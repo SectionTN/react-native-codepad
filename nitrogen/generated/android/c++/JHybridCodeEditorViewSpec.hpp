@@ -62,6 +62,18 @@ namespace margelo::nitro::codepad {
     void setFontSize(std::optional<double> fontSize) override;
     std::optional<double> getLineHeight() override;
     void setLineHeight(std::optional<double> lineHeight) override;
+    std::optional<bool> getLineNumbers() override;
+    void setLineNumbers(std::optional<bool> lineNumbers) override;
+    std::optional<bool> getSoftWrap() override;
+    void setSoftWrap(std::optional<bool> softWrap) override;
+    std::optional<bool> getReadOnly() override;
+    void setReadOnly(std::optional<bool> readOnly) override;
+    std::optional<bool> getHighlightActiveLine() override;
+    void setHighlightActiveLine(std::optional<bool> highlightActiveLine) override;
+    std::optional<std::string> getPlaceholder() override;
+    void setPlaceholder(const std::optional<std::string>& placeholder) override;
+    std::optional<NativeInsets> getContentInsets() override;
+    void setContentInsets(const std::optional<NativeInsets>& contentInsets) override;
     std::optional<std::function<void()>> getOnReady() override;
     void setOnReady(const std::optional<std::function<void()>>& onReady) override;
 

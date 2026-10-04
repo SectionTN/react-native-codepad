@@ -64,6 +64,42 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @set:Keep
   abstract var lineHeight: Double?
   
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var lineNumbers: Boolean?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var softWrap: Boolean?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var readOnly: Boolean?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var highlightActiveLine: Boolean?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var placeholder: String?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var contentInsets: NativeInsets?
+  
   abstract var onReady: (() -> Unit)?
   
   private var onReady_cxx: Func_void?

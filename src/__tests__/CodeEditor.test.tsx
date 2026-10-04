@@ -16,6 +16,12 @@ type HostProps = {
   theme: { tokens: Record<string, { color: string; bold: boolean; italic: boolean }> };
   fontSize: number;
   lineHeight: number;
+  lineNumbers: boolean;
+  softWrap: boolean;
+  readOnly: boolean;
+  highlightActiveLine: boolean;
+  placeholder?: string;
+  contentInsets?: { top?: number; bottom?: number; left?: number; right?: number };
   onReady: { f: () => void };
   hybridRef: { f: (ref: unknown) => void };
 };
@@ -85,5 +91,21 @@ describe('CodeEditor', () => {
     });
     expect(props.fontSize).toBe(14);
     expect(props.lineHeight).toBe(1.4);
+  });
+
+  it('fills the view prop defaults and passes insets through', async () => {
+    const props = host(await render(<CodeEditor />));
+    expect(props.lineNumbers).toBe(true);
+    expect(props.softWrap).toBe(false);
+    expect(props.readOnly).toBe(false);
+    expect(props.highlightActiveLine).toBe(true);
+    expect(props.placeholder).toBeUndefined();
+    expect(props.contentInsets).toBeUndefined();
+    const custom = host(
+      await render(<CodeEditor softWrap placeholder="Type here" contentInsets={{ bottom: 40 }} />),
+    );
+    expect(custom.softWrap).toBe(true);
+    expect(custom.placeholder).toBe('Type here');
+    expect(custom.contentInsets).toEqual({ bottom: 40 });
   });
 });

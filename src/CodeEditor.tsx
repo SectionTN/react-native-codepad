@@ -38,6 +38,12 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     fontFamily,
     fontSize = 14,
     lineHeight = 1.4,
+    lineNumbers = true,
+    softWrap = false,
+    readOnly = false,
+    highlightActiveLine = true,
+    placeholder,
+    contentInsets,
     onReady,
     ...viewProps
   },
@@ -79,6 +85,12 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       fontFamily={fontFamily}
       fontSize={fontSize}
       lineHeight={lineHeight}
+      lineNumbers={lineNumbers}
+      softWrap={softWrap}
+      readOnly={readOnly}
+      highlightActiveLine={highlightActiveLine}
+      placeholder={placeholder}
+      contentInsets={contentInsets}
       onReady={onReadyCallback}
       hybridRef={hybridRef}
     />

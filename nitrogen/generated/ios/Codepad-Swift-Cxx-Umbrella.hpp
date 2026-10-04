@@ -12,6 +12,8 @@
 namespace margelo::nitro::codepad { class HybridCodeEditorViewSpec; }
 // Forward declaration of `HybridCodepadSpec` to properly resolve imports.
 namespace margelo::nitro::codepad { class HybridCodepadSpec; }
+// Forward declaration of `NativeInsets` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeInsets; }
 // Forward declaration of `NativeTheme` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeTheme; }
 // Forward declaration of `NativeTokenStyle` to properly resolve imports.
@@ -20,6 +22,7 @@ namespace margelo::nitro::codepad { struct NativeTokenStyle; }
 // Include C++ defined types
 #include "HybridCodeEditorViewSpec.hpp"
 #include "HybridCodepadSpec.hpp"
+#include "NativeInsets.hpp"
 #include "NativeTheme.hpp"
 #include "NativeTokenStyle.hpp"
 #include <NitroModules/Promise.hpp>

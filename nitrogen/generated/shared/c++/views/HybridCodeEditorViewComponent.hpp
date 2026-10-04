@@ -20,6 +20,7 @@
 #include <string>
 #include <optional>
 #include "NativeTheme.hpp"
+#include "NativeInsets.hpp"
 #include <functional>
 #include <memory>
 #include "HybridCodeEditorViewSpec.hpp"
@@ -50,6 +51,12 @@ namespace margelo::nitro::codepad::views {
     nitro::ReactProp<std::optional<std::string>> fontFamily;
     nitro::ReactProp<std::optional<double>> fontSize;
     nitro::ReactProp<std::optional<double>> lineHeight;
+    nitro::ReactProp<std::optional<bool>> lineNumbers;
+    nitro::ReactProp<std::optional<bool>> softWrap;
+    nitro::ReactProp<std::optional<bool>> readOnly;
+    nitro::ReactProp<std::optional<bool>> highlightActiveLine;
+    nitro::ReactProp<std::optional<std::string>> placeholder;
+    nitro::ReactProp<std::optional<NativeInsets>> contentInsets;
     nitro::ReactProp<std::optional<std::function<void()>>> onReady;
     nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>> hybridRef;
 
@@ -61,6 +68,12 @@ namespace margelo::nitro::codepad::views {
              fontFamily.hasSameValue(other.fontFamily) &&
              fontSize.hasSameValue(other.fontSize) &&
              lineHeight.hasSameValue(other.lineHeight) &&
+             lineNumbers.hasSameValue(other.lineNumbers) &&
+             softWrap.hasSameValue(other.softWrap) &&
+             readOnly.hasSameValue(other.readOnly) &&
+             highlightActiveLine.hasSameValue(other.highlightActiveLine) &&
+             placeholder.hasSameValue(other.placeholder) &&
+             contentInsets.hasSameValue(other.contentInsets) &&
              onReady.hasSameValue(other.onReady) &&
              hybridRef.hasSameValue(other.hybridRef);
     }
@@ -73,6 +86,12 @@ namespace margelo::nitro::codepad::views {
              fontFamily.isProvided() ||
              fontSize.isProvided() ||
              lineHeight.isProvided() ||
+             lineNumbers.isProvided() ||
+             softWrap.isProvided() ||
+             readOnly.isProvided() ||
+             highlightActiveLine.isProvided() ||
+             placeholder.isProvided() ||
+             contentInsets.isProvided() ||
              onReady.isProvided() ||
              hybridRef.isProvided();
     }

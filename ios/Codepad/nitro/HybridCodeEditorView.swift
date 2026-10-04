@@ -8,6 +8,12 @@ class HybridCodeEditorView: HybridCodeEditorViewSpec {
   var fontFamily: String? = nil
   var fontSize: Double? = nil
   var lineHeight: Double? = nil
+  var lineNumbers: Bool? = nil
+  var softWrap: Bool? = nil
+  var readOnly: Bool? = nil
+  var highlightActiveLine: Bool? = nil
+  var placeholder: String? = nil
+  var contentInsets: NativeInsets? = nil
   var onReady: (() -> Void)? = nil
 
   func getText() throws -> String {

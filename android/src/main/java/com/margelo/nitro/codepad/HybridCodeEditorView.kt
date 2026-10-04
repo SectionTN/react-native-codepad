@@ -63,6 +63,47 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
       fontDirty = true
     }
 
+  override var lineNumbers: Boolean? = null
+    set(value) {
+      field = value
+      editor.setLineNumbers(value ?: true)
+    }
+
+  override var softWrap: Boolean? = null
+    set(value) {
+      field = value
+      editor.setSoftWrap(value ?: false)
+    }
+
+  override var readOnly: Boolean? = null
+    set(value) {
+      field = value
+      editor.setReadOnly(value ?: false)
+    }
+
+  override var highlightActiveLine: Boolean? = null
+    set(value) {
+      field = value
+      editor.setHighlightActiveLine(value ?: true)
+    }
+
+  override var placeholder: String? = null
+    set(value) {
+      field = value
+      editor.setPlaceholder(value)
+    }
+
+  override var contentInsets: NativeInsets? = null
+    set(value) {
+      field = value
+      editor.setContentInsets(
+        (value?.top ?: 0.0).toFloat(),
+        (value?.bottom ?: 0.0).toFloat(),
+        (value?.left ?: 0.0).toFloat(),
+        (value?.right ?: 0.0).toFloat(),
+      )
+    }
+
   override var onReady: (() -> Unit)? = null
 
   override fun afterUpdate() {

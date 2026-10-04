@@ -134,6 +134,42 @@ using namespace margelo::nitro::codepad::views;
           : !newViewProps.lineHeight.hasSameValue(oldViewProps->lineHeight)) {
       swiftPart.setLineHeight(newViewProps.lineHeight.get());
     }
+    // lineNumbers: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.lineNumbers.isProvided()
+          : !newViewProps.lineNumbers.hasSameValue(oldViewProps->lineNumbers)) {
+      swiftPart.setLineNumbers(newViewProps.lineNumbers.get());
+    }
+    // softWrap: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.softWrap.isProvided()
+          : !newViewProps.softWrap.hasSameValue(oldViewProps->softWrap)) {
+      swiftPart.setSoftWrap(newViewProps.softWrap.get());
+    }
+    // readOnly: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.readOnly.isProvided()
+          : !newViewProps.readOnly.hasSameValue(oldViewProps->readOnly)) {
+      swiftPart.setReadOnly(newViewProps.readOnly.get());
+    }
+    // highlightActiveLine: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.highlightActiveLine.isProvided()
+          : !newViewProps.highlightActiveLine.hasSameValue(oldViewProps->highlightActiveLine)) {
+      swiftPart.setHighlightActiveLine(newViewProps.highlightActiveLine.get());
+    }
+    // placeholder: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.placeholder.isProvided()
+          : !newViewProps.placeholder.hasSameValue(oldViewProps->placeholder)) {
+      swiftPart.setPlaceholder(newViewProps.placeholder.get());
+    }
+    // contentInsets: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.contentInsets.isProvided()
+          : !newViewProps.contentInsets.hasSameValue(oldViewProps->contentInsets)) {
+      swiftPart.setContentInsets(newViewProps.contentInsets.get());
+    }
     // onReady: optional
     if (oldViewProps == nullptr
           ? newViewProps.onReady.isProvided()

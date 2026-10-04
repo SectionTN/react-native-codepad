@@ -26,6 +26,18 @@ namespace margelo::nitro::codepad {
       prototype.registerHybridSetter("fontSize", &HybridCodeEditorViewSpec::setFontSize);
       prototype.registerHybridGetter("lineHeight", &HybridCodeEditorViewSpec::getLineHeight);
       prototype.registerHybridSetter("lineHeight", &HybridCodeEditorViewSpec::setLineHeight);
+      prototype.registerHybridGetter("lineNumbers", &HybridCodeEditorViewSpec::getLineNumbers);
+      prototype.registerHybridSetter("lineNumbers", &HybridCodeEditorViewSpec::setLineNumbers);
+      prototype.registerHybridGetter("softWrap", &HybridCodeEditorViewSpec::getSoftWrap);
+      prototype.registerHybridSetter("softWrap", &HybridCodeEditorViewSpec::setSoftWrap);
+      prototype.registerHybridGetter("readOnly", &HybridCodeEditorViewSpec::getReadOnly);
+      prototype.registerHybridSetter("readOnly", &HybridCodeEditorViewSpec::setReadOnly);
+      prototype.registerHybridGetter("highlightActiveLine", &HybridCodeEditorViewSpec::getHighlightActiveLine);
+      prototype.registerHybridSetter("highlightActiveLine", &HybridCodeEditorViewSpec::setHighlightActiveLine);
+      prototype.registerHybridGetter("placeholder", &HybridCodeEditorViewSpec::getPlaceholder);
+      prototype.registerHybridSetter("placeholder", &HybridCodeEditorViewSpec::setPlaceholder);
+      prototype.registerHybridGetter("contentInsets", &HybridCodeEditorViewSpec::getContentInsets);
+      prototype.registerHybridSetter("contentInsets", &HybridCodeEditorViewSpec::setContentInsets);
       prototype.registerHybridGetter("onReady", &HybridCodeEditorViewSpec::getOnReady);
       prototype.registerHybridSetter("onReady", &HybridCodeEditorViewSpec::setOnReady);
       prototype.registerHybridMethod("getText", &HybridCodeEditorViewSpec::getText);

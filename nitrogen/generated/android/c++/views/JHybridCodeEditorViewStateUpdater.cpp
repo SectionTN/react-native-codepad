@@ -84,6 +84,36 @@ void JHybridCodeEditorViewStateUpdater::updateViewProps(jni::alias_ref<jni::JCla
     hybridView->setLineHeight(newProps->lineHeight.get());
   }
   if (oldProps == nullptr
+        ? newProps->lineNumbers.isProvided()
+        : !newProps->lineNumbers.hasSameValue(oldProps->lineNumbers)) {
+    hybridView->setLineNumbers(newProps->lineNumbers.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->softWrap.isProvided()
+        : !newProps->softWrap.hasSameValue(oldProps->softWrap)) {
+    hybridView->setSoftWrap(newProps->softWrap.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->readOnly.isProvided()
+        : !newProps->readOnly.hasSameValue(oldProps->readOnly)) {
+    hybridView->setReadOnly(newProps->readOnly.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->highlightActiveLine.isProvided()
+        : !newProps->highlightActiveLine.hasSameValue(oldProps->highlightActiveLine)) {
+    hybridView->setHighlightActiveLine(newProps->highlightActiveLine.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->placeholder.isProvided()
+        : !newProps->placeholder.hasSameValue(oldProps->placeholder)) {
+    hybridView->setPlaceholder(newProps->placeholder.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->contentInsets.isProvided()
+        : !newProps->contentInsets.hasSameValue(oldProps->contentInsets)) {
+    hybridView->setContentInsets(newProps->contentInsets.get());
+  }
+  if (oldProps == nullptr
         ? newProps->onReady.isProvided()
         : !newProps->onReady.hasSameValue(oldProps->onReady)) {
     hybridView->setOnReady(newProps->onReady.get());

@@ -16,6 +16,12 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   var fontFamily: String? { get set }
   var fontSize: Double? { get set }
   var lineHeight: Double? { get set }
+  var lineNumbers: Bool? { get set }
+  var softWrap: Bool? { get set }
+  var readOnly: Bool? { get set }
+  var highlightActiveLine: Bool? { get set }
+  var placeholder: String? { get set }
+  var contentInsets: NativeInsets? { get set }
   var onReady: (() -> Void)? { get set }
 
   // Methods

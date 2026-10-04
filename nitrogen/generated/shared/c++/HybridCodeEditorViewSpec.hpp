@@ -15,10 +15,13 @@
 
 // Forward declaration of `NativeTheme` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeTheme; }
+// Forward declaration of `NativeInsets` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeInsets; }
 
 #include <string>
 #include <optional>
 #include "NativeTheme.hpp"
+#include "NativeInsets.hpp"
 #include <functional>
 #include <NitroModules/Promise.hpp>
 
@@ -61,6 +64,18 @@ namespace margelo::nitro::codepad {
       virtual void setFontSize(std::optional<double> fontSize) = 0;
       virtual std::optional<double> getLineHeight() = 0;
       virtual void setLineHeight(std::optional<double> lineHeight) = 0;
+      virtual std::optional<bool> getLineNumbers() = 0;
+      virtual void setLineNumbers(std::optional<bool> lineNumbers) = 0;
+      virtual std::optional<bool> getSoftWrap() = 0;
+      virtual void setSoftWrap(std::optional<bool> softWrap) = 0;
+      virtual std::optional<bool> getReadOnly() = 0;
+      virtual void setReadOnly(std::optional<bool> readOnly) = 0;
+      virtual std::optional<bool> getHighlightActiveLine() = 0;
+      virtual void setHighlightActiveLine(std::optional<bool> highlightActiveLine) = 0;
+      virtual std::optional<std::string> getPlaceholder() = 0;
+      virtual void setPlaceholder(const std::optional<std::string>& placeholder) = 0;
+      virtual std::optional<NativeInsets> getContentInsets() = 0;
+      virtual void setContentInsets(const std::optional<NativeInsets>& contentInsets) = 0;
       virtual std::optional<std::function<void()>> getOnReady() = 0;
       virtual void setOnReady(const std::optional<std::function<void()>>& onReady) = 0;
 

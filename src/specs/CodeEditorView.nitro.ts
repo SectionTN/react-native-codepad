@@ -21,6 +21,13 @@ export interface NativeTheme {
   tokens: Record<string, NativeTokenStyle>;
 }
 
+export interface NativeInsets {
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+}
+
 export interface CodeEditorViewProps extends HybridViewProps {
   initialValue?: string;
   language?: string;
@@ -28,6 +35,12 @@ export interface CodeEditorViewProps extends HybridViewProps {
   fontFamily?: string;
   fontSize?: number;
   lineHeight?: number;
+  lineNumbers?: boolean;
+  softWrap?: boolean;
+  readOnly?: boolean;
+  highlightActiveLine?: boolean;
+  placeholder?: string;
+  contentInsets?: NativeInsets;
   onReady?: () => void;
 }
 

@@ -11,6 +11,12 @@ export default {
     "fontFamily": true,
     "fontSize": true,
     "lineHeight": true,
+    "lineNumbers": true,
+    "softWrap": true,
+    "readOnly": true,
+    "highlightActiveLine": true,
+    "placeholder": true,
+    "contentInsets": true,
     "onReady": true,
     "hybridRef": true
   }

@@ -26,6 +26,12 @@ namespace margelo::nitro::codepad::views {
     fontFamily(nitro::ReactProp<std::optional<std::string>>::fromRawValue("CodeEditorView", "fontFamily", rawProps, sourceProps.fontFamily)),
     fontSize(nitro::ReactProp<std::optional<double>>::fromRawValue("CodeEditorView", "fontSize", rawProps, sourceProps.fontSize)),
     lineHeight(nitro::ReactProp<std::optional<double>>::fromRawValue("CodeEditorView", "lineHeight", rawProps, sourceProps.lineHeight)),
+    lineNumbers(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "lineNumbers", rawProps, sourceProps.lineNumbers)),
+    softWrap(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "softWrap", rawProps, sourceProps.softWrap)),
+    readOnly(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "readOnly", rawProps, sourceProps.readOnly)),
+    highlightActiveLine(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "highlightActiveLine", rawProps, sourceProps.highlightActiveLine)),
+    placeholder(nitro::ReactProp<std::optional<std::string>>::fromRawValue("CodeEditorView", "placeholder", rawProps, sourceProps.placeholder)),
+    contentInsets(nitro::ReactProp<std::optional<NativeInsets>>::fromRawValue("CodeEditorView", "contentInsets", rawProps, sourceProps.contentInsets)),
     onReady(nitro::ReactProp<std::optional<std::function<void()>>>::fromRawValue("CodeEditorView", "onReady", rawProps, sourceProps.onReady)),
     hybridRef(nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>>::fromRawValue("CodeEditorView", "hybridRef", rawProps, sourceProps.hybridRef)) { }
 
@@ -37,6 +43,12 @@ namespace margelo::nitro::codepad::views {
       case hashString("fontFamily"): return true;
       case hashString("fontSize"): return true;
       case hashString("lineHeight"): return true;
+      case hashString("lineNumbers"): return true;
+      case hashString("softWrap"): return true;
+      case hashString("readOnly"): return true;
+      case hashString("highlightActiveLine"): return true;
+      case hashString("placeholder"): return true;
+      case hashString("contentInsets"): return true;
       case hashString("onReady"): return true;
       case hashString("hybridRef"): return true;
       default: return false;

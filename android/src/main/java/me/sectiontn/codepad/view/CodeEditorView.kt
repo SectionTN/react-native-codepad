@@ -122,6 +122,13 @@ class CodeEditorView(context: Context) : View(context) {
     invalidate()
   }
 
+  var isReadOnly = false
+    private set
+
+  fun setReadOnly(enabled: Boolean) {
+    isReadOnly = enabled
+  }
+
   fun setPlaceholder(text: String?) {
     placeholder = text
     invalidate()
@@ -246,6 +253,8 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   override fun onDraw(canvas: Canvas) {
+    // React Native parents leave clipChildren off, so an unclipped drawColor would cover siblings.
+    canvas.clipRect(0, 0, width, height)
     canvas.drawColor(theme.background)
     if (width == 0 || height == 0) return
     val doc = core.document

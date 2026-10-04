@@ -12,6 +12,8 @@
 namespace margelo::nitro::codepad { class HybridCodeEditorViewSpec; }
 // Forward declaration of `HybridCodepadSpec` to properly resolve imports.
 namespace margelo::nitro::codepad { class HybridCodepadSpec; }
+// Forward declaration of `NativeInsets` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeInsets; }
 // Forward declaration of `NativeTheme` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeTheme; }
 // Forward declaration of `NativeTokenStyle` to properly resolve imports.
@@ -26,6 +28,7 @@ namespace Codepad { class HybridCodepadSpec_cxx; }
 // Include C++ defined types
 #include "HybridCodeEditorViewSpec.hpp"
 #include "HybridCodepadSpec.hpp"
+#include "NativeInsets.hpp"
 #include "NativeTheme.hpp"
 #include "NativeTokenStyle.hpp"
 #include <NitroModules/Promise.hpp>
@@ -112,6 +115,36 @@ namespace margelo::nitro::codepad::bridge::swift {
     return optional.has_value();
   }
   inline double get_std__optional_double_(const std::optional<double>& optional) noexcept {
+    return optional.value();
+  }
+  
+  // pragma MARK: std::optional<bool>
+  /**
+   * Specialized version of `std::optional<bool>`.
+   */
+  using std__optional_bool_ = std::optional<bool>;
+  inline std::optional<bool> create_std__optional_bool_(const bool& value) noexcept {
+    return std::optional<bool>(value);
+  }
+  inline bool has_value_std__optional_bool_(const std::optional<bool>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline bool get_std__optional_bool_(const std::optional<bool>& optional) noexcept {
+    return optional.value();
+  }
+  
+  // pragma MARK: std::optional<NativeInsets>
+  /**
+   * Specialized version of `std::optional<NativeInsets>`.
+   */
+  using std__optional_NativeInsets_ = std::optional<NativeInsets>;
+  inline std::optional<NativeInsets> create_std__optional_NativeInsets_(const NativeInsets& value) noexcept {
+    return std::optional<NativeInsets>(value);
+  }
+  inline bool has_value_std__optional_NativeInsets_(const std::optional<NativeInsets>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline NativeInsets get_std__optional_NativeInsets_(const std::optional<NativeInsets>& optional) noexcept {
     return optional.value();
   }
   

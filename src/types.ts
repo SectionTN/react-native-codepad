@@ -18,6 +18,13 @@ export interface Theme {
   tokens: Record<string, TokenStyle>;
 }
 
+export interface ContentInsets {
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+}
+
 export interface CodeEditorProps extends ViewProps {
   initialValue?: string;
   language?: string;
@@ -25,6 +32,13 @@ export interface CodeEditorProps extends ViewProps {
   fontFamily?: string;
   fontSize?: number;
   lineHeight?: number;
+  lineNumbers?: boolean;
+  softWrap?: boolean;
+  readOnly?: boolean;
+  highlightActiveLine?: boolean;
+  placeholder?: string;
+  /** Padding inside the scrollable area in dp. Style padding on the view is ignored. */
+  contentInsets?: ContentInsets;
   onReady?: () => void;
 }
 

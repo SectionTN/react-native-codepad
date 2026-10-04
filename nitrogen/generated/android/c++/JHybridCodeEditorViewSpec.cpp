@@ -11,6 +11,8 @@
 namespace margelo::nitro::codepad { struct NativeTheme; }
 // Forward declaration of `NativeTokenStyle` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeTokenStyle; }
+// Forward declaration of `NativeInsets` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeInsets; }
 
 #include <string>
 #include <optional>
@@ -19,6 +21,8 @@ namespace margelo::nitro::codepad { struct NativeTokenStyle; }
 #include "NativeTokenStyle.hpp"
 #include <unordered_map>
 #include "JNativeTokenStyle.hpp"
+#include "NativeInsets.hpp"
+#include "JNativeInsets.hpp"
 #include <functional>
 #include "JFunc_void.hpp"
 #include <NitroModules/JNICallable.hpp>
@@ -109,6 +113,60 @@ namespace margelo::nitro::codepad {
   void JHybridCodeEditorViewSpec::setLineHeight(std::optional<double> lineHeight) {
     static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JDouble> /* lineHeight */)>("setLineHeight");
     method(_javaPart, lineHeight.has_value() ? jni::JDouble::valueOf(lineHeight.value()) : nullptr);
+  }
+  std::optional<bool> JHybridCodeEditorViewSpec::getLineNumbers() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JBoolean>()>("getLineNumbers");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(static_cast<bool>(__result->value())) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setLineNumbers(std::optional<bool> lineNumbers) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JBoolean> /* lineNumbers */)>("setLineNumbers");
+    method(_javaPart, lineNumbers.has_value() ? jni::JBoolean::valueOf(lineNumbers.value()) : nullptr);
+  }
+  std::optional<bool> JHybridCodeEditorViewSpec::getSoftWrap() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JBoolean>()>("getSoftWrap");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(static_cast<bool>(__result->value())) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setSoftWrap(std::optional<bool> softWrap) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JBoolean> /* softWrap */)>("setSoftWrap");
+    method(_javaPart, softWrap.has_value() ? jni::JBoolean::valueOf(softWrap.value()) : nullptr);
+  }
+  std::optional<bool> JHybridCodeEditorViewSpec::getReadOnly() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JBoolean>()>("getReadOnly");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(static_cast<bool>(__result->value())) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setReadOnly(std::optional<bool> readOnly) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JBoolean> /* readOnly */)>("setReadOnly");
+    method(_javaPart, readOnly.has_value() ? jni::JBoolean::valueOf(readOnly.value()) : nullptr);
+  }
+  std::optional<bool> JHybridCodeEditorViewSpec::getHighlightActiveLine() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JBoolean>()>("getHighlightActiveLine");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(static_cast<bool>(__result->value())) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setHighlightActiveLine(std::optional<bool> highlightActiveLine) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JBoolean> /* highlightActiveLine */)>("setHighlightActiveLine");
+    method(_javaPart, highlightActiveLine.has_value() ? jni::JBoolean::valueOf(highlightActiveLine.value()) : nullptr);
+  }
+  std::optional<std::string> JHybridCodeEditorViewSpec::getPlaceholder() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JString>()>("getPlaceholder");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(__result->toStdString()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setPlaceholder(const std::optional<std::string>& placeholder) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JString> /* placeholder */)>("setPlaceholder");
+    method(_javaPart, placeholder.has_value() ? jni::make_jstring(placeholder.value()) : nullptr);
+  }
+  std::optional<NativeInsets> JHybridCodeEditorViewSpec::getContentInsets() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JNativeInsets>()>("getContentInsets");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(__result->toCpp()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setContentInsets(const std::optional<NativeInsets>& contentInsets) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<JNativeInsets> /* contentInsets */)>("setContentInsets");
+    method(_javaPart, contentInsets.has_value() ? JNativeInsets::fromCpp(contentInsets.value()) : nullptr);
   }
   std::optional<std::function<void()>> JHybridCodeEditorViewSpec::getOnReady() {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JFunc_void::javaobject>()>("getOnReady_cxx");

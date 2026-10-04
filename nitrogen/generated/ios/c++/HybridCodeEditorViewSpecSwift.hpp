@@ -16,12 +16,15 @@ namespace Codepad { class HybridCodeEditorViewSpec_cxx; }
 namespace margelo::nitro::codepad { struct NativeTheme; }
 // Forward declaration of `NativeTokenStyle` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeTokenStyle; }
+// Forward declaration of `NativeInsets` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeInsets; }
 
 #include <string>
 #include <optional>
 #include "NativeTheme.hpp"
 #include "NativeTokenStyle.hpp"
 #include <unordered_map>
+#include "NativeInsets.hpp"
 #include <functional>
 #include <NitroModules/Promise.hpp>
 
@@ -112,6 +115,48 @@ namespace margelo::nitro::codepad {
     }
     inline void setLineHeight(std::optional<double> lineHeight) noexcept override {
       _swiftPart.setLineHeight(lineHeight);
+    }
+    inline std::optional<bool> getLineNumbers() noexcept override {
+      auto __result = _swiftPart.getLineNumbers();
+      return __result;
+    }
+    inline void setLineNumbers(std::optional<bool> lineNumbers) noexcept override {
+      _swiftPart.setLineNumbers(lineNumbers);
+    }
+    inline std::optional<bool> getSoftWrap() noexcept override {
+      auto __result = _swiftPart.getSoftWrap();
+      return __result;
+    }
+    inline void setSoftWrap(std::optional<bool> softWrap) noexcept override {
+      _swiftPart.setSoftWrap(softWrap);
+    }
+    inline std::optional<bool> getReadOnly() noexcept override {
+      auto __result = _swiftPart.getReadOnly();
+      return __result;
+    }
+    inline void setReadOnly(std::optional<bool> readOnly) noexcept override {
+      _swiftPart.setReadOnly(readOnly);
+    }
+    inline std::optional<bool> getHighlightActiveLine() noexcept override {
+      auto __result = _swiftPart.getHighlightActiveLine();
+      return __result;
+    }
+    inline void setHighlightActiveLine(std::optional<bool> highlightActiveLine) noexcept override {
+      _swiftPart.setHighlightActiveLine(highlightActiveLine);
+    }
+    inline std::optional<std::string> getPlaceholder() noexcept override {
+      auto __result = _swiftPart.getPlaceholder();
+      return __result;
+    }
+    inline void setPlaceholder(const std::optional<std::string>& placeholder) noexcept override {
+      _swiftPart.setPlaceholder(placeholder);
+    }
+    inline std::optional<NativeInsets> getContentInsets() noexcept override {
+      auto __result = _swiftPart.getContentInsets();
+      return __result;
+    }
+    inline void setContentInsets(const std::optional<NativeInsets>& contentInsets) noexcept override {
+      _swiftPart.setContentInsets(contentInsets);
     }
     inline std::optional<std::function<void()>> getOnReady() noexcept override {
       auto __result = _swiftPart.getOnReady();
