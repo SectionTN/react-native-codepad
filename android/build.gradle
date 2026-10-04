@@ -116,6 +116,7 @@ android {
   testOptions {
     unitTests.returnDefaultValues = true
     unitTests.all {
+      inputs.dir("${projectDir}/../tests/vectors")
       systemProperty "codepad.vectorsDir", "${projectDir}/../tests/vectors"
       def hostLib = file("${projectDir}/../build/host/libcodepadhost.so")
       if (hostLib.exists()) {
