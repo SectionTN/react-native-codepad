@@ -1,0 +1,73 @@
+{
+  "area": "movement",
+  "cases": [
+    { "name": "char right and left on ascii", "text": "abc", "ops": [
+      { "op": "move", "unit": "char", "dir": 1, "expect": { "selection": { "anchor": 1, "head": 1 } } },
+      { "op": "move", "unit": "char", "dir": -1, "expect": { "selection": { "anchor": 0, "head": 0 } } },
+      { "op": "move", "unit": "char", "dir": -1, "expect": { "selection": { "anchor": 0, "head": 0 } } }
+    ] },
+    { "name": "char movement steps over an emoji", "text": "a\uD83D\uDE00b", "ops": [
+      { "op": "setSelection", "anchor": 1, "head": 1 },
+      { "op": "move", "unit": "char", "dir": 1, "expect": { "selection": { "anchor": 3, "head": 3 } } },
+      { "op": "move", "unit": "char", "dir": -1, "expect": { "selection": { "anchor": 1, "head": 1 } } }
+    ] },
+    { "name": "char movement keeps a combining mark with its base", "text": "e\u0301x", "ops": [
+      { "op": "move", "unit": "char", "dir": 1, "expect": { "selection": { "anchor": 2, "head": 2 } } }
+    ] },
+    { "name": "char movement crosses line breaks", "text": "a\nb", "ops": [
+      { "op": "setSelection", "anchor": 1, "head": 1 },
+      { "op": "move", "unit": "char", "dir": 1, "expect": { "selection": { "anchor": 2, "head": 2 } } },
+      { "op": "move", "unit": "char", "dir": -1, "expect": { "selection": { "anchor": 1, "head": 1 } } },
+      { "op": "move", "unit": "char", "dir": -1, "expect": { "selection": { "anchor": 0, "head": 0 } } }
+    ] },
+    { "name": "word right", "text": "foo bar_baz(qux)", "ops": [
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 3, "head": 3 } } },
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 11, "head": 11 } } },
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 12, "head": 12 } } },
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 15, "head": 15 } } },
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 16, "head": 16 } } },
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 16, "head": 16 } } }
+    ] },
+    { "name": "word left", "text": "foo bar_baz(qux)", "ops": [
+      { "op": "setSelection", "anchor": 16, "head": 16 },
+      { "op": "move", "unit": "word", "dir": -1, "expect": { "selection": { "anchor": 15, "head": 15 } } },
+      { "op": "move", "unit": "word", "dir": -1, "expect": { "selection": { "anchor": 12, "head": 12 } } },
+      { "op": "move", "unit": "word", "dir": -1, "expect": { "selection": { "anchor": 11, "head": 11 } } },
+      { "op": "move", "unit": "word", "dir": -1, "expect": { "selection": { "anchor": 4, "head": 4 } } },
+      { "op": "move", "unit": "word", "dir": -1, "expect": { "selection": { "anchor": 0, "head": 0 } } }
+    ] },
+    { "name": "word movement crosses line breaks", "text": "ab\ncd", "ops": [
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 2, "head": 2 } } },
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 3, "head": 3 } } },
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 5, "head": 5 } } }
+    ] },
+    { "name": "shift extends from the anchor", "text": "abc", "ops": [
+      { "op": "setSelection", "anchor": 1, "head": 1 },
+      { "op": "move", "unit": "char", "dir": 1, "extend": true, "expect": { "selection": { "anchor": 1, "head": 2 } } },
+      { "op": "move", "unit": "word", "dir": -1, "extend": true, "expect": { "selection": { "anchor": 1, "head": 0 } } }
+    ] },
+    { "name": "char movement without shift collapses a selection to its side", "text": "abcdef", "ops": [
+      { "op": "setSelection", "anchor": 1, "head": 4 },
+      { "op": "move", "unit": "char", "dir": 1, "expect": { "selection": { "anchor": 4, "head": 4 } } },
+      { "op": "setSelection", "anchor": 1, "head": 4 },
+      { "op": "move", "unit": "char", "dir": -1, "expect": { "selection": { "anchor": 1, "head": 1 } } }
+    ] },
+    { "name": "line and document bounds", "text": "  ab\ncd", "ops": [
+      { "op": "setSelection", "anchor": 3, "head": 3 },
+      { "op": "move", "unit": "lineStart", "dir": -1, "expect": { "selection": { "anchor": 0, "head": 0 } } },
+      { "op": "move", "unit": "lineEnd", "dir": 1, "expect": { "selection": { "anchor": 4, "head": 4 } } },
+      { "op": "move", "unit": "docEnd", "dir": 1, "expect": { "selection": { "anchor": 7, "head": 7 } } },
+      { "op": "move", "unit": "docStart", "dir": -1, "expect": { "selection": { "anchor": 0, "head": 0 } } }
+    ] },
+    { "name": "select word at offset", "text": "foo  bar", "ops": [
+      { "op": "selectWord", "offset": 1, "expect": { "selection": { "anchor": 0, "head": 3 } } },
+      { "op": "selectWord", "offset": 4, "expect": { "selection": { "anchor": 3, "head": 5 } } },
+      { "op": "selectWord", "offset": 7, "expect": { "selection": { "anchor": 5, "head": 8 } } },
+      { "op": "selectWord", "offset": 8, "expect": { "selection": { "anchor": 5, "head": 8 } } }
+    ] },
+    { "name": "select word on punctuation and empty lines", "text": "a.b\n", "ops": [
+      { "op": "selectWord", "offset": 1, "expect": { "selection": { "anchor": 1, "head": 2 } } },
+      { "op": "selectWord", "offset": 4, "expect": { "selection": { "anchor": 4, "head": 4 } } }
+    ] }
+  ]
+}

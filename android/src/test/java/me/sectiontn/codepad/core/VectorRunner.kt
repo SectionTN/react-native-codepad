@@ -34,12 +34,24 @@ class VectorRunner(private val case: JSONObject) {
       "replace" -> core.replace(op.getInt("start"), op.getInt("end"), op.getString("text"))
       "setSelection" -> core.setSelection(op.getInt("anchor"), op.getInt("head"))
       "selectAll" -> core.selectAll()
+      "move" -> core.move(unitOf(op.getString("unit")), op.getInt("dir") > 0, op.optBoolean("extend", false))
+      "selectWord" -> core.selectWordAt(op.getInt("offset"))
       "offsetToPosition" -> lastResult = core.document.offsetToPosition(op.getInt("offset"))
       "positionToOffset" -> lastResult = core.document.positionToOffset(op.getInt("line"), op.getInt("column"))
       "getLine" -> lastResult = core.document.line(op.getInt("index")).toString()
       "wait" -> now += op.getLong("ms")
       else -> fail("op not implemented: $name")
     }
+  }
+
+  private fun unitOf(name: String): TextMovement.Unit = when (name) {
+    "char" -> TextMovement.Unit.Char
+    "word" -> TextMovement.Unit.Word
+    "lineStart" -> TextMovement.Unit.LineStart
+    "lineEnd" -> TextMovement.Unit.LineEnd
+    "docStart" -> TextMovement.Unit.DocStart
+    "docEnd" -> TextMovement.Unit.DocEnd
+    else -> error("unknown unit $name")
   }
 
   private fun check(expect: JSONObject, where: String) {

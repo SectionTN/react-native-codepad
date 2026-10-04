@@ -32,6 +32,30 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
 
   fun selectAll() = moveSelection(Selection(0, document.length))
 
+  fun move(unit: TextMovement.Unit, forward: Boolean, extend: Boolean) {
+    val doc = document
+    val collapsing = !extend && !selection.isEmpty && unit == TextMovement.Unit.Char
+    val from = if (collapsing) (if (forward) selection.max else selection.min) else selection.head
+    val target = when (unit) {
+      TextMovement.Unit.Char -> when {
+        collapsing -> from
+        forward -> TextMovement.nextGrapheme(doc, from)
+        else -> TextMovement.prevGrapheme(doc, from)
+      }
+      TextMovement.Unit.Word -> if (forward) TextMovement.nextWordEnd(doc, from) else TextMovement.prevWordStart(doc, from)
+      TextMovement.Unit.LineStart -> doc.lineStart(doc.lineAt(from))
+      TextMovement.Unit.LineEnd -> doc.lineEnd(doc.lineAt(from))
+      TextMovement.Unit.DocStart -> 0
+      TextMovement.Unit.DocEnd -> doc.length
+    }
+    moveSelection(if (extend) Selection(selection.anchor, target) else Selection.caret(target))
+  }
+
+  fun selectWordAt(offset: Int) {
+    val r = TextMovement.wordRangeAt(document, offset)
+    moveSelection(Selection(r.start, r.end))
+  }
+
   private fun moveSelection(next: Selection) {
     if (next == selection) return
     selection = next
