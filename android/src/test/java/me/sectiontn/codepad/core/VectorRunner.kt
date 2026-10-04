@@ -49,6 +49,16 @@ class VectorRunner(private val case: JSONObject) {
       "indent" -> core.indent()
       "outdent" -> core.outdent()
       "bracketMatch" -> lastResult = core.bracketMatch(null)
+      "search" -> try {
+        lastResult = core.setSearch(SearchQuery(op.getString("text"), op.optBoolean("regex", false), op.optBoolean("caseSensitive", false), op.optBoolean("wholeWord", false)))
+      } catch (e: IllegalArgumentException) {
+        lastError = e.message ?: "invalid"
+      }
+      "findNext" -> lastResult = core.findNext()
+      "findPrevious" -> lastResult = core.findPrevious()
+      "replaceCurrent" -> lastResult = core.replaceCurrent(op.getString("text"))
+      "replaceAll" -> lastResult = core.replaceAll(op.getString("text"))
+      "clearSearch" -> core.clearSearch()
       "config" -> core.settings = core.settings.copy(
         tabSize = op.optInt("tabSize", core.settings.tabSize),
         insertSpaces = op.optBoolean("insertSpaces", core.settings.insertSpaces),
@@ -91,6 +101,19 @@ class VectorRunner(private val case: JSONObject) {
     if (expect.has("canRedo")) assertEquals("canRedo $where", expect.getBoolean("canRedo"), core.canRedo)
     if (expect.has("offset")) assertEquals("offset $where", expect.getInt("offset"), lastResult)
     if (expect.has("line")) assertEquals("line $where", expect.getString("line"), lastResult)
+    if (expect.has("matches")) {
+      val arr = expect.getJSONArray("matches")
+      val expected = (0 until arr.length()).map { i -> arr.getJSONArray(i).let { Range(it.getInt(0), it.getInt(1)) } }
+      assertEquals("matches $where", expected, core.matches)
+    }
+    if (expect.has("found")) {
+      if (expect.isNull("found")) assertNull("found $where", lastResult)
+      else {
+        val f = expect.getJSONObject("found")
+        assertEquals("found $where", EditorCore.SearchHit(f.getInt("index"), f.getInt("total")), lastResult)
+      }
+    }
+    if (expect.has("result")) assertEquals("result $where", expect.get("result"), lastResult)
     if (expect.has("brackets")) {
       if (expect.isNull("brackets")) assertNull("brackets $where", lastResult)
       else {

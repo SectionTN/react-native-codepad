@@ -1,0 +1,45 @@
+{
+  "area": "search",
+  "cases": [
+    { "name": "plain search is case insensitive by default", "text": "Foo foo FOO", "ops": [{ "op": "search", "text": "foo", "expect": { "result": 3, "matches": [[0, 3], [4, 7], [8, 11]] } }] },
+    { "name": "case sensitive", "text": "Foo foo FOO", "ops": [{ "op": "search", "text": "foo", "caseSensitive": true, "expect": { "matches": [[4, 7]] } }] },
+    { "name": "whole word needs identifier boundaries", "text": "cat concat cat", "ops": [{ "op": "search", "text": "cat", "wholeWord": true, "expect": { "matches": [[0, 3], [11, 14]] } }] },
+    { "name": "regex", "text": "a1 b22 c333", "ops": [{ "op": "search", "text": "[a-z]\\d+", "regex": true, "expect": { "matches": [[0, 2], [3, 6], [7, 11]] } }] },
+    { "name": "regex anchors are per line", "text": "x\nx", "ops": [{ "op": "search", "text": "^x", "regex": true, "expect": { "matches": [[0, 1], [2, 3]] } }] },
+    { "name": "plain search escapes regex characters", "text": "a.b axb", "ops": [{ "op": "search", "text": "a.b", "expect": { "matches": [[0, 3]] } }] },
+    { "name": "invalid regex reports an error and clears matches", "text": "abc", "ops": [{ "op": "search", "text": "a", "expect": { "matches": [[0, 1]] } }, { "op": "search", "text": "(", "regex": true, "expect": { "error": true, "matches": [] } }] },
+    { "name": "findNext starts at the first match at or after the caret and wraps", "text": "ab ab ab", "ops": [
+      { "op": "setSelection", "anchor": 4, "head": 4 },
+      { "op": "search", "text": "ab" },
+      { "op": "findNext", "expect": { "found": { "index": 2, "total": 3 }, "selection": { "anchor": 6, "head": 8 } } },
+      { "op": "findNext", "expect": { "found": { "index": 0, "total": 3 }, "selection": { "anchor": 0, "head": 2 } } },
+      { "op": "findNext", "expect": { "found": { "index": 1, "total": 3 }, "selection": { "anchor": 3, "head": 5 } } }
+    ] },
+    { "name": "findPrevious takes the last match before the caret and wraps", "text": "ab ab ab", "ops": [
+      { "op": "setSelection", "anchor": 4, "head": 4 },
+      { "op": "search", "text": "ab" },
+      { "op": "findPrevious", "expect": { "found": { "index": 1, "total": 3 }, "selection": { "anchor": 3, "head": 5 } } },
+      { "op": "findPrevious", "expect": { "found": { "index": 0, "total": 3 } } },
+      { "op": "findPrevious", "expect": { "found": { "index": 2, "total": 3 } } }
+    ] },
+    { "name": "replaceCurrent only replaces a selected match and advances", "text": "ab ab", "ops": [
+      { "op": "search", "text": "ab" },
+      { "op": "replaceCurrent", "text": "X", "expect": { "result": false, "text": "ab ab" } },
+      { "op": "findNext", "expect": { "selection": { "anchor": 0, "head": 2 } } },
+      { "op": "replaceCurrent", "text": "X", "expect": { "result": true, "text": "X ab", "selection": { "anchor": 2, "head": 4 }, "matches": [[2, 4]] } }
+    ] },
+    { "name": "replaceAll is one undo group", "text": "ab ab ab", "ops": [
+      { "op": "search", "text": "ab" },
+      { "op": "replaceAll", "text": "X", "expect": { "result": 3, "text": "X X X", "matches": [] } },
+      { "op": "undo", "expect": { "text": "ab ab ab" } }
+    ] },
+    { "name": "empty regex matches are skipped", "text": "bab", "ops": [{ "op": "search", "text": "a*", "regex": true, "expect": { "matches": [[1, 2]] } }] },
+    { "name": "findNext without a query is a no-op", "text": "abc", "ops": [{ "op": "findNext", "expect": { "found": null } }] },
+    { "name": "edits refresh the matches", "text": "aa", "ops": [
+      { "op": "search", "text": "a", "expect": { "matches": [[0, 1], [1, 2]] } },
+      { "op": "replace", "start": 0, "end": 0, "text": "a" },
+      { "op": "findNext", "expect": { "found": { "index": 1, "total": 3 } } }
+    ] },
+    { "name": "clearSearch drops the matches", "text": "aa", "ops": [{ "op": "search", "text": "a" }, { "op": "clearSearch", "expect": { "matches": [] } }, { "op": "findNext", "expect": { "found": null } }] }
+  ]
+}

@@ -208,6 +208,97 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
 
   fun bracketMatch(skip: ((Int) -> Boolean)?): IntArray? = BracketMatcher.match(document, selection.head, skip)
 
+  data class SearchHit(val index: Int, val total: Int)
+
+  var searchQuery: SearchQuery? = null
+    private set
+  var matches: List<Range> = emptyList()
+    private set
+  private var matchesRevision = -1
+
+  /** Compiles first so an invalid regex throws before any state changes. Returns the match count. */
+  fun setSearch(query: SearchQuery): Int {
+    try {
+      Searcher.compile(query)
+    } catch (e: IllegalArgumentException) {
+      clearSearch()
+      throw e
+    }
+    searchQuery = query
+    refreshMatches(force = true)
+    return matches.size
+  }
+
+  fun clearSearch() {
+    searchQuery = null
+    matches = emptyList()
+    matchesRevision = -1
+  }
+
+  fun findNext(): SearchHit? {
+    refreshMatches()
+    if (matches.isEmpty()) return null
+    var index = firstMatchAtOrAfter(selection.min)
+    if (index < matches.size && matches[index] == selection.range) index++
+    if (index >= matches.size) index = 0
+    return selectMatch(index)
+  }
+
+  fun findPrevious(): SearchHit? {
+    refreshMatches()
+    if (matches.isEmpty()) return null
+    var index = firstMatchAtOrAfter(selection.min) - 1
+    if (index < 0) index = matches.size - 1
+    return selectMatch(index)
+  }
+
+  fun replaceCurrent(text: String): Boolean {
+    refreshMatches()
+    val current = matches.firstOrNull { it == selection.range } ?: return false
+    applyChange(current.start, current.end, text, ChangeOrigin.Api, typing = false, caretAfter = true)
+    refreshMatches()
+    if (matches.isNotEmpty()) {
+      var index = firstMatchAtOrAfter(selection.min)
+      if (index >= matches.size) index = 0
+      selectMatch(index)
+    }
+    return true
+  }
+
+  fun replaceAll(text: String): Int {
+    refreshMatches()
+    val targets = matches
+    if (targets.isEmpty()) return 0
+    undo.beginGroup(selection)
+    for (m in targets.asReversed()) applyChange(m.start, m.end, text, ChangeOrigin.Api, typing = false, caretAfter = false)
+    undo.endGroup(selection)
+    refreshMatches()
+    return targets.size
+  }
+
+  private fun refreshMatches(force: Boolean = false) {
+    val query = searchQuery
+    if (query == null) {
+      matches = emptyList()
+      return
+    }
+    if (force || matchesRevision != document.revision) {
+      matches = Searcher.find(document.text(), query)
+      matchesRevision = document.revision
+    }
+  }
+
+  private fun firstMatchAtOrAfter(offset: Int): Int {
+    val i = matches.indexOfFirst { it.start >= offset }
+    return if (i < 0) matches.size else i
+  }
+
+  private fun selectMatch(index: Int): SearchHit {
+    val m = matches[index]
+    moveSelection(Selection(m.start, m.end))
+    return SearchHit(index, matches.size)
+  }
+
   private fun clamped(s: Selection): Selection {
     val max = document.length
     return Selection(s.anchor.coerceIn(0, max), s.head.coerceIn(0, max))
