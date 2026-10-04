@@ -8058,8 +8058,17 @@ __metadata:
     react: "npm:19.2.3"
     react-native: "npm:0.87.1"
     react-native-builder-bob: "npm:^0.43.1"
+    react-native-codepad-lang-javascript: "npm:*"
     react-native-monorepo-config: "npm:^0.4.0"
     react-native-nitro-modules: "npm:^0.37.1"
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-javascript@npm:*, react-native-codepad-lang-javascript@workspace:languages/javascript":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-javascript@workspace:languages/javascript"
+  peerDependencies:
+    react-native-codepad: 0.1.0
   languageName: unknown
   linkType: soft
 

@@ -12,6 +12,7 @@
   "dependencies": {
     "react": "19.2.3",
     "react-native": "0.87.1",
+    "react-native-codepad-lang-javascript": "*",
     "react-native-nitro-modules": "^0.37.1"
   },
   "devDependencies": {
