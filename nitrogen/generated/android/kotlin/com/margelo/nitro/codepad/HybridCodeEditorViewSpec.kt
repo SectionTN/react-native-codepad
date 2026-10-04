@@ -11,6 +11,7 @@ import androidx.annotation.Keep
 import com.facebook.jni.HybridData
 import com.facebook.proguard.annotations.DoNotStrip
 import dalvik.annotation.optimization.FastNative
+import com.margelo.nitro.core.Promise
 import com.margelo.nitro.core.HybridObject
 import com.margelo.nitro.views.HybridView
 
@@ -51,6 +52,26 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @DoNotStrip
   @Keep
   abstract fun getText(): String
+  
+  @DoNotStrip
+  @Keep
+  abstract fun getLength(): Double
+  
+  @DoNotStrip
+  @Keep
+  abstract fun getLineCount(): Double
+  
+  @DoNotStrip
+  @Keep
+  abstract fun getLine(index: Double): String
+  
+  @DoNotStrip
+  @Keep
+  abstract fun getRevision(): Double
+  
+  @DoNotStrip
+  @Keep
+  abstract fun setText(text: String, keepHistory: Boolean): Promise<Unit>
 
   // Default implementation of `HybridObject.toString()`
   override fun toString(): String {

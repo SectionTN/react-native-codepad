@@ -14,6 +14,9 @@
 #include <functional>
 #include "JFunc_void.hpp"
 #include <NitroModules/JNICallable.hpp>
+#include <NitroModules/Promise.hpp>
+#include <NitroModules/JPromise.hpp>
+#include <NitroModules/JUnit.hpp>
 
 namespace margelo::nitro::codepad {
 
@@ -77,6 +80,41 @@ namespace margelo::nitro::codepad {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JString>()>("getText");
     auto __result = method(_javaPart);
     return __result->toStdString();
+  }
+  double JHybridCodeEditorViewSpec::getLength() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<double()>("getLength");
+    auto __result = method(_javaPart);
+    return __result;
+  }
+  double JHybridCodeEditorViewSpec::getLineCount() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<double()>("getLineCount");
+    auto __result = method(_javaPart);
+    return __result;
+  }
+  std::string JHybridCodeEditorViewSpec::getLine(double index) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JString>(double /* index */)>("getLine");
+    auto __result = method(_javaPart, index);
+    return __result->toStdString();
+  }
+  double JHybridCodeEditorViewSpec::getRevision() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<double()>("getRevision");
+    auto __result = method(_javaPart);
+    return __result;
+  }
+  std::shared_ptr<Promise<void>> JHybridCodeEditorViewSpec::setText(const std::string& text, bool keepHistory) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* text */, jboolean /* keepHistory */)>("setText");
+    auto __result = method(_javaPart, jni::make_jstring(text), keepHistory);
+    return [&]() {
+      auto __promise = Promise<void>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& /* unit */) {
+        __promise->resolve();
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
   }
 
 } // namespace margelo::nitro::codepad

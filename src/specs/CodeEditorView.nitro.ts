@@ -7,6 +7,11 @@ export interface CodeEditorViewProps extends HybridViewProps {
 
 export interface CodeEditorViewMethods extends HybridViewMethods {
   getText(): string;
+  getLength(): number;
+  getLineCount(): number;
+  getLine(index: number): string;
+  getRevision(): number;
+  setText(text: string, keepHistory: boolean): Promise<void>;
 }
 
 export type CodeEditorView = HybridView<CodeEditorViewProps, CodeEditorViewMethods>;

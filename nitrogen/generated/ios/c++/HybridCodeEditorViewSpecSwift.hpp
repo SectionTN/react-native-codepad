@@ -17,6 +17,7 @@ namespace Codepad { class HybridCodeEditorViewSpec_cxx; }
 #include <string>
 #include <optional>
 #include <functional>
+#include <NitroModules/Promise.hpp>
 
 #include "Codepad-Swift-Cxx-Umbrella.hpp"
 
@@ -83,6 +84,46 @@ namespace margelo::nitro::codepad {
     // Methods
     inline std::string getText() override {
       auto __result = _swiftPart.getText();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline double getLength() override {
+      auto __result = _swiftPart.getLength();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline double getLineCount() override {
+      auto __result = _swiftPart.getLineCount();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::string getLine(double index) override {
+      auto __result = _swiftPart.getLine(std::forward<decltype(index)>(index));
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline double getRevision() override {
+      auto __result = _swiftPart.getRevision();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> setText(const std::string& text, bool keepHistory) override {
+      auto __result = _swiftPart.setText(text, std::forward<decltype(keepHistory)>(keepHistory));
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }

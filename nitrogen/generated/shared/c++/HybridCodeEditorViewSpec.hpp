@@ -18,6 +18,7 @@
 #include <string>
 #include <optional>
 #include <functional>
+#include <NitroModules/Promise.hpp>
 
 namespace margelo::nitro::codepad {
 
@@ -54,6 +55,11 @@ namespace margelo::nitro::codepad {
     public:
       // Methods
       virtual std::string getText() = 0;
+      virtual double getLength() = 0;
+      virtual double getLineCount() = 0;
+      virtual std::string getLine(double index) = 0;
+      virtual double getRevision() = 0;
+      virtual std::shared_ptr<Promise<void>> setText(const std::string& text, bool keepHistory) = 0;
 
     protected:
       // Hybrid Setup

@@ -16,6 +16,7 @@ namespace margelo::nitro::codepad { class HybridCodepadSpec; }
 // Include C++ defined types
 #include "HybridCodeEditorViewSpec.hpp"
 #include "HybridCodepadSpec.hpp"
+#include <NitroModules/Promise.hpp>
 #include <NitroModules/Result.hpp>
 #include <exception>
 #include <functional>

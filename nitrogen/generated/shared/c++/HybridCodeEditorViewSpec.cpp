@@ -19,6 +19,11 @@ namespace margelo::nitro::codepad {
       prototype.registerHybridGetter("onReady", &HybridCodeEditorViewSpec::getOnReady);
       prototype.registerHybridSetter("onReady", &HybridCodeEditorViewSpec::setOnReady);
       prototype.registerHybridMethod("getText", &HybridCodeEditorViewSpec::getText);
+      prototype.registerHybridMethod("getLength", &HybridCodeEditorViewSpec::getLength);
+      prototype.registerHybridMethod("getLineCount", &HybridCodeEditorViewSpec::getLineCount);
+      prototype.registerHybridMethod("getLine", &HybridCodeEditorViewSpec::getLine);
+      prototype.registerHybridMethod("getRevision", &HybridCodeEditorViewSpec::getRevision);
+      prototype.registerHybridMethod("setText", &HybridCodeEditorViewSpec::setText);
     });
   }
 

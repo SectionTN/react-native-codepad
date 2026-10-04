@@ -3,16 +3,18 @@ package me.sectiontn.codepad.view
 import android.content.Context
 import android.graphics.Canvas
 import android.view.View
+import me.sectiontn.codepad.core.EditorCore
 
 class CodeEditorView(context: Context) : View(context) {
-  private var text: String = ""
+  // Replaced once when initialValue loads. The JS thread reads it, so the reference must be volatile.
+  @Volatile
+  var core: EditorCore = EditorCore()
+    private set
 
   fun setInitialText(value: String) {
-    text = value
+    core = EditorCore(value)
     invalidate()
   }
-
-  fun text(): String = text
 
   override fun onDraw(canvas: Canvas) {
     canvas.drawColor(0xFFFFFFFF.toInt())

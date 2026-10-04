@@ -58,6 +58,11 @@ namespace margelo::nitro::codepad {
   public:
     // Methods
     std::string getText() override;
+    double getLength() override;
+    double getLineCount() override;
+    std::string getLine(double index) override;
+    double getRevision() override;
+    std::shared_ptr<Promise<void>> setText(const std::string& text, bool keepHistory) override;
 
   private:
     jni::global_ref<JHybridCodeEditorViewSpec::JavaPart> _javaPart;

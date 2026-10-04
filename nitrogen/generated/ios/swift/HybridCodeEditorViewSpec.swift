@@ -15,6 +15,11 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
 
   // Methods
   func getText() throws -> String
+  func getLength() throws -> Double
+  func getLineCount() throws -> Double
+  func getLine(index: Double) throws -> String
+  func getRevision() throws -> Double
+  func setText(text: String, keepHistory: Bool) throws -> Promise<Void>
 }
 
 public extension HybridCodeEditorViewSpec_protocol {

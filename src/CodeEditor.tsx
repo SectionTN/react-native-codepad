@@ -1,8 +1,8 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
-import type { ViewProps } from 'react-native';
 import { callback, getHostComponent } from 'react-native-nitro-modules';
 import type { CodeEditorViewMethods, CodeEditorViewProps } from './specs/CodeEditorView.nitro';
 import CodeEditorViewConfig from './specs/CodeEditorViewConfig';
+import type { CodeEditorProps, CodeEditorRef } from './types';
 
 const NativeCodeEditor = getHostComponent<CodeEditorViewProps, CodeEditorViewMethods>(
   'CodeEditorView',
@@ -10,15 +10,6 @@ const NativeCodeEditor = getHostComponent<CodeEditorViewProps, CodeEditorViewMet
 );
 
 type NativeRef = CodeEditorViewMethods;
-
-export interface CodeEditorProps extends ViewProps {
-  initialValue?: string;
-  onReady?: () => void;
-}
-
-export interface CodeEditorRef {
-  getText(): string;
-}
 
 export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function CodeEditor(
   { initialValue = '', onReady, ...viewProps },
@@ -39,8 +30,15 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   );
   const onReadyCallback = useMemo(() => callback(() => onReadyRef.current?.()), []);
 
+  // Until the native view reports in, reads see an empty document, so calling the ref before onReady is safe.
   useImperativeHandle(ref, () => ({
     getText: () => native.current?.getText() ?? '',
+    getLength: () => native.current?.getLength() ?? 0,
+    getLineCount: () => native.current?.getLineCount() ?? 1,
+    getLine: (index) => native.current?.getLine(index) ?? '',
+    getRevision: () => native.current?.getRevision() ?? 0,
+    setText: (text, opts) =>
+      native.current?.setText(text, opts?.keepHistory ?? false) ?? Promise.resolve(),
   }));
 
   return (
