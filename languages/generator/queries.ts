@@ -11,13 +11,25 @@ export function parseInherits(src: string): { parents: string[]; body: string } 
   let i = 0;
   while (i < lines.length && /^;+\s*(inherits:|extends\b)/.test(lines[i]!)) {
     const m = /^;+\s*inherits:\s*(.*)$/.exec(lines[i]!);
-    if (m) parents.push(...m[1]!.split(',').map((s) => s.trim()).filter(Boolean).map((s) => s.replace(/^\((.*)\)$/, '$1')));
+    if (m)
+      parents.push(
+        ...m[1]!
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((s) => s.replace(/^\((.*)\)$/, '$1')),
+      );
     i++;
   }
   return { parents, body: lines.slice(i).join('\n') };
 }
 
-export function resolveQuery(lang: string, kind: QueryKind, read: QueryReader, seen: Set<string> = new Set()): string | null {
+export function resolveQuery(
+  lang: string,
+  kind: QueryKind,
+  read: QueryReader,
+  seen: Set<string> = new Set(),
+): string | null {
   if (seen.has(lang)) return '';
   seen.add(lang);
   const src = read(lang, kind);

@@ -13,7 +13,10 @@ test('analyzePatterns keeps supported predicates and drops the rest with a reaso
   ].join('\n');
   const result = analyzePatterns(splitPatterns(src));
   assert.equal(result.kept.length, 3);
-  assert.deepEqual(result.dropped.map((d) => d.reason), ['lua-match?: unsupported %b', 'unsupported predicate is?']);
+  assert.deepEqual(
+    result.dropped.map((d) => d.reason),
+    ['lua-match?: unsupported %b', 'unsupported predicate is?'],
+  );
   assert.deepEqual(result.counts, { 'lua-match?': 2, 'is?': 1, 'set!': 1, 'offset!': 1 });
 });
 

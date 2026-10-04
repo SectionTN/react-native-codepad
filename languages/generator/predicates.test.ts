@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { TranslateError, luaPatternToRegex, vimRegexToRegex } from './predicates.ts';
+import { luaPatternToRegex, TranslateError, vimRegexToRegex } from './predicates.ts';
 
 test('lua patterns translate the nvim subset', () => {
   assert.equal(luaPatternToRegex('^[A-Z]'), '^[A-Z]');
@@ -38,6 +38,7 @@ test('vim regexes outside the subset throw', () => {
 });
 
 test('every translation compiles as a JavaScript RegExp', () => {
-  for (const p of ['^[A-Z]', '^_*[A-Z][A-Z%d_]*$', '%s+', '%a%w*']) new RegExp(luaPatternToRegex(p));
+  for (const p of ['^[A-Z]', '^_*[A-Z][A-Z%d_]*$', '%s+', '%a%w*'])
+    new RegExp(luaPatternToRegex(p));
   for (const v of ['\\<foo\\>', '\\v^(a|b)+$', 'x\\{2,3}']) new RegExp(vimRegexToRegex(v));
 });

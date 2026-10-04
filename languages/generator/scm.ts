@@ -2,7 +2,13 @@ export type TokType = 'open' | 'close' | 'lopen' | 'lclose' | 'str' | 'cap' | 'p
 export type Tok = { t: TokType; v: string; s: number; e: number };
 export type Arg = { kind: 'capture' | 'string' | 'ident'; value: string };
 export type Predicate = { name: string; args: Arg[] };
-export type Pattern = { start: number; end: number; text: string; predicates: Predicate[]; captures: string[] };
+export type Pattern = {
+  start: number;
+  end: number;
+  text: string;
+  predicates: Predicate[];
+  captures: string[];
+};
 
 const ESCAPES: Record<string, string> = { n: '\n', t: '\t', r: '\r', '0': '\0' };
 
@@ -42,7 +48,12 @@ export function tokenize(src: string): Tok[] {
         continue;
       }
       const w = src.slice(i, j);
-      out.push({ t: w.startsWith('@') ? 'cap' : w.startsWith('#') ? 'pred' : 'word', v: w, s: i, e: j });
+      out.push({
+        t: w.startsWith('@') ? 'cap' : w.startsWith('#') ? 'pred' : 'word',
+        v: w,
+        s: i,
+        e: j,
+      });
       i = j;
     }
   }
@@ -91,10 +102,17 @@ export function splitPatterns(src: string): Pattern[] {
     const first = toks[k]!;
     let last: number;
     if (first.t === 'open' || first.t === 'lopen') last = matchingClose(toks, k);
-    else if (first.t === 'close' || first.t === 'lclose') throw new Error(`stray closer at offset ${first.s}`);
+    else if (first.t === 'close' || first.t === 'lclose')
+      throw new Error(`stray closer at offset ${first.s}`);
     else last = k;
     // Trailing quantifiers, captures and field names belong to the pattern they follow.
-    while (toks[last + 1] && (toks[last + 1]!.t === 'cap' || (toks[last + 1]!.t === 'word' && (SUFFIX.has(toks[last + 1]!.v) || toks[last + 1]!.v.endsWith(':'))))) last++;
+    while (
+      toks[last + 1] &&
+      (toks[last + 1]!.t === 'cap' ||
+        (toks[last + 1]!.t === 'word' &&
+          (SUFFIX.has(toks[last + 1]!.v) || toks[last + 1]!.v.endsWith(':'))))
+    )
+      last++;
     const isPredicateGroup = first.t === 'open' && toks[k + 1]?.t === 'pred';
     if (isPredicateGroup && patterns.length > 0) {
       const prev = patterns[patterns.length - 1]!;
@@ -104,8 +122,21 @@ export function splitPatterns(src: string): Pattern[] {
     } else {
       const start = first.s;
       const end = toks[last]!.e;
-      const captures = [...new Set(toks.slice(k, last + 1).filter((t) => t.t === 'cap').map((t) => t.v.slice(1)))];
-      patterns.push({ start, end, text: src.slice(start, end), predicates: readPredicates(toks, k, last), captures });
+      const captures = [
+        ...new Set(
+          toks
+            .slice(k, last + 1)
+            .filter((t) => t.t === 'cap')
+            .map((t) => t.v.slice(1)),
+        ),
+      ];
+      patterns.push({
+        start,
+        end,
+        text: src.slice(start, end),
+        predicates: readPredicates(toks, k, last),
+        captures,
+      });
     }
     k = last + 1;
   }

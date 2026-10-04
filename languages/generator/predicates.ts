@@ -1,34 +1,69 @@
 export class TranslateError extends Error {}
 
 export const SUPPORTED_PREDICATES = new Set([
-  'eq?', 'not-eq?', 'any-eq?', 'any-not-eq?',
-  'match?', 'not-match?', 'any-match?', 'any-not-match?',
-  'vim-match?', 'not-vim-match?', 'any-vim-match?',
-  'lua-match?', 'not-lua-match?', 'any-lua-match?',
-  'contains?', 'not-contains?', 'any-contains?',
-  'any-of?', 'not-any-of?',
-  'has-ancestor?', 'not-has-ancestor?', 'has-parent?', 'not-has-parent?',
+  'eq?',
+  'not-eq?',
+  'any-eq?',
+  'any-not-eq?',
+  'match?',
+  'not-match?',
+  'any-match?',
+  'any-not-match?',
+  'vim-match?',
+  'not-vim-match?',
+  'any-vim-match?',
+  'lua-match?',
+  'not-lua-match?',
+  'any-lua-match?',
+  'contains?',
+  'not-contains?',
+  'any-contains?',
+  'any-of?',
+  'not-any-of?',
+  'has-ancestor?',
+  'not-has-ancestor?',
+  'has-parent?',
+  'not-has-parent?',
 ]);
 
 // The runtime ignores offset! and reads set! only for injection keys.
 export const SUPPORTED_DIRECTIVES = new Set(['set!', 'offset!']);
 
 export const isLuaMatch = (name: string): boolean => name.endsWith('lua-match?');
-export const isVimMatch = (name: string): boolean => /(^|-)(vim-)?match\?$/.test(name) && !isLuaMatch(name);
+export const isVimMatch = (name: string): boolean =>
+  /(^|-)(vim-)?match\?$/.test(name) && !isLuaMatch(name);
 
 export function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 const LUA_CLASS: Record<string, string> = {
-  d: '\\d', D: '\\D', s: '\\s', S: '\\S',
-  a: '[A-Za-z]', A: '[^A-Za-z]', w: '[A-Za-z0-9]', W: '[^A-Za-z0-9]',
-  u: '[A-Z]', U: '[^A-Z]', l: '[a-z]', L: '[^a-z]',
-  x: '[0-9A-Fa-f]', X: '[^0-9A-Fa-f]',
-  p: '[!-/:-@\\[-`{-~]', P: '[^!-/:-@\\[-`{-~]',
+  d: '\\d',
+  D: '\\D',
+  s: '\\s',
+  S: '\\S',
+  a: '[A-Za-z]',
+  A: '[^A-Za-z]',
+  w: '[A-Za-z0-9]',
+  W: '[^A-Za-z0-9]',
+  u: '[A-Z]',
+  U: '[^A-Z]',
+  l: '[a-z]',
+  L: '[^a-z]',
+  x: '[0-9A-Fa-f]',
+  X: '[^0-9A-Fa-f]',
+  p: '[!-/:-@\\[-`{-~]',
+  P: '[^!-/:-@\\[-`{-~]',
 };
 const LUA_CLASS_IN_SET: Record<string, string> = {
-  d: '0-9', s: '\\s', a: 'A-Za-z', w: 'A-Za-z0-9', u: 'A-Z', l: 'a-z', x: '0-9A-Fa-f', p: '!-/:-@\\[-`{-~',
+  d: '0-9',
+  s: '\\s',
+  a: 'A-Za-z',
+  w: 'A-Za-z0-9',
+  u: 'A-Z',
+  l: 'a-z',
+  x: '0-9A-Fa-f',
+  p: '!-/:-@\\[-`{-~',
 };
 
 export function luaPatternToRegex(p: string): string {
@@ -108,10 +143,26 @@ export function luaPatternToRegex(p: string): string {
 }
 
 const VIM_CLASS: Record<string, string> = {
-  d: '\\d', D: '\\D', s: '\\s', S: '\\S', w: '\\w', W: '\\W',
-  a: '[A-Za-z]', A: '[^A-Za-z]', l: '[a-z]', L: '[^a-z]', u: '[A-Z]', U: '[^A-Z]',
-  x: '[0-9A-Fa-f]', X: '[^0-9A-Fa-f]', h: '[A-Za-z_]', H: '[^A-Za-z_]',
-  n: '\\n', t: '\\t', r: '\\r', e: '\\x1b',
+  d: '\\d',
+  D: '\\D',
+  s: '\\s',
+  S: '\\S',
+  w: '\\w',
+  W: '\\W',
+  a: '[A-Za-z]',
+  A: '[^A-Za-z]',
+  l: '[a-z]',
+  L: '[^a-z]',
+  u: '[A-Z]',
+  U: '[^A-Z]',
+  x: '[0-9A-Fa-f]',
+  X: '[^0-9A-Fa-f]',
+  h: '[A-Za-z_]',
+  H: '[^A-Za-z_]',
+  n: '\\n',
+  t: '\\t',
+  r: '\\r',
+  e: '\\x1b',
 };
 
 function vimBraces(v: string, from: number): { text: string; next: number } {
@@ -175,7 +226,8 @@ export function vimRegexToRegex(v: string): string {
         out += b.text;
         i = b.next;
         continue;
-      } else if ('@%&~'.includes(c)) throw new TranslateError(`${c} is unsupported in very magic mode`);
+      } else if ('@%&~'.includes(c))
+        throw new TranslateError(`${c} is unsupported in very magic mode`);
       else if (c === '^') out += i === start ? '^' : '\\^';
       else if (c === '$') out += i === n - 1 ? '$' : '\\$';
       else out += c;

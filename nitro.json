@@ -1,0 +1,22 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["codepad"],
+  "ios": {
+    "iosModuleName": "Codepad"
+  },
+  "android": {
+    "androidNamespace": ["codepad"],
+    "androidCxxLibName": "codepad"
+  },
+  "autolinking": {
+    "CodeEditorView": {
+      "ios": { "language": "swift", "implementationClassName": "HybridCodeEditorView" },
+      "android": { "language": "kotlin", "implementationClassName": "HybridCodeEditorView" }
+    },
+    "Codepad": {
+      "ios": { "language": "swift", "implementationClassName": "HybridCodepad" },
+      "android": { "language": "kotlin", "implementationClassName": "HybridCodepad" }
+    }
+  },
+  "ignorePaths": ["node_modules", "lib", "example", "languages"]
+}

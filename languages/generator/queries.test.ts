@@ -3,7 +3,10 @@ import { test } from 'node:test';
 import { parseInherits, resolveQuery } from './queries.ts';
 
 test('parseInherits reads the modeline and strips optional parens', () => {
-  assert.deepEqual(parseInherits('; inherits: ecma,(jsx)\n(x) @a'), { parents: ['ecma', 'jsx'], body: '(x) @a' });
+  assert.deepEqual(parseInherits('; inherits: ecma,(jsx)\n(x) @a'), {
+    parents: ['ecma', 'jsx'],
+    body: '(x) @a',
+  });
   assert.deepEqual(parseInherits(';; extends\n(x) @a'), { parents: [], body: '(x) @a' });
   assert.deepEqual(parseInherits('(x) @a'), { parents: [], body: '(x) @a' });
 });
@@ -17,7 +20,18 @@ test('resolveQuery concatenates parents first, depth first, without cycles', () 
   };
   const read = (lang: string, kind: string) => files[`${lang}/${kind}`] ?? null;
   const out = resolveQuery('tsx', 'highlights', read);
-  assert.equal(out, ['; inherited from typescript', '; inherited from ecma', '(ecma) @e', '(ts) @t', '; inherited from jsx', '(jsx) @j', '(tsx) @t'].join('\n'));
+  assert.equal(
+    out,
+    [
+      '; inherited from typescript',
+      '; inherited from ecma',
+      '(ecma) @e',
+      '(ts) @t',
+      '; inherited from jsx',
+      '(jsx) @j',
+      '(tsx) @t',
+    ].join('\n'),
+  );
 });
 
 test('resolveQuery returns null for a missing file and skips missing optional parents', () => {
