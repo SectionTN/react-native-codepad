@@ -16,6 +16,16 @@ namespace margelo::nitro::codepad {
     registerHybrids(this, [](Prototype& prototype) {
       prototype.registerHybridGetter("initialValue", &HybridCodeEditorViewSpec::getInitialValue);
       prototype.registerHybridSetter("initialValue", &HybridCodeEditorViewSpec::setInitialValue);
+      prototype.registerHybridGetter("language", &HybridCodeEditorViewSpec::getLanguage);
+      prototype.registerHybridSetter("language", &HybridCodeEditorViewSpec::setLanguage);
+      prototype.registerHybridGetter("theme", &HybridCodeEditorViewSpec::getTheme);
+      prototype.registerHybridSetter("theme", &HybridCodeEditorViewSpec::setTheme);
+      prototype.registerHybridGetter("fontFamily", &HybridCodeEditorViewSpec::getFontFamily);
+      prototype.registerHybridSetter("fontFamily", &HybridCodeEditorViewSpec::setFontFamily);
+      prototype.registerHybridGetter("fontSize", &HybridCodeEditorViewSpec::getFontSize);
+      prototype.registerHybridSetter("fontSize", &HybridCodeEditorViewSpec::setFontSize);
+      prototype.registerHybridGetter("lineHeight", &HybridCodeEditorViewSpec::getLineHeight);
+      prototype.registerHybridSetter("lineHeight", &HybridCodeEditorViewSpec::setLineHeight);
       prototype.registerHybridGetter("onReady", &HybridCodeEditorViewSpec::getOnReady);
       prototype.registerHybridSetter("onReady", &HybridCodeEditorViewSpec::setOnReady);
       prototype.registerHybridMethod("getText", &HybridCodeEditorViewSpec::getText);

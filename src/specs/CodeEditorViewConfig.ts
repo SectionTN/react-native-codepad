@@ -6,6 +6,11 @@ export default {
   "directEventTypes": {},
   "validAttributes": {
     "initialValue": true,
+    "language": true,
+    "theme": true,
+    "fontFamily": true,
+    "fontSize": true,
+    "lineHeight": true,
     "onReady": true,
     "hybridRef": true
   }

@@ -3,6 +3,11 @@ import UIKit
 class HybridCodeEditorView: HybridCodeEditorViewSpec {
   var view: UIView = UIView()
   var initialValue: String? = nil
+  var language: String? = nil
+  var theme: NativeTheme? = nil
+  var fontFamily: String? = nil
+  var fontSize: Double? = nil
+  var lineHeight: Double? = nil
   var onReady: (() -> Void)? = nil
 
   func getText() throws -> String {

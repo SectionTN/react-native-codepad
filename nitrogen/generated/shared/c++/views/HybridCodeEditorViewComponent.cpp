@@ -21,12 +21,22 @@ namespace margelo::nitro::codepad::views {
                                                        const react::RawProps& rawProps):
     react::ViewProps(context, sourceProps, rawProps, filterObjectKeys),
     initialValue(nitro::ReactProp<std::optional<std::string>>::fromRawValue("CodeEditorView", "initialValue", rawProps, sourceProps.initialValue)),
+    language(nitro::ReactProp<std::optional<std::string>>::fromRawValue("CodeEditorView", "language", rawProps, sourceProps.language)),
+    theme(nitro::ReactProp<std::optional<NativeTheme>>::fromRawValue("CodeEditorView", "theme", rawProps, sourceProps.theme)),
+    fontFamily(nitro::ReactProp<std::optional<std::string>>::fromRawValue("CodeEditorView", "fontFamily", rawProps, sourceProps.fontFamily)),
+    fontSize(nitro::ReactProp<std::optional<double>>::fromRawValue("CodeEditorView", "fontSize", rawProps, sourceProps.fontSize)),
+    lineHeight(nitro::ReactProp<std::optional<double>>::fromRawValue("CodeEditorView", "lineHeight", rawProps, sourceProps.lineHeight)),
     onReady(nitro::ReactProp<std::optional<std::function<void()>>>::fromRawValue("CodeEditorView", "onReady", rawProps, sourceProps.onReady)),
     hybridRef(nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>>::fromRawValue("CodeEditorView", "hybridRef", rawProps, sourceProps.hybridRef)) { }
 
   bool HybridCodeEditorViewProps::filterObjectKeys(const std::string& propName) {
     switch (hashString(propName)) {
       case hashString("initialValue"): return true;
+      case hashString("language"): return true;
+      case hashString("theme"): return true;
+      case hashString("fontFamily"): return true;
+      case hashString("fontSize"): return true;
+      case hashString("lineHeight"): return true;
       case hashString("onReady"): return true;
       case hashString("hybridRef"): return true;
       default: return false;

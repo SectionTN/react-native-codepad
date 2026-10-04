@@ -7,10 +7,18 @@
 
 #include "JHybridCodeEditorViewSpec.hpp"
 
-
+// Forward declaration of `NativeTheme` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeTheme; }
+// Forward declaration of `NativeTokenStyle` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeTokenStyle; }
 
 #include <string>
 #include <optional>
+#include "NativeTheme.hpp"
+#include "JNativeTheme.hpp"
+#include "NativeTokenStyle.hpp"
+#include <unordered_map>
+#include "JNativeTokenStyle.hpp"
 #include <functional>
 #include "JFunc_void.hpp"
 #include <NitroModules/JNICallable.hpp>
@@ -56,6 +64,51 @@ namespace margelo::nitro::codepad {
   void JHybridCodeEditorViewSpec::setInitialValue(const std::optional<std::string>& initialValue) {
     static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JString> /* initialValue */)>("setInitialValue");
     method(_javaPart, initialValue.has_value() ? jni::make_jstring(initialValue.value()) : nullptr);
+  }
+  std::optional<std::string> JHybridCodeEditorViewSpec::getLanguage() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JString>()>("getLanguage");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(__result->toStdString()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setLanguage(const std::optional<std::string>& language) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JString> /* language */)>("setLanguage");
+    method(_javaPart, language.has_value() ? jni::make_jstring(language.value()) : nullptr);
+  }
+  std::optional<NativeTheme> JHybridCodeEditorViewSpec::getTheme() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JNativeTheme>()>("getTheme");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(__result->toCpp()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setTheme(const std::optional<NativeTheme>& theme) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<JNativeTheme> /* theme */)>("setTheme");
+    method(_javaPart, theme.has_value() ? JNativeTheme::fromCpp(theme.value()) : nullptr);
+  }
+  std::optional<std::string> JHybridCodeEditorViewSpec::getFontFamily() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JString>()>("getFontFamily");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(__result->toStdString()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setFontFamily(const std::optional<std::string>& fontFamily) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JString> /* fontFamily */)>("setFontFamily");
+    method(_javaPart, fontFamily.has_value() ? jni::make_jstring(fontFamily.value()) : nullptr);
+  }
+  std::optional<double> JHybridCodeEditorViewSpec::getFontSize() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JDouble>()>("getFontSize");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(__result->value()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setFontSize(std::optional<double> fontSize) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JDouble> /* fontSize */)>("setFontSize");
+    method(_javaPart, fontSize.has_value() ? jni::JDouble::valueOf(fontSize.value()) : nullptr);
+  }
+  std::optional<double> JHybridCodeEditorViewSpec::getLineHeight() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JDouble>()>("getLineHeight");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(__result->value()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setLineHeight(std::optional<double> lineHeight) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JDouble> /* lineHeight */)>("setLineHeight");
+    method(_javaPart, lineHeight.has_value() ? jni::JDouble::valueOf(lineHeight.value()) : nullptr);
   }
   std::optional<std::function<void()>> JHybridCodeEditorViewSpec::getOnReady() {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JFunc_void::javaobject>()>("getOnReady_cxx");

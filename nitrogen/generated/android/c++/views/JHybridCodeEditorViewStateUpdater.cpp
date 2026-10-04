@@ -59,6 +59,31 @@ void JHybridCodeEditorViewStateUpdater::updateViewProps(jni::alias_ref<jni::JCla
     hybridView->setInitialValue(newProps->initialValue.get());
   }
   if (oldProps == nullptr
+        ? newProps->language.isProvided()
+        : !newProps->language.hasSameValue(oldProps->language)) {
+    hybridView->setLanguage(newProps->language.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->theme.isProvided()
+        : !newProps->theme.hasSameValue(oldProps->theme)) {
+    hybridView->setTheme(newProps->theme.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->fontFamily.isProvided()
+        : !newProps->fontFamily.hasSameValue(oldProps->fontFamily)) {
+    hybridView->setFontFamily(newProps->fontFamily.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->fontSize.isProvided()
+        : !newProps->fontSize.hasSameValue(oldProps->fontSize)) {
+    hybridView->setFontSize(newProps->fontSize.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->lineHeight.isProvided()
+        : !newProps->lineHeight.hasSameValue(oldProps->lineHeight)) {
+    hybridView->setLineHeight(newProps->lineHeight.get());
+  }
+  if (oldProps == nullptr
         ? newProps->onReady.isProvided()
         : !newProps->onReady.hasSameValue(oldProps->onReady)) {
     hybridView->setOnReady(newProps->onReady.get());

@@ -12,10 +12,16 @@
 namespace margelo::nitro::codepad { class HybridCodeEditorViewSpec; }
 // Forward declaration of `HybridCodepadSpec` to properly resolve imports.
 namespace margelo::nitro::codepad { class HybridCodepadSpec; }
+// Forward declaration of `NativeTheme` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeTheme; }
+// Forward declaration of `NativeTokenStyle` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeTokenStyle; }
 
 // Include C++ defined types
 #include "HybridCodeEditorViewSpec.hpp"
 #include "HybridCodepadSpec.hpp"
+#include "NativeTheme.hpp"
+#include "NativeTokenStyle.hpp"
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/Result.hpp>
 #include <exception>
@@ -23,6 +29,7 @@ namespace margelo::nitro::codepad { class HybridCodepadSpec; }
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // C++ helpers for Swift

@@ -12,10 +12,16 @@
 // Forward declaration of `HybridCodeEditorViewSpec_cxx` to properly resolve imports.
 namespace Codepad { class HybridCodeEditorViewSpec_cxx; }
 
-
+// Forward declaration of `NativeTheme` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeTheme; }
+// Forward declaration of `NativeTokenStyle` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeTokenStyle; }
 
 #include <string>
 #include <optional>
+#include "NativeTheme.hpp"
+#include "NativeTokenStyle.hpp"
+#include <unordered_map>
 #include <functional>
 #include <NitroModules/Promise.hpp>
 
@@ -71,6 +77,41 @@ namespace margelo::nitro::codepad {
     }
     inline void setInitialValue(const std::optional<std::string>& initialValue) noexcept override {
       _swiftPart.setInitialValue(initialValue);
+    }
+    inline std::optional<std::string> getLanguage() noexcept override {
+      auto __result = _swiftPart.getLanguage();
+      return __result;
+    }
+    inline void setLanguage(const std::optional<std::string>& language) noexcept override {
+      _swiftPart.setLanguage(language);
+    }
+    inline std::optional<NativeTheme> getTheme() noexcept override {
+      auto __result = _swiftPart.getTheme();
+      return __result;
+    }
+    inline void setTheme(const std::optional<NativeTheme>& theme) noexcept override {
+      _swiftPart.setTheme(theme);
+    }
+    inline std::optional<std::string> getFontFamily() noexcept override {
+      auto __result = _swiftPart.getFontFamily();
+      return __result;
+    }
+    inline void setFontFamily(const std::optional<std::string>& fontFamily) noexcept override {
+      _swiftPart.setFontFamily(fontFamily);
+    }
+    inline std::optional<double> getFontSize() noexcept override {
+      auto __result = _swiftPart.getFontSize();
+      return __result;
+    }
+    inline void setFontSize(std::optional<double> fontSize) noexcept override {
+      _swiftPart.setFontSize(fontSize);
+    }
+    inline std::optional<double> getLineHeight() noexcept override {
+      auto __result = _swiftPart.getLineHeight();
+      return __result;
+    }
+    inline void setLineHeight(std::optional<double> lineHeight) noexcept override {
+      _swiftPart.setLineHeight(lineHeight);
     }
     inline std::optional<std::function<void()>> getOnReady() noexcept override {
       auto __result = _swiftPart.getOnReady();

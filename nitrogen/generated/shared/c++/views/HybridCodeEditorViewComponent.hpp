@@ -19,6 +19,7 @@
 
 #include <string>
 #include <optional>
+#include "NativeTheme.hpp"
 #include <functional>
 #include <memory>
 #include "HybridCodeEditorViewSpec.hpp"
@@ -44,12 +45,22 @@ namespace margelo::nitro::codepad::views {
 
   public:
     nitro::ReactProp<std::optional<std::string>> initialValue;
+    nitro::ReactProp<std::optional<std::string>> language;
+    nitro::ReactProp<std::optional<NativeTheme>> theme;
+    nitro::ReactProp<std::optional<std::string>> fontFamily;
+    nitro::ReactProp<std::optional<double>> fontSize;
+    nitro::ReactProp<std::optional<double>> lineHeight;
     nitro::ReactProp<std::optional<std::function<void()>>> onReady;
     nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>> hybridRef;
 
     [[nodiscard]]
     bool hasSameProps(const HybridCodeEditorViewProps& other) const noexcept {
       return initialValue.hasSameValue(other.initialValue) &&
+             language.hasSameValue(other.language) &&
+             theme.hasSameValue(other.theme) &&
+             fontFamily.hasSameValue(other.fontFamily) &&
+             fontSize.hasSameValue(other.fontSize) &&
+             lineHeight.hasSameValue(other.lineHeight) &&
              onReady.hasSameValue(other.onReady) &&
              hybridRef.hasSameValue(other.hybridRef);
     }
@@ -57,6 +68,11 @@ namespace margelo::nitro::codepad::views {
     [[nodiscard]]
     bool hasAnyProvidedProps() const noexcept {
       return initialValue.isProvided() ||
+             language.isProvided() ||
+             theme.isProvided() ||
+             fontFamily.isProvided() ||
+             fontSize.isProvided() ||
+             lineHeight.isProvided() ||
              onReady.isProvided() ||
              hybridRef.isProvided();
     }

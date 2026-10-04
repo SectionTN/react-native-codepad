@@ -104,6 +104,36 @@ using namespace margelo::nitro::codepad::views;
           : !newViewProps.initialValue.hasSameValue(oldViewProps->initialValue)) {
       swiftPart.setInitialValue(newViewProps.initialValue.get());
     }
+    // language: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.language.isProvided()
+          : !newViewProps.language.hasSameValue(oldViewProps->language)) {
+      swiftPart.setLanguage(newViewProps.language.get());
+    }
+    // theme: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.theme.isProvided()
+          : !newViewProps.theme.hasSameValue(oldViewProps->theme)) {
+      swiftPart.setTheme(newViewProps.theme.get());
+    }
+    // fontFamily: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.fontFamily.isProvided()
+          : !newViewProps.fontFamily.hasSameValue(oldViewProps->fontFamily)) {
+      swiftPart.setFontFamily(newViewProps.fontFamily.get());
+    }
+    // fontSize: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.fontSize.isProvided()
+          : !newViewProps.fontSize.hasSameValue(oldViewProps->fontSize)) {
+      swiftPart.setFontSize(newViewProps.fontSize.get());
+    }
+    // lineHeight: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.lineHeight.isProvided()
+          : !newViewProps.lineHeight.hasSameValue(oldViewProps->lineHeight)) {
+      swiftPart.setLineHeight(newViewProps.lineHeight.get());
+    }
     // onReady: optional
     if (oldViewProps == nullptr
           ? newViewProps.onReady.isProvided()

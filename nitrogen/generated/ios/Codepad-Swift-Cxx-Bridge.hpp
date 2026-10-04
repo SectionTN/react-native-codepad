@@ -12,6 +12,10 @@
 namespace margelo::nitro::codepad { class HybridCodeEditorViewSpec; }
 // Forward declaration of `HybridCodepadSpec` to properly resolve imports.
 namespace margelo::nitro::codepad { class HybridCodepadSpec; }
+// Forward declaration of `NativeTheme` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeTheme; }
+// Forward declaration of `NativeTokenStyle` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeTokenStyle; }
 
 // Forward declarations of Swift defined types
 // Forward declaration of `HybridCodeEditorViewSpec_cxx` to properly resolve imports.
@@ -22,6 +26,8 @@ namespace Codepad { class HybridCodepadSpec_cxx; }
 // Include C++ defined types
 #include "HybridCodeEditorViewSpec.hpp"
 #include "HybridCodepadSpec.hpp"
+#include "NativeTheme.hpp"
+#include "NativeTokenStyle.hpp"
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/PromiseHolder.hpp>
 #include <NitroModules/Result.hpp>
@@ -30,6 +36,7 @@ namespace Codepad { class HybridCodepadSpec_cxx; }
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 /**
@@ -50,6 +57,61 @@ namespace margelo::nitro::codepad::bridge::swift {
     return optional.has_value();
   }
   inline std::string get_std__optional_std__string_(const std::optional<std::string>& optional) noexcept {
+    return optional.value();
+  }
+  
+  // pragma MARK: std::unordered_map<std::string, NativeTokenStyle>
+  /**
+   * Specialized version of `std::unordered_map<std::string, NativeTokenStyle>`.
+   */
+  using std__unordered_map_std__string__NativeTokenStyle_ = std::unordered_map<std::string, NativeTokenStyle>;
+  inline std::unordered_map<std::string, NativeTokenStyle> create_std__unordered_map_std__string__NativeTokenStyle_(size_t size) noexcept {
+    std::unordered_map<std::string, NativeTokenStyle> map;
+    map.reserve(size);
+    return map;
+  }
+  inline std::vector<std::string> get_std__unordered_map_std__string__NativeTokenStyle__keys(const std__unordered_map_std__string__NativeTokenStyle_& map) noexcept {
+    std::vector<std::string> keys;
+    keys.reserve(map.size());
+    for (const auto& entry : map) {
+      keys.push_back(entry.first);
+    }
+    return keys;
+  }
+  inline NativeTokenStyle get_std__unordered_map_std__string__NativeTokenStyle__value(const std__unordered_map_std__string__NativeTokenStyle_& map, const std::string& key) noexcept {
+    return map.find(key)->second;
+  }
+  inline void emplace_std__unordered_map_std__string__NativeTokenStyle_(std__unordered_map_std__string__NativeTokenStyle_& map, const std::string& key, const NativeTokenStyle& value) noexcept {
+    map.emplace(key, value);
+  }
+  
+  // pragma MARK: std::optional<NativeTheme>
+  /**
+   * Specialized version of `std::optional<NativeTheme>`.
+   */
+  using std__optional_NativeTheme_ = std::optional<NativeTheme>;
+  inline std::optional<NativeTheme> create_std__optional_NativeTheme_(const NativeTheme& value) noexcept {
+    return std::optional<NativeTheme>(value);
+  }
+  inline bool has_value_std__optional_NativeTheme_(const std::optional<NativeTheme>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline NativeTheme get_std__optional_NativeTheme_(const std::optional<NativeTheme>& optional) noexcept {
+    return optional.value();
+  }
+  
+  // pragma MARK: std::optional<double>
+  /**
+   * Specialized version of `std::optional<double>`.
+   */
+  using std__optional_double_ = std::optional<double>;
+  inline std::optional<double> create_std__optional_double_(const double& value) noexcept {
+    return std::optional<double>(value);
+  }
+  inline bool has_value_std__optional_double_(const std::optional<double>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline double get_std__optional_double_(const std::optional<double>& optional) noexcept {
     return optional.value();
   }
   

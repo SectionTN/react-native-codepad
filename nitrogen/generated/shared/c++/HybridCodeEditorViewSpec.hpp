@@ -13,10 +13,12 @@
 #error NitroModules cannot be found! Are you sure you installed NitroModules properly?
 #endif
 
-
+// Forward declaration of `NativeTheme` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeTheme; }
 
 #include <string>
 #include <optional>
+#include "NativeTheme.hpp"
 #include <functional>
 #include <NitroModules/Promise.hpp>
 
@@ -49,6 +51,16 @@ namespace margelo::nitro::codepad {
       // Properties
       virtual std::optional<std::string> getInitialValue() = 0;
       virtual void setInitialValue(const std::optional<std::string>& initialValue) = 0;
+      virtual std::optional<std::string> getLanguage() = 0;
+      virtual void setLanguage(const std::optional<std::string>& language) = 0;
+      virtual std::optional<NativeTheme> getTheme() = 0;
+      virtual void setTheme(const std::optional<NativeTheme>& theme) = 0;
+      virtual std::optional<std::string> getFontFamily() = 0;
+      virtual void setFontFamily(const std::optional<std::string>& fontFamily) = 0;
+      virtual std::optional<double> getFontSize() = 0;
+      virtual void setFontSize(std::optional<double> fontSize) = 0;
+      virtual std::optional<double> getLineHeight() = 0;
+      virtual void setLineHeight(std::optional<double> lineHeight) = 0;
       virtual std::optional<std::function<void()>> getOnReady() = 0;
       virtual void setOnReady(const std::optional<std::function<void()>>& onReady) = 0;
 

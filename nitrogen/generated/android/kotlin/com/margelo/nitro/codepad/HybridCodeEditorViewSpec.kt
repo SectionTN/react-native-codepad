@@ -34,6 +34,36 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @set:Keep
   abstract var initialValue: String?
   
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var language: String?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var theme: NativeTheme?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var fontFamily: String?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var fontSize: Double?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var lineHeight: Double?
+  
   abstract var onReady: (() -> Unit)?
   
   private var onReady_cxx: Func_void?

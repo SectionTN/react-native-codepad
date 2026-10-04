@@ -52,6 +52,16 @@ namespace margelo::nitro::codepad {
     // Properties
     std::optional<std::string> getInitialValue() override;
     void setInitialValue(const std::optional<std::string>& initialValue) override;
+    std::optional<std::string> getLanguage() override;
+    void setLanguage(const std::optional<std::string>& language) override;
+    std::optional<NativeTheme> getTheme() override;
+    void setTheme(const std::optional<NativeTheme>& theme) override;
+    std::optional<std::string> getFontFamily() override;
+    void setFontFamily(const std::optional<std::string>& fontFamily) override;
+    std::optional<double> getFontSize() override;
+    void setFontSize(std::optional<double> fontSize) override;
+    std::optional<double> getLineHeight() override;
+    void setLineHeight(std::optional<double> lineHeight) override;
     std::optional<std::function<void()>> getOnReady() override;
     void setOnReady(const std::optional<std::function<void()>>& onReady) override;
 

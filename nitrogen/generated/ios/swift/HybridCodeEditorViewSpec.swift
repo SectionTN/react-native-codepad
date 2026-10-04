@@ -11,6 +11,11 @@ import NitroModules
 public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   // Properties
   var initialValue: String? { get set }
+  var language: String? { get set }
+  var theme: NativeTheme? { get set }
+  var fontFamily: String? { get set }
+  var fontSize: Double? { get set }
+  var lineHeight: Double? { get set }
   var onReady: (() -> Void)? { get set }
 
   // Methods

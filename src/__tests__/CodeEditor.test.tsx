@@ -2,6 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { render } from '@testing-library/react-native';
 import { createRef } from 'react';
 import { CodeEditor } from '../CodeEditor';
+import { githubLight } from '../themes/githubLight';
 import type { CodeEditorRef } from '../types';
 
 jest.mock('react-native-nitro-modules', () => ({
@@ -12,6 +13,9 @@ jest.mock('react-native-nitro-modules', () => ({
 
 type HostProps = {
   initialValue: string;
+  theme: { tokens: Record<string, { color: string; bold: boolean; italic: boolean }> };
+  fontSize: number;
+  lineHeight: number;
   onReady: { f: () => void };
   hybridRef: { f: (ref: unknown) => void };
 };
@@ -67,5 +71,19 @@ describe('CodeEditor', () => {
     expect(setText).toHaveBeenCalledWith('x', false);
     await ref.current?.setText('y', { keepHistory: true });
     expect(setText).toHaveBeenCalledWith('y', true);
+  });
+
+  it('normalizes theme tokens into structs and keeps font defaults', async () => {
+    const theme = {
+      ...githubLight,
+      tokens: { keyword: '#f00', comment: { color: '#0f0', italic: true } },
+    };
+    const props = host(await render(<CodeEditor theme={theme} />));
+    expect(props.theme.tokens).toEqual({
+      keyword: { color: '#f00', bold: false, italic: false },
+      comment: { color: '#0f0', bold: false, italic: true },
+    });
+    expect(props.fontSize).toBe(14);
+    expect(props.lineHeight).toBe(1.4);
   });
 });

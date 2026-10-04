@@ -145,6 +145,119 @@ open class HybridCodeEditorViewSpec_cxx {
     }
   }
   
+  public final var language: bridge.std__optional_std__string_ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_std__string_ in
+        if let __unwrappedValue = self.__implementation.language {
+          return bridge.create_std__optional_std__string_(std.string(__unwrappedValue))
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.language = { () -> String? in
+        if bridge.has_value_std__optional_std__string_(newValue) {
+          let __unwrapped = bridge.get_std__optional_std__string_(newValue)
+          return String(__unwrapped)
+        } else {
+          return nil
+        }
+      }()
+    }
+  }
+  
+  public final var theme: bridge.std__optional_NativeTheme_ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_NativeTheme_ in
+        if let __unwrappedValue = self.__implementation.theme {
+          return bridge.create_std__optional_NativeTheme_(__unwrappedValue)
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.theme = newValue.value
+    }
+  }
+  
+  public final var fontFamily: bridge.std__optional_std__string_ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_std__string_ in
+        if let __unwrappedValue = self.__implementation.fontFamily {
+          return bridge.create_std__optional_std__string_(std.string(__unwrappedValue))
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.fontFamily = { () -> String? in
+        if bridge.has_value_std__optional_std__string_(newValue) {
+          let __unwrapped = bridge.get_std__optional_std__string_(newValue)
+          return String(__unwrapped)
+        } else {
+          return nil
+        }
+      }()
+    }
+  }
+  
+  public final var fontSize: bridge.std__optional_double_ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_double_ in
+        if let __unwrappedValue = self.__implementation.fontSize {
+          return bridge.create_std__optional_double_(__unwrappedValue)
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.fontSize = { () -> Double? in
+        if bridge.has_value_std__optional_double_(newValue) {
+          let __unwrapped = bridge.get_std__optional_double_(newValue)
+          return __unwrapped
+        } else {
+          return nil
+        }
+      }()
+    }
+  }
+  
+  public final var lineHeight: bridge.std__optional_double_ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_double_ in
+        if let __unwrappedValue = self.__implementation.lineHeight {
+          return bridge.create_std__optional_double_(__unwrappedValue)
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.lineHeight = { () -> Double? in
+        if bridge.has_value_std__optional_double_(newValue) {
+          let __unwrapped = bridge.get_std__optional_double_(newValue)
+          return __unwrapped
+        } else {
+          return nil
+        }
+      }()
+    }
+  }
+  
   public final var onReady: bridge.std__optional_std__function_void____ {
     @inline(__always)
     get {
