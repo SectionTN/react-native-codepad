@@ -15,6 +15,8 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
   private val editor = CodeEditorView(context).apply {
     // Fonts linked with react-native-asset or expo-font resolve through React Native's font manager.
     typefaceResolver = { family -> ReactFontManager.getInstance().getTypeface(family, Typeface.NORMAL, context.assets) }
+    // The first draw already has initialValue applied, so ref methods are valid from onReady on.
+    onFirstDraw = { sendReady() }
   }
   private var loaded = false
   private var readySent = false
@@ -68,13 +70,12 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
       fontDirty = false
       editor.setFont(fontFamily, (fontSize ?: 14.0).toFloat(), (lineHeight ?: 1.4).toFloat())
     }
+  }
+
+  private fun sendReady() {
     if (readySent) return
-    editor.post {
-      if (!readySent) {
-        readySent = true
-        onReady?.invoke()
-      }
-    }
+    readySent = true
+    onReady?.invoke()
   }
 
   override fun getText(): String = editor.core.let { c -> c.read { c.document.text() } }
@@ -90,8 +91,7 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
   override fun setText(text: String, keepHistory: Boolean): Promise<Unit> {
     val promise = Promise<Unit>()
     editor.post {
-      editor.core.setText(text, keepHistory)
-      editor.invalidate()
+      editor.setText(text, keepHistory)
       promise.resolve(Unit)
     }
     return promise

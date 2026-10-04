@@ -20,6 +20,7 @@ class RowMetrics(paint: TextPaint, lineHeight: Float, tabSize: Int) {
   val rowHeight: Int
   val ascent: Int
   val descent: Int
+  val spaceWidth: Float
   val tabWidth: Int
 
   init {
@@ -29,7 +30,8 @@ class RowMetrics(paint: TextPaint, lineHeight: Float, tabSize: Int) {
     val extra = rowHeight - fontHeight
     ascent = fm.ascent - extra / 2
     descent = fm.descent + (extra - extra / 2)
-    tabWidth = Math.round(paint.measureText(" ") * tabSize)
+    spaceWidth = paint.measureText(" ")
+    tabWidth = Math.round(spaceWidth * tabSize)
   }
 }
 
@@ -87,12 +89,33 @@ class LineLayout(
       .build()
   }
 
+  val length: Int = text.length
+
   val rowCount: Int get() = layout.lineCount
 
   fun width(): Float {
     var max = 0f
     for (row in 0 until layout.lineCount) max = maxOf(max, layout.getLineWidth(row))
     return max
+  }
+
+  fun rowOf(column: Int): Int = layout.getLineForOffset(column.coerceIn(0, length))
+
+  fun caretX(column: Int): Float = layout.getPrimaryHorizontal(column.coerceIn(0, length))
+
+  fun columnAt(row: Int, x: Float): Int = layout.getOffsetForHorizontal(row.coerceIn(0, rowCount - 1), x)
+
+  /** Calls [out] once per row that [from, to) touches, with the row's horizontal extent. */
+  fun selectionRows(from: Int, to: Int, out: (row: Int, left: Float, right: Float) -> Unit) {
+    val a = from.coerceIn(0, length)
+    val b = to.coerceIn(a, length)
+    val firstRow = rowOf(a)
+    val lastRow = rowOf(b)
+    for (row in firstRow..lastRow) {
+      val left = if (row == firstRow) caretX(a) else layout.getLineLeft(row)
+      val right = if (row == lastRow) caretX(b) else layout.getLineLeft(row) + layout.getLineWidth(row)
+      out(row, minOf(left, right), maxOf(left, right))
+    }
   }
 
   fun draw(canvas: Canvas) = layout.draw(canvas)
