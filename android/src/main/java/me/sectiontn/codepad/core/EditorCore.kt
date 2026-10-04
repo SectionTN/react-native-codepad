@@ -206,6 +206,8 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     moveSelection(Selection(r.start, r.end))
   }
 
+  fun bracketMatch(skip: ((Int) -> Boolean)?): IntArray? = BracketMatcher.match(document, selection.head, skip)
+
   private fun clamped(s: Selection): Selection {
     val max = document.length
     return Selection(s.anchor.coerceIn(0, max), s.head.coerceIn(0, max))

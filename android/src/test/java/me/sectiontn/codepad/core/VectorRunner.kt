@@ -48,6 +48,7 @@ class VectorRunner(private val case: JSONObject) {
       "shiftTab" -> core.shiftTab()
       "indent" -> core.indent()
       "outdent" -> core.outdent()
+      "bracketMatch" -> lastResult = core.bracketMatch(null)
       "config" -> core.settings = core.settings.copy(
         tabSize = op.optInt("tabSize", core.settings.tabSize),
         insertSpaces = op.optBoolean("insertSpaces", core.settings.insertSpaces),
@@ -90,6 +91,13 @@ class VectorRunner(private val case: JSONObject) {
     if (expect.has("canRedo")) assertEquals("canRedo $where", expect.getBoolean("canRedo"), core.canRedo)
     if (expect.has("offset")) assertEquals("offset $where", expect.getInt("offset"), lastResult)
     if (expect.has("line")) assertEquals("line $where", expect.getString("line"), lastResult)
+    if (expect.has("brackets")) {
+      if (expect.isNull("brackets")) assertNull("brackets $where", lastResult)
+      else {
+        val arr = expect.getJSONArray("brackets")
+        assertEquals("brackets $where", listOf(arr.getInt(0), arr.getInt(1)), (lastResult as IntArray?)?.toList())
+      }
+    }
     if (expect.has("changes")) {
       val list = expect.getJSONArray("changes")
       assertEquals("change count $where", list.length(), changes.size)

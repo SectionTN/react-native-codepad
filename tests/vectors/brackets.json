@@ -1,0 +1,14 @@
+{
+  "area": "brackets",
+  "cases": [
+    { "name": "bracket after the caret", "text": "(a)", "ops": [{ "op": "bracketMatch", "expect": { "brackets": [0, 2] } }] },
+    { "name": "bracket before the caret", "text": "(a)", "ops": [{ "op": "setSelection", "anchor": 3, "head": 3 }, { "op": "bracketMatch", "expect": { "brackets": [2, 0] } }] },
+    { "name": "the bracket after the caret wins", "text": "()()", "ops": [{ "op": "setSelection", "anchor": 2, "head": 2 }, { "op": "bracketMatch", "expect": { "brackets": [2, 3] } }] },
+    { "name": "nested brackets", "text": "((a))", "ops": [{ "op": "bracketMatch", "expect": { "brackets": [0, 4] } }, { "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "bracketMatch", "expect": { "brackets": [1, 3] } }] },
+    { "name": "unmatched bracket", "text": "(a", "ops": [{ "op": "bracketMatch", "expect": { "brackets": null } }] },
+    { "name": "different kinds do not match", "text": "(]", "ops": [{ "op": "bracketMatch", "expect": { "brackets": null } }] },
+    { "name": "no bracket near the caret", "text": "abc", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "bracketMatch", "expect": { "brackets": null } }] },
+    { "name": "brackets across lines", "text": "{\n  x\n}", "ops": [{ "op": "setSelection", "anchor": 7, "head": 7 }, { "op": "bracketMatch", "expect": { "brackets": [6, 0] } }] },
+    { "name": "square and curly", "text": "[{}]", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "bracketMatch", "expect": { "brackets": [1, 2] } }, { "op": "setSelection", "anchor": 4, "head": 4 }, { "op": "bracketMatch", "expect": { "brackets": [3, 0] } }] }
+  ]
+}
