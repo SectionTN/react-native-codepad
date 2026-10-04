@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.TextPaint
@@ -14,9 +15,11 @@ import android.view.MotionEvent
 import android.view.VelocityTracker
 import android.view.View
 import android.view.ViewConfiguration
+import android.widget.Magnifier
 import me.sectiontn.codepad.core.Change
 import me.sectiontn.codepad.core.EditorCore
 import me.sectiontn.codepad.core.Range
+import me.sectiontn.codepad.core.Selection
 import me.sectiontn.codepad.core.TextMovement
 import me.sectiontn.codepad.layout.GutterMetrics
 import me.sectiontn.codepad.layout.HeightMap
@@ -31,8 +34,9 @@ import me.sectiontn.codepad.syntax.SyntaxEngine
 import kotlin.math.abs
 
 /**
- * Draws the document through a viewport (height map, layout cache, gutter, active line, selection, caret)
- * and handles touch: scrolling with flings, taps, double taps and long press word selection.
+ * Draws the document through a viewport (height map, layout cache, gutter, active line, selection, caret,
+ * handles) and handles touch: scrolling with flings, taps, double taps, long press word selection and
+ * handle drags.
  */
 class CodeEditorView(context: Context) : View(context) {
   // Replaced once when initialValue loads. The JS thread reads it, so the reference must be volatile.
@@ -47,6 +51,7 @@ class CodeEditorView(context: Context) : View(context) {
   var typefaceResolver: ((String) -> Typeface?)? = null
   var onFirstDraw: (() -> Unit)? = null
   var onScrollListener: ((FrameInfo) -> Unit)? = null
+  var onSelectionListener: ((Selection) -> Unit)? = null
 
   var isScrollEnabled = true
     private set
@@ -97,6 +102,26 @@ class CodeEditorView(context: Context) : View(context) {
   private var scrollDirty = false
   private var wordAnchor = Range(0, 0)
 
+  private val handles = SelectionHandles(context)
+  private var magnifier: Magnifier? = null
+  private var caretVisible = true
+  private var selectionDirty = false
+  private var grabDy = 0f
+  private var dragFixed = 0
+  private var anchorX = 0f
+  private var anchorY = 0f
+  private val blink = object : Runnable {
+    override fun run() {
+      caretVisible = !caretVisible
+      invalidate()
+      postDelayed(this, CARET_BLINK_MS)
+    }
+  }
+  private val hideInsertion = Runnable {
+    handles.insertionVisible = false
+    invalidate()
+  }
+
   init {
     isFocusable = true
     isFocusableInTouchMode = true
@@ -104,6 +129,7 @@ class CodeEditorView(context: Context) : View(context) {
     applyFont(Typeface.MONOSPACE, 14f)
     paint.color = theme.foreground
     scroller.setColor(theme.foreground)
+    handles.setColor(theme.cursor)
     viewport.textPadding = dp(TEXT_PADDING_DP)
     wire(core)
   }
@@ -134,6 +160,7 @@ class CodeEditorView(context: Context) : View(context) {
     theme = colors
     paint.color = colors.foreground
     scroller.setColor(colors.foreground)
+    handles.setColor(colors.cursor)
     cache.clear()
     invalidate()
   }
@@ -230,7 +257,12 @@ class CodeEditorView(context: Context) : View(context) {
 
   private fun wire(core: EditorCore) {
     core.onChange = { change, _ -> onDocumentChange(change) }
-    core.onSelectionChange = { invalidate() }
+    core.onSelectionChange = { onSelectionMoved() }
+  }
+
+  private fun onSelectionMoved() {
+    selectionDirty = true
+    restartBlink()
   }
 
   private fun onDocumentChange(change: Change) {
@@ -242,6 +274,8 @@ class CodeEditorView(context: Context) : View(context) {
     cache.shift(first, oldCount, newCount)
     engine().edit(change, SyntaxEngine.pointsFor(doc, change))
     if (updateGutter()) relayout() else viewport.clamp()
+    hideInsertionHandle()
+    restartBlink()
     invalidate()
   }
 
@@ -317,6 +351,7 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   private fun onScrolled() {
+    hideInsertionHandle()
     scrollDirty = true
     invalidate()
   }
@@ -341,10 +376,74 @@ class CodeEditorView(context: Context) : View(context) {
     scroller.fling(viewport.scrollX, viewport.scrollY, vx, vy, viewport.maxScrollX, viewport.maxScrollY)
   }
 
+  /** Shows the caret at once and restarts the blink cycle. Runs on focus, edits and caret moves. */
+  private fun restartBlink() {
+    removeCallbacks(blink)
+    caretVisible = true
+    if (isFocused && isAttachedToWindow) postDelayed(blink, CARET_BLINK_MS)
+    invalidate()
+  }
+
+  private fun showInsertionHandle() {
+    handles.insertionVisible = true
+    removeCallbacks(hideInsertion)
+    postDelayed(hideInsertion, INSERTION_HANDLE_MS)
+    invalidate()
+  }
+
+  private fun hideInsertionHandle() {
+    removeCallbacks(hideInsertion)
+    if (handles.insertionVisible) {
+      handles.insertionVisible = false
+      invalidate()
+    }
+  }
+
+  /** View coordinates of the bottom of the caret row at [offset]. False when that line is not laid out. */
+  private fun anchorAt(offset: Int, m: RowMetrics): Boolean {
+    val line = core.document.lineAt(offset)
+    val entry = cache[line] ?: return false
+    val col = offset - core.document.lineStart(line)
+    val row = entry.layout.rowOf(col)
+    anchorX = viewport.viewX(entry.layout.caretX(col))
+    anchorY = (viewport.lineTop(line) + (row + 1) * m.rowHeight).toFloat()
+    return true
+  }
+
+  private fun placeHandles(m: RowMetrics) {
+    val sel = core.selection
+    handles.selectionVisible = !sel.isEmpty
+    if (sel.isEmpty) {
+      handles.hideStart()
+      handles.hideEnd()
+      if (anchorAt(sel.head, m)) handles.placeInsertion(anchorX, anchorY) else handles.hideInsertion()
+    } else {
+      handles.hideInsertion()
+      if (anchorAt(sel.min, m)) handles.placeStart(anchorX, anchorY) else handles.hideStart()
+      if (anchorAt(sel.max, m)) handles.placeEnd(anchorX, anchorY) else handles.hideEnd()
+    }
+  }
+
+  private fun showMagnifier(x: Float, y: Float) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
+    val m = magnifier ?: Magnifier(this).also { magnifier = it }
+    m.show(x, y)
+  }
+
+  private fun dismissMagnifier() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) magnifier?.dismiss()
+  }
+
   private inner class GestureHost : GestureMachine.Host {
     override fun offsetAt(x: Float, y: Float): Int = this@CodeEditorView.offsetAt(x, y)
 
-    override fun handleAt(x: Float, y: Float): GestureMachine.Handle? = null
+    // Runs on touch down, so this is where the grab offset and the fixed selection end are captured.
+    override fun handleAt(x: Float, y: Float): GestureMachine.Handle? {
+      val handle = handles.hitTest(x, y) ?: return null
+      grabDy = y - handles.top(handle)
+      dragFixed = if (handle == GestureMachine.Handle.Start) core.selection.max else core.selection.min
+      return handle
+    }
 
     override fun insideSelection(offset: Int): Boolean {
       val sel = core.selection
@@ -356,6 +455,7 @@ class CodeEditorView(context: Context) : View(context) {
     override fun placeCaret(offset: Int) {
       requestFocus()
       core.setSelection(offset, offset)
+      showInsertionHandle()
     }
 
     override fun selectWord(offset: Int) {
@@ -374,9 +474,21 @@ class CodeEditorView(context: Context) : View(context) {
       }
     }
 
-    override fun moveHandle(handle: GestureMachine.Handle, x: Float, y: Float) {}
+    override fun moveHandle(handle: GestureMachine.Handle, x: Float, y: Float) {
+      val textY = y - grabDy - rowMetrics().rowHeight / 2f
+      val offset = this@CodeEditorView.offsetAt(x, textY)
+      if (handle == GestureMachine.Handle.Insertion) {
+        core.setSelection(offset, offset)
+        showInsertionHandle()
+      } else {
+        core.setSelection(dragFixed, offset)
+      }
+      showMagnifier(x, textY)
+    }
 
-    override fun endHandleDrag() {}
+    override fun endHandleDrag() {
+      dismissMagnifier()
+    }
 
     override fun beginScroll() {}
 
@@ -467,7 +579,12 @@ class CodeEditorView(context: Context) : View(context) {
 
   override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {
     super.onFocusChanged(gainFocus, direction, previouslyFocusedRect)
-    invalidate()
+    if (gainFocus) {
+      restartBlink()
+    } else {
+      removeCallbacks(blink)
+      invalidate()
+    }
   }
 
   override fun onAttachedToWindow() {
@@ -478,6 +595,9 @@ class CodeEditorView(context: Context) : View(context) {
   override fun onDetachedFromWindow() {
     super.onDetachedFromWindow()
     removeCallbacks(longPressRunnable)
+    removeCallbacks(blink)
+    removeCallbacks(hideInsertion)
+    dismissMagnifier()
     scroller.abort()
     engine?.close()
     engine = null
@@ -501,12 +621,18 @@ class CodeEditorView(context: Context) : View(context) {
     val lastLine = drawText(canvas, firstLine)
     drawGutter(canvas, m, firstLine, lastLine, caretLine)
     drawCaret(canvas, m, caretLine)
+    placeHandles(m)
+    handles.draw(canvas)
     drawPlaceholder(canvas, m)
     if (scroller.draw(canvas, width, height)) postInvalidateOnAnimation()
     publish(firstLine, lastLine, caretLine, m)
     if (scrollDirty) {
       scrollDirty = false
       onScrollListener?.invoke(frame)
+    }
+    if (selectionDirty) {
+      selectionDirty = false
+      onSelectionListener?.invoke(core.selection)
     }
     if (!drawn) {
       drawn = true
@@ -621,7 +747,7 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   private fun drawCaret(canvas: Canvas, m: RowMetrics, caretLine: Int) {
-    if (!isFocused || !core.selection.isEmpty) return
+    if (!isFocused || !caretVisible || !core.selection.isEmpty) return
     val entry = cache[caretLine] ?: return
     val col = core.selection.head - core.document.lineStart(caretLine)
     val row = entry.layout.rowOf(col)
@@ -665,5 +791,7 @@ class CodeEditorView(context: Context) : View(context) {
     private const val TEXT_PADDING_DP = 8f
     private const val GUTTER_PADDING_DP = 8f
     private const val CARET_WIDTH_DP = 2f
+    private const val CARET_BLINK_MS = 500L
+    private const val INSERTION_HANDLE_MS = 4000L
   }
 }
