@@ -1,0 +1,83 @@
+{
+  "area": "undo",
+  "cases": [
+    { "name": "typing coalesces into one group", "text": "", "ops": [
+      { "op": "type", "text": "abc", "expect": { "text": "abc", "selection": { "anchor": 3, "head": 3 }, "canUndo": true, "canRedo": false } },
+      { "op": "undo", "expect": { "text": "", "selection": { "anchor": 0, "head": 0 }, "canUndo": false, "canRedo": true } },
+      { "op": "redo", "expect": { "text": "abc", "selection": { "anchor": 3, "head": 3 } } }
+    ], "expect": { "changes": [
+      { "start": 0, "end": 0, "text": "a", "origin": "input" },
+      { "start": 1, "end": 1, "text": "b", "origin": "input" },
+      { "start": 2, "end": 2, "text": "c", "origin": "input" },
+      { "start": 0, "end": 3, "text": "", "origin": "undo" },
+      { "start": 0, "end": 0, "text": "abc", "origin": "redo" }
+    ] } },
+    { "name": "a newline is its own group", "text": "", "ops": [
+      { "op": "config", "autoIndent": false },
+      { "op": "type", "text": "ab" }, { "op": "type", "text": "\n" }, { "op": "type", "text": "c", "expect": { "text": "ab\nc" } },
+      { "op": "undo", "expect": { "text": "ab\n" } },
+      { "op": "undo", "expect": { "text": "ab" } },
+      { "op": "undo", "expect": { "text": "" } }
+    ] },
+    { "name": "a pause of one second breaks the group", "text": "", "ops": [
+      { "op": "type", "text": "a" }, { "op": "wait", "ms": 1500 }, { "op": "type", "text": "b" },
+      { "op": "undo", "expect": { "text": "a" } }
+    ] },
+    { "name": "moving the selection breaks the group", "text": "", "ops": [
+      { "op": "type", "text": "a" }, { "op": "setSelection", "anchor": 0, "head": 0 }, { "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "type", "text": "b" },
+      { "op": "undo", "expect": { "text": "a" } }
+    ] },
+    { "name": "backspace coalesces", "text": "abcd", "ops": [
+      { "op": "setSelection", "anchor": 4, "head": 4 },
+      { "op": "backspace" }, { "op": "backspace" }, { "op": "backspace", "expect": { "text": "a", "selection": { "anchor": 1, "head": 1 } } },
+      { "op": "undo", "expect": { "text": "abcd", "selection": { "anchor": 4, "head": 4 } } }
+    ], "expect": { "changes": [
+      { "start": 3, "end": 4, "text": "", "origin": "input" },
+      { "start": 2, "end": 3, "text": "", "origin": "input" },
+      { "start": 1, "end": 2, "text": "", "origin": "input" },
+      { "start": 1, "end": 1, "text": "bcd", "origin": "undo" }
+    ] } },
+    { "name": "api edits never merge with typing", "text": "", "ops": [
+      { "op": "type", "text": "a" }, { "op": "replace", "start": 1, "end": 1, "text": "b" }, { "op": "type", "text": "c", "expect": { "text": "abc" } },
+      { "op": "undo", "expect": { "text": "ab" } },
+      { "op": "undo", "expect": { "text": "a" } },
+      { "op": "undo", "expect": { "text": "" } }
+    ] },
+    { "name": "undo restores the selection from before the group", "text": "hello", "ops": [
+      { "op": "setSelection", "anchor": 0, "head": 5 },
+      { "op": "type", "text": "x", "expect": { "text": "x", "selection": { "anchor": 1, "head": 1 } } },
+      { "op": "undo", "expect": { "text": "hello", "selection": { "anchor": 0, "head": 5 } } },
+      { "op": "redo", "expect": { "text": "x", "selection": { "anchor": 1, "head": 1 } } }
+    ] },
+    { "name": "a new edit clears redo", "text": "", "ops": [
+      { "op": "type", "text": "a" }, { "op": "undo" }, { "op": "type", "text": "b" }
+    ], "expect": { "text": "b", "canUndo": true, "canRedo": false } },
+    { "name": "setText clears history", "text": "", "ops": [
+      { "op": "type", "text": "a" }, { "op": "setText", "text": "zzz" }
+    ], "expect": { "text": "zzz", "canUndo": false, "selection": { "anchor": 0, "head": 0 }, "revision": 2 } },
+    { "name": "setText with keepHistory is undoable", "text": "", "ops": [
+      { "op": "type", "text": "a" }, { "op": "setText", "text": "zzz", "keepHistory": true, "expect": { "canUndo": true } },
+      { "op": "undo", "expect": { "text": "a" } }
+    ] },
+    { "name": "setText reports one change over the whole document", "text": "abc", "ops": [
+      { "op": "setText", "text": "xy" }
+    ], "expect": { "changes": [{ "start": 0, "end": 3, "text": "xy", "origin": "api" }] } },
+    { "name": "insertText replaces the selection and leaves the caret after it", "text": "hello", "ops": [
+      { "op": "setSelection", "anchor": 1, "head": 4 },
+      { "op": "insertText", "text": "EY", "expect": { "text": "hEYo", "selection": { "anchor": 3, "head": 3 } } },
+      { "op": "undo", "expect": { "text": "hello", "selection": { "anchor": 1, "head": 4 } } }
+    ] },
+    { "name": "delete removes the next grapheme and is a no-op at the end", "text": "ab", "ops": [
+      { "op": "delete", "expect": { "text": "b", "selection": { "anchor": 0, "head": 0 }, "revision": 1 } },
+      { "op": "setSelection", "anchor": 1, "head": 1 },
+      { "op": "delete", "expect": { "text": "b", "revision": 1 } }
+    ] },
+    { "name": "backspace at the start is a no-op", "text": "ab", "ops": [{ "op": "backspace" }], "expect": { "revision": 0 } },
+    { "name": "backspace removes a whole emoji", "text": "a\uD83D\uDE00", "ops": [
+      { "op": "setSelection", "anchor": 3, "head": 3 }, { "op": "backspace" }
+    ], "expect": { "text": "a", "selection": { "anchor": 1, "head": 1 } } },
+    { "name": "backspace with a selection deletes it", "text": "abcd", "ops": [
+      { "op": "setSelection", "anchor": 1, "head": 3 }, { "op": "backspace" }
+    ], "expect": { "text": "ad", "selection": { "anchor": 1, "head": 1 } } }
+  ]
+}

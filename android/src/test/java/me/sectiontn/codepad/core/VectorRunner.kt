@@ -36,6 +36,19 @@ class VectorRunner(private val case: JSONObject) {
       "selectAll" -> core.selectAll()
       "move" -> core.move(unitOf(op.getString("unit")), op.getInt("dir") > 0, op.optBoolean("extend", false))
       "selectWord" -> core.selectWordAt(op.getInt("offset"))
+      "type" -> core.typeText(op.getString("text"))
+      "insertText" -> core.insertText(op.getString("text"))
+      "setText" -> core.setText(op.getString("text"), op.optBoolean("keepHistory", false))
+      "backspace" -> core.backspace()
+      "delete" -> core.delete()
+      "undo" -> lastResult = core.undo()
+      "redo" -> lastResult = core.redo()
+      "config" -> core.settings = core.settings.copy(
+        tabSize = op.optInt("tabSize", core.settings.tabSize),
+        insertSpaces = op.optBoolean("insertSpaces", core.settings.insertSpaces),
+        autoIndent = op.optBoolean("autoIndent", core.settings.autoIndent),
+        autoCloseBrackets = op.optBoolean("autoCloseBrackets", core.settings.autoCloseBrackets),
+      )
       "offsetToPosition" -> lastResult = core.document.offsetToPosition(op.getInt("offset"))
       "positionToOffset" -> lastResult = core.document.positionToOffset(op.getInt("line"), op.getInt("column"))
       "getLine" -> lastResult = core.document.line(op.getInt("index")).toString()
@@ -68,6 +81,8 @@ class VectorRunner(private val case: JSONObject) {
       val p = expect.getJSONObject("position")
       assertEquals("position $where", Position(p.getInt("line"), p.getInt("column")), lastResult)
     }
+    if (expect.has("canUndo")) assertEquals("canUndo $where", expect.getBoolean("canUndo"), core.canUndo)
+    if (expect.has("canRedo")) assertEquals("canRedo $where", expect.getBoolean("canRedo"), core.canRedo)
     if (expect.has("offset")) assertEquals("offset $where", expect.getInt("offset"), lastResult)
     if (expect.has("line")) assertEquals("line $where", expect.getString("line"), lastResult)
     if (expect.has("changes")) {
