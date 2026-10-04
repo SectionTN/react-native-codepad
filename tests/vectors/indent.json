@@ -1,0 +1,28 @@
+{
+  "area": "indent",
+  "cases": [
+    { "name": "enter copies the leading whitespace", "text": "  foo", "ops": [{ "op": "setSelection", "anchor": 5, "head": 5 }, { "op": "enter" }], "expect": { "text": "  foo\n  ", "selection": { "anchor": 8, "head": 8 } } },
+    { "name": "enter after an opener adds one unit", "text": "{", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "enter" }], "expect": { "text": "{\n    ", "selection": { "anchor": 6, "head": 6 } } },
+    { "name": "enter between a pair puts the closer on its own line", "text": "{}", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "enter" }], "expect": { "text": "{\n    \n}", "selection": { "anchor": 6, "head": 6 } } },
+    { "name": "enter after an opener with trailing spaces still indents", "text": "(  ", "ops": [{ "op": "setSelection", "anchor": 3, "head": 3 }, { "op": "enter" }], "expect": { "text": "(  \n    ", "selection": { "anchor": 8, "head": 8 } } },
+    { "name": "enter with tabs", "text": "\tfoo{", "ops": [{ "op": "config", "insertSpaces": false }, { "op": "setSelection", "anchor": 5, "head": 5 }, { "op": "enter" }], "expect": { "text": "\tfoo{\n\t\t", "selection": { "anchor": 8, "head": 8 } } },
+    { "name": "enter with autoIndent off inserts a bare newline", "text": "  foo", "ops": [{ "op": "config", "autoIndent": false }, { "op": "setSelection", "anchor": 5, "head": 5 }, { "op": "enter" }], "expect": { "text": "  foo\n", "selection": { "anchor": 6, "head": 6 } } },
+    { "name": "enter inside the leading whitespace copies only up to the caret", "text": "    x", "ops": [{ "op": "setSelection", "anchor": 2, "head": 2 }, { "op": "enter" }], "expect": { "text": "  \n    x", "selection": { "anchor": 5, "head": 5 } } },
+    { "name": "enter replaces a selection", "text": "ab{cd}ef", "ops": [{ "op": "setSelection", "anchor": 3, "head": 5 }, { "op": "enter" }], "expect": { "text": "ab{\n    \n}ef", "selection": { "anchor": 8, "head": 8 } } },
+    { "name": "enter is its own undo group and undo restores the caret", "text": "{}", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "enter" }, { "op": "undo" }], "expect": { "text": "{}", "selection": { "anchor": 1, "head": 1 } } },
+    { "name": "tab inserts one unit at the caret", "text": "ab", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "tab" }], "expect": { "text": "a    b", "selection": { "anchor": 5, "head": 5 } } },
+    { "name": "tab with a single line selection replaces it", "text": "abc", "ops": [{ "op": "setSelection", "anchor": 1, "head": 2 }, { "op": "tab" }], "expect": { "text": "a    c", "selection": { "anchor": 5, "head": 5 } } },
+    { "name": "tab with a multi line selection indents each line", "text": "a\nb\nc", "ops": [
+      { "op": "setSelection", "anchor": 0, "head": 3 },
+      { "op": "tab", "expect": { "text": "    a\n    b\nc", "selection": { "anchor": 4, "head": 11 } } },
+      { "op": "undo", "expect": { "text": "a\nb\nc", "selection": { "anchor": 0, "head": 3 } } }
+    ] },
+    { "name": "a selection ending at a line start excludes that line", "text": "a\nb\nc", "ops": [{ "op": "setSelection", "anchor": 0, "head": 2 }, { "op": "tab" }], "expect": { "text": "    a\nb\nc" } },
+    { "name": "shift tab removes up to one unit per line", "text": "    a\n  b\n\tc\nd", "ops": [{ "op": "setSelection", "anchor": 0, "head": 14 }, { "op": "shiftTab" }], "expect": { "text": "a\nb\nc\nd" } },
+    { "name": "indent and outdent act on the caret line", "text": "a", "ops": [
+      { "op": "indent", "expect": { "text": "    a", "selection": { "anchor": 4, "head": 4 } } },
+      { "op": "outdent", "expect": { "text": "a", "selection": { "anchor": 0, "head": 0 } } }
+    ] },
+    { "name": "outdent is one undo group", "text": "  a\n  b", "ops": [{ "op": "selectAll" }, { "op": "outdent", "expect": { "text": "a\nb" } }, { "op": "undo" }], "expect": { "text": "  a\n  b" } }
+  ]
+}

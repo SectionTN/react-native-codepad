@@ -43,6 +43,11 @@ class VectorRunner(private val case: JSONObject) {
       "delete" -> core.delete()
       "undo" -> lastResult = core.undo()
       "redo" -> lastResult = core.redo()
+      "enter" -> core.insertNewline()
+      "tab" -> core.tab()
+      "shiftTab" -> core.shiftTab()
+      "indent" -> core.indent()
+      "outdent" -> core.outdent()
       "config" -> core.settings = core.settings.copy(
         tabSize = op.optInt("tabSize", core.settings.tabSize),
         insertSpaces = op.optBoolean("insertSpaces", core.settings.insertSpaces),

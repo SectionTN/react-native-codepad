@@ -60,7 +60,50 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
 
   /** One unit of user input, a code point or an IME commit. */
   internal fun typeUnit(s: String) {
+    if (s == "\n") {
+      insertNewline()
+      return
+    }
     applyChange(selection.min, selection.max, s, ChangeOrigin.Input, typing = s.codePointCount(0, s.length) == 1, caretAfter = true)
+  }
+
+  fun insertNewline() {
+    val start = selection.min
+    val nl = Indenter.newline(document, start, selection.max, settings)
+    applyChange(start, selection.max, nl.text, ChangeOrigin.Input, typing = false, caretAfter = false)
+    moveSelection(Selection.caret(start + nl.caretOffset), fromEdit = true)
+    undo.amendSelectionAfter(selection)
+  }
+
+  fun tab() {
+    if (document.lineAt(selection.min) != document.lineAt(selection.max)) {
+      indent()
+    } else {
+      applyChange(selection.min, selection.max, Indenter.unit(settings), ChangeOrigin.Input, typing = false, caretAfter = true)
+    }
+  }
+
+  fun shiftTab() = outdent()
+
+  fun indent() {
+    val unit = Indenter.unit(settings)
+    undo.beginGroup(selection)
+    for (line in Indenter.selectedLines(document, selection)) {
+      val start = document.lineStart(line)
+      applyChange(start, start, unit, ChangeOrigin.Input, typing = false, caretAfter = false)
+    }
+    undo.endGroup(selection)
+  }
+
+  fun outdent() {
+    undo.beginGroup(selection)
+    for (line in Indenter.selectedLines(document, selection)) {
+      val n = Indenter.outdentCount(document.line(line), settings)
+      if (n == 0) continue
+      val start = document.lineStart(line)
+      applyChange(start, start + n, "", ChangeOrigin.Input, typing = false, caretAfter = false)
+    }
+    undo.endGroup(selection)
   }
 
   fun backspace() {
