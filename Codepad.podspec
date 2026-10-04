@@ -17,7 +17,13 @@ Pod::Spec.new do |s|
     "ios/**/*.{swift}",
     "ios/**/*.{m,mm}",
     "cpp/**/*.{hpp,cpp}",
+    "cpp/tree-sitter/lib/src/lib.c",
   ]
+  s.preserve_paths = ["cpp/tree-sitter/lib/**/*"]
+  s.pod_target_xcconfig = {
+    "HEADER_SEARCH_PATHS" => "\"$(PODS_TARGET_SRCROOT)/cpp/tree-sitter/lib/include\" \"$(PODS_TARGET_SRCROOT)/cpp/tree-sitter/lib/src\"",
+    "GCC_PREPROCESSOR_DEFINITIONS" => "$(inherited) TREE_SITTER_HIDE_SYMBOLS=1",
+  }
 
   s.dependency 'React-jsi'
   s.dependency 'React-callinvoker'

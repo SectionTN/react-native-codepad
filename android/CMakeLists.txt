@@ -4,21 +4,25 @@ cmake_minimum_required(VERSION 3.9.0)
 set(PACKAGE_NAME codepad)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_STANDARD 20)
+set(TS_DIR ${CMAKE_SOURCE_DIR}/../cpp/tree-sitter/lib)
 
-# Define C++ library and add all sources
-add_library(${PACKAGE_NAME} SHARED src/main/cpp/cpp-adapter.cpp)
+add_library(${PACKAGE_NAME} SHARED
+  src/main/cpp/cpp-adapter.cpp
+  ${TS_DIR}/src/lib.c
+)
 
-# Add Nitrogen specs :)
+# Keep the runtime private to libcodepad.so. Language packages carry their own parser tables.
+set_source_files_properties(${TS_DIR}/src/lib.c PROPERTIES COMPILE_OPTIONS
+  "-std=c11;-O2;-fvisibility=hidden;-DTREE_SITTER_HIDE_SYMBOLS;-w")
+
 include(${CMAKE_SOURCE_DIR}/../nitrogen/generated/android/codepad+autolinking.cmake)
 
-# Set up local includes
-include_directories("src/main/cpp" "../cpp")
+target_include_directories(${PACKAGE_NAME} PRIVATE src/main/cpp ../cpp ${TS_DIR}/include ${TS_DIR}/src)
 
 find_library(LOG_LIB log)
 
-# Link all libraries together
 target_link_libraries(
-        ${PACKAGE_NAME}
-        ${LOG_LIB}
-        android # <-- Android core
+  ${PACKAGE_NAME}
+  ${LOG_LIB}
+  android
 )
