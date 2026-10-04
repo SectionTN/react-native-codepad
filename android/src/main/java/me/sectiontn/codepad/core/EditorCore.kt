@@ -64,6 +64,32 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
       insertNewline()
       return
     }
+    if (s.length == 1) {
+      when (val action = AutoCloser.actionFor(document, selection, s[0], settings)) {
+        is AutoCloser.Action.SkipCloser -> {
+          moveSelection(Selection.caret(selection.head + 1))
+          return
+        }
+        is AutoCloser.Action.InsertPair -> {
+          val start = selection.min
+          applyChange(start, selection.max, action.text, ChangeOrigin.Input, typing = false, caretAfter = false)
+          moveSelection(Selection.caret(start + 1), fromEdit = true)
+          undo.amendSelectionAfter(selection)
+          return
+        }
+        is AutoCloser.Action.Wrap -> {
+          val min = selection.min
+          val max = selection.max
+          undo.beginGroup(selection)
+          applyChange(max, max, action.close.toString(), ChangeOrigin.Input, typing = false, caretAfter = false)
+          applyChange(min, min, action.open.toString(), ChangeOrigin.Input, typing = false, caretAfter = false)
+          moveSelection(Selection(min + 1, max + 1), fromEdit = true)
+          undo.endGroup(selection)
+          return
+        }
+        AutoCloser.Action.None -> {}
+      }
+    }
     applyChange(selection.min, selection.max, s, ChangeOrigin.Input, typing = s.codePointCount(0, s.length) == 1, caretAfter = true)
   }
 
@@ -113,6 +139,10 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     }
     val caret = selection.head
     if (caret == 0) return
+    if (settings.autoCloseBrackets && AutoCloser.deletesPair(document, caret)) {
+      applyChange(caret - 1, caret + 1, "", ChangeOrigin.Input, typing = false, caretAfter = true)
+      return
+    }
     val from = TextMovement.prevGrapheme(document, caret)
     applyChange(from, caret, "", ChangeOrigin.Input, typing = caret - from == 1, caretAfter = true)
   }

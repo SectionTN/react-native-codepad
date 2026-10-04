@@ -1,0 +1,25 @@
+{
+  "area": "autoclose",
+  "cases": [
+    { "name": "opener at the end inserts the pair", "text": "", "ops": [{ "op": "type", "text": "(" }], "expect": { "text": "()", "selection": { "anchor": 1, "head": 1 } } },
+    { "name": "typing the closer steps over it", "text": "()", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "type", "text": ")" }], "expect": { "text": "()", "selection": { "anchor": 2, "head": 2 }, "revision": 0 } },
+    { "name": "no pair before a word character", "text": "ab", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "type", "text": "(" }], "expect": { "text": "a(b", "selection": { "anchor": 2, "head": 2 } } },
+    { "name": "quote after a word character stays single", "text": "don", "ops": [{ "op": "setSelection", "anchor": 3, "head": 3 }, { "op": "type", "text": "'" }], "expect": { "text": "don'", "selection": { "anchor": 4, "head": 4 } } },
+    { "name": "quote at the end inserts the pair", "text": "", "ops": [{ "op": "type", "text": "\"" }], "expect": { "text": "\"\"", "selection": { "anchor": 1, "head": 1 } } },
+    { "name": "typing the closing quote steps over it", "text": "\"\"", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "type", "text": "\"" }], "expect": { "text": "\"\"", "selection": { "anchor": 2, "head": 2 }, "revision": 0 } },
+    { "name": "backspace between an empty pair deletes both", "text": "()", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "backspace" }], "expect": { "text": "", "selection": { "anchor": 0, "head": 0 } } },
+    { "name": "opener with a selection wraps it", "text": "abc", "ops": [
+      { "op": "setSelection", "anchor": 0, "head": 3 },
+      { "op": "type", "text": "[", "expect": { "text": "[abc]", "selection": { "anchor": 1, "head": 4 } } },
+      { "op": "undo", "expect": { "text": "abc", "selection": { "anchor": 0, "head": 3 } } }
+    ] },
+    { "name": "pair before whitespace", "text": "a b", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "type", "text": "{" }], "expect": { "text": "a{} b", "selection": { "anchor": 2, "head": 2 } } },
+    { "name": "pair before a closer", "text": "()", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "type", "text": "[" }], "expect": { "text": "([])", "selection": { "anchor": 2, "head": 2 } } },
+    { "name": "pair before a semicolon or comma", "text": ";,", "ops": [{ "op": "type", "text": "(" }, { "op": "setSelection", "anchor": 3, "head": 3 }, { "op": "type", "text": "[" }], "expect": { "text": "();[]," } },
+    { "name": "autoCloseBrackets off", "text": "", "ops": [{ "op": "config", "autoCloseBrackets": false }, { "op": "type", "text": "(" }], "expect": { "text": "(", "selection": { "anchor": 1, "head": 1 } } },
+    { "name": "backtick pair", "text": "", "ops": [{ "op": "type", "text": "`" }], "expect": { "text": "``", "selection": { "anchor": 1, "head": 1 } } },
+    { "name": "typing through a pair", "text": "", "ops": [{ "op": "type", "text": "(" }, { "op": "type", "text": "x" }, { "op": "type", "text": ")" }], "expect": { "text": "(x)", "selection": { "anchor": 3, "head": 3 }, "revision": 2 } },
+    { "name": "undo after a pair insert restores the empty document", "text": "", "ops": [{ "op": "type", "text": "(" }, { "op": "undo" }], "expect": { "text": "", "selection": { "anchor": 0, "head": 0 } } },
+    { "name": "redo after a pair insert restores the caret between the pair", "text": "", "ops": [{ "op": "type", "text": "(" }, { "op": "undo" }, { "op": "redo" }], "expect": { "text": "()", "selection": { "anchor": 1, "head": 1 } } }
+  ]
+}
