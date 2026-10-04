@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { CodeEditor, type CodeEditorRef, githubDark } from 'react-native-codepad';
 
-const sample = [
+const block = [
   '// readFile with retries',
   'import { readFile } from "node:fs/promises";',
   '',
@@ -21,6 +21,8 @@ const sample = [
   '}',
   '',
 ].join('\n');
+
+const sample = new Array(40).fill(block).join('\n');
 
 function Toggle({ label, value, onPress }: { label: string; value: boolean; onPress: () => void }) {
   return (

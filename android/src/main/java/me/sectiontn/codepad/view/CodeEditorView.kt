@@ -3,15 +3,21 @@ package me.sectiontn.codepad.view
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
 import android.text.TextPaint
 import android.util.TypedValue
+import android.view.MotionEvent
+import android.view.VelocityTracker
 import android.view.View
+import android.view.ViewConfiguration
 import me.sectiontn.codepad.core.Change
 import me.sectiontn.codepad.core.EditorCore
+import me.sectiontn.codepad.core.Range
+import me.sectiontn.codepad.core.TextMovement
 import me.sectiontn.codepad.layout.GutterMetrics
 import me.sectiontn.codepad.layout.HeightMap
 import me.sectiontn.codepad.layout.LayoutCache
@@ -22,8 +28,12 @@ import me.sectiontn.codepad.syntax.Highlighter
 import me.sectiontn.codepad.syntax.LanguageRegistry
 import me.sectiontn.codepad.syntax.Snapshot
 import me.sectiontn.codepad.syntax.SyntaxEngine
+import kotlin.math.abs
 
-/** Draws the document through a viewport: height map, layout cache, gutter, active line, selection and caret. */
+/**
+ * Draws the document through a viewport (height map, layout cache, gutter, active line, selection, caret)
+ * and handles touch: scrolling with flings, taps, double taps and long press word selection.
+ */
 class CodeEditorView(context: Context) : View(context) {
   // Replaced once when initialValue loads. The JS thread reads it, so the reference must be volatile.
   @Volatile
@@ -36,6 +46,13 @@ class CodeEditorView(context: Context) : View(context) {
 
   var typefaceResolver: ((String) -> Typeface?)? = null
   var onFirstDraw: (() -> Unit)? = null
+  var onScrollListener: ((FrameInfo) -> Unit)? = null
+
+  var isScrollEnabled = true
+    private set
+
+  var isReadOnly = false
+    private set
 
   // revision is the snapshot the spans came from, -1 when the line was laid out plain.
   private class Entry(val layout: LineLayout, val spans: IntArray?, var revision: Int)
@@ -62,10 +79,31 @@ class CodeEditorView(context: Context) : View(context) {
   private var placeholder: String? = null
   private var drawn = false
 
+  private val viewConfig = ViewConfiguration.get(context)
+  private val scroller = ScrollController(context, this)
+  private val gestures = GestureMachine(
+    GestureHost(),
+    GestureMachine.Config(
+      touchSlop = viewConfig.scaledTouchSlop.toFloat(),
+      doubleTapSlop = viewConfig.scaledDoubleTapSlop.toFloat(),
+      doubleTapTimeout = ViewConfiguration.getDoubleTapTimeout().toLong(),
+      longPressTimeout = ViewConfiguration.getLongPressTimeout().toLong(),
+    ),
+  )
+  private val longPressRunnable = Runnable { gestures.longPress() }
+  private var velocity: VelocityTracker? = null
+  private var touchX = 0f
+  private var touchY = 0f
+  private var scrollDirty = false
+  private var wordAnchor = Range(0, 0)
+
   init {
+    isFocusable = true
+    isFocusableInTouchMode = true
     gutterPaint.textAlign = Paint.Align.RIGHT
     applyFont(Typeface.MONOSPACE, 14f)
     paint.color = theme.foreground
+    scroller.setColor(theme.foreground)
     viewport.textPadding = dp(TEXT_PADDING_DP)
     wire(core)
   }
@@ -95,6 +133,7 @@ class CodeEditorView(context: Context) : View(context) {
   fun setTheme(colors: ThemeColors) {
     theme = colors
     paint.color = colors.foreground
+    scroller.setColor(colors.foreground)
     cache.clear()
     invalidate()
   }
@@ -122,9 +161,6 @@ class CodeEditorView(context: Context) : View(context) {
     invalidate()
   }
 
-  var isReadOnly = false
-    private set
-
   fun setReadOnly(enabled: Boolean) {
     isReadOnly = enabled
   }
@@ -141,6 +177,46 @@ class CodeEditorView(context: Context) : View(context) {
     viewport.insetLeft = dp(left)
     viewport.insetRight = dp(right)
     relayout()
+  }
+
+  fun setScrollEnabled(enabled: Boolean) {
+    isScrollEnabled = enabled
+  }
+
+  fun scrollToLine(line: Int, animated: Boolean) {
+    val target = heights.rowStart(line.coerceIn(0, core.document.lineCount - 1)) * viewport.rowHeight
+    scroller.abort()
+    if (animated) {
+      scroller.animateTo(viewport.scrollX, viewport.scrollY, viewport.scrollX, target.coerceIn(0, viewport.maxScrollY))
+    } else if (viewport.scrollTo(viewport.scrollX, target)) {
+      onScrolled()
+    }
+  }
+
+  /** Scrolls the least amount that shows the caret with the text padding around it. */
+  fun revealSelection() {
+    val m = rowMetrics()
+    val head = core.selection.head
+    val line = core.document.lineAt(head)
+    val entry = cache[line] ?: layoutLine(line)
+    val col = head - core.document.lineStart(line)
+    val row = entry.layout.rowOf(col)
+    val x = Math.round(entry.layout.caretX(col))
+    val top = (heights.rowStart(line) + row) * m.rowHeight
+    scroller.abort()
+    if (viewport.reveal(x, top, x + dp(CARET_WIDTH_DP), top + m.rowHeight)) onScrolled()
+  }
+
+  /** Document offset under a view point. Points left of the text snap to the row start, points below to the end. */
+  fun offsetAt(x: Float, y: Float): Int {
+    val doc = core.document
+    val row = viewport.rowAt(y.toInt())
+    if (row < 0) return 0
+    if (row >= heights.totalRows) return doc.length
+    val line = heights.lineAtRow(row)
+    val entry = cache[line] ?: layoutLine(line)
+    val rowInLine = (row - heights.rowStart(line)).coerceIn(0, entry.layout.rowCount - 1)
+    return doc.lineStart(line) + entry.layout.columnAt(rowInLine, viewport.contentX(x))
   }
 
   private fun applyFont(typeface: Typeface, sizeDp: Float) {
@@ -231,12 +307,167 @@ class CodeEditorView(context: Context) : View(context) {
 
   private fun dp(value: Float): Int = Math.round(value * density)
 
+  /** Lays out one line plain, for hit tests and reveals on lines outside the drawn range. */
+  private fun layoutLine(line: Int): Entry {
+    val layout = LineLayout(core.document.line(line), null, paint, theme, viewport.wrapWidth, core.settings.tabSize, rowMetrics())
+    val entry = Entry(layout, null, -1)
+    cache.put(line, entry)
+    viewport.measured(line, layout.rowCount)
+    return entry
+  }
+
+  private fun onScrolled() {
+    scrollDirty = true
+    invalidate()
+  }
+
+  private fun scrollByTouch(dx: Float, dy: Float) {
+    val oldX = viewport.scrollX
+    val oldY = viewport.scrollY
+    val rx = Math.round(dx)
+    val ry = Math.round(dy)
+    viewport.scrollBy(rx, ry)
+    val overX = if (viewport.maxScrollX > 0) rx - (viewport.scrollX - oldX) else 0
+    val overY = if (viewport.maxScrollY > 0) ry - (viewport.scrollY - oldY) else 0
+    if (overX != 0 || overY != 0) scroller.pull(overX.toFloat(), overY.toFloat(), touchX, touchY, width, height)
+    if (oldX != viewport.scrollX || oldY != viewport.scrollY) onScrolled()
+  }
+
+  private fun fling(velocityX: Float, velocityY: Float) {
+    val min = viewConfig.scaledMinimumFlingVelocity
+    val vx = if (abs(velocityX) > min && viewport.maxScrollX > 0) -velocityX.toInt() else 0
+    val vy = if (abs(velocityY) > min && viewport.maxScrollY > 0) -velocityY.toInt() else 0
+    if (vx == 0 && vy == 0) return
+    scroller.fling(viewport.scrollX, viewport.scrollY, vx, vy, viewport.maxScrollX, viewport.maxScrollY)
+  }
+
+  private inner class GestureHost : GestureMachine.Host {
+    override fun offsetAt(x: Float, y: Float): Int = this@CodeEditorView.offsetAt(x, y)
+
+    override fun handleAt(x: Float, y: Float): GestureMachine.Handle? = null
+
+    override fun insideSelection(offset: Int): Boolean {
+      val sel = core.selection
+      return !sel.isEmpty && offset >= sel.min && offset <= sel.max
+    }
+
+    override fun canScroll(dx: Float, dy: Float): Boolean = isScrollEnabled && viewport.canScroll(dx, dy)
+
+    override fun placeCaret(offset: Int) {
+      requestFocus()
+      core.setSelection(offset, offset)
+    }
+
+    override fun selectWord(offset: Int) {
+      requestFocus()
+      core.selectWordAt(offset)
+      wordAnchor = core.selection.range
+    }
+
+    // The word under the long press stays selected and the far end follows the finger by words.
+    override fun extendWords(offset: Int) {
+      val word = TextMovement.wordRangeAt(core.document, offset)
+      if (offset >= wordAnchor.start) {
+        core.setSelection(wordAnchor.start, maxOf(word.end, wordAnchor.end))
+      } else {
+        core.setSelection(wordAnchor.end, word.start)
+      }
+    }
+
+    override fun moveHandle(handle: GestureMachine.Handle, x: Float, y: Float) {}
+
+    override fun endHandleDrag() {}
+
+    override fun beginScroll() {}
+
+    override fun scrollBy(dx: Float, dy: Float) = scrollByTouch(dx, dy)
+
+    override fun endScroll(velocityX: Float, velocityY: Float) {
+      scroller.release()
+      fling(velocityX, velocityY)
+    }
+
+    override fun showMenu() {}
+
+    override fun disallowIntercept() {
+      parent?.requestDisallowInterceptTouchEvent(true)
+    }
+
+    override fun postLongPress(delayMs: Long) {
+      postDelayed(longPressRunnable, delayMs)
+    }
+
+    override fun cancelLongPress() {
+      removeCallbacks(longPressRunnable)
+    }
+  }
+
   override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
     super.onSizeChanged(w, h, oldw, oldh)
     viewport.width = w
     viewport.height = h
     cache.capacity = maxOf(64, 3 * (h / rowMetrics().rowHeight + 1))
+    scroller.setSize(w, h)
     relayout()
+  }
+
+  override fun onTouchEvent(event: MotionEvent): Boolean {
+    touchX = event.x
+    touchY = event.y
+    when (event.actionMasked) {
+      MotionEvent.ACTION_DOWN -> {
+        velocity?.recycle()
+        velocity = VelocityTracker.obtain().also { it.addMovement(event) }
+        if (!scroller.isFinished) scroller.abort()
+        gestures.down(event.x, event.y, event.eventTime)
+      }
+      MotionEvent.ACTION_MOVE -> {
+        velocity?.addMovement(event)
+        gestures.move(event.x, event.y, event.eventTime)
+      }
+      MotionEvent.ACTION_UP -> {
+        var vx = 0f
+        var vy = 0f
+        velocity?.let {
+          it.addMovement(event)
+          it.computeCurrentVelocity(1000, viewConfig.scaledMaximumFlingVelocity.toFloat())
+          vx = it.xVelocity
+          vy = it.yVelocity
+          it.recycle()
+        }
+        velocity = null
+        gestures.up(event.x, event.y, event.eventTime, vx, vy)
+      }
+      MotionEvent.ACTION_CANCEL -> {
+        velocity?.recycle()
+        velocity = null
+        gestures.cancel()
+      }
+      else -> return super.onTouchEvent(event)
+    }
+    return true
+  }
+
+  override fun computeScroll() {
+    if (!scroller.step()) return
+    val wasTop = viewport.scrollY == 0
+    val wasBottom = viewport.scrollY == viewport.maxScrollY
+    val wasLeft = viewport.scrollX == 0
+    val wasRight = viewport.scrollX == viewport.maxScrollX
+    if (viewport.scrollTo(scroller.currX, scroller.currY)) onScrolled()
+    val v = scroller.currVelocity.toInt()
+    if (scroller.flinging && v > 0) {
+      if (!wasTop && viewport.scrollY == 0) scroller.absorbTop(v)
+      if (!wasBottom && viewport.scrollY == viewport.maxScrollY) scroller.absorbBottom(v)
+      if (!wasLeft && viewport.scrollX == 0) scroller.absorbLeft(v)
+      if (!wasRight && viewport.scrollX == viewport.maxScrollX) scroller.absorbRight(v)
+    }
+    postInvalidateOnAnimation()
+  }
+
+  override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {
+    super.onFocusChanged(gainFocus, direction, previouslyFocusedRect)
+    invalidate()
   }
 
   override fun onAttachedToWindow() {
@@ -246,6 +477,8 @@ class CodeEditorView(context: Context) : View(context) {
 
   override fun onDetachedFromWindow() {
     super.onDetachedFromWindow()
+    removeCallbacks(longPressRunnable)
+    scroller.abort()
     engine?.close()
     engine = null
     snapshot?.close()
@@ -269,7 +502,12 @@ class CodeEditorView(context: Context) : View(context) {
     drawGutter(canvas, m, firstLine, lastLine, caretLine)
     drawCaret(canvas, m, caretLine)
     drawPlaceholder(canvas, m)
+    if (scroller.draw(canvas, width, height)) postInvalidateOnAnimation()
     publish(firstLine, lastLine, caretLine, m)
+    if (scrollDirty) {
+      scrollDirty = false
+      onScrollListener?.invoke(frame)
+    }
     if (!drawn) {
       drawn = true
       onFirstDraw?.let { post(it) }
