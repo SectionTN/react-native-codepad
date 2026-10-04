@@ -25,9 +25,16 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Lint files
+        run: yarn lint
 
       - name: Typecheck files
         run: yarn typecheck
+
+      - name: Check generated language packages
+        run: |
+          yarn gen:languages javascript
+          git diff --exit-code -- languages/javascript
 
   test:
     runs-on: ubuntu-latest
@@ -40,7 +47,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Run unit tests
-        run: yarn test --maxWorkers=2 --coverage
+        run: yarn test
 
   build-library:
     runs-on: ubuntu-latest
@@ -110,6 +117,11 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('example/android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
+      - name: Unit tests on the JVM
+        run: |
+          yarn host:treesitter
+          yarn test:android
 
       - name: Build example for Android
         env:
