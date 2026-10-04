@@ -71,7 +71,7 @@
       }
     },
     {
-      "includes": ["languages/grammars.json"],
+      "includes": ["languages/grammars.json", "tests/vectors/**"],
       "formatter": {
         "enabled": false
       }
