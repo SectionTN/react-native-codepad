@@ -1,0 +1,20 @@
+{
+  "area": "document",
+  "cases": [
+    { "name": "empty document", "text": "", "ops": [], "expect": { "text": "", "lineCount": 1, "length": 0, "revision": 0, "selection": { "anchor": 0, "head": 0 } } },
+    { "name": "insert into empty document", "text": "", "ops": [{ "op": "replace", "start": 0, "end": 0, "text": "abc" }], "expect": { "text": "abc", "length": 3, "revision": 1, "selection": { "anchor": 3, "head": 3 } } },
+    { "name": "replace in the middle keeps a caret before it", "text": "hello world", "ops": [{ "op": "setSelection", "anchor": 0, "head": 0 }, { "op": "replace", "start": 6, "end": 11, "text": "there" }], "expect": { "text": "hello there", "revision": 1, "selection": { "anchor": 0, "head": 0 } } },
+    { "name": "multi line insert", "text": "ab", "ops": [{ "op": "replace", "start": 1, "end": 1, "text": "1\n2\n3" }], "expect": { "text": "a1\n2\n3b", "lineCount": 3, "length": 7 } },
+    { "name": "delete across lines", "text": "one\ntwo\nthree", "ops": [{ "op": "replace", "start": 2, "end": 9, "text": "" }], "expect": { "text": "onhree", "lineCount": 1, "length": 6 } },
+    { "name": "crlf and cr normalize on load", "text": "a\r\nb\rc", "ops": [], "expect": { "text": "a\nb\nc", "lineCount": 3, "length": 5 } },
+    { "name": "crlf normalizes on replace", "text": "x", "ops": [{ "op": "replace", "start": 1, "end": 1, "text": "\r\ny" }], "expect": { "text": "x\ny", "lineCount": 2, "length": 3 } },
+    { "name": "range clamps and swaps", "text": "abc", "ops": [{ "op": "replace", "start": 10, "end": -5, "text": "Z" }], "expect": { "text": "Z", "selection": { "anchor": 0, "head": 0 } } },
+    { "name": "selection shifts after an insert before it", "text": "hello", "ops": [{ "op": "setSelection", "anchor": 2, "head": 4 }, { "op": "replace", "start": 0, "end": 0, "text": "AB" }], "expect": { "text": "ABhello", "selection": { "anchor": 4, "head": 6 } } },
+    { "name": "selection inside a replaced range collapses to the end of the insert", "text": "hello world", "ops": [{ "op": "setSelection", "anchor": 7, "head": 9 }, { "op": "replace", "start": 6, "end": 11, "text": "x" }], "expect": { "text": "hello x", "selection": { "anchor": 7, "head": 7 } } },
+    { "name": "selection boundary at the range start stays", "text": "hello world", "ops": [{ "op": "setSelection", "anchor": 0, "head": 5 }, { "op": "replace", "start": 5, "end": 11, "text": "" }], "expect": { "text": "hello", "selection": { "anchor": 0, "head": 5 } } },
+    { "name": "selection boundary at the range end moves by the delta", "text": "hello world", "ops": [{ "op": "setSelection", "anchor": 0, "head": 5 }, { "op": "replace", "start": 0, "end": 5, "text": "hey" }], "expect": { "text": "hey world", "selection": { "anchor": 0, "head": 3 } } },
+    { "name": "caret at a pure insertion point follows the insert", "text": "ab", "ops": [{ "op": "setSelection", "anchor": 1, "head": 1 }, { "op": "replace", "start": 1, "end": 1, "text": "X" }], "expect": { "text": "aXb", "selection": { "anchor": 2, "head": 2 } } },
+    { "name": "getLine out of range is empty", "text": "a\nb", "ops": [{ "op": "getLine", "index": 5, "expect": { "line": "" } }, { "op": "getLine", "index": 1, "expect": { "line": "b" } }, { "op": "getLine", "index": -1, "expect": { "line": "" } }] },
+    { "name": "setSelection clamps", "text": "abc", "ops": [{ "op": "setSelection", "anchor": -3, "head": 99 }], "expect": { "selection": { "anchor": 0, "head": 3 } } }
+  ]
+}

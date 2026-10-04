@@ -1,0 +1,22 @@
+{
+  "area": "positions",
+  "cases": [
+    { "name": "offset to position across lines", "text": "ab\ncd\n", "ops": [
+      { "op": "offsetToPosition", "offset": 0, "expect": { "position": { "line": 0, "column": 0 } } },
+      { "op": "offsetToPosition", "offset": 2, "expect": { "position": { "line": 0, "column": 2 } } },
+      { "op": "offsetToPosition", "offset": 3, "expect": { "position": { "line": 1, "column": 0 } } },
+      { "op": "offsetToPosition", "offset": 5, "expect": { "position": { "line": 1, "column": 2 } } },
+      { "op": "offsetToPosition", "offset": 6, "expect": { "position": { "line": 2, "column": 0 } } },
+      { "op": "offsetToPosition", "offset": 99, "expect": { "position": { "line": 2, "column": 0 } } },
+      { "op": "offsetToPosition", "offset": -1, "expect": { "position": { "line": 0, "column": 0 } } }
+    ], "expect": { "lineCount": 3, "length": 6 } },
+    { "name": "position to offset clamps", "text": "ab\ncd\n", "ops": [
+      { "op": "positionToOffset", "line": 1, "column": 99, "expect": { "offset": 5 } },
+      { "op": "positionToOffset", "line": 99, "column": 0, "expect": { "offset": 6 } },
+      { "op": "positionToOffset", "line": -1, "column": 0, "expect": { "offset": 0 } },
+      { "op": "positionToOffset", "line": 0, "column": 1, "expect": { "offset": 1 } }
+    ] },
+    { "name": "surrogate pairs count as two units", "text": "a\uD83D\uDE00b", "ops": [{ "op": "offsetToPosition", "offset": 3, "expect": { "position": { "line": 0, "column": 3 } } }], "expect": { "length": 4 } },
+    { "name": "line starts recompute after edits", "text": "a\nb\nc", "ops": [{ "op": "replace", "start": 0, "end": 0, "text": "xx\n" }, { "op": "offsetToPosition", "offset": 4, "expect": { "position": { "line": 1, "column": 1 } } }], "expect": { "lineCount": 4 } }
+  ]
+}
