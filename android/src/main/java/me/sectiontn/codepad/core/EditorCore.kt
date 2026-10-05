@@ -46,6 +46,10 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     applyChange(selection.min, selection.max, text, origin, typing = false, caretAfter = true)
   }
 
+  /** An IME edit. The selection maps through the change like any edit; single char deletes coalesce like typed backspaces. */
+  fun inputReplace(start: Int, end: Int, text: String, typing: Boolean = false): Change =
+    applyChange(start, end, text, ChangeOrigin.Input, typing, caretAfter = false)
+
   fun setText(text: String, keepHistory: Boolean = false) {
     applyChange(0, document.length, text, ChangeOrigin.Api, typing = false, caretAfter = false)
     moveSelection(Selection(0, 0), fromEdit = true)
