@@ -129,6 +129,12 @@ jobs:
         run: |
           yarn turbo run build:android --cache-dir="${{ env.TURBO_CACHE_DIR }}"
 
+      - name: Compile instrumented tests
+        if: env.turbo_cache_hit != 1
+        run: |
+          cd example/android
+          ./gradlew :app:compileDebugAndroidTestKotlin --console=plain -q
+
   build-ios:
     runs-on: macos-latest
 
