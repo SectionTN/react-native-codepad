@@ -46,6 +46,8 @@
     "test": "jest && node --test 'languages/generator/*.test.ts'",
     "test:android": "cd example/android && ./gradlew :react-native-codepad:testDebugUnitTest --console=plain -q",
     "host:treesitter": "scripts/build-host-treesitter.sh",
+    "bench:scroll": "scripts/bench.sh scroll",
+    "bench:memory": "scripts/bench.sh memory",
     "release": "release-it --only-version"
   },
   "keywords": [

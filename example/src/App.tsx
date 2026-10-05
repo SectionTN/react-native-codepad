@@ -1,101 +1,38 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
-import { CodeEditor, type CodeEditorRef, githubDark } from 'react-native-codepad';
+import { BenchmarkScreen } from './screens/BenchmarkScreen';
+import { EditorScreen } from './screens/EditorScreen';
 
-const block = [
-  '// readFile with retries',
-  'import { readFile } from "node:fs/promises";',
-  '',
-  'const MAX_RETRIES = 3;',
-  'const MESSAGE = "a long string literal that keeps going past the edge of the screen so soft wrap has something to do";',
-  '',
-  'export async function load(path, retries = MAX_RETRIES) {',
-  '  for (let i = 0; i < retries; i++) {',
-  '    try {',
-  '      return await readFile(path, "utf8");',
-  '    } catch (error) {',
-  '      if (i === retries - 1) throw error;',
-  '    }',
-  '  }',
-  '  return null;',
-  '}',
-  '',
-].join('\n');
-
-const sample = new Array(40).fill(block).join('\n');
-
-function Toggle({ label, value, onPress }: { label: string; value: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={[styles.toggle, value && styles.toggleOn]}>
-      <Text style={styles.toggleText}>{label}</Text>
-    </Pressable>
-  );
-}
+type Tab = 'editor' | 'benchmark';
 
 export default function App() {
-  const editor = useRef<CodeEditorRef>(null);
-  const [wrap, setWrap] = useState(false);
-  const [numbers, setNumbers] = useState(true);
-  const [activeLine, setActiveLine] = useState(true);
-  const [empty, setEmpty] = useState(false);
-  const [status, setStatus] = useState('tap, scroll or select');
+  const [tab, setTab] = useState<Tab>('editor');
   return (
     <View style={styles.root}>
-      <View style={styles.bar}>
-        <Toggle label="Wrap" value={wrap} onPress={() => setWrap((v) => !v)} />
-        <Toggle label="Numbers" value={numbers} onPress={() => setNumbers((v) => !v)} />
-        <Toggle label="Active" value={activeLine} onPress={() => setActiveLine((v) => !v)} />
-        <Toggle label="Empty" value={empty} onPress={() => setEmpty((v) => !v)} />
-        <Toggle
-          label="Top"
-          value={false}
-          onPress={() => editor.current?.scrollToLine(0, { animated: true })}
-        />
-        <Toggle label="Line 300" value={false} onPress={() => editor.current?.scrollToLine(300)} />
+      <View style={styles.tabs}>
+        {(['editor', 'benchmark'] as const).map((t) => (
+          <Pressable
+            key={t}
+            onPress={() => setTab(t)}
+            style={[styles.tab, tab === t && styles.tabOn]}
+          >
+            <Text style={styles.tabText}>{t === 'editor' ? 'Editor' : 'Benchmark'}</Text>
+          </Pressable>
+        ))}
       </View>
-      <Text style={styles.status}>{status}</Text>
-      <CodeEditor
-        key={empty ? 'empty' : 'sample'}
-        ref={editor}
-        style={styles.editor}
-        initialValue={empty ? '' : sample}
-        language="javascript"
-        theme={githubDark}
-        softWrap={wrap}
-        lineNumbers={numbers}
-        highlightActiveLine={activeLine}
-        placeholder="Start typing"
-        scrollEnabled
-        contentInsets={{ bottom: 24 }}
-        onReady={() => console.log('codepad ready, lines', editor.current?.getLineCount())}
-        onScroll={(e) => {
-          const lines = editor.current?.getVisibleLines();
-          setStatus(
-            `scroll ${Math.round(e.y)} of ${Math.round(e.contentHeight)} dp, lines ${(lines?.first ?? 0) + 1} to ${(lines?.last ?? 0) + 1}`,
-          );
-        }}
-        onSelectionChange={(s) => {
-          const rect = editor.current?.getCursorRect();
-          setStatus(
-            `selection ${s.anchor}..${s.head} rev ${s.revision}, caret ${rect ? `${Math.round(rect.x)},${Math.round(rect.y)}` : 'none'}`,
-          );
-        }}
-      />
+      {tab === 'editor' ? <EditorScreen /> : <BenchmarkScreen />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0d1117', paddingTop: StatusBar.currentHeight ?? 0 },
-  bar: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 8 },
-  status: { color: '#8b949e', paddingHorizontal: 8, paddingBottom: 4, fontSize: 12 },
-  toggle: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#21262d',
+  tabs: {
+    flexDirection: 'row',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#30363d',
   },
-  toggleOn: { backgroundColor: '#1f6feb' },
-  toggleText: { color: '#e6edf3' },
-  editor: { flex: 1 },
+  tab: { flex: 1, paddingVertical: 10, alignItems: 'center' },
+  tabOn: { borderBottomWidth: 2, borderBottomColor: '#1f6feb' },
+  tabText: { color: '#e6edf3', fontWeight: '600' },
 });
