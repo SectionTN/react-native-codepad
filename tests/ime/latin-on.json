@@ -1,0 +1,465 @@
+{
+  "name": "latin-on",
+  "source": "recorded on 2510ERA8BG",
+  "ime": "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME",
+  "recordedAt": "2026-10-05",
+  "sessions": [
+    {
+      "inputType": 163841,
+      "initial": {
+        "text": "",
+        "selection": [
+          0,
+          0
+        ]
+      },
+      "steps": [
+        {
+          "t": 14,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "",
+            "selStart": 0,
+            "selEnd": 0,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 18,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 59787,
+          "call": "commitText",
+          "args": [
+            "h",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              1,
+              1
+            ],
+            "comp": null,
+            "len": 1,
+            "text": "h"
+          }
+        },
+        {
+          "t": 59984,
+          "call": "commitText",
+          "args": [
+            "e",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              2,
+              2
+            ],
+            "comp": null,
+            "len": 2,
+            "text": "he"
+          }
+        },
+        {
+          "t": 60195,
+          "call": "commitText",
+          "args": [
+            "l",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              3,
+              3
+            ],
+            "comp": null,
+            "len": 3,
+            "text": "hel"
+          }
+        },
+        {
+          "t": 60411,
+          "call": "commitText",
+          "args": [
+            "o",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              4,
+              4
+            ],
+            "comp": null,
+            "len": 4,
+            "text": "helo"
+          }
+        },
+        {
+          "t": 61261,
+          "call": "beginBatchEdit",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              4,
+              4
+            ],
+            "comp": null,
+            "len": 4,
+            "text": "helo"
+          }
+        },
+        {
+          "t": 61262,
+          "call": "replaceText",
+          "args": [
+            3,
+            4,
+            "lo ",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "hello "
+          }
+        },
+        {
+          "t": 61267,
+          "call": "endBatchEdit",
+          "args": [],
+          "ret": false,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "hello "
+          }
+        }
+      ]
+    },
+    {
+      "inputType": 163841,
+      "initial": {
+        "text": "hello ",
+        "selection": [
+          6,
+          6
+        ]
+      },
+      "steps": [
+        {
+          "t": 62014,
+          "call": "commitText",
+          "args": [
+            "w",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              7,
+              7
+            ],
+            "comp": null,
+            "len": 7,
+            "text": "hello w"
+          }
+        },
+        {
+          "t": 62228,
+          "call": "commitText",
+          "args": [
+            "r",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              8,
+              8
+            ],
+            "comp": null,
+            "len": 8,
+            "text": "hello wr"
+          }
+        },
+        {
+          "t": 62447,
+          "call": "commitText",
+          "args": [
+            "o",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              9,
+              9
+            ],
+            "comp": null,
+            "len": 9,
+            "text": "hello wro"
+          }
+        },
+        {
+          "t": 62651,
+          "call": "commitText",
+          "args": [
+            "l",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              10,
+              10
+            ],
+            "comp": null,
+            "len": 10,
+            "text": "hello wrol"
+          }
+        },
+        {
+          "t": 62854,
+          "call": "commitText",
+          "args": [
+            "d",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              11,
+              11
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello wrold"
+          }
+        },
+        {
+          "t": 63434,
+          "call": "commitText",
+          "args": [
+            " ",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hello wrold "
+          }
+        },
+        {
+          "t": 64300,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              11,
+              11
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello wrold"
+          }
+        },
+        {
+          "t": 64301,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              11,
+              11
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello wrold"
+          }
+        },
+        {
+          "t": 81252,
+          "call": "beginBatchEdit",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              11,
+              11
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello wrold"
+          }
+        },
+        {
+          "t": 81255,
+          "call": "replaceText",
+          "args": [
+            7,
+            11,
+            "orld ",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hello world "
+          }
+        },
+        {
+          "t": 81256,
+          "call": "endBatchEdit",
+          "args": [],
+          "ret": false,
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hello world "
+          }
+        },
+        {
+          "t": 82109,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              11,
+              11
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello world"
+          }
+        },
+        {
+          "t": 82109,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              11,
+              11
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello world"
+          }
+        },
+        {
+          "t": 82756,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              10,
+              10
+            ],
+            "comp": null,
+            "len": 10,
+            "text": "hello worl"
+          }
+        },
+        {
+          "t": 82756,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              10,
+              10
+            ],
+            "comp": null,
+            "len": 10,
+            "text": "hello worl"
+          }
+        }
+      ]
+    }
+  ]
+}

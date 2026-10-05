@@ -8,6 +8,7 @@ import android.view.KeyEvent
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputConnectionWrapper
 import android.view.inputmethod.SurroundingText
+import android.view.inputmethod.TextAttribute
 import androidx.annotation.RequiresApi
 import org.json.JSONArray
 import org.json.JSONObject
@@ -33,6 +34,10 @@ class RecordingInputConnection(target: InputConnection, private val view: CodeEd
     record("setComposingRegion", args(start, end)) { super.setComposingRegion(start, end) }
 
   override fun finishComposingText(): Boolean = record("finishComposingText", args()) { super.finishComposingText() }
+
+  @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+  override fun replaceText(start: Int, end: Int, text: CharSequence, newCursorPosition: Int, textAttribute: TextAttribute?): Boolean =
+    record("replaceText", args(start, end, text.toString(), newCursorPosition)) { super.replaceText(start, end, text, newCursorPosition, textAttribute) }
 
   override fun deleteSurroundingText(beforeLength: Int, afterLength: Int): Boolean =
     record("deleteSurroundingText", args(beforeLength, afterLength)) { super.deleteSurroundingText(beforeLength, afterLength) }

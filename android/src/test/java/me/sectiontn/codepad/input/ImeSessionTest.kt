@@ -263,4 +263,33 @@ class ImeSessionTest {
     assertFalse(ime.sendKey(android.view.KeyEvent.KEYCODE_Q, 0))
     assertFalse(ime.sendKey(android.view.KeyEvent.KEYCODE_DPAD_DOWN, 0))
   }
+
+  @Test
+  fun replaceTextSwapsAnAbsoluteRangeWithAMinimalEdit() {
+    val (core, ime) = session("helo.", 4)
+    val changes = ArrayList<Change>()
+    core.onChange = { c, _ -> changes.add(c) }
+    assertTrue(ime.replaceText(0, 4, "hello ", 1))
+    assertEquals("hello .", core.document.text())
+    assertEquals(Selection(6, 6), core.selection)
+    assertEquals(listOf("lo "), changes.map { it.inserted })
+  }
+
+  @Test
+  fun replaceTextEndsTheCompositionAndFollowsTheCommitCaretRule() {
+    val (core, ime) = session()
+    ime.setComposingText("wrold", 1)
+    assertTrue(ime.replaceText(0, 5, "world ", 0))
+    assertEquals("world ", core.document.text())
+    assertNull(ime.composing)
+    assertEquals(Selection(0, 0), core.selection)
+  }
+
+  @Test
+  fun replaceTextClampsTheRangeToTheDocument() {
+    val (core, ime) = session("abcd", 4)
+    assertTrue(ime.replaceText(2, 99, "x", 1))
+    assertEquals("abx", core.document.text())
+    assertEquals(Selection(3, 3), core.selection)
+  }
 }

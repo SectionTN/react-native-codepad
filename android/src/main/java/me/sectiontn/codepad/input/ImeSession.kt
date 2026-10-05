@@ -58,6 +58,16 @@ class ImeSession(private val core: EditorCore) {
 
   fun finishComposingText(): Boolean = mutate { endComposition() }
 
+  /** The suggestion pick of newer keyboards: end composing, swap an absolute range, place the caret like a commit. */
+  fun replaceText(start: Int, end: Int, text: String, newCursorPosition: Int): Boolean = mutate {
+    endComposition()
+    val a = start.coerceIn(0, doc.length)
+    val b = end.coerceIn(0, doc.length)
+    val region = Range(minOf(a, b), maxOf(a, b))
+    replaceRegion(region, text)
+    placeCaret(region.start, text.length, newCursorPosition)
+  }
+
   data class Window(val text: String, val selStart: Int, val selEnd: Int, val offset: Int)
 
   /** Deletes around the selection, widened past the composing text, with the exact lengths the IME sent. */

@@ -5,6 +5,7 @@ import android.text.TextUtils
 import android.view.KeyEvent
 import android.view.inputmethod.BaseInputConnection
 import android.view.inputmethod.SurroundingText
+import android.view.inputmethod.TextAttribute
 import androidx.annotation.RequiresApi
 import me.sectiontn.codepad.input.ImeSession
 
@@ -21,6 +22,10 @@ class EditorInputConnection(private val view: CodeEditorView) : BaseInputConnect
   override fun setComposingRegion(start: Int, end: Int): Boolean = edit { session.setComposingRegion(start, end) }
 
   override fun finishComposingText(): Boolean = edit { session.finishComposingText() }
+
+  @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+  override fun replaceText(start: Int, end: Int, text: CharSequence, newCursorPosition: Int, textAttribute: TextAttribute?): Boolean =
+    edit { session.replaceText(start, end, text.toString(), newCursorPosition) }
 
   override fun deleteSurroundingText(beforeLength: Int, afterLength: Int): Boolean =
     edit { session.deleteSurroundingText(beforeLength, afterLength) }
