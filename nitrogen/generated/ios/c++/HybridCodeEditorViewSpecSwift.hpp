@@ -18,6 +18,16 @@ namespace margelo::nitro::codepad { struct NativeTheme; }
 namespace margelo::nitro::codepad { struct NativeTokenStyle; }
 // Forward declaration of `NativeInsets` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeInsets; }
+// Forward declaration of `NativeScrollEvent` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeScrollEvent; }
+// Forward declaration of `NativeSelection` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSelection; }
+// Forward declaration of `NativePosition` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativePosition; }
+// Forward declaration of `NativeRect` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeRect; }
+// Forward declaration of `NativeVisibleLines` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 
 #include <string>
 #include <optional>
@@ -26,6 +36,11 @@ namespace margelo::nitro::codepad { struct NativeInsets; }
 #include <unordered_map>
 #include "NativeInsets.hpp"
 #include <functional>
+#include "NativeScrollEvent.hpp"
+#include "NativeSelection.hpp"
+#include "NativePosition.hpp"
+#include "NativeRect.hpp"
+#include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
 
 #include "Codepad-Swift-Cxx-Umbrella.hpp"
@@ -151,6 +166,13 @@ namespace margelo::nitro::codepad {
     inline void setPlaceholder(const std::optional<std::string>& placeholder) noexcept override {
       _swiftPart.setPlaceholder(placeholder);
     }
+    inline std::optional<bool> getScrollEnabled() noexcept override {
+      auto __result = _swiftPart.getScrollEnabled();
+      return __result;
+    }
+    inline void setScrollEnabled(std::optional<bool> scrollEnabled) noexcept override {
+      _swiftPart.setScrollEnabled(scrollEnabled);
+    }
     inline std::optional<NativeInsets> getContentInsets() noexcept override {
       auto __result = _swiftPart.getContentInsets();
       return __result;
@@ -164,6 +186,20 @@ namespace margelo::nitro::codepad {
     }
     inline void setOnReady(const std::optional<std::function<void()>>& onReady) noexcept override {
       _swiftPart.setOnReady(onReady);
+    }
+    inline std::optional<std::function<void(const NativeScrollEvent& /* e */)>> getOnScroll() noexcept override {
+      auto __result = _swiftPart.getOnScroll();
+      return __result;
+    }
+    inline void setOnScroll(const std::optional<std::function<void(const NativeScrollEvent& /* e */)>>& onScroll) noexcept override {
+      _swiftPart.setOnScroll(onScroll);
+    }
+    inline std::optional<std::function<void(const NativeSelection& /* s */)>> getOnSelectionChange() noexcept override {
+      auto __result = _swiftPart.getOnSelectionChange();
+      return __result;
+    }
+    inline void setOnSelectionChange(const std::optional<std::function<void(const NativeSelection& /* s */)>>& onSelectionChange) noexcept override {
+      _swiftPart.setOnSelectionChange(onSelectionChange);
     }
 
   public:
@@ -208,8 +244,88 @@ namespace margelo::nitro::codepad {
       auto __value = std::move(__result.value());
       return __value;
     }
+    inline NativeSelection getSelection() override {
+      auto __result = _swiftPart.getSelection();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::string getTextInRange(double start, double end) override {
+      auto __result = _swiftPart.getTextInRange(std::forward<decltype(start)>(start), std::forward<decltype(end)>(end));
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline NativePosition offsetToPosition(double offset) override {
+      auto __result = _swiftPart.offsetToPosition(std::forward<decltype(offset)>(offset));
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline double positionToOffset(double line, double column) override {
+      auto __result = _swiftPart.positionToOffset(std::forward<decltype(line)>(line), std::forward<decltype(column)>(column));
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::optional<NativeRect> getCursorRect() override {
+      auto __result = _swiftPart.getCursorRect();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline NativeVisibleLines getVisibleLines() override {
+      auto __result = _swiftPart.getVisibleLines();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
     inline std::shared_ptr<Promise<void>> setText(const std::string& text, bool keepHistory) override {
       auto __result = _swiftPart.setText(text, std::forward<decltype(keepHistory)>(keepHistory));
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> setSelection(double anchor, double head) override {
+      auto __result = _swiftPart.setSelection(std::forward<decltype(anchor)>(anchor), std::forward<decltype(head)>(head));
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> selectAll() override {
+      auto __result = _swiftPart.selectAll();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> scrollToLine(double line, bool animated) override {
+      auto __result = _swiftPart.scrollToLine(std::forward<decltype(line)>(line), std::forward<decltype(animated)>(animated));
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> revealSelection() override {
+      auto __result = _swiftPart.revealSelection();
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }

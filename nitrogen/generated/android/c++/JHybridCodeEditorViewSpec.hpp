@@ -72,10 +72,16 @@ namespace margelo::nitro::codepad {
     void setHighlightActiveLine(std::optional<bool> highlightActiveLine) override;
     std::optional<std::string> getPlaceholder() override;
     void setPlaceholder(const std::optional<std::string>& placeholder) override;
+    std::optional<bool> getScrollEnabled() override;
+    void setScrollEnabled(std::optional<bool> scrollEnabled) override;
     std::optional<NativeInsets> getContentInsets() override;
     void setContentInsets(const std::optional<NativeInsets>& contentInsets) override;
     std::optional<std::function<void()>> getOnReady() override;
     void setOnReady(const std::optional<std::function<void()>>& onReady) override;
+    std::optional<std::function<void(const NativeScrollEvent& /* e */)>> getOnScroll() override;
+    void setOnScroll(const std::optional<std::function<void(const NativeScrollEvent& /* e */)>>& onScroll) override;
+    std::optional<std::function<void(const NativeSelection& /* s */)>> getOnSelectionChange() override;
+    void setOnSelectionChange(const std::optional<std::function<void(const NativeSelection& /* s */)>>& onSelectionChange) override;
 
   public:
     // Methods
@@ -84,7 +90,17 @@ namespace margelo::nitro::codepad {
     double getLineCount() override;
     std::string getLine(double index) override;
     double getRevision() override;
+    NativeSelection getSelection() override;
+    std::string getTextInRange(double start, double end) override;
+    NativePosition offsetToPosition(double offset) override;
+    double positionToOffset(double line, double column) override;
+    std::optional<NativeRect> getCursorRect() override;
+    NativeVisibleLines getVisibleLines() override;
     std::shared_ptr<Promise<void>> setText(const std::string& text, bool keepHistory) override;
+    std::shared_ptr<Promise<void>> setSelection(double anchor, double head) override;
+    std::shared_ptr<Promise<void>> selectAll() override;
+    std::shared_ptr<Promise<void>> scrollToLine(double line, bool animated) override;
+    std::shared_ptr<Promise<void>> revealSelection() override;
 
   private:
     jni::global_ref<JHybridCodeEditorViewSpec::JavaPart> _javaPart;

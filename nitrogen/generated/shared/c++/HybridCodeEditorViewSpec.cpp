@@ -36,16 +36,32 @@ namespace margelo::nitro::codepad {
       prototype.registerHybridSetter("highlightActiveLine", &HybridCodeEditorViewSpec::setHighlightActiveLine);
       prototype.registerHybridGetter("placeholder", &HybridCodeEditorViewSpec::getPlaceholder);
       prototype.registerHybridSetter("placeholder", &HybridCodeEditorViewSpec::setPlaceholder);
+      prototype.registerHybridGetter("scrollEnabled", &HybridCodeEditorViewSpec::getScrollEnabled);
+      prototype.registerHybridSetter("scrollEnabled", &HybridCodeEditorViewSpec::setScrollEnabled);
       prototype.registerHybridGetter("contentInsets", &HybridCodeEditorViewSpec::getContentInsets);
       prototype.registerHybridSetter("contentInsets", &HybridCodeEditorViewSpec::setContentInsets);
       prototype.registerHybridGetter("onReady", &HybridCodeEditorViewSpec::getOnReady);
       prototype.registerHybridSetter("onReady", &HybridCodeEditorViewSpec::setOnReady);
+      prototype.registerHybridGetter("onScroll", &HybridCodeEditorViewSpec::getOnScroll);
+      prototype.registerHybridSetter("onScroll", &HybridCodeEditorViewSpec::setOnScroll);
+      prototype.registerHybridGetter("onSelectionChange", &HybridCodeEditorViewSpec::getOnSelectionChange);
+      prototype.registerHybridSetter("onSelectionChange", &HybridCodeEditorViewSpec::setOnSelectionChange);
       prototype.registerHybridMethod("getText", &HybridCodeEditorViewSpec::getText);
       prototype.registerHybridMethod("getLength", &HybridCodeEditorViewSpec::getLength);
       prototype.registerHybridMethod("getLineCount", &HybridCodeEditorViewSpec::getLineCount);
       prototype.registerHybridMethod("getLine", &HybridCodeEditorViewSpec::getLine);
       prototype.registerHybridMethod("getRevision", &HybridCodeEditorViewSpec::getRevision);
+      prototype.registerHybridMethod("getSelection", &HybridCodeEditorViewSpec::getSelection);
+      prototype.registerHybridMethod("getTextInRange", &HybridCodeEditorViewSpec::getTextInRange);
+      prototype.registerHybridMethod("offsetToPosition", &HybridCodeEditorViewSpec::offsetToPosition);
+      prototype.registerHybridMethod("positionToOffset", &HybridCodeEditorViewSpec::positionToOffset);
+      prototype.registerHybridMethod("getCursorRect", &HybridCodeEditorViewSpec::getCursorRect);
+      prototype.registerHybridMethod("getVisibleLines", &HybridCodeEditorViewSpec::getVisibleLines);
       prototype.registerHybridMethod("setText", &HybridCodeEditorViewSpec::setText);
+      prototype.registerHybridMethod("setSelection", &HybridCodeEditorViewSpec::setSelection);
+      prototype.registerHybridMethod("selectAll", &HybridCodeEditorViewSpec::selectAll);
+      prototype.registerHybridMethod("scrollToLine", &HybridCodeEditorViewSpec::scrollToLine);
+      prototype.registerHybridMethod("revealSelection", &HybridCodeEditorViewSpec::revealSelection);
     });
   }
 

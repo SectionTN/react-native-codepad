@@ -38,6 +38,7 @@ export default function App() {
   const [numbers, setNumbers] = useState(true);
   const [activeLine, setActiveLine] = useState(true);
   const [empty, setEmpty] = useState(false);
+  const [status, setStatus] = useState('tap, scroll or select');
   return (
     <View style={styles.root}>
       <View style={styles.bar}>
@@ -45,7 +46,14 @@ export default function App() {
         <Toggle label="Numbers" value={numbers} onPress={() => setNumbers((v) => !v)} />
         <Toggle label="Active" value={activeLine} onPress={() => setActiveLine((v) => !v)} />
         <Toggle label="Empty" value={empty} onPress={() => setEmpty((v) => !v)} />
+        <Toggle
+          label="Top"
+          value={false}
+          onPress={() => editor.current?.scrollToLine(0, { animated: true })}
+        />
+        <Toggle label="Line 300" value={false} onPress={() => editor.current?.scrollToLine(300)} />
       </View>
+      <Text style={styles.status}>{status}</Text>
       <CodeEditor
         key={empty ? 'empty' : 'sample'}
         ref={editor}
@@ -57,8 +65,21 @@ export default function App() {
         lineNumbers={numbers}
         highlightActiveLine={activeLine}
         placeholder="Start typing"
+        scrollEnabled
         contentInsets={{ bottom: 24 }}
         onReady={() => console.log('codepad ready, lines', editor.current?.getLineCount())}
+        onScroll={(e) => {
+          const lines = editor.current?.getVisibleLines();
+          setStatus(
+            `scroll ${Math.round(e.y)} of ${Math.round(e.contentHeight)} dp, lines ${(lines?.first ?? 0) + 1} to ${(lines?.last ?? 0) + 1}`,
+          );
+        }}
+        onSelectionChange={(s) => {
+          const rect = editor.current?.getCursorRect();
+          setStatus(
+            `selection ${s.anchor}..${s.head} rev ${s.revision}, caret ${rect ? `${Math.round(rect.x)},${Math.round(rect.y)}` : 'none'}`,
+          );
+        }}
       />
     </View>
   );
@@ -66,7 +87,8 @@ export default function App() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0d1117', paddingTop: StatusBar.currentHeight ?? 0 },
-  bar: { flexDirection: 'row', gap: 8, padding: 8 },
+  bar: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 8 },
+  status: { color: '#8b949e', paddingHorizontal: 8, paddingBottom: 4, fontSize: 12 },
   toggle: {
     paddingHorizontal: 12,
     paddingVertical: 6,

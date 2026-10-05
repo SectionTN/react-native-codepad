@@ -22,6 +22,8 @@
 #include "NativeTheme.hpp"
 #include "NativeInsets.hpp"
 #include <functional>
+#include "NativeScrollEvent.hpp"
+#include "NativeSelection.hpp"
 #include <memory>
 #include "HybridCodeEditorViewSpec.hpp"
 
@@ -56,8 +58,11 @@ namespace margelo::nitro::codepad::views {
     nitro::ReactProp<std::optional<bool>> readOnly;
     nitro::ReactProp<std::optional<bool>> highlightActiveLine;
     nitro::ReactProp<std::optional<std::string>> placeholder;
+    nitro::ReactProp<std::optional<bool>> scrollEnabled;
     nitro::ReactProp<std::optional<NativeInsets>> contentInsets;
     nitro::ReactProp<std::optional<std::function<void()>>> onReady;
+    nitro::ReactProp<std::optional<std::function<void(const NativeScrollEvent& /* e */)>>> onScroll;
+    nitro::ReactProp<std::optional<std::function<void(const NativeSelection& /* s */)>>> onSelectionChange;
     nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>> hybridRef;
 
     [[nodiscard]]
@@ -73,8 +78,11 @@ namespace margelo::nitro::codepad::views {
              readOnly.hasSameValue(other.readOnly) &&
              highlightActiveLine.hasSameValue(other.highlightActiveLine) &&
              placeholder.hasSameValue(other.placeholder) &&
+             scrollEnabled.hasSameValue(other.scrollEnabled) &&
              contentInsets.hasSameValue(other.contentInsets) &&
              onReady.hasSameValue(other.onReady) &&
+             onScroll.hasSameValue(other.onScroll) &&
+             onSelectionChange.hasSameValue(other.onSelectionChange) &&
              hybridRef.hasSameValue(other.hybridRef);
     }
 
@@ -91,8 +99,11 @@ namespace margelo::nitro::codepad::views {
              readOnly.isProvided() ||
              highlightActiveLine.isProvided() ||
              placeholder.isProvided() ||
+             scrollEnabled.isProvided() ||
              contentInsets.isProvided() ||
              onReady.isProvided() ||
+             onScroll.isProvided() ||
+             onSelectionChange.isProvided() ||
              hybridRef.isProvided();
     }
 

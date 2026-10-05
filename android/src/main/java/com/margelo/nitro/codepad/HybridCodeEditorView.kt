@@ -17,6 +17,12 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
     typefaceResolver = { family -> ReactFontManager.getInstance().getTypeface(family, Typeface.NORMAL, context.assets) }
     // The first draw already has initialValue applied, so ref methods are valid from onReady on.
     onFirstDraw = { sendReady() }
+    onScrollListener = { f ->
+      onScroll?.invoke(NativeScrollEvent(f.scrollX.toDouble(), f.scrollY.toDouble(), f.contentWidth.toDouble(), f.contentHeight.toDouble()))
+    }
+    onSelectionListener = { s ->
+      onSelectionChange?.invoke(NativeSelection(s.anchor.toDouble(), s.head.toDouble(), core.document.revision.toDouble()))
+    }
   }
   private var loaded = false
   private var readySent = false
@@ -93,6 +99,12 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
       editor.setPlaceholder(value)
     }
 
+  override var scrollEnabled: Boolean? = null
+    set(value) {
+      field = value
+      editor.setScrollEnabled(value ?: true)
+    }
+
   override var contentInsets: NativeInsets? = null
     set(value) {
       field = value
@@ -105,6 +117,10 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
     }
 
   override var onReady: (() -> Unit)? = null
+
+  override var onScroll: ((NativeScrollEvent) -> Unit)? = null
+
+  override var onSelectionChange: ((NativeSelection) -> Unit)? = null
 
   override fun afterUpdate() {
     if (fontDirty) {
@@ -129,10 +145,50 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
 
   override fun getRevision(): Double = editor.core.let { c -> c.read { c.document.revision.toDouble() } }
 
-  override fun setText(text: String, keepHistory: Boolean): Promise<Unit> {
+  override fun getSelection(): NativeSelection = editor.core.let { c ->
+    c.read {
+      val s = c.selection
+      NativeSelection(s.anchor.toDouble(), s.head.toDouble(), c.document.revision.toDouble())
+    }
+  }
+
+  override fun getTextInRange(start: Double, end: Double): String =
+    editor.core.let { c -> c.read { c.document.text(start.toInt(), end.toInt()) } }
+
+  override fun offsetToPosition(offset: Double): NativePosition = editor.core.let { c ->
+    c.read {
+      val p = c.document.offsetToPosition(offset.toInt())
+      NativePosition(p.line.toDouble(), p.column.toDouble())
+    }
+  }
+
+  override fun positionToOffset(line: Double, column: Double): Double =
+    editor.core.let { c -> c.read { c.document.positionToOffset(line.toInt(), column.toInt()).toDouble() } }
+
+  // Both read the frame the main thread published after its last draw.
+  override fun getCursorRect(): NativeRect? = editor.frame.caret?.let {
+    NativeRect(it.left.toDouble(), it.top.toDouble(), it.width().toDouble(), it.height().toDouble())
+  }
+
+  override fun getVisibleLines(): NativeVisibleLines =
+    editor.frame.let { NativeVisibleLines(it.firstLine.toDouble(), it.lastLine.toDouble()) }
+
+  override fun setText(text: String, keepHistory: Boolean): Promise<Unit> = onMain { editor.setText(text, keepHistory) }
+
+  override fun setSelection(anchor: Double, head: Double): Promise<Unit> = onMain { editor.core.setSelection(anchor.toInt(), head.toInt()) }
+
+  override fun selectAll(): Promise<Unit> = onMain { editor.selectAll() }
+
+  override fun scrollToLine(line: Double, animated: Boolean): Promise<Unit> = onMain { editor.scrollToLine(line.toInt(), animated) }
+
+  override fun revealSelection(): Promise<Unit> = onMain { editor.revealSelection() }
+
+  /** Write methods run on the main thread and resolve once the change is applied and a redraw is queued. */
+  private fun onMain(block: () -> Unit): Promise<Unit> {
     val promise = Promise<Unit>()
     editor.post {
-      editor.setText(text, keepHistory)
+      block()
+      editor.invalidate()
       promise.resolve(Unit)
     }
     return promise

@@ -17,12 +17,27 @@
 namespace margelo::nitro::codepad { struct NativeTheme; }
 // Forward declaration of `NativeInsets` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeInsets; }
+// Forward declaration of `NativeScrollEvent` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeScrollEvent; }
+// Forward declaration of `NativeSelection` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSelection; }
+// Forward declaration of `NativePosition` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativePosition; }
+// Forward declaration of `NativeRect` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeRect; }
+// Forward declaration of `NativeVisibleLines` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 
 #include <string>
 #include <optional>
 #include "NativeTheme.hpp"
 #include "NativeInsets.hpp"
 #include <functional>
+#include "NativeScrollEvent.hpp"
+#include "NativeSelection.hpp"
+#include "NativePosition.hpp"
+#include "NativeRect.hpp"
+#include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
 
 namespace margelo::nitro::codepad {
@@ -74,10 +89,16 @@ namespace margelo::nitro::codepad {
       virtual void setHighlightActiveLine(std::optional<bool> highlightActiveLine) = 0;
       virtual std::optional<std::string> getPlaceholder() = 0;
       virtual void setPlaceholder(const std::optional<std::string>& placeholder) = 0;
+      virtual std::optional<bool> getScrollEnabled() = 0;
+      virtual void setScrollEnabled(std::optional<bool> scrollEnabled) = 0;
       virtual std::optional<NativeInsets> getContentInsets() = 0;
       virtual void setContentInsets(const std::optional<NativeInsets>& contentInsets) = 0;
       virtual std::optional<std::function<void()>> getOnReady() = 0;
       virtual void setOnReady(const std::optional<std::function<void()>>& onReady) = 0;
+      virtual std::optional<std::function<void(const NativeScrollEvent& /* e */)>> getOnScroll() = 0;
+      virtual void setOnScroll(const std::optional<std::function<void(const NativeScrollEvent& /* e */)>>& onScroll) = 0;
+      virtual std::optional<std::function<void(const NativeSelection& /* s */)>> getOnSelectionChange() = 0;
+      virtual void setOnSelectionChange(const std::optional<std::function<void(const NativeSelection& /* s */)>>& onSelectionChange) = 0;
 
     public:
       // Methods
@@ -86,7 +107,17 @@ namespace margelo::nitro::codepad {
       virtual double getLineCount() = 0;
       virtual std::string getLine(double index) = 0;
       virtual double getRevision() = 0;
+      virtual NativeSelection getSelection() = 0;
+      virtual std::string getTextInRange(double start, double end) = 0;
+      virtual NativePosition offsetToPosition(double offset) = 0;
+      virtual double positionToOffset(double line, double column) = 0;
+      virtual std::optional<NativeRect> getCursorRect() = 0;
+      virtual NativeVisibleLines getVisibleLines() = 0;
       virtual std::shared_ptr<Promise<void>> setText(const std::string& text, bool keepHistory) = 0;
+      virtual std::shared_ptr<Promise<void>> setSelection(double anchor, double head) = 0;
+      virtual std::shared_ptr<Promise<void>> selectAll() = 0;
+      virtual std::shared_ptr<Promise<void>> scrollToLine(double line, bool animated) = 0;
+      virtual std::shared_ptr<Promise<void>> revealSelection() = 0;
 
     protected:
       // Hybrid Setup

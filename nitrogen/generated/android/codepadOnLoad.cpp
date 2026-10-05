@@ -17,6 +17,8 @@
 
 #include "JHybridCodeEditorViewSpec.hpp"
 #include "JFunc_void.hpp"
+#include "JFunc_void_NativeScrollEvent.hpp"
+#include "JFunc_void_NativeSelection.hpp"
 #include "views/JHybridCodeEditorViewStateUpdater.hpp"
 #include "JHybridCodepadSpec.hpp"
 #include <NitroModules/DefaultConstructableObject.hpp>
@@ -53,6 +55,8 @@ void registerAllNatives() {
   // Register native JNI methods
   margelo::nitro::codepad::JHybridCodeEditorViewSpec::CxxPart::registerNatives();
   margelo::nitro::codepad::JFunc_void_cxx::registerNatives();
+  margelo::nitro::codepad::JFunc_void_NativeScrollEvent_cxx::registerNatives();
+  margelo::nitro::codepad::JFunc_void_NativeSelection_cxx::registerNatives();
   margelo::nitro::codepad::views::JHybridCodeEditorViewStateUpdater::registerNatives();
   margelo::nitro::codepad::JHybridCodepadSpec::CxxPart::registerNatives();
 

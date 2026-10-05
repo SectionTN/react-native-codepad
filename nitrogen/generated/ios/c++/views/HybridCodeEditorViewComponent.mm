@@ -164,6 +164,12 @@ using namespace margelo::nitro::codepad::views;
           : !newViewProps.placeholder.hasSameValue(oldViewProps->placeholder)) {
       swiftPart.setPlaceholder(newViewProps.placeholder.get());
     }
+    // scrollEnabled: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.scrollEnabled.isProvided()
+          : !newViewProps.scrollEnabled.hasSameValue(oldViewProps->scrollEnabled)) {
+      swiftPart.setScrollEnabled(newViewProps.scrollEnabled.get());
+    }
     // contentInsets: optional
     if (oldViewProps == nullptr
           ? newViewProps.contentInsets.isProvided()
@@ -175,6 +181,18 @@ using namespace margelo::nitro::codepad::views;
           ? newViewProps.onReady.isProvided()
           : !newViewProps.onReady.hasSameValue(oldViewProps->onReady)) {
       swiftPart.setOnReady(newViewProps.onReady.get());
+    }
+    // onScroll: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.onScroll.isProvided()
+          : !newViewProps.onScroll.hasSameValue(oldViewProps->onScroll)) {
+      swiftPart.setOnScroll(newViewProps.onScroll.get());
+    }
+    // onSelectionChange: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.onSelectionChange.isProvided()
+          : !newViewProps.onSelectionChange.hasSameValue(oldViewProps->onSelectionChange)) {
+      swiftPart.setOnSelectionChange(newViewProps.onSelectionChange.get());
     }
 
     // Update hybridRef if it changed

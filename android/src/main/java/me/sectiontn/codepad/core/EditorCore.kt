@@ -9,6 +9,9 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
   val lock = ReentrantReadWriteLock()
   val undo = UndoManager(clock)
   var settings = EditorSettings()
+
+  // Written on the main thread, read on the JS thread without the lock.
+  @Volatile
   var selection: Selection = Selection(0, 0)
     private set
 

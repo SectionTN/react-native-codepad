@@ -109,6 +109,11 @@ void JHybridCodeEditorViewStateUpdater::updateViewProps(jni::alias_ref<jni::JCla
     hybridView->setPlaceholder(newProps->placeholder.get());
   }
   if (oldProps == nullptr
+        ? newProps->scrollEnabled.isProvided()
+        : !newProps->scrollEnabled.hasSameValue(oldProps->scrollEnabled)) {
+    hybridView->setScrollEnabled(newProps->scrollEnabled.get());
+  }
+  if (oldProps == nullptr
         ? newProps->contentInsets.isProvided()
         : !newProps->contentInsets.hasSameValue(oldProps->contentInsets)) {
     hybridView->setContentInsets(newProps->contentInsets.get());
@@ -117,6 +122,16 @@ void JHybridCodeEditorViewStateUpdater::updateViewProps(jni::alias_ref<jni::JCla
         ? newProps->onReady.isProvided()
         : !newProps->onReady.hasSameValue(oldProps->onReady)) {
     hybridView->setOnReady(newProps->onReady.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->onScroll.isProvided()
+        : !newProps->onScroll.hasSameValue(oldProps->onScroll)) {
+    hybridView->setOnScroll(newProps->onScroll.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->onSelectionChange.isProvided()
+        : !newProps->onSelectionChange.hasSameValue(oldProps->onSelectionChange)) {
+    hybridView->setOnSelectionChange(newProps->onSelectionChange.get());
   }
 
   // Update hybridRef if it changed

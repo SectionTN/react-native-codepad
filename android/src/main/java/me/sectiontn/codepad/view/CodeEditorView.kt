@@ -434,11 +434,15 @@ class CodeEditorView(context: Context) : View(context) {
   private fun anchorAt(offset: Int, m: RowMetrics): Boolean {
     val line = core.document.lineAt(offset)
     val entry = cache[line] ?: return false
+    anchorTo(line, offset, entry, m)
+    return true
+  }
+
+  private fun anchorTo(line: Int, offset: Int, entry: Entry, m: RowMetrics) {
     val col = offset - core.document.lineStart(line)
     val row = entry.layout.rowOf(col)
     anchorX = viewport.viewX(entry.layout.caretX(col))
     anchorY = (viewport.lineTop(line) + (row + 1) * m.rowHeight).toFloat()
-    return true
   }
 
   private fun placeHandles(m: RowMetrics) {
@@ -471,16 +475,22 @@ class CodeEditorView(context: Context) : View(context) {
     return clip.getItemAt(0).coerceToText(context)?.toString()?.takeIf { it.isNotEmpty() }
   }
 
-  /** Bounds of the visible selection ends, or the caret, for anchoring the floating menu. */
+  /** Bounds of the selection ends, or the caret, for anchoring the floating menu. Ends off screen keep their real position so the toolbar hides with them. */
   private fun selectionRect(out: Rect) {
     val m = rowMetrics()
     val sel = core.selection
-    out.setEmpty()
-    if (anchorAt(sel.min, m)) out.set(anchorX.toInt(), (anchorY - m.rowHeight).toInt(), anchorX.toInt() + 1, anchorY.toInt())
-    if (!sel.isEmpty && anchorAt(sel.max, m)) {
-      out.union(anchorX.toInt(), (anchorY - m.rowHeight).toInt(), anchorX.toInt() + 1, anchorY.toInt())
+    endRect(sel.min, m, out)
+    if (!sel.isEmpty) {
+      val end = Rect()
+      endRect(sel.max, m, end)
+      out.union(end)
     }
-    if (out.isEmpty) out.set(viewport.textAreaLeft, 0, viewport.textAreaLeft + 1, 1)
+  }
+
+  private fun endRect(offset: Int, m: RowMetrics, out: Rect) {
+    val line = core.document.lineAt(offset)
+    anchorTo(line, offset, cache[line] ?: layoutLine(line), m)
+    out.set(anchorX.toInt(), (anchorY - m.rowHeight).toInt(), anchorX.toInt() + 1, anchorY.toInt())
   }
 
   private inner class MenuHost : EditMenu.Host {

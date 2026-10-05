@@ -21,8 +21,11 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   var readOnly: Bool? { get set }
   var highlightActiveLine: Bool? { get set }
   var placeholder: String? { get set }
+  var scrollEnabled: Bool? { get set }
   var contentInsets: NativeInsets? { get set }
   var onReady: (() -> Void)? { get set }
+  var onScroll: ((_ e: NativeScrollEvent) -> Void)? { get set }
+  var onSelectionChange: ((_ s: NativeSelection) -> Void)? { get set }
 
   // Methods
   func getText() throws -> String
@@ -30,7 +33,17 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   func getLineCount() throws -> Double
   func getLine(index: Double) throws -> String
   func getRevision() throws -> Double
+  func getSelection() throws -> NativeSelection
+  func getTextInRange(start: Double, end: Double) throws -> String
+  func offsetToPosition(offset: Double) throws -> NativePosition
+  func positionToOffset(line: Double, column: Double) throws -> Double
+  func getCursorRect() throws -> NativeRect?
+  func getVisibleLines() throws -> NativeVisibleLines
   func setText(text: String, keepHistory: Bool) throws -> Promise<Void>
+  func setSelection(anchor: Double, head: Double) throws -> Promise<Void>
+  func selectAll() throws -> Promise<Void>
+  func scrollToLine(line: Double, animated: Bool) throws -> Promise<Void>
+  func revealSelection() throws -> Promise<Void>
 }
 
 public extension HybridCodeEditorViewSpec_protocol {

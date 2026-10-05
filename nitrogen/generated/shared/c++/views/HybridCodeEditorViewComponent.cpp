@@ -31,8 +31,11 @@ namespace margelo::nitro::codepad::views {
     readOnly(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "readOnly", rawProps, sourceProps.readOnly)),
     highlightActiveLine(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "highlightActiveLine", rawProps, sourceProps.highlightActiveLine)),
     placeholder(nitro::ReactProp<std::optional<std::string>>::fromRawValue("CodeEditorView", "placeholder", rawProps, sourceProps.placeholder)),
+    scrollEnabled(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "scrollEnabled", rawProps, sourceProps.scrollEnabled)),
     contentInsets(nitro::ReactProp<std::optional<NativeInsets>>::fromRawValue("CodeEditorView", "contentInsets", rawProps, sourceProps.contentInsets)),
     onReady(nitro::ReactProp<std::optional<std::function<void()>>>::fromRawValue("CodeEditorView", "onReady", rawProps, sourceProps.onReady)),
+    onScroll(nitro::ReactProp<std::optional<std::function<void(const NativeScrollEvent& /* e */)>>>::fromRawValue("CodeEditorView", "onScroll", rawProps, sourceProps.onScroll)),
+    onSelectionChange(nitro::ReactProp<std::optional<std::function<void(const NativeSelection& /* s */)>>>::fromRawValue("CodeEditorView", "onSelectionChange", rawProps, sourceProps.onSelectionChange)),
     hybridRef(nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>>::fromRawValue("CodeEditorView", "hybridRef", rawProps, sourceProps.hybridRef)) { }
 
   bool HybridCodeEditorViewProps::filterObjectKeys(const std::string& propName) {
@@ -48,8 +51,11 @@ namespace margelo::nitro::codepad::views {
       case hashString("readOnly"): return true;
       case hashString("highlightActiveLine"): return true;
       case hashString("placeholder"): return true;
+      case hashString("scrollEnabled"): return true;
       case hashString("contentInsets"): return true;
       case hashString("onReady"): return true;
+      case hashString("onScroll"): return true;
+      case hashString("onSelectionChange"): return true;
       case hashString("hybridRef"): return true;
       default: return false;
     }

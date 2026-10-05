@@ -5,7 +5,19 @@ export { CodeEditor } from './CodeEditor';
 export { githubDark } from './themes/githubDark';
 export { githubLight } from './themes/githubLight';
 export { oneDark } from './themes/oneDark';
-export type { CodeEditorProps, CodeEditorRef, ContentInsets, Theme, TokenStyle } from './types';
+export type {
+  CodeEditorProps,
+  CodeEditorRef,
+  ContentInsets,
+  Position,
+  Range,
+  Rect,
+  ScrollEvent,
+  Selection,
+  SelectionChangeEvent,
+  Theme,
+  TokenStyle,
+} from './types';
 
 export const Codepad: { availableLanguages(): string[] } =
   NitroModules.createHybridObject<CodepadSpec>('Codepad');

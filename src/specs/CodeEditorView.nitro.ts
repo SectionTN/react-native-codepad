@@ -28,6 +28,36 @@ export interface NativeInsets {
   right?: number;
 }
 
+export interface NativeSelection {
+  anchor: number;
+  head: number;
+  revision: number;
+}
+
+export interface NativePosition {
+  line: number;
+  column: number;
+}
+
+export interface NativeRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface NativeVisibleLines {
+  first: number;
+  last: number;
+}
+
+export interface NativeScrollEvent {
+  x: number;
+  y: number;
+  contentWidth: number;
+  contentHeight: number;
+}
+
 export interface CodeEditorViewProps extends HybridViewProps {
   initialValue?: string;
   language?: string;
@@ -40,8 +70,11 @@ export interface CodeEditorViewProps extends HybridViewProps {
   readOnly?: boolean;
   highlightActiveLine?: boolean;
   placeholder?: string;
+  scrollEnabled?: boolean;
   contentInsets?: NativeInsets;
   onReady?: () => void;
+  onScroll?: (e: NativeScrollEvent) => void;
+  onSelectionChange?: (s: NativeSelection) => void;
 }
 
 export interface CodeEditorViewMethods extends HybridViewMethods {
@@ -50,7 +83,17 @@ export interface CodeEditorViewMethods extends HybridViewMethods {
   getLineCount(): number;
   getLine(index: number): string;
   getRevision(): number;
+  getSelection(): NativeSelection;
+  getTextInRange(start: number, end: number): string;
+  offsetToPosition(offset: number): NativePosition;
+  positionToOffset(line: number, column: number): number;
+  getCursorRect(): NativeRect | undefined;
+  getVisibleLines(): NativeVisibleLines;
   setText(text: string, keepHistory: boolean): Promise<void>;
+  setSelection(anchor: number, head: number): Promise<void>;
+  selectAll(): Promise<void>;
+  scrollToLine(line: number, animated: boolean): Promise<void>;
+  revealSelection(): Promise<void>;
 }
 
 export type CodeEditorView = HybridView<CodeEditorViewProps, CodeEditorViewMethods>;

@@ -16,8 +16,11 @@ export default {
     "readOnly": true,
     "highlightActiveLine": true,
     "placeholder": true,
+    "scrollEnabled": true,
     "contentInsets": true,
     "onReady": true,
+    "onScroll": true,
+    "onSelectionChange": true,
     "hybridRef": true
   }
 } as const;

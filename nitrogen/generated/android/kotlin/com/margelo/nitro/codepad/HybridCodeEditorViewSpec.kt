@@ -98,6 +98,12 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @get:Keep
   @set:DoNotStrip
   @set:Keep
+  abstract var scrollEnabled: Boolean?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
   abstract var contentInsets: NativeInsets?
   
   abstract var onReady: (() -> Unit)?
@@ -112,6 +118,34 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
     @DoNotStrip
     set(value) {
       onReady = value?.let { it }
+    }
+  
+  abstract var onScroll: ((e: NativeScrollEvent) -> Unit)?
+  
+  private var onScroll_cxx: Func_void_NativeScrollEvent?
+    @Keep
+    @DoNotStrip
+    get() {
+      return onScroll?.let { Func_void_NativeScrollEvent_java(it) }
+    }
+    @Keep
+    @DoNotStrip
+    set(value) {
+      onScroll = value?.let { it }
+    }
+  
+  abstract var onSelectionChange: ((s: NativeSelection) -> Unit)?
+  
+  private var onSelectionChange_cxx: Func_void_NativeSelection?
+    @Keep
+    @DoNotStrip
+    get() {
+      return onSelectionChange?.let { Func_void_NativeSelection_java(it) }
+    }
+    @Keep
+    @DoNotStrip
+    set(value) {
+      onSelectionChange = value?.let { it }
     }
 
   // Methods
@@ -137,7 +171,47 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   
   @DoNotStrip
   @Keep
+  abstract fun getSelection(): NativeSelection
+  
+  @DoNotStrip
+  @Keep
+  abstract fun getTextInRange(start: Double, end: Double): String
+  
+  @DoNotStrip
+  @Keep
+  abstract fun offsetToPosition(offset: Double): NativePosition
+  
+  @DoNotStrip
+  @Keep
+  abstract fun positionToOffset(line: Double, column: Double): Double
+  
+  @DoNotStrip
+  @Keep
+  abstract fun getCursorRect(): NativeRect?
+  
+  @DoNotStrip
+  @Keep
+  abstract fun getVisibleLines(): NativeVisibleLines
+  
+  @DoNotStrip
+  @Keep
   abstract fun setText(text: String, keepHistory: Boolean): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun setSelection(anchor: Double, head: Double): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun selectAll(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun scrollToLine(line: Double, animated: Boolean): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun revealSelection(): Promise<Unit>
 
   // Default implementation of `HybridObject.toString()`
   override fun toString(): String {

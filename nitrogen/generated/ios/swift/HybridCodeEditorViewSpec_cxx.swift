@@ -378,6 +378,30 @@ open class HybridCodeEditorViewSpec_cxx {
     }
   }
   
+  public final var scrollEnabled: bridge.std__optional_bool_ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_bool_ in
+        if let __unwrappedValue = self.__implementation.scrollEnabled {
+          return bridge.create_std__optional_bool_(__unwrappedValue)
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.scrollEnabled = { () -> Bool? in
+        if bridge.has_value_std__optional_bool_(newValue) {
+          let __unwrapped = bridge.get_std__optional_bool_(newValue)
+          return __unwrapped
+        } else {
+          return nil
+        }
+      }()
+    }
+  }
+  
   public final var contentInsets: bridge.std__optional_NativeInsets_ {
     @inline(__always)
     get {
@@ -418,6 +442,70 @@ open class HybridCodeEditorViewSpec_cxx {
             let __wrappedFunction = bridge.wrap_Func_void(__unwrapped)
             return { () -> Void in
               __wrappedFunction.call()
+            }
+          }()
+        } else {
+          return nil
+        }
+      }()
+    }
+  }
+  
+  public final var onScroll: bridge.std__optional_std__function_void_const_NativeScrollEvent_____e______ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_std__function_void_const_NativeScrollEvent_____e______ in
+        if let __unwrappedValue = self.__implementation.onScroll {
+          return bridge.create_std__optional_std__function_void_const_NativeScrollEvent_____e______({ () -> bridge.Func_void_NativeScrollEvent in
+            let __closureWrapper = Func_void_NativeScrollEvent(__unwrappedValue)
+            return bridge.create_Func_void_NativeScrollEvent(__closureWrapper.toUnsafe())
+          }())
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.onScroll = { () -> ((_ e: NativeScrollEvent) -> Void)? in
+        if bridge.has_value_std__optional_std__function_void_const_NativeScrollEvent_____e______(newValue) {
+          let __unwrapped = bridge.get_std__optional_std__function_void_const_NativeScrollEvent_____e______(newValue)
+          return { () -> (NativeScrollEvent) -> Void in
+            let __wrappedFunction = bridge.wrap_Func_void_NativeScrollEvent(__unwrapped)
+            return { (__e: NativeScrollEvent) -> Void in
+              __wrappedFunction.call(__e)
+            }
+          }()
+        } else {
+          return nil
+        }
+      }()
+    }
+  }
+  
+  public final var onSelectionChange: bridge.std__optional_std__function_void_const_NativeSelection_____s______ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_std__function_void_const_NativeSelection_____s______ in
+        if let __unwrappedValue = self.__implementation.onSelectionChange {
+          return bridge.create_std__optional_std__function_void_const_NativeSelection_____s______({ () -> bridge.Func_void_NativeSelection in
+            let __closureWrapper = Func_void_NativeSelection(__unwrappedValue)
+            return bridge.create_Func_void_NativeSelection(__closureWrapper.toUnsafe())
+          }())
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.onSelectionChange = { () -> ((_ s: NativeSelection) -> Void)? in
+        if bridge.has_value_std__optional_std__function_void_const_NativeSelection_____s______(newValue) {
+          let __unwrapped = bridge.get_std__optional_std__function_void_const_NativeSelection_____s______(newValue)
+          return { () -> (NativeSelection) -> Void in
+            let __wrappedFunction = bridge.wrap_Func_void_NativeSelection(__unwrapped)
+            return { (__s: NativeSelection) -> Void in
+              __wrappedFunction.call(__s)
             }
           }()
         } else {
@@ -489,9 +577,163 @@ open class HybridCodeEditorViewSpec_cxx {
   }
   
   @inline(__always)
+  public final func getSelection() -> bridge.Result_NativeSelection_ {
+    do {
+      let __result = try self.__implementation.getSelection()
+      let __resultCpp = __result
+      return bridge.create_Result_NativeSelection_(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_NativeSelection_(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func getTextInRange(start: Double, end: Double) -> bridge.Result_std__string_ {
+    do {
+      let __result = try self.__implementation.getTextInRange(start: start, end: end)
+      let __resultCpp = std.string(__result)
+      return bridge.create_Result_std__string_(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_std__string_(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func offsetToPosition(offset: Double) -> bridge.Result_NativePosition_ {
+    do {
+      let __result = try self.__implementation.offsetToPosition(offset: offset)
+      let __resultCpp = __result
+      return bridge.create_Result_NativePosition_(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_NativePosition_(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func positionToOffset(line: Double, column: Double) -> bridge.Result_double_ {
+    do {
+      let __result = try self.__implementation.positionToOffset(line: line, column: column)
+      let __resultCpp = __result
+      return bridge.create_Result_double_(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_double_(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func getCursorRect() -> bridge.Result_std__optional_NativeRect__ {
+    do {
+      let __result = try self.__implementation.getCursorRect()
+      let __resultCpp = { () -> bridge.std__optional_NativeRect_ in
+        if let __unwrappedValue = __result {
+          return bridge.create_std__optional_NativeRect_(__unwrappedValue)
+        } else {
+          return .init()
+        }
+      }()
+      return bridge.create_Result_std__optional_NativeRect__(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_std__optional_NativeRect__(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func getVisibleLines() -> bridge.Result_NativeVisibleLines_ {
+    do {
+      let __result = try self.__implementation.getVisibleLines()
+      let __resultCpp = __result
+      return bridge.create_Result_NativeVisibleLines_(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_NativeVisibleLines_(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
   public final func setText(text: std.string, keepHistory: Bool) -> bridge.Result_std__shared_ptr_Promise_void___ {
     do {
       let __result = try self.__implementation.setText(text: String(text), keepHistory: keepHistory)
+      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_void__ in
+        let __promise = bridge.create_std__shared_ptr_Promise_void__()
+        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_void__(__promise)
+        __result
+          .then({ __result in __promiseHolder.resolve() })
+          .catch({ __error in __promiseHolder.reject(__error.toCpp()) })
+        return __promise
+      }()
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func setSelection(anchor: Double, head: Double) -> bridge.Result_std__shared_ptr_Promise_void___ {
+    do {
+      let __result = try self.__implementation.setSelection(anchor: anchor, head: head)
+      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_void__ in
+        let __promise = bridge.create_std__shared_ptr_Promise_void__()
+        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_void__(__promise)
+        __result
+          .then({ __result in __promiseHolder.resolve() })
+          .catch({ __error in __promiseHolder.reject(__error.toCpp()) })
+        return __promise
+      }()
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func selectAll() -> bridge.Result_std__shared_ptr_Promise_void___ {
+    do {
+      let __result = try self.__implementation.selectAll()
+      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_void__ in
+        let __promise = bridge.create_std__shared_ptr_Promise_void__()
+        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_void__(__promise)
+        __result
+          .then({ __result in __promiseHolder.resolve() })
+          .catch({ __error in __promiseHolder.reject(__error.toCpp()) })
+        return __promise
+      }()
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func scrollToLine(line: Double, animated: Bool) -> bridge.Result_std__shared_ptr_Promise_void___ {
+    do {
+      let __result = try self.__implementation.scrollToLine(line: line, animated: animated)
+      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_void__ in
+        let __promise = bridge.create_std__shared_ptr_Promise_void__()
+        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_void__(__promise)
+        __result
+          .then({ __result in __promiseHolder.resolve() })
+          .catch({ __error in __promiseHolder.reject(__error.toCpp()) })
+        return __promise
+      }()
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_std__shared_ptr_Promise_void___(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func revealSelection() -> bridge.Result_std__shared_ptr_Promise_void___ {
+    do {
+      let __result = try self.__implementation.revealSelection()
       let __resultCpp = { () -> bridge.std__shared_ptr_Promise_void__ in
         let __promise = bridge.create_std__shared_ptr_Promise_void__()
         let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_void__(__promise)
