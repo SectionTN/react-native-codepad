@@ -56,6 +56,7 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
 
   override var theme: NativeTheme? = null
     set(value) {
+      if (value == field) return
       field = value
       editor.setTheme(value?.let { toColors(it) } ?: ThemeColors.default)
     }
@@ -116,6 +117,7 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
 
   override var contentInsets: NativeInsets? = null
     set(value) {
+      if (value == field) return
       field = value
       editor.setContentInsets(
         (value?.top ?: 0.0).toFloat(),

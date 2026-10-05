@@ -24,6 +24,8 @@ const block = [
 
 const sample = new Array(40).fill(block).join('\n');
 
+// Object props keep one identity across renders; a fresh literal would reach native on every scroll event.
+const INSETS = { bottom: 24 };
 const SUGGESTIONS: Suggestions[] = ['off', 'forceOff', 'on'];
 
 function Toggle({ label, value, onPress }: { label: string; value: boolean; onPress: () => void }) {
@@ -90,7 +92,7 @@ export function EditorScreen() {
         highlightActiveLine={activeLine}
         placeholder="Start typing"
         scrollEnabled
-        contentInsets={{ bottom: 24 }}
+        contentInsets={INSETS}
         suggestions={suggestions}
         autoCloseBrackets={autoClose}
         onFocus={() => setFocused(true)}

@@ -452,13 +452,25 @@ class CodeEditorView(context: Context) : View(context) {
   private fun relayout() {
     anchorDirty = true
     val anchor = viewport.anchor()
+    val scrollX = viewport.scrollX
     viewport.rowHeight = rowMetrics().rowHeight
     cache.clear()
     heights.resetAll()
     viewport.widestLine = 0
     updateGutter()
     viewport.restore(anchor)
+    // The visible lines are measured again right away so the horizontal position survives the widest line reset.
+    layoutVisibleLines()
+    viewport.scrollTo(scrollX, viewport.scrollY)
     invalidate()
+  }
+
+  private fun layoutVisibleLines() {
+    var line = viewport.firstVisibleLine()
+    while (line < core.document.lineCount && line <= viewport.lastVisibleLine()) {
+      if (cache[line] == null) layoutLine(line)
+      line++
+    }
   }
 
   private fun updateGutter(): Boolean {
@@ -501,6 +513,7 @@ class CodeEditorView(context: Context) : View(context) {
     val entry = Entry(layout, null, -1)
     cache.put(line, entry)
     viewport.measured(line, layout.rowCount)
+    if (!viewport.wrap) viewport.widestLine = maxOf(viewport.widestLine, Math.round(layout.width()))
     return entry
   }
 
