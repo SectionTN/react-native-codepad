@@ -118,6 +118,8 @@ android {
     unitTests.all {
       inputs.dir("${projectDir}/../tests/vectors")
       systemProperty "codepad.vectorsDir", "${projectDir}/../tests/vectors"
+      inputs.dir("${projectDir}/../tests/ime")
+      systemProperty "codepad.imeDir", "${projectDir}/../tests/ime"
       def hostLib = file("${projectDir}/../build/host/libcodepadhost.so")
       // A rebuilt host library must rerun the syntax tests.
       inputs.files(hostLib).withPropertyName("codepadHostLib")

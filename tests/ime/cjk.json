@@ -1,0 +1,27 @@
+{
+  "name": "cjk",
+  "source": "hand written from the Gboard Japanese romaji composition pattern, replaced by a recording once the phone session runs",
+  "ime": "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME",
+  "recordedAt": "2026-10-05",
+  "sessions": [
+    {
+      "inputType": 655361,
+      "initial": {"text": "x = ", "selection": [4, 4]},
+      "steps": [
+        {"t": 0, "call": "setComposingText", "args": ["n", 1], "ret": true, "after": {"sel": [5, 5], "comp": [4, 5], "len": 5, "text": "x = n"}},
+        {"t": 1, "call": "setComposingText", "args": ["に", 1], "after": {"sel": [5, 5], "comp": [4, 5], "text": "x = に"}},
+        {"t": 2, "call": "setComposingText", "args": ["にh", 1], "after": {"sel": [6, 6], "comp": [4, 6], "text": "x = にh"}},
+        {"t": 3, "call": "setComposingText", "args": ["にほ", 1], "after": {"sel": [6, 6], "comp": [4, 6], "text": "x = にほ"}},
+        {"t": 4, "call": "setComposingText", "args": ["にほn", 1], "after": {"sel": [7, 7], "comp": [4, 7], "text": "x = にほn"}},
+        {"t": 5, "call": "setComposingText", "args": ["にほん", 1], "after": {"sel": [7, 7], "comp": [4, 7], "text": "x = にほん"}},
+        {"t": 6, "call": "setComposingText", "args": ["日本", 1], "after": {"sel": [6, 6], "comp": [4, 6], "text": "x = 日本"}},
+        {"t": 7, "call": "commitText", "args": ["日本", 1], "after": {"sel": [6, 6], "comp": null, "text": "x = 日本"}},
+        {"t": 8, "call": "getTextBeforeCursor", "args": [40, 0], "ret": "x = 日本"},
+        {"t": 9, "call": "setComposingRegion", "args": [4, 6], "ret": true, "after": {"sel": [6, 6], "comp": [4, 6]}},
+        {"t": 10, "call": "setComposingText", "args": ["日本語", 1], "after": {"sel": [7, 7], "comp": [4, 7], "text": "x = 日本語"}},
+        {"t": 11, "call": "finishComposingText", "args": [], "ret": true, "after": {"sel": [7, 7], "comp": null, "text": "x = 日本語"}},
+        {"t": 12, "call": "deleteSurroundingTextInCodePoints", "args": [1, 0], "ret": true, "after": {"sel": [6, 6], "text": "x = 日本"}}
+      ]
+    }
+  ]
+}
