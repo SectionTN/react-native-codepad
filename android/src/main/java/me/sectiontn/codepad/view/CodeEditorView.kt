@@ -179,6 +179,8 @@ class CodeEditorView(context: Context) : View(context) {
   private var debugOn = false
   private var debugChecked = 0L
   private var recording = false
+  private var recorder: RecordingInputConnection? = null
+  private var externalSelection = false
 
   init {
     isFocusable = true
@@ -402,6 +404,7 @@ class CodeEditorView(context: Context) : View(context) {
   private fun onSelectionMoved() {
     if (!movingVertically) goalX = null
     selectionDirty = true
+    if (!ime.applying) externalSelection = true
     imeDirty = true
     anchorDirty = true
     restartBlink()
@@ -651,6 +654,11 @@ class CodeEditorView(context: Context) : View(context) {
   private fun flushIme(m: RowMetrics) {
     if (imeDirty && ime.batchDepth == 0) {
       imeDirty = false
+      // Taps and hardware keys move the caret without a keyboard call; a replay needs that line.
+      if (externalSelection) {
+        externalSelection = false
+        recorder?.logSelection(core.selection)
+      }
       if (isFocused) bridge.updateSelection(core.selection, ime.composing)
     }
     if (cursorUpdateOnce || (anchorDirty && bridge.monitorsCursor)) {
@@ -947,7 +955,8 @@ class CodeEditorView(context: Context) : View(context) {
     lastInputType = outAttrs.inputType
     recording = debugSwitch()
     val connection = EditorInputConnection(this)
-    return if (recording) RecordingInputConnection(connection, this) else connection
+    recorder = if (recording) RecordingInputConnection(connection, this) else null
+    return recorder ?: connection
   }
 
   override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {

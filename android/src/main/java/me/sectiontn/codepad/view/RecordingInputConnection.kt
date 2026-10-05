@@ -10,6 +10,7 @@ import android.view.inputmethod.InputConnectionWrapper
 import android.view.inputmethod.SurroundingText
 import android.view.inputmethod.TextAttribute
 import androidx.annotation.RequiresApi
+import me.sectiontn.codepad.core.Selection
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -83,6 +84,9 @@ class RecordingInputConnection(target: InputConnection, private val view: CodeEd
     super.closeConnection()
     log("close", args(), null, false, null)
   }
+
+  /** Caret moves made by taps or hardware keys, which the keyboard only learns about from updateSelection. */
+  fun logSelection(selection: Selection) = log("select", args(selection.anchor, selection.head), null, false, null)
 
   private fun args(vararg values: Any?): JSONArray = JSONArray().also { a -> values.forEach { a.put(it ?: JSONObject.NULL) } }
 

@@ -1,0 +1,363 @@
+{
+  "name": "tap-into-word",
+  "source": "recorded on 2510ERA8BG",
+  "ime": "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME",
+  "recordedAt": "2026-10-05",
+  "sessions": [
+    {
+      "inputType": 163841,
+      "initial": {
+        "text": "",
+        "selection": [
+          0,
+          0
+        ]
+      },
+      "steps": [
+        {
+          "t": 22,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "",
+            "selStart": 0,
+            "selEnd": 0,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 28,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 17511,
+          "call": "commitText",
+          "args": [
+            "h",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              1,
+              1
+            ],
+            "comp": null,
+            "len": 1,
+            "text": "h"
+          }
+        },
+        {
+          "t": 17716,
+          "call": "commitText",
+          "args": [
+            "e",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              2,
+              2
+            ],
+            "comp": null,
+            "len": 2,
+            "text": "he"
+          }
+        },
+        {
+          "t": 17947,
+          "call": "commitText",
+          "args": [
+            "l",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              3,
+              3
+            ],
+            "comp": null,
+            "len": 3,
+            "text": "hel"
+          }
+        },
+        {
+          "t": 18155,
+          "call": "commitText",
+          "args": [
+            "l",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              4,
+              4
+            ],
+            "comp": null,
+            "len": 4,
+            "text": "hell"
+          }
+        },
+        {
+          "t": 18358,
+          "call": "commitText",
+          "args": [
+            "o",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              5,
+              5
+            ],
+            "comp": null,
+            "len": 5,
+            "text": "hello"
+          }
+        },
+        {
+          "t": 18572,
+          "call": "commitText",
+          "args": [
+            " ",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "hello "
+          }
+        },
+        {
+          "t": 18920,
+          "call": "commitText",
+          "args": [
+            "w",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              7,
+              7
+            ],
+            "comp": null,
+            "len": 7,
+            "text": "hello w"
+          }
+        },
+        {
+          "t": 19121,
+          "call": "commitText",
+          "args": [
+            "o",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              8,
+              8
+            ],
+            "comp": null,
+            "len": 8,
+            "text": "hello wo"
+          }
+        },
+        {
+          "t": 19324,
+          "call": "commitText",
+          "args": [
+            "r",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              9,
+              9
+            ],
+            "comp": null,
+            "len": 9,
+            "text": "hello wor"
+          }
+        },
+        {
+          "t": 19531,
+          "call": "commitText",
+          "args": [
+            "l",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              10,
+              10
+            ],
+            "comp": null,
+            "len": 10,
+            "text": "hello worl"
+          }
+        },
+        {
+          "t": 19734,
+          "call": "commitText",
+          "args": [
+            "d",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              11,
+              11
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello world"
+          }
+        },
+        {
+          "t": 20591,
+          "call": "select",
+          "args": [
+            2,
+            2
+          ],
+          "after": {
+            "sel": [
+              2,
+              2
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello world"
+          }
+        },
+        {
+          "t": 20595,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "hello world",
+            "selStart": 2,
+            "selEnd": 2,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              2,
+              2
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello world"
+          }
+        },
+        {
+          "t": 20812,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              2,
+              2
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello world"
+          }
+        },
+        {
+          "t": 22087,
+          "call": "beginBatchEdit",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              2,
+              2
+            ],
+            "comp": null,
+            "len": 11,
+            "text": "hello world"
+          }
+        },
+        {
+          "t": 22089,
+          "call": "replaceText",
+          "args": [
+            2,
+            6,
+            "llos ",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              7,
+              7
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        },
+        {
+          "t": 22089,
+          "call": "endBatchEdit",
+          "args": [],
+          "ret": false,
+          "after": {
+            "sel": [
+              7,
+              7
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        }
+      ]
+    }
+  ]
+}

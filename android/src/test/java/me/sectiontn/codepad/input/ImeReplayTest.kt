@@ -62,6 +62,7 @@ class ImeReplayTest(private val session: JSONObject, private val label: String) 
     "setComposingRegion" -> ime.setComposingRegion(a.getInt(0), a.getInt(1))
     "finishComposingText" -> ime.finishComposingText()
     "replaceText" -> ime.replaceText(a.getInt(0), a.getInt(1), a.getString(2), a.getInt(3))
+    "select" -> { core.setSelection(a.getInt(0), a.getInt(1)); SKIP }
     "deleteSurroundingText" -> ime.deleteSurroundingText(a.getInt(0), a.getInt(1))
     "deleteSurroundingTextInCodePoints" -> ime.deleteSurroundingTextInCodePoints(a.getInt(0), a.getInt(1))
     "getTextBeforeCursor" -> ime.textBeforeCursor(a.getInt(0))
