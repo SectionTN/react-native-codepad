@@ -21,9 +21,11 @@
 #include <optional>
 #include "NativeTheme.hpp"
 #include "NativeInsets.hpp"
+#include "NativeSuggestions.hpp"
 #include <functional>
 #include "NativeScrollEvent.hpp"
 #include "NativeSelection.hpp"
+#include "NativeChangeEvent.hpp"
 #include <memory>
 #include "HybridCodeEditorViewSpec.hpp"
 
@@ -60,9 +62,19 @@ namespace margelo::nitro::codepad::views {
     nitro::ReactProp<std::optional<std::string>> placeholder;
     nitro::ReactProp<std::optional<bool>> scrollEnabled;
     nitro::ReactProp<std::optional<NativeInsets>> contentInsets;
+    nitro::ReactProp<std::optional<NativeSuggestions>> suggestions;
+    nitro::ReactProp<std::optional<bool>> autoFocus;
+    nitro::ReactProp<std::optional<double>> tabSize;
+    nitro::ReactProp<std::optional<bool>> insertSpaces;
+    nitro::ReactProp<std::optional<bool>> autoIndent;
+    nitro::ReactProp<std::optional<bool>> autoCloseBrackets;
     nitro::ReactProp<std::optional<std::function<void()>>> onReady;
     nitro::ReactProp<std::optional<std::function<void(const NativeScrollEvent& /* e */)>>> onScroll;
     nitro::ReactProp<std::optional<std::function<void(const NativeSelection& /* s */)>>> onSelectionChange;
+    nitro::ReactProp<std::optional<std::function<void(const NativeChangeEvent& /* e */)>>> onChange;
+    nitro::ReactProp<std::optional<std::function<void(const std::string& /* text */)>>> onChangeText;
+    nitro::ReactProp<std::optional<std::function<void()>>> onEditorFocus;
+    nitro::ReactProp<std::optional<std::function<void()>>> onEditorBlur;
     nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>> hybridRef;
 
     [[nodiscard]]
@@ -80,9 +92,19 @@ namespace margelo::nitro::codepad::views {
              placeholder.hasSameValue(other.placeholder) &&
              scrollEnabled.hasSameValue(other.scrollEnabled) &&
              contentInsets.hasSameValue(other.contentInsets) &&
+             suggestions.hasSameValue(other.suggestions) &&
+             autoFocus.hasSameValue(other.autoFocus) &&
+             tabSize.hasSameValue(other.tabSize) &&
+             insertSpaces.hasSameValue(other.insertSpaces) &&
+             autoIndent.hasSameValue(other.autoIndent) &&
+             autoCloseBrackets.hasSameValue(other.autoCloseBrackets) &&
              onReady.hasSameValue(other.onReady) &&
              onScroll.hasSameValue(other.onScroll) &&
              onSelectionChange.hasSameValue(other.onSelectionChange) &&
+             onChange.hasSameValue(other.onChange) &&
+             onChangeText.hasSameValue(other.onChangeText) &&
+             onEditorFocus.hasSameValue(other.onEditorFocus) &&
+             onEditorBlur.hasSameValue(other.onEditorBlur) &&
              hybridRef.hasSameValue(other.hybridRef);
     }
 
@@ -101,9 +123,19 @@ namespace margelo::nitro::codepad::views {
              placeholder.isProvided() ||
              scrollEnabled.isProvided() ||
              contentInsets.isProvided() ||
+             suggestions.isProvided() ||
+             autoFocus.isProvided() ||
+             tabSize.isProvided() ||
+             insertSpaces.isProvided() ||
+             autoIndent.isProvided() ||
+             autoCloseBrackets.isProvided() ||
              onReady.isProvided() ||
              onScroll.isProvided() ||
              onSelectionChange.isProvided() ||
+             onChange.isProvided() ||
+             onChangeText.isProvided() ||
+             onEditorFocus.isProvided() ||
+             onEditorBlur.isProvided() ||
              hybridRef.isProvided();
     }
 

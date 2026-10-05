@@ -12,6 +12,10 @@
 namespace margelo::nitro::codepad { class HybridCodeEditorViewSpec; }
 // Forward declaration of `HybridCodepadSpec` to properly resolve imports.
 namespace margelo::nitro::codepad { class HybridCodepadSpec; }
+// Forward declaration of `NativeChangeEvent` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeChangeEvent; }
+// Forward declaration of `NativeChangeOrigin` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeChangeOrigin; }
 // Forward declaration of `NativeInsets` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeInsets; }
 // Forward declaration of `NativePosition` to properly resolve imports.
@@ -22,6 +26,8 @@ namespace margelo::nitro::codepad { struct NativeRect; }
 namespace margelo::nitro::codepad { struct NativeScrollEvent; }
 // Forward declaration of `NativeSelection` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSelection; }
+// Forward declaration of `NativeSuggestions` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeSuggestions; }
 // Forward declaration of `NativeTheme` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeTheme; }
 // Forward declaration of `NativeTokenStyle` to properly resolve imports.
@@ -38,11 +44,14 @@ namespace Codepad { class HybridCodepadSpec_cxx; }
 // Include C++ defined types
 #include "HybridCodeEditorViewSpec.hpp"
 #include "HybridCodepadSpec.hpp"
+#include "NativeChangeEvent.hpp"
+#include "NativeChangeOrigin.hpp"
 #include "NativeInsets.hpp"
 #include "NativePosition.hpp"
 #include "NativeRect.hpp"
 #include "NativeScrollEvent.hpp"
 #include "NativeSelection.hpp"
+#include "NativeSuggestions.hpp"
 #include "NativeTheme.hpp"
 #include "NativeTokenStyle.hpp"
 #include "NativeVisibleLines.hpp"
@@ -163,6 +172,21 @@ namespace margelo::nitro::codepad::bridge::swift {
     return optional.value();
   }
   
+  // pragma MARK: std::optional<NativeSuggestions>
+  /**
+   * Specialized version of `std::optional<NativeSuggestions>`.
+   */
+  using std__optional_NativeSuggestions_ = std::optional<NativeSuggestions>;
+  inline std::optional<NativeSuggestions> create_std__optional_NativeSuggestions_(const NativeSuggestions& value) noexcept {
+    return std::optional<NativeSuggestions>(value);
+  }
+  inline bool has_value_std__optional_NativeSuggestions_(const std::optional<NativeSuggestions>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline NativeSuggestions get_std__optional_NativeSuggestions_(const std::optional<NativeSuggestions>& optional) noexcept {
+    return optional.value();
+  }
+  
   // pragma MARK: std::function<void()>
   /**
    * Specialized version of `std::function<void()>`.
@@ -271,6 +295,80 @@ namespace margelo::nitro::codepad::bridge::swift {
     return optional.has_value();
   }
   inline std::function<void(const NativeSelection& /* s */)> get_std__optional_std__function_void_const_NativeSelection_____s______(const std::optional<std::function<void(const NativeSelection& /* s */)>>& optional) noexcept {
+    return optional.value();
+  }
+  
+  // pragma MARK: std::function<void(const NativeChangeEvent& /* e */)>
+  /**
+   * Specialized version of `std::function<void(const NativeChangeEvent&)>`.
+   */
+  using Func_void_NativeChangeEvent = std::function<void(const NativeChangeEvent& /* e */)>;
+  /**
+   * Wrapper class for a `std::function<void(const NativeChangeEvent& / * e * /)>`, this can be used from Swift.
+   */
+  class Func_void_NativeChangeEvent_Wrapper final {
+  public:
+    explicit Func_void_NativeChangeEvent_Wrapper(std::function<void(const NativeChangeEvent& /* e */)>&& func): _function(std::make_unique<std::function<void(const NativeChangeEvent& /* e */)>>(std::move(func))) {}
+    inline void call(NativeChangeEvent e) const noexcept {
+      _function->operator()(e);
+    }
+  private:
+    std::unique_ptr<std::function<void(const NativeChangeEvent& /* e */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_NativeChangeEvent create_Func_void_NativeChangeEvent(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_NativeChangeEvent_Wrapper wrap_Func_void_NativeChangeEvent(Func_void_NativeChangeEvent value) noexcept {
+    return Func_void_NativeChangeEvent_Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::optional<std::function<void(const NativeChangeEvent& /* e */)>>
+  /**
+   * Specialized version of `std::optional<std::function<void(const NativeChangeEvent& / * e * /)>>`.
+   */
+  using std__optional_std__function_void_const_NativeChangeEvent_____e______ = std::optional<std::function<void(const NativeChangeEvent& /* e */)>>;
+  inline std::optional<std::function<void(const NativeChangeEvent& /* e */)>> create_std__optional_std__function_void_const_NativeChangeEvent_____e______(const std::function<void(const NativeChangeEvent& /* e */)>& value) noexcept {
+    return std::optional<std::function<void(const NativeChangeEvent& /* e */)>>(value);
+  }
+  inline bool has_value_std__optional_std__function_void_const_NativeChangeEvent_____e______(const std::optional<std::function<void(const NativeChangeEvent& /* e */)>>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline std::function<void(const NativeChangeEvent& /* e */)> get_std__optional_std__function_void_const_NativeChangeEvent_____e______(const std::optional<std::function<void(const NativeChangeEvent& /* e */)>>& optional) noexcept {
+    return optional.value();
+  }
+  
+  // pragma MARK: std::function<void(const std::string& /* text */)>
+  /**
+   * Specialized version of `std::function<void(const std::string&)>`.
+   */
+  using Func_void_std__string = std::function<void(const std::string& /* text */)>;
+  /**
+   * Wrapper class for a `std::function<void(const std::string& / * text * /)>`, this can be used from Swift.
+   */
+  class Func_void_std__string_Wrapper final {
+  public:
+    explicit Func_void_std__string_Wrapper(std::function<void(const std::string& /* text */)>&& func): _function(std::make_unique<std::function<void(const std::string& /* text */)>>(std::move(func))) {}
+    inline void call(std::string text) const noexcept {
+      _function->operator()(text);
+    }
+  private:
+    std::unique_ptr<std::function<void(const std::string& /* text */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_std__string_Wrapper wrap_Func_void_std__string(Func_void_std__string value) noexcept {
+    return Func_void_std__string_Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::optional<std::function<void(const std::string& /* text */)>>
+  /**
+   * Specialized version of `std::optional<std::function<void(const std::string& / * text * /)>>`.
+   */
+  using std__optional_std__function_void_const_std__string_____text______ = std::optional<std::function<void(const std::string& /* text */)>>;
+  inline std::optional<std::function<void(const std::string& /* text */)>> create_std__optional_std__function_void_const_std__string_____text______(const std::function<void(const std::string& /* text */)>& value) noexcept {
+    return std::optional<std::function<void(const std::string& /* text */)>>(value);
+  }
+  inline bool has_value_std__optional_std__function_void_const_std__string_____text______(const std::optional<std::function<void(const std::string& /* text */)>>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline std::function<void(const std::string& /* text */)> get_std__optional_std__function_void_const_std__string_____text______(const std::optional<std::function<void(const std::string& /* text */)>>& optional) noexcept {
     return optional.value();
   }
   
@@ -387,6 +485,15 @@ namespace margelo::nitro::codepad::bridge::swift {
   }
   inline Result_NativeVisibleLines_ create_Result_NativeVisibleLines_(const std::exception_ptr& error) noexcept {
     return Result<NativeVisibleLines>::withError(error);
+  }
+  
+  // pragma MARK: Result<bool>
+  using Result_bool_ = Result<bool>;
+  inline Result_bool_ create_Result_bool_(bool value) noexcept {
+    return Result<bool>::withValue(std::move(value));
+  }
+  inline Result_bool_ create_Result_bool_(const std::exception_ptr& error) noexcept {
+    return Result<bool>::withError(error);
   }
   
   // pragma MARK: Result<std::shared_ptr<Promise<void>>>

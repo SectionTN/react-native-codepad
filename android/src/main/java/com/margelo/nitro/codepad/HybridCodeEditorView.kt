@@ -6,7 +6,10 @@ import com.facebook.proguard.annotations.DoNotStrip
 import com.facebook.react.common.assets.ReactFontManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.margelo.nitro.core.Promise
+import me.sectiontn.codepad.core.ChangeOrigin
+import me.sectiontn.codepad.core.EditorSettings
 import me.sectiontn.codepad.view.CodeEditorView
+import me.sectiontn.codepad.view.InputMethodBridge
 import me.sectiontn.codepad.view.ThemeColors
 import me.sectiontn.codepad.view.TokenStyleColors
 
@@ -23,10 +26,16 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
     onSelectionListener = { s ->
       onSelectionChange?.invoke(NativeSelection(s.anchor.toDouble(), s.head.toDouble(), core.document.revision.toDouble()))
     }
+    onChangeListener = { change, origin ->
+      onChange?.invoke(NativeChangeEvent(change.start.toDouble(), change.end.toDouble(), change.inserted, toOrigin(origin), change.revision.toDouble()))
+      onChangeText?.invoke(core.document.text())
+    }
+    onFocusListener = { focused -> if (focused) onEditorFocus?.invoke() else onEditorBlur?.invoke() }
   }
   private var loaded = false
   private var readySent = false
   private var fontDirty = false
+  private var settingsDirty = false
 
   override val view: View = editor
 
@@ -116,16 +125,70 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
       )
     }
 
+  override var suggestions: NativeSuggestions? = null
+    set(value) {
+      field = value
+      editor.setSuggestions(
+        when (value) {
+          NativeSuggestions.FORCEOFF -> InputMethodBridge.Suggestions.ForceOff
+          NativeSuggestions.ON -> InputMethodBridge.Suggestions.On
+          else -> InputMethodBridge.Suggestions.Off
+        },
+      )
+    }
+
+  override var autoFocus: Boolean? = null
+    set(value) {
+      field = value
+      editor.setAutoFocus(value ?: false)
+    }
+
+  override var tabSize: Double? = null
+    set(value) {
+      field = value
+      settingsDirty = true
+    }
+
+  override var insertSpaces: Boolean? = null
+    set(value) {
+      field = value
+      settingsDirty = true
+    }
+
+  override var autoIndent: Boolean? = null
+    set(value) {
+      field = value
+      settingsDirty = true
+    }
+
+  override var autoCloseBrackets: Boolean? = null
+    set(value) {
+      field = value
+      settingsDirty = true
+    }
+
   override var onReady: (() -> Unit)? = null
 
   override var onScroll: ((NativeScrollEvent) -> Unit)? = null
 
   override var onSelectionChange: ((NativeSelection) -> Unit)? = null
 
+  override var onChange: ((NativeChangeEvent) -> Unit)? = null
+
+  override var onChangeText: ((String) -> Unit)? = null
+
+  override var onEditorFocus: (() -> Unit)? = null
+
+  override var onEditorBlur: (() -> Unit)? = null
+
   override fun afterUpdate() {
     if (fontDirty) {
       fontDirty = false
       editor.setFont(fontFamily, (fontSize ?: 14.0).toFloat(), (lineHeight ?: 1.4).toFloat())
+    }
+    if (settingsDirty) {
+      settingsDirty = false
+      editor.setEditorSettings(EditorSettings((tabSize ?: 4.0).toInt(), insertSpaces ?: true, autoIndent ?: true, autoCloseBrackets ?: true))
     }
   }
 
@@ -173,6 +236,13 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
   override fun getVisibleLines(): NativeVisibleLines =
     editor.frame.let { NativeVisibleLines(it.firstLine.toDouble(), it.lastLine.toDouble()) }
 
+  override fun isFocused(): Boolean = editor.focused
+
+  // Stack size reads without the lock, a benign race like selection.
+  override fun canUndo(): Boolean = editor.core.canUndo
+
+  override fun canRedo(): Boolean = editor.core.canRedo
+
   override fun setText(text: String, keepHistory: Boolean): Promise<Unit> = onMain { editor.setText(text, keepHistory) }
 
   override fun setSelection(anchor: Double, head: Double): Promise<Unit> = onMain { editor.core.setSelection(anchor.toInt(), head.toInt()) }
@@ -182,6 +252,36 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
   override fun scrollToLine(line: Double, animated: Boolean): Promise<Unit> = onMain { editor.scrollToLine(line.toInt(), animated) }
 
   override fun revealSelection(): Promise<Unit> = onMain { editor.revealSelection() }
+
+  override fun insertText(text: String): Promise<Unit> = onMain { editor.core.insertText(text) }
+
+  override fun replaceRange(start: Double, end: Double, text: String): Promise<Unit> =
+    onMain { editor.core.replace(start.toInt(), end.toInt(), text) }
+
+  override fun undo(): Promise<Unit> = onMain { editor.undo() }
+
+  override fun redo(): Promise<Unit> = onMain { editor.redo() }
+
+  override fun indent(): Promise<Unit> = onMain { editor.core.indent() }
+
+  override fun outdent(): Promise<Unit> = onMain { editor.core.outdent() }
+
+  override fun cut(): Promise<Unit> = onMain { editor.cut(ChangeOrigin.Api) }
+
+  override fun copy(): Promise<Unit> = onMain { editor.copy() }
+
+  override fun paste(): Promise<Unit> = onMain { editor.paste(ChangeOrigin.Api) }
+
+  override fun focus(): Promise<Unit> = onMain { editor.focus() }
+
+  override fun blur(): Promise<Unit> = onMain { editor.blur() }
+
+  private fun toOrigin(origin: ChangeOrigin): NativeChangeOrigin = when (origin) {
+    ChangeOrigin.Input -> NativeChangeOrigin.INPUT
+    ChangeOrigin.Api -> NativeChangeOrigin.API
+    ChangeOrigin.Undo -> NativeChangeOrigin.UNDO
+    ChangeOrigin.Redo -> NativeChangeOrigin.REDO
+  }
 
   /** Write methods run on the main thread and resolve once the change is applied and a redraw is queued. */
   private fun onMain(block: () -> Unit): Promise<Unit> {

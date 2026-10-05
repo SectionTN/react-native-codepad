@@ -76,12 +76,32 @@ namespace margelo::nitro::codepad {
     void setScrollEnabled(std::optional<bool> scrollEnabled) override;
     std::optional<NativeInsets> getContentInsets() override;
     void setContentInsets(const std::optional<NativeInsets>& contentInsets) override;
+    std::optional<NativeSuggestions> getSuggestions() override;
+    void setSuggestions(std::optional<NativeSuggestions> suggestions) override;
+    std::optional<bool> getAutoFocus() override;
+    void setAutoFocus(std::optional<bool> autoFocus) override;
+    std::optional<double> getTabSize() override;
+    void setTabSize(std::optional<double> tabSize) override;
+    std::optional<bool> getInsertSpaces() override;
+    void setInsertSpaces(std::optional<bool> insertSpaces) override;
+    std::optional<bool> getAutoIndent() override;
+    void setAutoIndent(std::optional<bool> autoIndent) override;
+    std::optional<bool> getAutoCloseBrackets() override;
+    void setAutoCloseBrackets(std::optional<bool> autoCloseBrackets) override;
     std::optional<std::function<void()>> getOnReady() override;
     void setOnReady(const std::optional<std::function<void()>>& onReady) override;
     std::optional<std::function<void(const NativeScrollEvent& /* e */)>> getOnScroll() override;
     void setOnScroll(const std::optional<std::function<void(const NativeScrollEvent& /* e */)>>& onScroll) override;
     std::optional<std::function<void(const NativeSelection& /* s */)>> getOnSelectionChange() override;
     void setOnSelectionChange(const std::optional<std::function<void(const NativeSelection& /* s */)>>& onSelectionChange) override;
+    std::optional<std::function<void(const NativeChangeEvent& /* e */)>> getOnChange() override;
+    void setOnChange(const std::optional<std::function<void(const NativeChangeEvent& /* e */)>>& onChange) override;
+    std::optional<std::function<void(const std::string& /* text */)>> getOnChangeText() override;
+    void setOnChangeText(const std::optional<std::function<void(const std::string& /* text */)>>& onChangeText) override;
+    std::optional<std::function<void()>> getOnEditorFocus() override;
+    void setOnEditorFocus(const std::optional<std::function<void()>>& onEditorFocus) override;
+    std::optional<std::function<void()>> getOnEditorBlur() override;
+    void setOnEditorBlur(const std::optional<std::function<void()>>& onEditorBlur) override;
 
   public:
     // Methods
@@ -96,11 +116,25 @@ namespace margelo::nitro::codepad {
     double positionToOffset(double line, double column) override;
     std::optional<NativeRect> getCursorRect() override;
     NativeVisibleLines getVisibleLines() override;
+    bool isFocused() override;
+    bool canUndo() override;
+    bool canRedo() override;
     std::shared_ptr<Promise<void>> setText(const std::string& text, bool keepHistory) override;
     std::shared_ptr<Promise<void>> setSelection(double anchor, double head) override;
     std::shared_ptr<Promise<void>> selectAll() override;
     std::shared_ptr<Promise<void>> scrollToLine(double line, bool animated) override;
     std::shared_ptr<Promise<void>> revealSelection() override;
+    std::shared_ptr<Promise<void>> insertText(const std::string& text) override;
+    std::shared_ptr<Promise<void>> replaceRange(double start, double end, const std::string& text) override;
+    std::shared_ptr<Promise<void>> undo() override;
+    std::shared_ptr<Promise<void>> redo() override;
+    std::shared_ptr<Promise<void>> indent() override;
+    std::shared_ptr<Promise<void>> outdent() override;
+    std::shared_ptr<Promise<void>> cut() override;
+    std::shared_ptr<Promise<void>> copy() override;
+    std::shared_ptr<Promise<void>> paste() override;
+    std::shared_ptr<Promise<void>> focus() override;
+    std::shared_ptr<Promise<void>> blur() override;
 
   private:
     jni::global_ref<JHybridCodeEditorViewSpec::JavaPart> _javaPart;

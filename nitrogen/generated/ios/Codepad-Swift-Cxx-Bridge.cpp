@@ -39,6 +39,22 @@ namespace margelo::nitro::codepad::bridge::swift {
     };
   }
   
+  // pragma MARK: std::function<void(const NativeChangeEvent& /* e */)>
+  Func_void_NativeChangeEvent create_Func_void_NativeChangeEvent(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = Codepad::Func_void_NativeChangeEvent::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const NativeChangeEvent& e) mutable -> void {
+      swiftClosure.call(e);
+    };
+  }
+  
+  // pragma MARK: std::function<void(const std::string& /* text */)>
+  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = Codepad::Func_void_std__string::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const std::string& text) mutable -> void {
+      swiftClosure.call(text);
+    };
+  }
+  
   // pragma MARK: std::function<void(const std::exception_ptr& /* error */)>
   Func_void_std__exception_ptr create_Func_void_std__exception_ptr(void* NON_NULL swiftClosureWrapper) noexcept {
     auto swiftClosure = Codepad::Func_void_std__exception_ptr::fromUnsafe(swiftClosureWrapper);

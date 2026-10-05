@@ -18,10 +18,16 @@ namespace margelo::nitro::codepad { struct NativeTheme; }
 namespace margelo::nitro::codepad { struct NativeTokenStyle; }
 // Forward declaration of `NativeInsets` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeInsets; }
+// Forward declaration of `NativeSuggestions` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeSuggestions; }
 // Forward declaration of `NativeScrollEvent` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeScrollEvent; }
 // Forward declaration of `NativeSelection` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSelection; }
+// Forward declaration of `NativeChangeEvent` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeChangeEvent; }
+// Forward declaration of `NativeChangeOrigin` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeChangeOrigin; }
 // Forward declaration of `NativePosition` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativePosition; }
 // Forward declaration of `NativeRect` to properly resolve imports.
@@ -35,9 +41,12 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 #include "NativeTokenStyle.hpp"
 #include <unordered_map>
 #include "NativeInsets.hpp"
+#include "NativeSuggestions.hpp"
 #include <functional>
 #include "NativeScrollEvent.hpp"
 #include "NativeSelection.hpp"
+#include "NativeChangeEvent.hpp"
+#include "NativeChangeOrigin.hpp"
 #include "NativePosition.hpp"
 #include "NativeRect.hpp"
 #include "NativeVisibleLines.hpp"
@@ -180,6 +189,48 @@ namespace margelo::nitro::codepad {
     inline void setContentInsets(const std::optional<NativeInsets>& contentInsets) noexcept override {
       _swiftPart.setContentInsets(contentInsets);
     }
+    inline std::optional<NativeSuggestions> getSuggestions() noexcept override {
+      auto __result = _swiftPart.getSuggestions();
+      return __result;
+    }
+    inline void setSuggestions(std::optional<NativeSuggestions> suggestions) noexcept override {
+      _swiftPart.setSuggestions(suggestions);
+    }
+    inline std::optional<bool> getAutoFocus() noexcept override {
+      auto __result = _swiftPart.getAutoFocus();
+      return __result;
+    }
+    inline void setAutoFocus(std::optional<bool> autoFocus) noexcept override {
+      _swiftPart.setAutoFocus(autoFocus);
+    }
+    inline std::optional<double> getTabSize() noexcept override {
+      auto __result = _swiftPart.getTabSize();
+      return __result;
+    }
+    inline void setTabSize(std::optional<double> tabSize) noexcept override {
+      _swiftPart.setTabSize(tabSize);
+    }
+    inline std::optional<bool> getInsertSpaces() noexcept override {
+      auto __result = _swiftPart.getInsertSpaces();
+      return __result;
+    }
+    inline void setInsertSpaces(std::optional<bool> insertSpaces) noexcept override {
+      _swiftPart.setInsertSpaces(insertSpaces);
+    }
+    inline std::optional<bool> getAutoIndent() noexcept override {
+      auto __result = _swiftPart.getAutoIndent();
+      return __result;
+    }
+    inline void setAutoIndent(std::optional<bool> autoIndent) noexcept override {
+      _swiftPart.setAutoIndent(autoIndent);
+    }
+    inline std::optional<bool> getAutoCloseBrackets() noexcept override {
+      auto __result = _swiftPart.getAutoCloseBrackets();
+      return __result;
+    }
+    inline void setAutoCloseBrackets(std::optional<bool> autoCloseBrackets) noexcept override {
+      _swiftPart.setAutoCloseBrackets(autoCloseBrackets);
+    }
     inline std::optional<std::function<void()>> getOnReady() noexcept override {
       auto __result = _swiftPart.getOnReady();
       return __result;
@@ -200,6 +251,34 @@ namespace margelo::nitro::codepad {
     }
     inline void setOnSelectionChange(const std::optional<std::function<void(const NativeSelection& /* s */)>>& onSelectionChange) noexcept override {
       _swiftPart.setOnSelectionChange(onSelectionChange);
+    }
+    inline std::optional<std::function<void(const NativeChangeEvent& /* e */)>> getOnChange() noexcept override {
+      auto __result = _swiftPart.getOnChange();
+      return __result;
+    }
+    inline void setOnChange(const std::optional<std::function<void(const NativeChangeEvent& /* e */)>>& onChange) noexcept override {
+      _swiftPart.setOnChange(onChange);
+    }
+    inline std::optional<std::function<void(const std::string& /* text */)>> getOnChangeText() noexcept override {
+      auto __result = _swiftPart.getOnChangeText();
+      return __result;
+    }
+    inline void setOnChangeText(const std::optional<std::function<void(const std::string& /* text */)>>& onChangeText) noexcept override {
+      _swiftPart.setOnChangeText(onChangeText);
+    }
+    inline std::optional<std::function<void()>> getOnEditorFocus() noexcept override {
+      auto __result = _swiftPart.getOnEditorFocus();
+      return __result;
+    }
+    inline void setOnEditorFocus(const std::optional<std::function<void()>>& onEditorFocus) noexcept override {
+      _swiftPart.setOnEditorFocus(onEditorFocus);
+    }
+    inline std::optional<std::function<void()>> getOnEditorBlur() noexcept override {
+      auto __result = _swiftPart.getOnEditorBlur();
+      return __result;
+    }
+    inline void setOnEditorBlur(const std::optional<std::function<void()>>& onEditorBlur) noexcept override {
+      _swiftPart.setOnEditorBlur(onEditorBlur);
     }
 
   public:
@@ -292,6 +371,30 @@ namespace margelo::nitro::codepad {
       auto __value = std::move(__result.value());
       return __value;
     }
+    inline bool isFocused() override {
+      auto __result = _swiftPart.isFocused();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline bool canUndo() override {
+      auto __result = _swiftPart.canUndo();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline bool canRedo() override {
+      auto __result = _swiftPart.canRedo();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
     inline std::shared_ptr<Promise<void>> setText(const std::string& text, bool keepHistory) override {
       auto __result = _swiftPart.setText(text, std::forward<decltype(keepHistory)>(keepHistory));
       if (__result.hasError()) [[unlikely]] {
@@ -326,6 +429,94 @@ namespace margelo::nitro::codepad {
     }
     inline std::shared_ptr<Promise<void>> revealSelection() override {
       auto __result = _swiftPart.revealSelection();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> insertText(const std::string& text) override {
+      auto __result = _swiftPart.insertText(text);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> replaceRange(double start, double end, const std::string& text) override {
+      auto __result = _swiftPart.replaceRange(std::forward<decltype(start)>(start), std::forward<decltype(end)>(end), text);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> undo() override {
+      auto __result = _swiftPart.undo();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> redo() override {
+      auto __result = _swiftPart.redo();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> indent() override {
+      auto __result = _swiftPart.indent();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> outdent() override {
+      auto __result = _swiftPart.outdent();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> cut() override {
+      auto __result = _swiftPart.cut();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> copy() override {
+      auto __result = _swiftPart.copy();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> paste() override {
+      auto __result = _swiftPart.paste();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> focus() override {
+      auto __result = _swiftPart.focus();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> blur() override {
+      auto __result = _swiftPart.blur();
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }

@@ -18,9 +18,19 @@ export default {
     "placeholder": true,
     "scrollEnabled": true,
     "contentInsets": true,
+    "suggestions": true,
+    "autoFocus": true,
+    "tabSize": true,
+    "insertSpaces": true,
+    "autoIndent": true,
+    "autoCloseBrackets": true,
     "onReady": true,
     "onScroll": true,
     "onSelectionChange": true,
+    "onChange": true,
+    "onChangeText": true,
+    "onEditorFocus": true,
+    "onEditorBlur": true,
     "hybridRef": true
   }
 } as const;

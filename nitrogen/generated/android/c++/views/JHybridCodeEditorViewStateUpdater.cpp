@@ -119,6 +119,36 @@ void JHybridCodeEditorViewStateUpdater::updateViewProps(jni::alias_ref<jni::JCla
     hybridView->setContentInsets(newProps->contentInsets.get());
   }
   if (oldProps == nullptr
+        ? newProps->suggestions.isProvided()
+        : !newProps->suggestions.hasSameValue(oldProps->suggestions)) {
+    hybridView->setSuggestions(newProps->suggestions.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->autoFocus.isProvided()
+        : !newProps->autoFocus.hasSameValue(oldProps->autoFocus)) {
+    hybridView->setAutoFocus(newProps->autoFocus.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->tabSize.isProvided()
+        : !newProps->tabSize.hasSameValue(oldProps->tabSize)) {
+    hybridView->setTabSize(newProps->tabSize.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->insertSpaces.isProvided()
+        : !newProps->insertSpaces.hasSameValue(oldProps->insertSpaces)) {
+    hybridView->setInsertSpaces(newProps->insertSpaces.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->autoIndent.isProvided()
+        : !newProps->autoIndent.hasSameValue(oldProps->autoIndent)) {
+    hybridView->setAutoIndent(newProps->autoIndent.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->autoCloseBrackets.isProvided()
+        : !newProps->autoCloseBrackets.hasSameValue(oldProps->autoCloseBrackets)) {
+    hybridView->setAutoCloseBrackets(newProps->autoCloseBrackets.get());
+  }
+  if (oldProps == nullptr
         ? newProps->onReady.isProvided()
         : !newProps->onReady.hasSameValue(oldProps->onReady)) {
     hybridView->setOnReady(newProps->onReady.get());
@@ -132,6 +162,26 @@ void JHybridCodeEditorViewStateUpdater::updateViewProps(jni::alias_ref<jni::JCla
         ? newProps->onSelectionChange.isProvided()
         : !newProps->onSelectionChange.hasSameValue(oldProps->onSelectionChange)) {
     hybridView->setOnSelectionChange(newProps->onSelectionChange.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->onChange.isProvided()
+        : !newProps->onChange.hasSameValue(oldProps->onChange)) {
+    hybridView->setOnChange(newProps->onChange.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->onChangeText.isProvided()
+        : !newProps->onChangeText.hasSameValue(oldProps->onChangeText)) {
+    hybridView->setOnChangeText(newProps->onChangeText.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->onEditorFocus.isProvided()
+        : !newProps->onEditorFocus.hasSameValue(oldProps->onEditorFocus)) {
+    hybridView->setOnEditorFocus(newProps->onEditorFocus.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->onEditorBlur.isProvided()
+        : !newProps->onEditorBlur.hasSameValue(oldProps->onEditorBlur)) {
+    hybridView->setOnEditorBlur(newProps->onEditorBlur.get());
   }
 
   // Update hybridRef if it changed

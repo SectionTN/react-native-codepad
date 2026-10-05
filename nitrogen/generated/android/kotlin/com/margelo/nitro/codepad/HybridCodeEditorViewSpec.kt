@@ -106,6 +106,42 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @set:Keep
   abstract var contentInsets: NativeInsets?
   
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var suggestions: NativeSuggestions?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var autoFocus: Boolean?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var tabSize: Double?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var insertSpaces: Boolean?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var autoIndent: Boolean?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var autoCloseBrackets: Boolean?
+  
   abstract var onReady: (() -> Unit)?
   
   private var onReady_cxx: Func_void?
@@ -146,6 +182,62 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
     @DoNotStrip
     set(value) {
       onSelectionChange = value?.let { it }
+    }
+  
+  abstract var onChange: ((e: NativeChangeEvent) -> Unit)?
+  
+  private var onChange_cxx: Func_void_NativeChangeEvent?
+    @Keep
+    @DoNotStrip
+    get() {
+      return onChange?.let { Func_void_NativeChangeEvent_java(it) }
+    }
+    @Keep
+    @DoNotStrip
+    set(value) {
+      onChange = value?.let { it }
+    }
+  
+  abstract var onChangeText: ((text: String) -> Unit)?
+  
+  private var onChangeText_cxx: Func_void_std__string?
+    @Keep
+    @DoNotStrip
+    get() {
+      return onChangeText?.let { Func_void_std__string_java(it) }
+    }
+    @Keep
+    @DoNotStrip
+    set(value) {
+      onChangeText = value?.let { it }
+    }
+  
+  abstract var onEditorFocus: (() -> Unit)?
+  
+  private var onEditorFocus_cxx: Func_void?
+    @Keep
+    @DoNotStrip
+    get() {
+      return onEditorFocus?.let { Func_void_java(it) }
+    }
+    @Keep
+    @DoNotStrip
+    set(value) {
+      onEditorFocus = value?.let { it }
+    }
+  
+  abstract var onEditorBlur: (() -> Unit)?
+  
+  private var onEditorBlur_cxx: Func_void?
+    @Keep
+    @DoNotStrip
+    get() {
+      return onEditorBlur?.let { Func_void_java(it) }
+    }
+    @Keep
+    @DoNotStrip
+    set(value) {
+      onEditorBlur = value?.let { it }
     }
 
   // Methods
@@ -195,6 +287,18 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   
   @DoNotStrip
   @Keep
+  abstract fun isFocused(): Boolean
+  
+  @DoNotStrip
+  @Keep
+  abstract fun canUndo(): Boolean
+  
+  @DoNotStrip
+  @Keep
+  abstract fun canRedo(): Boolean
+  
+  @DoNotStrip
+  @Keep
   abstract fun setText(text: String, keepHistory: Boolean): Promise<Unit>
   
   @DoNotStrip
@@ -212,6 +316,50 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @DoNotStrip
   @Keep
   abstract fun revealSelection(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun insertText(text: String): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun replaceRange(start: Double, end: Double, text: String): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun undo(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun redo(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun indent(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun outdent(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun cut(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun copy(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun paste(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun focus(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun blur(): Promise<Unit>
 
   // Default implementation of `HybridObject.toString()`
   override fun toString(): String {

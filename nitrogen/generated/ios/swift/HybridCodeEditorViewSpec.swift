@@ -23,9 +23,19 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   var placeholder: String? { get set }
   var scrollEnabled: Bool? { get set }
   var contentInsets: NativeInsets? { get set }
+  var suggestions: NativeSuggestions? { get set }
+  var autoFocus: Bool? { get set }
+  var tabSize: Double? { get set }
+  var insertSpaces: Bool? { get set }
+  var autoIndent: Bool? { get set }
+  var autoCloseBrackets: Bool? { get set }
   var onReady: (() -> Void)? { get set }
   var onScroll: ((_ e: NativeScrollEvent) -> Void)? { get set }
   var onSelectionChange: ((_ s: NativeSelection) -> Void)? { get set }
+  var onChange: ((_ e: NativeChangeEvent) -> Void)? { get set }
+  var onChangeText: ((_ text: String) -> Void)? { get set }
+  var onEditorFocus: (() -> Void)? { get set }
+  var onEditorBlur: (() -> Void)? { get set }
 
   // Methods
   func getText() throws -> String
@@ -39,11 +49,25 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   func positionToOffset(line: Double, column: Double) throws -> Double
   func getCursorRect() throws -> NativeRect?
   func getVisibleLines() throws -> NativeVisibleLines
+  func isFocused() throws -> Bool
+  func canUndo() throws -> Bool
+  func canRedo() throws -> Bool
   func setText(text: String, keepHistory: Bool) throws -> Promise<Void>
   func setSelection(anchor: Double, head: Double) throws -> Promise<Void>
   func selectAll() throws -> Promise<Void>
   func scrollToLine(line: Double, animated: Bool) throws -> Promise<Void>
   func revealSelection() throws -> Promise<Void>
+  func insertText(text: String) throws -> Promise<Void>
+  func replaceRange(start: Double, end: Double, text: String) throws -> Promise<Void>
+  func undo() throws -> Promise<Void>
+  func redo() throws -> Promise<Void>
+  func indent() throws -> Promise<Void>
+  func outdent() throws -> Promise<Void>
+  func cut() throws -> Promise<Void>
+  func copy() throws -> Promise<Void>
+  func paste() throws -> Promise<Void>
+  func focus() throws -> Promise<Void>
+  func blur() throws -> Promise<Void>
 }
 
 public extension HybridCodeEditorViewSpec_protocol {

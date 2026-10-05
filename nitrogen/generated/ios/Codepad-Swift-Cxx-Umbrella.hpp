@@ -12,6 +12,10 @@
 namespace margelo::nitro::codepad { class HybridCodeEditorViewSpec; }
 // Forward declaration of `HybridCodepadSpec` to properly resolve imports.
 namespace margelo::nitro::codepad { class HybridCodepadSpec; }
+// Forward declaration of `NativeChangeEvent` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeChangeEvent; }
+// Forward declaration of `NativeChangeOrigin` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeChangeOrigin; }
 // Forward declaration of `NativeInsets` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeInsets; }
 // Forward declaration of `NativePosition` to properly resolve imports.
@@ -22,6 +26,8 @@ namespace margelo::nitro::codepad { struct NativeRect; }
 namespace margelo::nitro::codepad { struct NativeScrollEvent; }
 // Forward declaration of `NativeSelection` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSelection; }
+// Forward declaration of `NativeSuggestions` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeSuggestions; }
 // Forward declaration of `NativeTheme` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeTheme; }
 // Forward declaration of `NativeTokenStyle` to properly resolve imports.
@@ -32,11 +38,14 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 // Include C++ defined types
 #include "HybridCodeEditorViewSpec.hpp"
 #include "HybridCodepadSpec.hpp"
+#include "NativeChangeEvent.hpp"
+#include "NativeChangeOrigin.hpp"
 #include "NativeInsets.hpp"
 #include "NativePosition.hpp"
 #include "NativeRect.hpp"
 #include "NativeScrollEvent.hpp"
 #include "NativeSelection.hpp"
+#include "NativeSuggestions.hpp"
 #include "NativeTheme.hpp"
 #include "NativeTokenStyle.hpp"
 #include "NativeVisibleLines.hpp"

@@ -17,10 +17,14 @@
 namespace margelo::nitro::codepad { struct NativeTheme; }
 // Forward declaration of `NativeInsets` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeInsets; }
+// Forward declaration of `NativeSuggestions` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeSuggestions; }
 // Forward declaration of `NativeScrollEvent` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeScrollEvent; }
 // Forward declaration of `NativeSelection` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSelection; }
+// Forward declaration of `NativeChangeEvent` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeChangeEvent; }
 // Forward declaration of `NativePosition` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativePosition; }
 // Forward declaration of `NativeRect` to properly resolve imports.
@@ -32,9 +36,11 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 #include <optional>
 #include "NativeTheme.hpp"
 #include "NativeInsets.hpp"
+#include "NativeSuggestions.hpp"
 #include <functional>
 #include "NativeScrollEvent.hpp"
 #include "NativeSelection.hpp"
+#include "NativeChangeEvent.hpp"
 #include "NativePosition.hpp"
 #include "NativeRect.hpp"
 #include "NativeVisibleLines.hpp"
@@ -93,12 +99,32 @@ namespace margelo::nitro::codepad {
       virtual void setScrollEnabled(std::optional<bool> scrollEnabled) = 0;
       virtual std::optional<NativeInsets> getContentInsets() = 0;
       virtual void setContentInsets(const std::optional<NativeInsets>& contentInsets) = 0;
+      virtual std::optional<NativeSuggestions> getSuggestions() = 0;
+      virtual void setSuggestions(std::optional<NativeSuggestions> suggestions) = 0;
+      virtual std::optional<bool> getAutoFocus() = 0;
+      virtual void setAutoFocus(std::optional<bool> autoFocus) = 0;
+      virtual std::optional<double> getTabSize() = 0;
+      virtual void setTabSize(std::optional<double> tabSize) = 0;
+      virtual std::optional<bool> getInsertSpaces() = 0;
+      virtual void setInsertSpaces(std::optional<bool> insertSpaces) = 0;
+      virtual std::optional<bool> getAutoIndent() = 0;
+      virtual void setAutoIndent(std::optional<bool> autoIndent) = 0;
+      virtual std::optional<bool> getAutoCloseBrackets() = 0;
+      virtual void setAutoCloseBrackets(std::optional<bool> autoCloseBrackets) = 0;
       virtual std::optional<std::function<void()>> getOnReady() = 0;
       virtual void setOnReady(const std::optional<std::function<void()>>& onReady) = 0;
       virtual std::optional<std::function<void(const NativeScrollEvent& /* e */)>> getOnScroll() = 0;
       virtual void setOnScroll(const std::optional<std::function<void(const NativeScrollEvent& /* e */)>>& onScroll) = 0;
       virtual std::optional<std::function<void(const NativeSelection& /* s */)>> getOnSelectionChange() = 0;
       virtual void setOnSelectionChange(const std::optional<std::function<void(const NativeSelection& /* s */)>>& onSelectionChange) = 0;
+      virtual std::optional<std::function<void(const NativeChangeEvent& /* e */)>> getOnChange() = 0;
+      virtual void setOnChange(const std::optional<std::function<void(const NativeChangeEvent& /* e */)>>& onChange) = 0;
+      virtual std::optional<std::function<void(const std::string& /* text */)>> getOnChangeText() = 0;
+      virtual void setOnChangeText(const std::optional<std::function<void(const std::string& /* text */)>>& onChangeText) = 0;
+      virtual std::optional<std::function<void()>> getOnEditorFocus() = 0;
+      virtual void setOnEditorFocus(const std::optional<std::function<void()>>& onEditorFocus) = 0;
+      virtual std::optional<std::function<void()>> getOnEditorBlur() = 0;
+      virtual void setOnEditorBlur(const std::optional<std::function<void()>>& onEditorBlur) = 0;
 
     public:
       // Methods
@@ -113,11 +139,25 @@ namespace margelo::nitro::codepad {
       virtual double positionToOffset(double line, double column) = 0;
       virtual std::optional<NativeRect> getCursorRect() = 0;
       virtual NativeVisibleLines getVisibleLines() = 0;
+      virtual bool isFocused() = 0;
+      virtual bool canUndo() = 0;
+      virtual bool canRedo() = 0;
       virtual std::shared_ptr<Promise<void>> setText(const std::string& text, bool keepHistory) = 0;
       virtual std::shared_ptr<Promise<void>> setSelection(double anchor, double head) = 0;
       virtual std::shared_ptr<Promise<void>> selectAll() = 0;
       virtual std::shared_ptr<Promise<void>> scrollToLine(double line, bool animated) = 0;
       virtual std::shared_ptr<Promise<void>> revealSelection() = 0;
+      virtual std::shared_ptr<Promise<void>> insertText(const std::string& text) = 0;
+      virtual std::shared_ptr<Promise<void>> replaceRange(double start, double end, const std::string& text) = 0;
+      virtual std::shared_ptr<Promise<void>> undo() = 0;
+      virtual std::shared_ptr<Promise<void>> redo() = 0;
+      virtual std::shared_ptr<Promise<void>> indent() = 0;
+      virtual std::shared_ptr<Promise<void>> outdent() = 0;
+      virtual std::shared_ptr<Promise<void>> cut() = 0;
+      virtual std::shared_ptr<Promise<void>> copy() = 0;
+      virtual std::shared_ptr<Promise<void>> paste() = 0;
+      virtual std::shared_ptr<Promise<void>> focus() = 0;
+      virtual std::shared_ptr<Promise<void>> blur() = 0;
 
     protected:
       // Hybrid Setup

@@ -33,9 +33,19 @@ namespace margelo::nitro::codepad::views {
     placeholder(nitro::ReactProp<std::optional<std::string>>::fromRawValue("CodeEditorView", "placeholder", rawProps, sourceProps.placeholder)),
     scrollEnabled(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "scrollEnabled", rawProps, sourceProps.scrollEnabled)),
     contentInsets(nitro::ReactProp<std::optional<NativeInsets>>::fromRawValue("CodeEditorView", "contentInsets", rawProps, sourceProps.contentInsets)),
+    suggestions(nitro::ReactProp<std::optional<NativeSuggestions>>::fromRawValue("CodeEditorView", "suggestions", rawProps, sourceProps.suggestions)),
+    autoFocus(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "autoFocus", rawProps, sourceProps.autoFocus)),
+    tabSize(nitro::ReactProp<std::optional<double>>::fromRawValue("CodeEditorView", "tabSize", rawProps, sourceProps.tabSize)),
+    insertSpaces(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "insertSpaces", rawProps, sourceProps.insertSpaces)),
+    autoIndent(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "autoIndent", rawProps, sourceProps.autoIndent)),
+    autoCloseBrackets(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "autoCloseBrackets", rawProps, sourceProps.autoCloseBrackets)),
     onReady(nitro::ReactProp<std::optional<std::function<void()>>>::fromRawValue("CodeEditorView", "onReady", rawProps, sourceProps.onReady)),
     onScroll(nitro::ReactProp<std::optional<std::function<void(const NativeScrollEvent& /* e */)>>>::fromRawValue("CodeEditorView", "onScroll", rawProps, sourceProps.onScroll)),
     onSelectionChange(nitro::ReactProp<std::optional<std::function<void(const NativeSelection& /* s */)>>>::fromRawValue("CodeEditorView", "onSelectionChange", rawProps, sourceProps.onSelectionChange)),
+    onChange(nitro::ReactProp<std::optional<std::function<void(const NativeChangeEvent& /* e */)>>>::fromRawValue("CodeEditorView", "onChange", rawProps, sourceProps.onChange)),
+    onChangeText(nitro::ReactProp<std::optional<std::function<void(const std::string& /* text */)>>>::fromRawValue("CodeEditorView", "onChangeText", rawProps, sourceProps.onChangeText)),
+    onEditorFocus(nitro::ReactProp<std::optional<std::function<void()>>>::fromRawValue("CodeEditorView", "onEditorFocus", rawProps, sourceProps.onEditorFocus)),
+    onEditorBlur(nitro::ReactProp<std::optional<std::function<void()>>>::fromRawValue("CodeEditorView", "onEditorBlur", rawProps, sourceProps.onEditorBlur)),
     hybridRef(nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>>::fromRawValue("CodeEditorView", "hybridRef", rawProps, sourceProps.hybridRef)) { }
 
   bool HybridCodeEditorViewProps::filterObjectKeys(const std::string& propName) {
@@ -53,9 +63,19 @@ namespace margelo::nitro::codepad::views {
       case hashString("placeholder"): return true;
       case hashString("scrollEnabled"): return true;
       case hashString("contentInsets"): return true;
+      case hashString("suggestions"): return true;
+      case hashString("autoFocus"): return true;
+      case hashString("tabSize"): return true;
+      case hashString("insertSpaces"): return true;
+      case hashString("autoIndent"): return true;
+      case hashString("autoCloseBrackets"): return true;
       case hashString("onReady"): return true;
       case hashString("onScroll"): return true;
       case hashString("onSelectionChange"): return true;
+      case hashString("onChange"): return true;
+      case hashString("onChangeText"): return true;
+      case hashString("onEditorFocus"): return true;
+      case hashString("onEditorBlur"): return true;
       case hashString("hybridRef"): return true;
       default: return false;
     }

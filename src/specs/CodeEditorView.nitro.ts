@@ -58,6 +58,18 @@ export interface NativeScrollEvent {
   contentHeight: number;
 }
 
+export type NativeChangeOrigin = 'input' | 'api' | 'undo' | 'redo';
+
+export type NativeSuggestions = 'off' | 'forceOff' | 'on';
+
+export interface NativeChangeEvent {
+  start: number;
+  end: number;
+  text: string;
+  origin: NativeChangeOrigin;
+  revision: number;
+}
+
 export interface CodeEditorViewProps extends HybridViewProps {
   initialValue?: string;
   language?: string;
@@ -72,9 +84,20 @@ export interface CodeEditorViewProps extends HybridViewProps {
   placeholder?: string;
   scrollEnabled?: boolean;
   contentInsets?: NativeInsets;
+  suggestions?: NativeSuggestions;
+  autoFocus?: boolean;
+  tabSize?: number;
+  insertSpaces?: boolean;
+  autoIndent?: boolean;
+  autoCloseBrackets?: boolean;
   onReady?: () => void;
   onScroll?: (e: NativeScrollEvent) => void;
   onSelectionChange?: (s: NativeSelection) => void;
+  onChange?: (e: NativeChangeEvent) => void;
+  onChangeText?: (text: string) => void;
+  // Not onFocus and onBlur: those names already exist on ViewProps with an event argument.
+  onEditorFocus?: () => void;
+  onEditorBlur?: () => void;
 }
 
 export interface CodeEditorViewMethods extends HybridViewMethods {
@@ -89,11 +112,25 @@ export interface CodeEditorViewMethods extends HybridViewMethods {
   positionToOffset(line: number, column: number): number;
   getCursorRect(): NativeRect | undefined;
   getVisibleLines(): NativeVisibleLines;
+  isFocused(): boolean;
+  canUndo(): boolean;
+  canRedo(): boolean;
   setText(text: string, keepHistory: boolean): Promise<void>;
   setSelection(anchor: number, head: number): Promise<void>;
   selectAll(): Promise<void>;
   scrollToLine(line: number, animated: boolean): Promise<void>;
   revealSelection(): Promise<void>;
+  insertText(text: string): Promise<void>;
+  replaceRange(start: number, end: number, text: string): Promise<void>;
+  undo(): Promise<void>;
+  redo(): Promise<void>;
+  indent(): Promise<void>;
+  outdent(): Promise<void>;
+  cut(): Promise<void>;
+  copy(): Promise<void>;
+  paste(): Promise<void>;
+  focus(): Promise<void>;
+  blur(): Promise<void>;
 }
 
 export type CodeEditorView = HybridView<CodeEditorViewProps, CodeEditorViewMethods>;

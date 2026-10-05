@@ -176,6 +176,42 @@ using namespace margelo::nitro::codepad::views;
           : !newViewProps.contentInsets.hasSameValue(oldViewProps->contentInsets)) {
       swiftPart.setContentInsets(newViewProps.contentInsets.get());
     }
+    // suggestions: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.suggestions.isProvided()
+          : !newViewProps.suggestions.hasSameValue(oldViewProps->suggestions)) {
+      swiftPart.setSuggestions(newViewProps.suggestions.get());
+    }
+    // autoFocus: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.autoFocus.isProvided()
+          : !newViewProps.autoFocus.hasSameValue(oldViewProps->autoFocus)) {
+      swiftPart.setAutoFocus(newViewProps.autoFocus.get());
+    }
+    // tabSize: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.tabSize.isProvided()
+          : !newViewProps.tabSize.hasSameValue(oldViewProps->tabSize)) {
+      swiftPart.setTabSize(newViewProps.tabSize.get());
+    }
+    // insertSpaces: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.insertSpaces.isProvided()
+          : !newViewProps.insertSpaces.hasSameValue(oldViewProps->insertSpaces)) {
+      swiftPart.setInsertSpaces(newViewProps.insertSpaces.get());
+    }
+    // autoIndent: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.autoIndent.isProvided()
+          : !newViewProps.autoIndent.hasSameValue(oldViewProps->autoIndent)) {
+      swiftPart.setAutoIndent(newViewProps.autoIndent.get());
+    }
+    // autoCloseBrackets: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.autoCloseBrackets.isProvided()
+          : !newViewProps.autoCloseBrackets.hasSameValue(oldViewProps->autoCloseBrackets)) {
+      swiftPart.setAutoCloseBrackets(newViewProps.autoCloseBrackets.get());
+    }
     // onReady: optional
     if (oldViewProps == nullptr
           ? newViewProps.onReady.isProvided()
@@ -193,6 +229,30 @@ using namespace margelo::nitro::codepad::views;
           ? newViewProps.onSelectionChange.isProvided()
           : !newViewProps.onSelectionChange.hasSameValue(oldViewProps->onSelectionChange)) {
       swiftPart.setOnSelectionChange(newViewProps.onSelectionChange.get());
+    }
+    // onChange: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.onChange.isProvided()
+          : !newViewProps.onChange.hasSameValue(oldViewProps->onChange)) {
+      swiftPart.setOnChange(newViewProps.onChange.get());
+    }
+    // onChangeText: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.onChangeText.isProvided()
+          : !newViewProps.onChangeText.hasSameValue(oldViewProps->onChangeText)) {
+      swiftPart.setOnChangeText(newViewProps.onChangeText.get());
+    }
+    // onEditorFocus: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.onEditorFocus.isProvided()
+          : !newViewProps.onEditorFocus.hasSameValue(oldViewProps->onEditorFocus)) {
+      swiftPart.setOnEditorFocus(newViewProps.onEditorFocus.get());
+    }
+    // onEditorBlur: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.onEditorBlur.isProvided()
+          : !newViewProps.onEditorBlur.hasSameValue(oldViewProps->onEditorBlur)) {
+      swiftPart.setOnEditorBlur(newViewProps.onEditorBlur.get());
     }
 
     // Update hybridRef if it changed

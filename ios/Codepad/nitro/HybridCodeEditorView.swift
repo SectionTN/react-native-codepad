@@ -18,6 +18,16 @@ class HybridCodeEditorView: HybridCodeEditorViewSpec {
   var scrollEnabled: Bool? = nil
   var onScroll: ((NativeScrollEvent) -> Void)? = nil
   var onSelectionChange: ((NativeSelection) -> Void)? = nil
+  var suggestions: NativeSuggestions? = nil
+  var autoFocus: Bool? = nil
+  var tabSize: Double? = nil
+  var insertSpaces: Bool? = nil
+  var autoIndent: Bool? = nil
+  var autoCloseBrackets: Bool? = nil
+  var onChange: ((NativeChangeEvent) -> Void)? = nil
+  var onChangeText: ((String) -> Void)? = nil
+  var onEditorFocus: (() -> Void)? = nil
+  var onEditorBlur: (() -> Void)? = nil
 
   func getText() throws -> String {
     return initialValue ?? ""
@@ -83,6 +93,62 @@ class HybridCodeEditorView: HybridCodeEditorViewSpec {
   }
 
   func revealSelection() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func isFocused() throws -> Bool {
+    return false
+  }
+
+  func canUndo() throws -> Bool {
+    return false
+  }
+
+  func canRedo() throws -> Bool {
+    return false
+  }
+
+  func insertText(text: String) throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func replaceRange(start: Double, end: Double, text: String) throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func undo() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func redo() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func indent() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func outdent() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func cut() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func copy() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func paste() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func focus() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func blur() throws -> Promise<Void> {
     return Promise.resolved(withResult: ())
   }
 
