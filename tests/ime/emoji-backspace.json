@@ -1,0 +1,333 @@
+{
+  "name": "emoji-backspace",
+  "source": "recorded on 2510ERA8BG",
+  "ime": "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME",
+  "recordedAt": "2026-10-05",
+  "sessions": [
+    {
+      "inputType": 163841,
+      "initial": {
+        "text": "hellos world",
+        "selection": [
+          7,
+          7
+        ]
+      },
+      "steps": [
+        {
+          "t": 25,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "hellos world",
+            "selStart": 7,
+            "selEnd": 7,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              7,
+              7
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        },
+        {
+          "t": 32,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              7,
+              7
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        },
+        {
+          "t": 12500,
+          "call": "select",
+          "args": [
+            12,
+            12
+          ],
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        },
+        {
+          "t": 12502,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "hellos world",
+            "selStart": 12,
+            "selEnd": 12,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        },
+        {
+          "t": 12709,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        },
+        {
+          "t": 33393,
+          "call": "commitText",
+          "args": [
+            "😂",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              14,
+              14
+            ],
+            "comp": null,
+            "len": 14,
+            "text": "hellos world😂"
+          }
+        },
+        {
+          "t": 34517,
+          "call": "commitText",
+          "args": [
+            "❤️",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              16,
+              16
+            ],
+            "comp": null,
+            "len": 16,
+            "text": "hellos world😂❤️"
+          }
+        },
+        {
+          "t": 35349,
+          "call": "beginBatchEdit",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              16,
+              16
+            ],
+            "comp": null,
+            "len": 16,
+            "text": "hellos world😂❤️"
+          }
+        },
+        {
+          "t": 35350,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              16,
+              16
+            ],
+            "comp": null,
+            "len": 16,
+            "text": "hellos world😂❤️"
+          }
+        },
+        {
+          "t": 35351,
+          "call": "deleteSurroundingText",
+          "args": [
+            2,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              14,
+              14
+            ],
+            "comp": null,
+            "len": 14,
+            "text": "hellos world😂"
+          }
+        },
+        {
+          "t": 35351,
+          "call": "endBatchEdit",
+          "args": [],
+          "ret": false,
+          "after": {
+            "sel": [
+              14,
+              14
+            ],
+            "comp": null,
+            "len": 14,
+            "text": "hellos world😂"
+          }
+        },
+        {
+          "t": 36103,
+          "call": "beginBatchEdit",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              14,
+              14
+            ],
+            "comp": null,
+            "len": 14,
+            "text": "hellos world😂"
+          }
+        },
+        {
+          "t": 36103,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              14,
+              14
+            ],
+            "comp": null,
+            "len": 14,
+            "text": "hellos world😂"
+          }
+        },
+        {
+          "t": 36104,
+          "call": "deleteSurroundingText",
+          "args": [
+            2,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        },
+        {
+          "t": 36113,
+          "call": "endBatchEdit",
+          "args": [],
+          "ret": false,
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        },
+        {
+          "t": 46344,
+          "call": "select",
+          "args": [
+            7,
+            12
+          ],
+          "after": {
+            "sel": [
+              7,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        },
+        {
+          "t": 46348,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "hellos world",
+            "selStart": 7,
+            "selEnd": 12,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              7,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        },
+        {
+          "t": 46638,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              7,
+              12
+            ],
+            "comp": null,
+            "len": 12,
+            "text": "hellos world"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "name": "gboard-paste",
+  "source": "recorded on 2510ERA8BG",
+  "ime": "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME",
+  "recordedAt": "2026-10-05",
+  "sessions": [
+    {
+      "inputType": 163841,
+      "initial": {
+        "text": "hellos worl helo\nif (x){\n    \n}",
+        "selection": [
+          31,
+          31
+        ]
+      },
+      "steps": [
+        {
+          "t": 18,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "hellos worl helo\nif (x){\n    \n}",
+            "selStart": 31,
+            "selEnd": 31,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              31,
+              31
+            ],
+            "comp": null,
+            "len": 31,
+            "text": "hellos worl helo\nif (x){\n    \n}"
+          }
+        },
+        {
+          "t": 40,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              31,
+              31
+            ],
+            "comp": null,
+            "len": 31,
+            "text": "hellos worl helo\nif (x){\n    \n}"
+          }
+        },
+        {
+          "t": 10549,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              31,
+              31
+            ],
+            "comp": null,
+            "len": 31,
+            "text": "hellos worl helo\nif (x){\n    \n}"
+          }
+        },
+        {
+          "t": 10565,
+          "call": "commitText",
+          "args": [
+            "hellos worl helo\nif (x){\n    \n}",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              62,
+              62
+            ],
+            "comp": null,
+            "len": 62,
+            "text": "hellos worl helo\nif (x){\n    \n}hellos worl helo\nif (x){\n    \n}"
+          }
+        }
+      ]
+    }
+  ]
+}

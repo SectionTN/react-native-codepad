@@ -1,0 +1,272 @@
+{
+  "name": "enter-in-braces",
+  "source": "recorded on 2510ERA8BG",
+  "ime": "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME",
+  "recordedAt": "2026-10-05",
+  "sessions": [
+    {
+      "inputType": 163841,
+      "initial": {
+        "text": "hellos worl helo",
+        "selection": [
+          16,
+          16
+        ]
+      },
+      "steps": [
+        {
+          "t": 20,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "hellos worl helo",
+            "selStart": 16,
+            "selEnd": 16,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              16,
+              16
+            ],
+            "comp": null,
+            "len": 16,
+            "text": "hellos worl helo"
+          }
+        },
+        {
+          "t": 27,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              16,
+              16
+            ],
+            "comp": null,
+            "len": 16,
+            "text": "hellos worl helo"
+          }
+        }
+      ]
+    },
+    {
+      "inputType": 163841,
+      "initial": {
+        "text": "hellos worl helo",
+        "selection": [
+          16,
+          16
+        ]
+      },
+      "steps": [
+        {
+          "t": 20712,
+          "call": "commitText",
+          "args": [
+            "\n",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              17,
+              17
+            ],
+            "comp": null,
+            "len": 17,
+            "text": "hellos worl helo\n"
+          }
+        },
+        {
+          "t": 21306,
+          "call": "commitText",
+          "args": [
+            "i",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              18,
+              18
+            ],
+            "comp": null,
+            "len": 18,
+            "text": "hellos worl helo\ni"
+          }
+        },
+        {
+          "t": 21504,
+          "call": "commitText",
+          "args": [
+            "f",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              19,
+              19
+            ],
+            "comp": null,
+            "len": 19,
+            "text": "hellos worl helo\nif"
+          }
+        },
+        {
+          "t": 21719,
+          "call": "commitText",
+          "args": [
+            " ",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              20,
+              20
+            ],
+            "comp": null,
+            "len": 20,
+            "text": "hellos worl helo\nif "
+          }
+        },
+        {
+          "t": 22731,
+          "call": "commitText",
+          "args": [
+            "(",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              21,
+              21
+            ],
+            "comp": null,
+            "len": 22,
+            "text": "hellos worl helo\nif ()"
+          }
+        },
+        {
+          "t": 23825,
+          "call": "commitText",
+          "args": [
+            "x",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              22,
+              22
+            ],
+            "comp": null,
+            "len": 23,
+            "text": "hellos worl helo\nif (x)"
+          }
+        },
+        {
+          "t": 24843,
+          "call": "commitText",
+          "args": [
+            ")",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              23,
+              23
+            ],
+            "comp": null,
+            "len": 23,
+            "text": "hellos worl helo\nif (x)"
+          }
+        },
+        {
+          "t": 25940,
+          "call": "commitText",
+          "args": [
+            "{",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              24,
+              24
+            ],
+            "comp": null,
+            "len": 25,
+            "text": "hellos worl helo\nif (x){}"
+          }
+        },
+        {
+          "t": 26589,
+          "call": "commitText",
+          "args": [
+            "\n",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              29,
+              29
+            ],
+            "comp": null,
+            "len": 31,
+            "text": "hellos worl helo\nif (x){\n    \n}"
+          }
+        },
+        {
+          "t": 26613,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "hellos worl helo\nif (x){\n    \n}",
+            "selStart": 29,
+            "selEnd": 29,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              29,
+              29
+            ],
+            "comp": null,
+            "len": 31,
+            "text": "hellos worl helo\nif (x){\n    \n}"
+          }
+        },
+        {
+          "t": 26817,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              29,
+              29
+            ],
+            "comp": null,
+            "len": 31,
+            "text": "hellos worl helo\nif (x){\n    \n}"
+          }
+        }
+      ]
+    }
+  ]
+}
