@@ -93,9 +93,9 @@ class EditorInputConnection(private val view: CodeEditorView) : BaseInputConnect
     super.closeConnection()
   }
 
-  private inline fun edit(block: () -> Boolean): Boolean {
+  private fun edit(block: () -> Boolean): Boolean {
     view.markInputTime()
-    return block()
+    return view.inputWork(block)
   }
 
   private companion object {

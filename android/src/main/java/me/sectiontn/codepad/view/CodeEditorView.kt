@@ -176,6 +176,8 @@ class CodeEditorView(context: Context) : View(context) {
   private var cursorUpdateOnce = false
   private var revealPending = false
   private var inputTime = 0L
+  private var inputWork = 0L
+  private var drawStart = 0L
   private var debugOn = false
   private var debugChecked = 0L
   private var recording = false
@@ -615,6 +617,16 @@ class CodeEditorView(context: Context) : View(context) {
     if (inputTime == 0L && debugSwitch()) inputTime = time
   }
 
+  /** Adds the time a key handler or keyboard call spends on the main thread to the next paint line. */
+  internal fun <T> inputWork(block: () -> T): T {
+    val started = SystemClock.uptimeMillis()
+    try {
+      return block()
+    } finally {
+      if (inputTime != 0L) inputWork += SystemClock.uptimeMillis() - started
+    }
+  }
+
   /** The document as the recorder logs it after each keyboard call. */
   internal fun imeState(): JSONObject {
     val sel = core.selection
@@ -667,7 +679,8 @@ class CodeEditorView(context: Context) : View(context) {
       if (isFocused) sendCursorAnchorInfo(m)
     }
     if (inputTime != 0L) {
-      Log.i(DebugSwitch.TAG, "{\"call\":\"paint\",\"latency\":${SystemClock.uptimeMillis() - inputTime}}")
+      Log.i(DebugSwitch.TAG, "{\"call\":\"paint\",\"latency\":${SystemClock.uptimeMillis() - inputTime},\"work\":${inputWork + SystemClock.uptimeMillis() - drawStart}}")
+      inputWork = 0L
       inputTime = 0L
     }
   }
@@ -910,15 +923,17 @@ class CodeEditorView(context: Context) : View(context) {
     if (command != null) {
       if (command.edits && isReadOnly) return true
       markInputTime(event.eventTime)
-      runCommand(command)
+      inputWork { runCommand(command) }
       return true
     }
     if (isReadOnly || event.isCtrlPressed || event.isAltPressed || event.isMetaPressed) return super.onKeyDown(keyCode, event)
     val ch = event.unicodeChar
     if (ch == 0 || ch and KeyCharacterMap.COMBINING_ACCENT != 0) return super.onKeyDown(keyCode, event)
     markInputTime(event.eventTime)
-    ime.finishComposingText()
-    core.typeText(String(Character.toChars(ch)))
+    inputWork {
+      ime.finishComposingText()
+      core.typeText(String(Character.toChars(ch)))
+    }
     return true
   }
 
@@ -994,6 +1009,7 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   override fun onDraw(canvas: Canvas) {
+    drawStart = SystemClock.uptimeMillis()
     // React Native parents leave clipChildren off, so an unclipped drawColor would cover siblings.
     canvas.clipRect(0, 0, width, height)
     canvas.drawColor(theme.background)

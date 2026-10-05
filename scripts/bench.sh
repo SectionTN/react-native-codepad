@@ -38,11 +38,13 @@ case "$cmd" in
     adb shell input text "$text"
     sleep 1
     adb shell settings put global codepad_debug 0
-    adb logcat -d -v raw -s codepad-ime:I | sed -n 's/.*"call":"paint","latency":\([0-9]*\).*/\1/p' | sort -n |
-      awk '{ v[NR] = $1 } END {
-        if (NR == 0) { print "no paint lines: focus the editor first"; exit 1 }
-        printf "frames %d  p50 %d ms  p95 %d ms  max %d ms\n", NR, v[int(NR * 0.5 + 0.5)], v[int(NR * 0.95 + 0.5)], v[NR]
-      }'
+    lines=$(adb logcat -d -v raw -s codepad-ime:I | sed -n 's/.*"call":"paint","latency":\([0-9]*\),"work":\([0-9]*\).*/\1 \2/p')
+    [ -n "$lines" ] || { echo "no paint lines: focus the editor first"; exit 1; }
+    # latency runs from the key event time to the end of the draw, so it includes the wait for the next vsync; work is the time in the key handler and onDraw.
+    summary() { sort -n | awk -v name="$1" '{ v[NR] = $1 } END { printf "%-8s p50 %d ms  p95 %d ms  max %d ms\n", name, v[int(NR * 0.5 + 0.5)], v[int(NR * 0.95 + 0.5)], v[NR] }'; }
+    echo "frames $(echo "$lines" | wc -l)"
+    echo "$lines" | awk '{ print $1 }' | summary latency
+    echo "$lines" | awk '{ print $2 }' | summary work
     ;;
   *)
     echo "usage: $0 scroll [swipes] | memory | typing [chars]" >&2
