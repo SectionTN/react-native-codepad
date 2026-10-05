@@ -15,6 +15,8 @@ import android.os.SystemClock
 import android.text.TextPaint
 import android.util.Log
 import android.util.TypedValue
+import android.view.KeyCharacterMap
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.VelocityTracker
 import android.view.View
@@ -29,10 +31,15 @@ import me.sectiontn.codepad.core.EditorSettings
 import me.sectiontn.codepad.core.Range
 import me.sectiontn.codepad.core.Selection
 import me.sectiontn.codepad.core.TextMovement
+import me.sectiontn.codepad.input.CoreCommands
 import me.sectiontn.codepad.input.ImeSession
+import me.sectiontn.codepad.input.KeyCommand
+import me.sectiontn.codepad.input.KeyCommands
+import me.sectiontn.codepad.layout.CaretMover
 import me.sectiontn.codepad.layout.GutterMetrics
 import me.sectiontn.codepad.layout.HeightMap
 import me.sectiontn.codepad.layout.LayoutCache
+import me.sectiontn.codepad.layout.LineGeometry
 import me.sectiontn.codepad.layout.LineLayout
 import me.sectiontn.codepad.layout.RowMetrics
 import me.sectiontn.codepad.layout.Viewport
@@ -89,6 +96,15 @@ class CodeEditorView(context: Context) : View(context) {
   private var heights = HeightMap(1)
   private val viewport = Viewport(heights)
   private val cache = LayoutCache<Entry>(64)
+  private var goalX: Float? = null
+  private var movingVertically = false
+  private val geometry = object : LineGeometry {
+    private fun entry(line: Int) = cache[line] ?: layoutLine(line)
+    override fun rows(line: Int): Int = entry(line).layout.rowCount
+    override fun rowOf(line: Int, column: Int): Int = entry(line).layout.rowOf(column)
+    override fun caretX(line: Int, column: Int): Float = entry(line).layout.caretX(column)
+    override fun columnAt(line: Int, row: Int, x: Float): Int = entry(line).layout.columnAt(row, x)
+  }
 
   private var lineNumbers = true
   private var highlightActiveLine = true
@@ -381,6 +397,7 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   private fun onSelectionMoved() {
+    if (!movingVertically) goalX = null
     selectionDirty = true
     imeDirty = true
     anchorDirty = true
@@ -875,6 +892,48 @@ class CodeEditorView(context: Context) : View(context) {
       if (!wasRight && viewport.scrollX == viewport.maxScrollX) scroller.absorbRight(v)
     }
     postInvalidateOnAnimation()
+  }
+
+  override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+    val command = KeyCommands.map(keyCode, event.metaState)
+    if (command != null) {
+      if (command.edits && isReadOnly) return true
+      markInputTime(event.eventTime)
+      runCommand(command)
+      return true
+    }
+    if (isReadOnly || event.isCtrlPressed || event.isAltPressed || event.isMetaPressed) return super.onKeyDown(keyCode, event)
+    val ch = event.unicodeChar
+    if (ch == 0 || ch and KeyCharacterMap.COMBINING_ACCENT != 0) return super.onKeyDown(keyCode, event)
+    markInputTime(event.eventTime)
+    ime.finishComposingText()
+    core.typeText(String(Character.toChars(ch)))
+    return true
+  }
+
+  private fun runCommand(command: KeyCommand) {
+    if (command.edits) ime.finishComposingText()
+    when (command) {
+      is KeyCommand.Vertical -> moveVertically(command)
+      KeyCommand.Copy -> copy()
+      KeyCommand.Cut -> cut()
+      KeyCommand.Paste -> paste()
+      KeyCommand.Undo -> undo()
+      KeyCommand.Redo -> redo()
+      else -> CoreCommands.run(core, command)
+    }
+    revealPending = true
+    invalidate()
+  }
+
+  private fun moveVertically(command: KeyCommand.Vertical) {
+    val m = rowMetrics()
+    val rows = if (command.page) maxOf(1, viewport.viewportHeight / m.rowHeight) else 1
+    val result = CaretMover.move(core.document, geometry, core.selection.head, rows * command.direction, goalX)
+    movingVertically = true
+    core.setSelection(if (command.extend) core.selection.anchor else result.offset, result.offset)
+    movingVertically = false
+    goalX = result.goalX
   }
 
   override fun onCheckIsTextEditor(): Boolean = !isReadOnly
