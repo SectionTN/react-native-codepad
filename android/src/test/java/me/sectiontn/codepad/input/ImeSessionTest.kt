@@ -153,4 +153,101 @@ class ImeSessionTest {
     assertTrue(seen)
     assertFalse(ime.applying)
   }
+
+  @Test
+  fun deleteSurroundingTextSkipsTheComposingText() {
+    val (core, ime) = session("abcdef", 3)
+    ime.setComposingRegion(2, 4)
+    assertTrue(ime.deleteSurroundingText(1, 1))
+    assertEquals("acdf", core.document.text())
+    assertEquals(Range(1, 3), ime.composing)
+    assertEquals(Selection(2, 2), core.selection)
+  }
+
+  @Test
+  fun deletesClampToTheDocumentAsOneUndoStep() {
+    val (core, ime) = session("abcdef", 3)
+    ime.deleteSurroundingText(10, 10)
+    assertEquals("", core.document.text())
+    assertTrue(core.undo())
+    assertEquals("abcdef", core.document.text())
+    assertFalse(core.canUndo)
+  }
+
+  @Test
+  fun singleBackspaceDeletesAnEmptyPairAndCoalesces() {
+    val (core, ime) = session()
+    ime.commitText("(", 1)
+    ime.deleteSurroundingText(1, 0)
+    assertEquals("", core.document.text())
+    ime.commitText("a", 1)
+    ime.commitText("b", 1)
+    ime.commitText("c", 1)
+    ime.deleteSurroundingText(1, 0)
+    ime.deleteSurroundingText(1, 0)
+    assertEquals("a", core.document.text())
+    assertTrue(core.undo())
+    assertEquals("abc", core.document.text())
+  }
+
+  @Test
+  fun deleteInCodePointsWalksSurrogatePairs() {
+    val smile = String(Character.toChars(0x1F600))
+    val (core, ime) = session("a" + smile + "b", 3)
+    assertTrue(ime.deleteSurroundingTextInCodePoints(1, 1))
+    assertEquals("a", core.document.text())
+    assertEquals(Selection(1, 1), core.selection)
+  }
+
+  @Test
+  fun textWindows() {
+    val (core, ime) = session("hello world", 5)
+    assertEquals("llo", ime.textBeforeCursor(3))
+    assertEquals(" wo", ime.textAfterCursor(3))
+    assertEquals("hello", ime.textBeforeCursor(100))
+    assertNull(ime.selectedText())
+    core.setSelection(2, 7)
+    assertEquals("llo w", ime.selectedText())
+    assertEquals(ImeSession.Window("ello worl", 1, 6, 1), ime.window(1, 3))
+    assertEquals(ImeSession.Window("hello world", 2, 7, 0), ime.window(50, 50))
+  }
+
+  @Test
+  fun batchDepthNests() {
+    val (_, ime) = session()
+    assertTrue(ime.beginBatchEdit())
+    ime.beginBatchEdit()
+    assertTrue(ime.endBatchEdit())
+    assertFalse(ime.endBatchEdit())
+    assertFalse(ime.endBatchEdit())
+    assertEquals(0, ime.batchDepth)
+  }
+
+  @Test
+  fun externalChangesMapOrDropTheComposition() {
+    val (core, ime) = session("xx", 2)
+    ime.setComposingText("ab", 1)
+    assertFalse(ime.onExternalChange(core.replace(0, 1, "YY")))
+    assertEquals(Range(3, 5), ime.composing)
+    assertFalse(ime.onExternalChange(core.replace(5, 5, "z")))
+    assertEquals(Range(3, 5), ime.composing)
+    assertTrue(ime.onExternalChange(core.replace(4, 4, "!")))
+    assertNull(ime.composing)
+    assertFalse(ime.onExternalChange(core.replace(0, 0, "q")))
+  }
+
+  @Test
+  fun selectionFromTheImeClampsAndKeepsComposing() {
+    val (core, ime) = session("abc", 0)
+    ime.setComposingRegion(0, 3)
+    assertTrue(ime.setSelection(9, 1))
+    assertEquals(Selection(3, 1), core.selection)
+    assertEquals(Range(0, 3), ime.composing)
+    assertEquals("abc", ime.composingText())
+    ime.beginBatchEdit()
+    ime.reset()
+    assertNull(ime.composing)
+    assertNull(ime.composingText())
+    assertEquals(0, ime.batchDepth)
+  }
 }
