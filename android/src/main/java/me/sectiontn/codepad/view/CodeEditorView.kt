@@ -942,7 +942,8 @@ class CodeEditorView(context: Context) : View(context) {
     if (isReadOnly) return null
     bridge.fillEditorInfo(outAttrs, suggestions, placeholder, core.selection, ime.window(EDITOR_INFO_WINDOW, EDITOR_INFO_WINDOW))
     lastInputType = outAttrs.inputType
-    return EditorInputConnection(this)
+    val connection = EditorInputConnection(this)
+    return if (debugSwitch()) RecordingInputConnection(connection, this) else connection
   }
 
   override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {

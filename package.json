@@ -48,6 +48,8 @@
     "host:treesitter": "scripts/build-host-treesitter.sh",
     "bench:scroll": "scripts/bench.sh scroll",
     "bench:memory": "scripts/bench.sh memory",
+    "bench:typing": "scripts/bench.sh typing",
+    "ime:record": "scripts/ime-record.sh",
     "release": "release-it --only-version"
   },
   "keywords": [
