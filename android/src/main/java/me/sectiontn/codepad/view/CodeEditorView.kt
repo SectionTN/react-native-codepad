@@ -141,6 +141,8 @@ class CodeEditorView(context: Context) : View(context) {
     override fun run() {
       caretVisible = !caretVisible
       invalidate()
+      // A flipped debug setting swaps the recording connection in or out without a tap.
+      if (debugSwitch() != recording) restartInput()
       postDelayed(this, CARET_BLINK_MS)
     }
   }
@@ -176,6 +178,7 @@ class CodeEditorView(context: Context) : View(context) {
   private var inputTime = 0L
   private var debugOn = false
   private var debugChecked = 0L
+  private var recording = false
 
   init {
     isFocusable = true
@@ -942,8 +945,9 @@ class CodeEditorView(context: Context) : View(context) {
     if (isReadOnly) return null
     bridge.fillEditorInfo(outAttrs, suggestions, placeholder, core.selection, ime.window(EDITOR_INFO_WINDOW, EDITOR_INFO_WINDOW))
     lastInputType = outAttrs.inputType
+    recording = debugSwitch()
     val connection = EditorInputConnection(this)
-    return if (debugSwitch()) RecordingInputConnection(connection, this) else connection
+    return if (recording) RecordingInputConnection(connection, this) else connection
   }
 
   override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: Rect?) {

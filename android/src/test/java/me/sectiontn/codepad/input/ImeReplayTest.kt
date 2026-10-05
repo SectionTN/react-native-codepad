@@ -72,12 +72,8 @@ class ImeReplayTest(private val session: JSONObject, private val label: String) 
     "setSelection" -> ime.setSelection(a.getInt(0), a.getInt(1))
     "beginBatchEdit" -> ime.beginBatchEdit()
     "endBatchEdit" -> ime.endBatchEdit()
-    "sendKeyEvent" -> {
-      if (a.getInt(0) == KeyEvent.ACTION_DOWN) {
-        assertTrue("$where key ${a.getInt(1)} does not replay", ime.sendKey(a.getInt(1), a.getInt(2)))
-      }
-      true
-    }
+    // Only key downs do anything, as in the view, and a key without a command (Shift) returns false there too.
+    "sendKeyEvent" -> a.getInt(0) == KeyEvent.ACTION_DOWN && ime.sendKey(a.getInt(1), a.getInt(2))
     "performEditorAction" -> {
       ime.finishComposingText()
       core.insertNewline()
