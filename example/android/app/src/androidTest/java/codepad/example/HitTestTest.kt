@@ -31,7 +31,9 @@ class HitTestTest {
           val row0 = ((editor.frame.caret ?: error("no caret")).top + 2f) * density
           assertEquals("wrap $wrap far right", 6, editor.offsetAt(599f, row0))
           assertEquals("wrap $wrap far left", 0, editor.offsetAt(0f, row0))
-          assertEquals("wrap $wrap below", editor.core.document.length, editor.offsetAt(300f, 399f))
+          // The wrapped rows can outgrow the 400 px view on dense screens, so probe just past the content, not a fixed y.
+          val below = editor.frame.contentHeight * density + 10f
+          assertEquals("wrap $wrap below", editor.core.document.length, editor.offsetAt(300f, below))
         }
       }
     }
