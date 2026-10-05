@@ -13,13 +13,14 @@ class Document(initialText: String = "") {
   init {
     val text = normalizeNewlines(initialText)
     var from = 0
+    // Exact capacity and no substring copies: the default builder adds 16 spare chars to every line.
     while (true) {
       val nl = text.indexOf('\n', from)
       if (nl < 0) {
-        lines.add(StringBuilder(text.substring(from)))
+        lines.add(StringBuilder(text.length - from).append(text, from, text.length))
         break
       }
-      lines.add(StringBuilder(text.substring(from, nl)))
+      lines.add(StringBuilder(nl - from).append(text, from, nl))
       from = nl + 1
     }
     length = text.length
@@ -105,7 +106,8 @@ class Document(initialText: String = "") {
       fresh.add(StringBuilder(prefix).append(parts[0]).append(suffix))
     } else {
       fresh.add(StringBuilder(prefix).append(parts[0]))
-      for (i in 1 until parts.size - 1) fresh.add(StringBuilder(parts[i]))
+      // Exact capacity: the default adds 16 spare chars per line, which is a third of a typical line.
+      for (i in 1 until parts.size - 1) fresh.add(StringBuilder(parts[i].length).append(parts[i]))
       fresh.add(StringBuilder(parts[parts.size - 1]).append(suffix))
     }
     lines.subList(sl, el + 1).clear()

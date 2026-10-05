@@ -30,9 +30,9 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
 
   override val view: View = editor
 
+  // Not mirrored: the document owns the text after the first load and a second copy of a big file is waste.
   override var initialValue: String? = null
     set(value) {
-      field = value
       if (!loaded && value != null) {
         loaded = true
         editor.setInitialText(value)
