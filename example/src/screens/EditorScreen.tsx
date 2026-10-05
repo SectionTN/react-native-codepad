@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { CodeEditor, type CodeEditorRef, githubDark } from 'react-native-codepad';
+import { CodeEditor, type CodeEditorRef, githubDark, type Suggestions } from 'react-native-codepad';
 
 const block = [
   '// readFile with retries',
@@ -24,6 +24,8 @@ const block = [
 
 const sample = new Array(40).fill(block).join('\n');
 
+const SUGGESTIONS: Suggestions[] = ['off', 'forceOff', 'on'];
+
 function Toggle({ label, value, onPress }: { label: string; value: boolean; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={[styles.toggle, value && styles.toggleOn]}>
@@ -39,6 +41,10 @@ export function EditorScreen() {
   const [activeLine, setActiveLine] = useState(true);
   const [empty, setEmpty] = useState(false);
   const [status, setStatus] = useState('tap, scroll or select');
+  const [change, setChange] = useState('no edits yet');
+  const [suggestions, setSuggestions] = useState<Suggestions>('off');
+  const [autoClose, setAutoClose] = useState(true);
+  const [focused, setFocused] = useState(false);
   return (
     <View style={styles.screen}>
       <View style={styles.bar}>
@@ -52,8 +58,26 @@ export function EditorScreen() {
           onPress={() => editor.current?.scrollToLine(0, { animated: true })}
         />
         <Toggle label="Line 300" value={false} onPress={() => editor.current?.scrollToLine(300)} />
+        <Toggle label="Undo" value={false} onPress={() => editor.current?.undo()} />
+        <Toggle label="Redo" value={false} onPress={() => editor.current?.redo()} />
+        <Toggle
+          label={focused ? 'Blur' : 'Focus'}
+          value={focused}
+          onPress={() => (focused ? editor.current?.blur() : editor.current?.focus())}
+        />
+        <Toggle
+          label={`Sugg ${suggestions}`}
+          value={suggestions !== 'off'}
+          onPress={() =>
+            setSuggestions(
+              (s) => SUGGESTIONS[(SUGGESTIONS.indexOf(s) + 1) % SUGGESTIONS.length] ?? 'off',
+            )
+          }
+        />
+        <Toggle label="Auto" value={autoClose} onPress={() => setAutoClose((v) => !v)} />
       </View>
       <Text style={styles.status}>{status}</Text>
+      <Text style={styles.status}>{change}</Text>
       <CodeEditor
         key={empty ? 'empty' : 'sample'}
         ref={editor}
@@ -67,6 +91,15 @@ export function EditorScreen() {
         placeholder="Start typing"
         scrollEnabled
         contentInsets={{ bottom: 24 }}
+        suggestions={suggestions}
+        autoCloseBrackets={autoClose}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onChange={(e) =>
+          setChange(
+            `rev ${e.revision}: -${e.end - e.start} +${e.text.length} at ${e.start} (${e.origin})`,
+          )
+        }
         onReady={() => console.log('codepad ready, lines', editor.current?.getLineCount())}
         onScroll={(e) => {
           const lines = editor.current?.getVisibleLines();
