@@ -250,4 +250,17 @@ class ImeSessionTest {
     assertNull(ime.composingText())
     assertEquals(0, ime.batchDepth)
   }
+
+  @Test
+  fun keysFromTheImeRunCoreCommands() {
+    val (core, ime) = session("ab", 2)
+    ime.setComposingText("c", 1)
+    assertTrue(ime.sendKey(android.view.KeyEvent.KEYCODE_DEL, 0))
+    assertEquals("ab", core.document.text())
+    assertNull(ime.composing)
+    assertTrue(ime.sendKey(android.view.KeyEvent.KEYCODE_ENTER, 0))
+    assertEquals("ab\n", core.document.text())
+    assertFalse(ime.sendKey(android.view.KeyEvent.KEYCODE_Q, 0))
+    assertFalse(ime.sendKey(android.view.KeyEvent.KEYCODE_DPAD_DOWN, 0))
+  }
 }

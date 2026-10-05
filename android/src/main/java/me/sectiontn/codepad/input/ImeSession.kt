@@ -132,6 +132,17 @@ class ImeSession(private val core: EditorCore) {
     return batchDepth > 0
   }
 
+  /** A key event the keyboard sent instead of text. Editing keys end the composition first, like a tap would. */
+  fun sendKey(keyCode: Int, metaState: Int): Boolean {
+    val command = KeyCommands.map(keyCode, metaState) ?: return false
+    var handled = false
+    mutate {
+      if (command.edits) endComposition()
+      handled = CoreCommands.run(core, command)
+    }
+    return handled
+  }
+
   /** A change the session did not make. Returns true when it hit the composing text, which the view answers with restartInput. */
   fun onExternalChange(change: Change): Boolean {
     val c = composing ?: return false
