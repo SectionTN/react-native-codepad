@@ -1,0 +1,1543 @@
+{
+  "name": "backspace-hold",
+  "source": "recorded on 2510ERA8BG",
+  "ime": "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME",
+  "recordedAt": "2026-10-05",
+  "sessions": [
+    {
+      "inputType": 655361,
+      "initial": {
+        "text": "",
+        "selection": [
+          0,
+          0
+        ]
+      },
+      "steps": [
+        {
+          "t": 24,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "",
+            "selStart": 0,
+            "selEnd": 0,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 32,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        }
+      ]
+    },
+    {
+      "inputType": 655361,
+      "initial": {
+        "text": "",
+        "selection": [
+          0,
+          0
+        ]
+      },
+      "steps": [
+        {
+          "t": 36200,
+          "call": "commitText",
+          "args": [
+            "a",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              1,
+              1
+            ],
+            "comp": null,
+            "len": 1,
+            "text": "a"
+          }
+        },
+        {
+          "t": 36582,
+          "call": "commitText",
+          "args": [
+            "b",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              2,
+              2
+            ],
+            "comp": null,
+            "len": 2,
+            "text": "ab"
+          }
+        },
+        {
+          "t": 36882,
+          "call": "commitText",
+          "args": [
+            "c",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              3,
+              3
+            ],
+            "comp": null,
+            "len": 3,
+            "text": "abc"
+          }
+        },
+        {
+          "t": 37181,
+          "call": "commitText",
+          "args": [
+            "d",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              4,
+              4
+            ],
+            "comp": null,
+            "len": 4,
+            "text": "abcd"
+          }
+        },
+        {
+          "t": 37532,
+          "call": "commitText",
+          "args": [
+            "e",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              5,
+              5
+            ],
+            "comp": null,
+            "len": 5,
+            "text": "abcde"
+          }
+        },
+        {
+          "t": 37850,
+          "call": "commitText",
+          "args": [
+            "f",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "abcdef"
+          }
+        },
+        {
+          "t": 38152,
+          "call": "commitText",
+          "args": [
+            "g",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              7,
+              7
+            ],
+            "comp": null,
+            "len": 7,
+            "text": "abcdefg"
+          }
+        },
+        {
+          "t": 38494,
+          "call": "commitText",
+          "args": [
+            "h",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              8,
+              8
+            ],
+            "comp": null,
+            "len": 8,
+            "text": "abcdefgh"
+          }
+        },
+        {
+          "t": 38793,
+          "call": "commitText",
+          "args": [
+            "i",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              9,
+              9
+            ],
+            "comp": null,
+            "len": 9,
+            "text": "abcdefghi"
+          }
+        },
+        {
+          "t": 39093,
+          "call": "commitText",
+          "args": [
+            "j",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              10,
+              10
+            ],
+            "comp": null,
+            "len": 10,
+            "text": "abcdefghij"
+          }
+        },
+        {
+          "t": 40748,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              9,
+              9
+            ],
+            "comp": null,
+            "len": 9,
+            "text": "abcdefghi"
+          }
+        },
+        {
+          "t": 40752,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              9,
+              9
+            ],
+            "comp": null,
+            "len": 9,
+            "text": "abcdefghi"
+          }
+        },
+        {
+          "t": 40796,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              8,
+              8
+            ],
+            "comp": null,
+            "len": 8,
+            "text": "abcdefgh"
+          }
+        },
+        {
+          "t": 40797,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              8,
+              8
+            ],
+            "comp": null,
+            "len": 8,
+            "text": "abcdefgh"
+          }
+        },
+        {
+          "t": 40841,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              7,
+              7
+            ],
+            "comp": null,
+            "len": 7,
+            "text": "abcdefg"
+          }
+        },
+        {
+          "t": 40842,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              7,
+              7
+            ],
+            "comp": null,
+            "len": 7,
+            "text": "abcdefg"
+          }
+        },
+        {
+          "t": 40900,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "abcdef"
+          }
+        },
+        {
+          "t": 40901,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "abcdef"
+          }
+        },
+        {
+          "t": 40956,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              5,
+              5
+            ],
+            "comp": null,
+            "len": 5,
+            "text": "abcde"
+          }
+        },
+        {
+          "t": 40960,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              5,
+              5
+            ],
+            "comp": null,
+            "len": 5,
+            "text": "abcde"
+          }
+        },
+        {
+          "t": 41013,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              4,
+              4
+            ],
+            "comp": null,
+            "len": 4,
+            "text": "abcd"
+          }
+        },
+        {
+          "t": 41013,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              4,
+              4
+            ],
+            "comp": null,
+            "len": 4,
+            "text": "abcd"
+          }
+        },
+        {
+          "t": 41058,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              3,
+              3
+            ],
+            "comp": null,
+            "len": 3,
+            "text": "abc"
+          }
+        },
+        {
+          "t": 41058,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              3,
+              3
+            ],
+            "comp": null,
+            "len": 3,
+            "text": "abc"
+          }
+        },
+        {
+          "t": 41111,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              2,
+              2
+            ],
+            "comp": null,
+            "len": 2,
+            "text": "ab"
+          }
+        },
+        {
+          "t": 41111,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              2,
+              2
+            ],
+            "comp": null,
+            "len": 2,
+            "text": "ab"
+          }
+        },
+        {
+          "t": 41163,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              1,
+              1
+            ],
+            "comp": null,
+            "len": 1,
+            "text": "a"
+          }
+        },
+        {
+          "t": 41163,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              1,
+              1
+            ],
+            "comp": null,
+            "len": 1,
+            "text": "a"
+          }
+        },
+        {
+          "t": 41215,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41215,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41265,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41266,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41319,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41326,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41374,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41375,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41435,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41436,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41484,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41484,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41537,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41538,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41592,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41592,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41641,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41643,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41694,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41695,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41746,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41751,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41800,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41809,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41853,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41854,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41904,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41905,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41959,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 41960,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42008,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42009,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42061,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42062,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42116,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42118,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42165,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42166,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42226,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42227,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42270,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42271,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42323,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42324,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42374,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42375,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42426,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42435,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42479,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 42480,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        }
+      ]
+    }
+  ]
+}

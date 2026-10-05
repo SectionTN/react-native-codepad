@@ -1,31 +1,349 @@
 {
   "name": "latin-off",
-  "source": "hand written from the Gboard call pattern under TYPE_TEXT_FLAG_NO_SUGGESTIONS, replaced by a recording once the phone session runs",
+  "source": "recorded on 2510ERA8BG",
   "ime": "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME",
   "recordedAt": "2026-10-05",
   "sessions": [
     {
       "inputType": 655361,
-      "initial": {"text": "", "selection": [0, 0]},
+      "initial": {
+        "text": "",
+        "selection": [
+          0,
+          0
+        ]
+      },
       "steps": [
-        {"t": 0, "call": "beginBatchEdit", "args": [], "ret": true},
-        {"t": 1, "call": "commitText", "args": ["f", 1], "ret": true, "after": {"sel": [1, 1], "comp": null, "len": 1, "text": "f"}},
-        {"t": 2, "call": "endBatchEdit", "args": [], "ret": false},
-        {"t": 3, "call": "getTextBeforeCursor", "args": [40, 0], "ret": "f"},
-        {"t": 4, "call": "commitText", "args": ["n", 1], "after": {"sel": [2, 2], "text": "fn"}},
-        {"t": 5, "call": "commitText", "args": [" ", 1], "after": {"sel": [3, 3], "text": "fn "}},
-        {"t": 6, "call": "commitText", "args": ["(", 1], "after": {"sel": [4, 4], "comp": null, "text": "fn ()"}},
-        {"t": 7, "call": "commitText", "args": [")", 1], "after": {"sel": [5, 5], "text": "fn ()"}},
-        {"t": 8, "call": "commitText", "args": [" ", 1], "after": {"sel": [6, 6], "text": "fn () "}},
-        {"t": 9, "call": "commitText", "args": ["{", 1], "after": {"sel": [7, 7], "text": "fn () {}"}},
-        {"t": 10, "call": "sendKeyEvent", "args": [0, 66, 0], "after": {"sel": [12, 12], "text": "fn () {\n    \n}"}},
-        {"t": 11, "call": "sendKeyEvent", "args": [1, 66, 0]},
-        {"t": 12, "call": "commitText", "args": ["x", 1], "after": {"sel": [13, 13], "text": "fn () {\n    x\n}"}},
-        {"t": 13, "call": "deleteSurroundingText", "args": [1, 0], "ret": true, "after": {"sel": [12, 12], "text": "fn () {\n    \n}"}},
-        {"t": 14, "call": "getTextBeforeCursor", "args": [40, 0], "ret": "fn () {\n    "},
-        {"t": 15, "call": "getTextAfterCursor", "args": [40, 0], "ret": "\n}"},
-        {"t": 16, "call": "getSelectedText", "args": [0], "ret": null},
-        {"t": 17, "call": "getSurroundingText", "args": [4, 4, 0], "ret": {"text": "    \n}", "selStart": 4, "selEnd": 4, "offset": 8}}
+        {
+          "t": 30,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              0,
+              0
+            ],
+            "comp": null,
+            "len": 0,
+            "text": ""
+          }
+        },
+        {
+          "t": 22233,
+          "call": "commitText",
+          "args": [
+            "f",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              1,
+              1
+            ],
+            "comp": null,
+            "len": 1,
+            "text": "f"
+          }
+        },
+        {
+          "t": 22685,
+          "call": "commitText",
+          "args": [
+            "n",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              2,
+              2
+            ],
+            "comp": null,
+            "len": 2,
+            "text": "fn"
+          }
+        },
+        {
+          "t": 23141,
+          "call": "commitText",
+          "args": [
+            " ",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              3,
+              3
+            ],
+            "comp": null,
+            "len": 3,
+            "text": "fn "
+          }
+        },
+        {
+          "t": 63735,
+          "call": "commitText",
+          "args": [
+            "(",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              4,
+              4
+            ],
+            "comp": null,
+            "len": 5,
+            "text": "fn ()"
+          }
+        },
+        {
+          "t": 64276,
+          "call": "commitText",
+          "args": [
+            ")",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              5,
+              5
+            ],
+            "comp": null,
+            "len": 5,
+            "text": "fn ()"
+          }
+        },
+        {
+          "t": 64868,
+          "call": "commitText",
+          "args": [
+            " ",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "fn () "
+          }
+        },
+        {
+          "t": 65381,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            59,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "fn () "
+          }
+        },
+        {
+          "t": 65412,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            59,
+            1
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "fn () "
+          }
+        },
+        {
+          "t": 82777,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            59,
+            1
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "fn () "
+          }
+        },
+        {
+          "t": 82815,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            59,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              6,
+              6
+            ],
+            "comp": null,
+            "len": 6,
+            "text": "fn () "
+          }
+        },
+        {
+          "t": 104577,
+          "call": "commitText",
+          "args": [
+            "{",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              7,
+              7
+            ],
+            "comp": null,
+            "len": 8,
+            "text": "fn () {}"
+          }
+        },
+        {
+          "t": 105127,
+          "call": "commitText",
+          "args": [
+            "\n",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 14,
+            "text": "fn () {\n    \n}"
+          }
+        },
+        {
+          "t": 105137,
+          "call": "getSurroundingText",
+          "args": [
+            600,
+            600,
+            1
+          ],
+          "ret": {
+            "text": "fn () {\n    \n}",
+            "selStart": 12,
+            "selEnd": 12,
+            "offset": 0
+          },
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 14,
+            "text": "fn () {\n    \n}"
+          }
+        },
+        {
+          "t": 105341,
+          "call": "finishComposingText",
+          "args": [],
+          "ret": true,
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 14,
+            "text": "fn () {\n    \n}"
+          }
+        },
+        {
+          "t": 128730,
+          "call": "commitText",
+          "args": [
+            "x",
+            1
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              13,
+              13
+            ],
+            "comp": null,
+            "len": 15,
+            "text": "fn () {\n    x\n}"
+          }
+        },
+        {
+          "t": 129288,
+          "call": "sendKeyEvent",
+          "args": [
+            0,
+            67,
+            0
+          ],
+          "ret": true,
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 14,
+            "text": "fn () {\n    \n}"
+          }
+        },
+        {
+          "t": 129289,
+          "call": "sendKeyEvent",
+          "args": [
+            1,
+            67,
+            0
+          ],
+          "ret": false,
+          "after": {
+            "sel": [
+              12,
+              12
+            ],
+            "comp": null,
+            "len": 14,
+            "text": "fn () {\n    \n}"
+          }
+        }
       ]
     }
   ]
