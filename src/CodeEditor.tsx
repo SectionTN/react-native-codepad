@@ -3,6 +3,7 @@ import { callback, getHostComponent } from 'react-native-nitro-modules';
 import type {
   CodeEditorViewMethods,
   CodeEditorViewProps,
+  NativeChangeEvent,
   NativeScrollEvent,
   NativeSelection,
   NativeTheme,
@@ -47,9 +48,19 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     placeholder,
     scrollEnabled = true,
     contentInsets,
+    tabSize = 4,
+    insertSpaces = true,
+    autoIndent = true,
+    autoCloseBrackets = true,
+    suggestions = 'off',
+    autoFocus = false,
     onReady,
     onScroll,
     onSelectionChange,
+    onChange,
+    onChangeText,
+    onFocus,
+    onBlur,
     ...viewProps
   },
   ref,
@@ -61,6 +72,14 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   onScrollRef.current = onScroll;
   const onSelectionChangeRef = useRef(onSelectionChange);
   onSelectionChangeRef.current = onSelectionChange;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const onChangeTextRef = useRef(onChangeText);
+  onChangeTextRef.current = onChangeText;
+  const onFocusRef = useRef(onFocus);
+  onFocusRef.current = onFocus;
+  const onBlurRef = useRef(onBlur);
+  onBlurRef.current = onBlur;
   const nativeTheme = useMemo(() => normalizeTheme(theme), [theme]);
 
   // Nitro re-sends a function prop and re-invokes hybridRef whenever the wrapped object changes,
@@ -81,6 +100,16 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     () => callback((s: NativeSelection) => onSelectionChangeRef.current?.(s)),
     [],
   );
+  const onChangeCallback = useMemo(
+    () => callback((e: NativeChangeEvent) => onChangeRef.current?.(e)),
+    [],
+  );
+  const onChangeTextCallback = useMemo(
+    () => callback((text: string) => onChangeTextRef.current?.(text)),
+    [],
+  );
+  const onFocusCallback = useMemo(() => callback(() => onFocusRef.current?.()), []);
+  const onBlurCallback = useMemo(() => callback(() => onBlurRef.current?.()), []);
 
   // Until the native view reports in, reads see an empty document, so calling the ref before onReady is safe.
   useImperativeHandle(ref, () => ({
@@ -99,6 +128,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     positionToOffset: (pos) => native.current?.positionToOffset(pos.line, pos.column) ?? 0,
     getCursorRect: () => native.current?.getCursorRect() ?? null,
     getVisibleLines: () => native.current?.getVisibleLines() ?? { first: 0, last: 0 },
+    canUndo: () => native.current?.canUndo() ?? false,
+    canRedo: () => native.current?.canRedo() ?? false,
+    isFocused: () => native.current?.isFocused() ?? false,
     setText: (text, opts) =>
       native.current?.setText(text, opts?.keepHistory ?? false) ?? Promise.resolve(),
     setSelection: (sel) => native.current?.setSelection(sel.anchor, sel.head) ?? Promise.resolve(),
@@ -106,6 +138,18 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     scrollToLine: (line, opts) =>
       native.current?.scrollToLine(line, opts?.animated ?? false) ?? Promise.resolve(),
     revealSelection: () => native.current?.revealSelection() ?? Promise.resolve(),
+    replaceRange: (range, text) =>
+      native.current?.replaceRange(range.start, range.end, text) ?? Promise.resolve(),
+    insertText: (text) => native.current?.insertText(text) ?? Promise.resolve(),
+    undo: () => native.current?.undo() ?? Promise.resolve(),
+    redo: () => native.current?.redo() ?? Promise.resolve(),
+    indent: () => native.current?.indent() ?? Promise.resolve(),
+    outdent: () => native.current?.outdent() ?? Promise.resolve(),
+    cut: () => native.current?.cut() ?? Promise.resolve(),
+    copy: () => native.current?.copy() ?? Promise.resolve(),
+    paste: () => native.current?.paste() ?? Promise.resolve(),
+    focus: () => native.current?.focus() ?? Promise.resolve(),
+    blur: () => native.current?.blur() ?? Promise.resolve(),
   }));
 
   return (
@@ -124,9 +168,19 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       placeholder={placeholder}
       scrollEnabled={scrollEnabled}
       contentInsets={contentInsets}
+      tabSize={tabSize}
+      insertSpaces={insertSpaces}
+      autoIndent={autoIndent}
+      autoCloseBrackets={autoCloseBrackets}
+      suggestions={suggestions}
+      autoFocus={autoFocus}
       onReady={onReadyCallback}
       onScroll={onScrollCallback}
       onSelectionChange={onSelectionChangeCallback}
+      onChange={onChangeCallback}
+      onChangeText={onChangeText ? onChangeTextCallback : undefined}
+      onEditorFocus={onFocusCallback}
+      onEditorBlur={onBlurCallback}
       hybridRef={hybridRef}
     />
   );

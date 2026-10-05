@@ -27,6 +27,16 @@ type HostProps = {
   onSelectionChange: { f: (s: unknown) => void };
   onReady: { f: () => void };
   hybridRef: { f: (ref: unknown) => void };
+  suggestions: 'off' | 'forceOff' | 'on';
+  autoFocus: boolean;
+  tabSize: number;
+  insertSpaces: boolean;
+  autoIndent: boolean;
+  autoCloseBrackets: boolean;
+  onChange: { f: (e: unknown) => void };
+  onChangeText?: { f: (text: string) => void };
+  onEditorFocus: { f: () => void };
+  onEditorBlur: { f: () => void };
 };
 
 type Rendered = Awaited<ReturnType<typeof render>>;
@@ -176,5 +186,90 @@ describe('CodeEditor', () => {
     await ref.current?.revealSelection();
     expect(native.selectAll).toHaveBeenCalledTimes(1);
     expect(native.revealSelection).toHaveBeenCalledTimes(1);
+  });
+
+  it('wraps the change and focus events once and reads the latest handlers', async () => {
+    const onChange = jest.fn();
+    const onFocus = jest.fn();
+    const api = await render(<CodeEditor onChange={onChange} onFocus={onFocus} />);
+    const before = host(api);
+    expect(before.suggestions).toBe('off');
+    expect(before.autoFocus).toBe(false);
+    expect(before.tabSize).toBe(4);
+    expect(before.insertSpaces).toBe(true);
+    expect(before.autoIndent).toBe(true);
+    expect(before.autoCloseBrackets).toBe(true);
+    expect(before.onChangeText).toBeUndefined();
+    const later = jest.fn();
+    const onChangeText = jest.fn();
+    await api.rerender(
+      <CodeEditor onChange={later} onFocus={onFocus} onChangeText={onChangeText} />,
+    );
+    const after = host(api);
+    expect(after.onChange).toBe(before.onChange);
+    expect(after.onEditorFocus).toBe(before.onEditorFocus);
+    expect(after.onEditorBlur).toBe(before.onEditorBlur);
+    const event = { start: 0, end: 0, text: 'a', origin: 'input', revision: 1 };
+    after.onChange.f(event);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(later).toHaveBeenCalledWith(event);
+    after.onChangeText?.f('a');
+    expect(onChangeText).toHaveBeenCalledWith('a');
+    after.onEditorFocus.f();
+    expect(onFocus).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps the editing methods onto the native object', async () => {
+    const ref = createRef<CodeEditorRef>();
+    const props = host(await render(<CodeEditor ref={ref} />));
+    expect(ref.current?.canUndo()).toBe(false);
+    expect(ref.current?.isFocused()).toBe(false);
+    await ref.current?.undo();
+    const native = {
+      canUndo: () => true,
+      canRedo: () => false,
+      isFocused: () => true,
+      replaceRange: jest.fn(() => Promise.resolve()),
+      insertText: jest.fn(() => Promise.resolve()),
+      undo: jest.fn(() => Promise.resolve()),
+      redo: jest.fn(() => Promise.resolve()),
+      indent: jest.fn(() => Promise.resolve()),
+      outdent: jest.fn(() => Promise.resolve()),
+      cut: jest.fn(() => Promise.resolve()),
+      copy: jest.fn(() => Promise.resolve()),
+      paste: jest.fn(() => Promise.resolve()),
+      focus: jest.fn(() => Promise.resolve()),
+      blur: jest.fn(() => Promise.resolve()),
+    };
+    props.hybridRef.f(native);
+    expect(ref.current?.canUndo()).toBe(true);
+    expect(ref.current?.canRedo()).toBe(false);
+    expect(ref.current?.isFocused()).toBe(true);
+    await ref.current?.replaceRange({ start: 1, end: 3 }, 'xy');
+    expect(native.replaceRange).toHaveBeenCalledWith(1, 3, 'xy');
+    await ref.current?.insertText('q');
+    expect(native.insertText).toHaveBeenCalledWith('q');
+    await ref.current?.undo();
+    await ref.current?.redo();
+    await ref.current?.indent();
+    await ref.current?.outdent();
+    await ref.current?.cut();
+    await ref.current?.copy();
+    await ref.current?.paste();
+    await ref.current?.focus();
+    await ref.current?.blur();
+    for (const fn of [
+      native.undo,
+      native.redo,
+      native.indent,
+      native.outdent,
+      native.cut,
+      native.copy,
+      native.paste,
+      native.focus,
+      native.blur,
+    ]) {
+      expect(fn).toHaveBeenCalledTimes(1);
+    }
   });
 });

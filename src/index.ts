@@ -6,6 +6,8 @@ export { githubDark } from './themes/githubDark';
 export { githubLight } from './themes/githubLight';
 export { oneDark } from './themes/oneDark';
 export type {
+  ChangeEvent,
+  ChangeOrigin,
   CodeEditorProps,
   CodeEditorRef,
   ContentInsets,
@@ -15,6 +17,7 @@ export type {
   ScrollEvent,
   Selection,
   SelectionChangeEvent,
+  Suggestions,
   Theme,
   TokenStyle,
 } from './types';
