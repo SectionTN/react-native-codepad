@@ -1,5 +1,7 @@
 package me.sectiontn.codepad.view
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -17,6 +19,7 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.widget.Magnifier
 import me.sectiontn.codepad.core.Change
+import me.sectiontn.codepad.core.ChangeOrigin
 import me.sectiontn.codepad.core.EditorCore
 import me.sectiontn.codepad.core.Range
 import me.sectiontn.codepad.core.Selection
@@ -121,6 +124,8 @@ class CodeEditorView(context: Context) : View(context) {
     handles.insertionVisible = false
     invalidate()
   }
+  private val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+  private val menu = EditMenu(this, MenuHost())
 
   init {
     isFocusable = true
@@ -246,6 +251,30 @@ class CodeEditorView(context: Context) : View(context) {
     return doc.lineStart(line) + entry.layout.columnAt(rowInLine, viewport.contentX(x))
   }
 
+  fun copy(): Boolean {
+    val sel = core.selection
+    if (sel.isEmpty) return false
+    clipboard.setPrimaryClip(ClipData.newPlainText("text", core.document.text(sel.min, sel.max)))
+    return true
+  }
+
+  fun cut() {
+    if (isReadOnly || !copy()) return
+    core.delete()
+  }
+
+  fun paste() {
+    if (isReadOnly) return
+    val text = clipboardText() ?: return
+    core.insertText(text, ChangeOrigin.Input)
+    revealSelection()
+  }
+
+  fun selectAll() {
+    core.selectAll()
+    menu.invalidateContentRect()
+  }
+
   private fun applyFont(typeface: Typeface, sizeDp: Float) {
     val size = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, sizeDp, resources.displayMetrics)
     paint.typeface = typeface
@@ -275,6 +304,7 @@ class CodeEditorView(context: Context) : View(context) {
     engine().edit(change, SyntaxEngine.pointsFor(doc, change))
     if (updateGutter()) relayout() else viewport.clamp()
     hideInsertionHandle()
+    menu.hide()
     restartBlink()
     invalidate()
   }
@@ -352,6 +382,7 @@ class CodeEditorView(context: Context) : View(context) {
 
   private fun onScrolled() {
     hideInsertionHandle()
+    menu.invalidateContentRect()
     scrollDirty = true
     invalidate()
   }
@@ -434,6 +465,44 @@ class CodeEditorView(context: Context) : View(context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) magnifier?.dismiss()
   }
 
+  private fun clipboardText(): String? {
+    val clip = clipboard.primaryClip ?: return null
+    if (clip.itemCount == 0) return null
+    return clip.getItemAt(0).coerceToText(context)?.toString()?.takeIf { it.isNotEmpty() }
+  }
+
+  /** Bounds of the visible selection ends, or the caret, for anchoring the floating menu. */
+  private fun selectionRect(out: Rect) {
+    val m = rowMetrics()
+    val sel = core.selection
+    out.setEmpty()
+    if (anchorAt(sel.min, m)) out.set(anchorX.toInt(), (anchorY - m.rowHeight).toInt(), anchorX.toInt() + 1, anchorY.toInt())
+    if (!sel.isEmpty && anchorAt(sel.max, m)) {
+      out.union(anchorX.toInt(), (anchorY - m.rowHeight).toInt(), anchorX.toInt() + 1, anchorY.toInt())
+    }
+    if (out.isEmpty) out.set(viewport.textAreaLeft, 0, viewport.textAreaLeft + 1, 1)
+  }
+
+  private inner class MenuHost : EditMenu.Host {
+    override fun contentRect(out: Rect) = selectionRect(out)
+
+    override fun canCut(): Boolean = !isReadOnly && !core.selection.isEmpty
+
+    override fun canCopy(): Boolean = !core.selection.isEmpty
+
+    override fun canPaste(): Boolean = !isReadOnly && clipboardText() != null
+
+    override fun cut() = this@CodeEditorView.cut()
+
+    override fun copy() {
+      this@CodeEditorView.copy()
+    }
+
+    override fun paste() = this@CodeEditorView.paste()
+
+    override fun selectAll() = this@CodeEditorView.selectAll()
+  }
+
   private inner class GestureHost : GestureMachine.Host {
     override fun offsetAt(x: Float, y: Float): Int = this@CodeEditorView.offsetAt(x, y)
 
@@ -453,6 +522,7 @@ class CodeEditorView(context: Context) : View(context) {
     override fun canScroll(dx: Float, dy: Float): Boolean = isScrollEnabled && viewport.canScroll(dx, dy)
 
     override fun placeCaret(offset: Int) {
+      menu.hide()
       requestFocus()
       core.setSelection(offset, offset)
       showInsertionHandle()
@@ -475,6 +545,7 @@ class CodeEditorView(context: Context) : View(context) {
     }
 
     override fun moveHandle(handle: GestureMachine.Handle, x: Float, y: Float) {
+      menu.hide()
       val textY = y - grabDy - rowMetrics().rowHeight / 2f
       val offset = this@CodeEditorView.offsetAt(x, textY)
       if (handle == GestureMachine.Handle.Insertion) {
@@ -488,9 +559,12 @@ class CodeEditorView(context: Context) : View(context) {
 
     override fun endHandleDrag() {
       dismissMagnifier()
+      menu.show()
     }
 
-    override fun beginScroll() {}
+    override fun beginScroll() {
+      menu.hide()
+    }
 
     override fun scrollBy(dx: Float, dy: Float) = scrollByTouch(dx, dy)
 
@@ -499,7 +573,9 @@ class CodeEditorView(context: Context) : View(context) {
       fling(velocityX, velocityY)
     }
 
-    override fun showMenu() {}
+    override fun showMenu() {
+      menu.show()
+    }
 
     override fun disallowIntercept() {
       parent?.requestDisallowInterceptTouchEvent(true)
@@ -598,6 +674,7 @@ class CodeEditorView(context: Context) : View(context) {
     removeCallbacks(blink)
     removeCallbacks(hideInsertion)
     dismissMagnifier()
+    menu.hide()
     scroller.abort()
     engine?.close()
     engine = null

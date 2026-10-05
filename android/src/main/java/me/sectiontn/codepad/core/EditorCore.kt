@@ -39,8 +39,8 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     return change
   }
 
-  fun insertText(text: String) {
-    applyChange(selection.min, selection.max, text, ChangeOrigin.Api, typing = false, caretAfter = true)
+  fun insertText(text: String, origin: ChangeOrigin = ChangeOrigin.Api) {
+    applyChange(selection.min, selection.max, text, origin, typing = false, caretAfter = true)
   }
 
   fun setText(text: String, keepHistory: Boolean = false) {
