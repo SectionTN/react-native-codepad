@@ -1,7 +1,5 @@
 package me.sectiontn.codepad.view
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -29,6 +27,7 @@ import me.sectiontn.codepad.core.ChangeOrigin
 import me.sectiontn.codepad.core.EditorCore
 import me.sectiontn.codepad.core.EditorSettings
 import me.sectiontn.codepad.core.Range
+import me.sectiontn.codepad.core.SearchQuery
 import me.sectiontn.codepad.core.Selection
 import me.sectiontn.codepad.core.TextMovement
 import me.sectiontn.codepad.input.CoreCommands
@@ -85,7 +84,6 @@ class CodeEditorView(context: Context) : View(context) {
   private val mainHandler = Handler(Looper.getMainLooper())
   private val paint = TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG)
   private val gutterPaint = TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG)
-  private val fill = Paint()
   private var theme: ThemeColors = ThemeColors.default
   private var lineHeight = 1.4f
   private var languageId: String? = null
@@ -97,6 +95,7 @@ class CodeEditorView(context: Context) : View(context) {
   private var heights = HeightMap(1)
   private val viewport = Viewport(heights)
   private val cache = LayoutCache<Entry>(64)
+  private val painter = EditorPainter(viewport, { cache[it]?.layout }, paint, gutterPaint, density)
   private var goalX: Float? = null
   private var movingVertically = false
   private val geometry = object : LineGeometry {
@@ -129,6 +128,7 @@ class CodeEditorView(context: Context) : View(context) {
   private var highlightActiveLine = true
   private var matchBrackets = true
   private var brackets = BracketHighlight(core)
+  private var search: SearchController? = null
   private var placeholder: String? = null
   private var drawn = false
 
@@ -171,7 +171,7 @@ class CodeEditorView(context: Context) : View(context) {
     handles.insertionVisible = false
     invalidate()
   }
-  private val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+  private val clipboard = ClipboardActions(context)
   private val menu = EditMenu(this, MenuHost())
 
   var onFocusListener: ((Boolean) -> Unit)? = null
@@ -245,6 +245,7 @@ class CodeEditorView(context: Context) : View(context) {
 
   fun setTheme(colors: ThemeColors) {
     theme = colors
+    painter.theme = colors
     paint.color = colors.foreground
     scroller.setColor(colors.foreground)
     handles.setColor(colors.cursor)
@@ -375,7 +376,7 @@ class CodeEditorView(context: Context) : View(context) {
     val x = Math.round(entry.layout.caretX(col))
     val top = (heights.rowStart(line) + row) * m.rowHeight
     scroller.abort()
-    if (viewport.reveal(x, top, x + dp(CARET_WIDTH_DP), top + m.rowHeight)) onScrolled()
+    if (viewport.reveal(x, top, x + dp(EditorPainter.CARET_WIDTH_DP), top + m.rowHeight)) onScrolled()
   }
 
   /** Document offset under a view point. Points left of the text snap to the row start, points below to the end. */
@@ -390,29 +391,43 @@ class CodeEditorView(context: Context) : View(context) {
     return doc.lineStart(line) + entry.layout.columnAt(rowInLine, viewport.contentX(x))
   }
 
-  fun copy(): Boolean {
-    val sel = core.selection
-    if (sel.isEmpty) return false
-    clipboard.setPrimaryClip(ClipData.newPlainText("text", core.document.text(sel.min, sel.max)))
-    return true
-  }
+  fun copy(): Boolean = clipboard.copy(core)
 
   fun cut(origin: ChangeOrigin = ChangeOrigin.Input) {
-    if (isReadOnly || !copy()) return
-    val sel = core.selection
-    if (origin == ChangeOrigin.Api) core.replace(sel.min, sel.max, "", origin) else core.delete()
+    if (!isReadOnly) clipboard.cut(core, origin)
   }
 
   fun paste(origin: ChangeOrigin = ChangeOrigin.Input) {
-    if (isReadOnly) return
-    val text = clipboardText() ?: return
-    core.insertText(text, origin)
-    revealSelection()
+    if (!isReadOnly && clipboard.paste(core, origin)) revealSelection()
   }
 
   fun selectAll() {
     core.selectAll()
     menu.invalidateContentRect()
+  }
+
+  /** Throws IllegalArgumentException for an invalid regex. The matches arrive through whenSearchFresh. */
+  fun setSearch(query: SearchQuery) = search().setQuery(query)
+
+  fun clearSearch() {
+    search?.setQuery(null)
+  }
+
+  fun whenSearchFresh(block: () -> Unit) = search?.whenFresh(block) ?: block()
+
+  val matchCount: Int get() = core.matchCount
+
+  fun findNext(): EditorCore.SearchHit? = core.findNext().also { afterSearchMove() }
+
+  fun findPrevious(): EditorCore.SearchHit? = core.findPrevious().also { afterSearchMove() }
+
+  fun replaceCurrent(text: String): Boolean = core.replaceCurrent(text).also { afterSearchMove() }
+
+  fun replaceAll(text: String): Int = core.replaceAll(text).also { afterSearchMove() }
+
+  private fun afterSearchMove() {
+    revealSelection()
+    invalidate()
   }
 
   private fun applyFont(typeface: Typeface, sizeDp: Float) {
@@ -429,6 +444,16 @@ class CodeEditorView(context: Context) : View(context) {
     core.onSelectionChange = { onSelectionMoved() }
     ime = ImeSession(core)
     brackets = BracketHighlight(core).also { it.enabled = matchBrackets }
+    search?.close()
+    search = null
+  }
+
+  private fun search(): SearchController = search ?: SearchController(core, { post(it) }).also { controller ->
+    controller.onResult = { count, ms ->
+      if (debugSwitch()) Log.i(DebugSwitch.TAG, "{\"call\":\"search\",\"count\":$count,\"ms\":$ms}")
+      invalidate()
+    }
+    search = controller
   }
 
   private fun onSelectionMoved() {
@@ -448,6 +473,7 @@ class CodeEditorView(context: Context) : View(context) {
     heights.replaceLines(first, oldCount, newCount)
     cache.shift(first, oldCount, newCount)
     engine().edit(change, SyntaxEngine.pointsFor(doc, change))
+    search?.onChange(change)
     if (updateGutter()) relayout() else viewport.clamp()
     hideInsertionHandle()
     menu.hide()
@@ -503,7 +529,7 @@ class CodeEditorView(context: Context) : View(context) {
 
   private fun updateGutter(): Boolean {
     val w = if (lineNumbers) {
-      GutterMetrics.width(core.document.lineCount, paint.measureText("0"), dp(GUTTER_PADDING_DP).toFloat())
+      GutterMetrics.width(core.document.lineCount, paint.measureText("0"), dp(EditorPainter.GUTTER_PADDING_DP).toFloat())
     } else {
       0
     }
@@ -729,17 +755,8 @@ class CodeEditorView(context: Context) : View(context) {
   private fun sendCursorAnchorInfo(m: RowMetrics) {
     val doc = core.document
     val sel = core.selection
-    val caretLine = doc.lineAt(sel.head)
-    var caret: RectF? = null
-    var baseline = 0f
-    cache[caretLine]?.let { entry ->
-      val col = sel.head - doc.lineStart(caretLine)
-      val row = entry.layout.rowOf(col)
-      val x = viewport.viewX(entry.layout.caretX(col))
-      val top = (viewport.lineTop(caretLine) + row * m.rowHeight).toFloat()
-      caret = RectF(x, top, x + dp(CARET_WIDTH_DP), top + m.rowHeight)
-      baseline = top - m.ascent
-    }
+    val caret = caretRect(m, doc.lineAt(sel.head))
+    val baseline = caret?.let { it.top - m.ascent } ?: 0f
     val range = ime.composing
     val bounds = ArrayList<RectF>()
     var text: String? = null
@@ -760,12 +777,6 @@ class CodeEditorView(context: Context) : View(context) {
       }
     }
     bridge.sendCursorAnchorInfo(sel, caret, baseline, range?.start ?: -1, text, bounds)
-  }
-
-  private fun clipboardText(): String? {
-    val clip = clipboard.primaryClip ?: return null
-    if (clip.itemCount == 0) return null
-    return clip.getItemAt(0).coerceToText(context)?.toString()?.takeIf { it.isNotEmpty() }
   }
 
   /** Bounds of the selection ends, or the caret, for anchoring the floating menu. Ends off screen keep their real position so the toolbar hides with them. */
@@ -793,7 +804,7 @@ class CodeEditorView(context: Context) : View(context) {
 
     override fun canCopy(): Boolean = !core.selection.isEmpty
 
-    override fun canPaste(): Boolean = !isReadOnly && clipboardText() != null
+    override fun canPaste(): Boolean = !isReadOnly && clipboard.text() != null
 
     override fun cut() = this@CodeEditorView.cut()
 
@@ -1045,6 +1056,8 @@ class CodeEditorView(context: Context) : View(context) {
     scroller.abort()
     engine?.close()
     engine = null
+    search?.close()
+    search = null
     snapshot?.close()
     snapshot = null
   }
@@ -1065,15 +1078,15 @@ class CodeEditorView(context: Context) : View(context) {
     val lastBound = minOf(doc.lineCount - 1, firstLine + height / m.rowHeight + 1)
     prepare(firstLine, lastBound, m)
     val caretLine = doc.lineAt(core.selection.head)
-    drawActiveLine(canvas, caretLine)
-    drawFills(canvas, firstLine)
-    val lastLine = drawText(canvas, firstLine)
-    drawComposing(canvas, m, firstLine)
-    drawGutter(canvas, m, firstLine, lastLine, caretLine)
-    drawCaret(canvas, m, caretLine)
+    if (highlightActiveLine && core.selection.isEmpty) painter.drawActiveLine(canvas, caretLine, width, height)
+    drawFills(canvas, firstLine, lastBound)
+    val lastLine = painter.drawText(canvas, doc, firstLine, width, height)
+    drawComposing(canvas, firstLine)
+    if (lineNumbers) painter.drawGutter(canvas, m, firstLine, lastLine, caretLine, height)
+    if (isFocused && caretVisible && core.selection.isEmpty) caretRect(m, caretLine)?.let { painter.drawCaret(canvas, it, height) }
     placeHandles(m)
     handles.draw(canvas)
-    drawPlaceholder(canvas, m)
+    placeholder?.let { if (doc.length == 0) painter.drawPlaceholder(canvas, m, it) }
     if (scroller.draw(canvas, width, height)) postInvalidateOnAnimation()
     publish(firstLine, lastLine, caretLine, m)
     flushIme(m)
@@ -1125,20 +1138,17 @@ class CodeEditorView(context: Context) : View(context) {
     }
   }
 
-  private fun drawActiveLine(canvas: Canvas, caretLine: Int) {
-    if (!highlightActiveLine || !core.selection.isEmpty) return
-    val top = viewport.lineTop(caretLine)
-    val bottom = top + heights.rows(caretLine) * viewport.rowHeight
-    if (bottom <= 0 || top >= height) return
-    fill.color = theme.activeLine
-    canvas.drawRect(viewport.textAreaLeft.toFloat(), top.toFloat(), width.toFloat(), bottom.toFloat(), fill)
-  }
-
-  /** Fills under the text in this order: bracket pair, then selection. */
-  private fun drawFills(canvas: Canvas, firstLine: Int) {
+  /** Fills under the text in this order: search matches, bracket pair, selection. */
+  private fun drawFills(canvas: Canvas, firstLine: Int, lastLine: Int) {
     canvas.save()
     canvas.clipRect(viewport.textAreaLeft, 0, width, height)
-    val consistent = snapshot?.takeIf { it.revision == core.document.revision }
+    val doc = core.document
+    search?.takeIf { it.active }?.let {
+      val window = Range(doc.lineStart(firstLine), doc.lineEnd(lastLine))
+      val active = core.selection.range.takeIf { r -> !r.isEmpty }
+      decorations.drawMatches(canvas, rowGeometry, it.matchesForPaint(), active, firstLine, window, theme.searchMatch, theme.searchMatchActive)
+    }
+    val consistent = snapshot?.takeIf { it.revision == doc.revision }
     brackets.pair(consistent, highlighter)?.let {
       decorations.drawBrackets(canvas, rowGeometry, it, firstLine, theme.matchingBracket)
     }
@@ -1147,98 +1157,25 @@ class CodeEditorView(context: Context) : View(context) {
     canvas.restore()
   }
 
-  /** Returns the last line drawn. */
-  private fun drawText(canvas: Canvas, firstLine: Int): Int {
-    val doc = core.document
-    var lastLine = firstLine
-    canvas.save()
-    canvas.clipRect(viewport.textAreaLeft, 0, width, height)
-    var line = firstLine
-    while (line < doc.lineCount) {
-      val top = viewport.lineTop(line)
-      if (top >= height) break
-      val entry = cache[line] ?: break
-      canvas.save()
-      canvas.translate(viewport.viewX(0f), top.toFloat())
-      entry.layout.draw(canvas)
-      canvas.restore()
-      lastLine = line
-      line++
-    }
-    canvas.restore()
-    return lastLine
-  }
-
-  /** One dp underline below the composing text, the same cue EditText gives while the keyboard composes. */
-  private fun drawComposing(canvas: Canvas, m: RowMetrics, firstLine: Int) {
+  private fun drawComposing(canvas: Canvas, firstLine: Int) {
     val range = ime.composing ?: return
-    val doc = core.document
-    val startLine = doc.lineAt(range.start)
-    val endLine = doc.lineAt(range.end)
-    if (endLine < firstLine) return
-    fill.color = theme.foreground
-    val x0 = viewport.viewX(0f)
-    val thickness = maxOf(1, dp(1f)).toFloat()
+    clippedToText(canvas) {
+      decorations.drawUnderline(canvas, rowGeometry, range.start, range.end, firstLine, theme.foreground, maxOf(1, dp(1f)).toFloat())
+    }
+  }
+
+  private inline fun clippedToText(canvas: Canvas, block: () -> Unit) {
     canvas.save()
     canvas.clipRect(viewport.textAreaLeft, 0, width, height)
-    for (line in maxOf(startLine, firstLine)..endLine) {
-      val top = viewport.lineTop(line)
-      if (top >= height) break
-      val entry = cache[line] ?: break
-      val ls = doc.lineStart(line)
-      val from = if (line == startLine) range.start - ls else 0
-      val to = if (line == endLine) range.end - ls else doc.lineLength(line)
-      entry.layout.selectionRows(from, to) { row, left, right ->
-        val bottom = (top + (row + 1) * m.rowHeight).toFloat()
-        canvas.drawRect(x0 + left, bottom - thickness, x0 + right, bottom, fill)
-      }
-    }
+    block()
     canvas.restore()
   }
 
-  private fun drawGutter(canvas: Canvas, m: RowMetrics, firstLine: Int, lastLine: Int, caretLine: Int) {
-    if (!lineNumbers) return
-    val left = viewport.insetLeft.toFloat()
-    val right = (viewport.insetLeft + viewport.gutterWidth).toFloat()
-    fill.color = theme.gutterBackground
-    canvas.drawRect(left, 0f, right, height.toFloat(), fill)
-    val x = right - dp(GUTTER_PADDING_DP)
-    for (line in firstLine..lastLine) {
-      gutterPaint.color = if (line == caretLine) theme.gutterActiveForeground else theme.gutterForeground
-      canvas.drawText((line + 1).toString(), x, (viewport.lineTop(line) - m.ascent).toFloat(), gutterPaint)
-    }
-  }
-
-  private fun drawCaret(canvas: Canvas, m: RowMetrics, caretLine: Int) {
-    if (!isFocused || !caretVisible || !core.selection.isEmpty) return
-    val entry = cache[caretLine] ?: return
-    val col = core.selection.head - core.document.lineStart(caretLine)
-    val row = entry.layout.rowOf(col)
-    val x = viewport.viewX(entry.layout.caretX(col))
-    val top = (viewport.lineTop(caretLine) + row * m.rowHeight).toFloat()
-    if (top + m.rowHeight <= 0f || top >= height || x < viewport.textAreaLeft) return
-    fill.color = theme.cursor
-    canvas.drawRect(x - 1f, top, x - 1f + dp(CARET_WIDTH_DP), top + m.rowHeight, fill)
-  }
-
-  private fun drawPlaceholder(canvas: Canvas, m: RowMetrics) {
-    val text = placeholder ?: return
-    if (core.document.length > 0) return
-    paint.color = theme.gutterForeground
-    canvas.drawText(text, viewport.viewX(0f), (viewport.lineTop(0) - m.ascent).toFloat(), paint)
-    paint.color = theme.foreground
-  }
+  private fun caretRect(m: RowMetrics, caretLine: Int): RectF? =
+    painter.caretRect(m, caretLine, core.selection.head - core.document.lineStart(caretLine))
 
   private fun publish(firstLine: Int, lastLine: Int, caretLine: Int, m: RowMetrics) {
-    var caret: RectF? = null
-    val entry = cache[caretLine]
-    if (entry != null) {
-      val col = core.selection.head - core.document.lineStart(caretLine)
-      val row = entry.layout.rowOf(col)
-      val x = viewport.viewX(entry.layout.caretX(col))
-      val top = (viewport.lineTop(caretLine) + row * m.rowHeight).toFloat()
-      caret = RectF(x / density, top / density, (x + dp(CARET_WIDTH_DP)) / density, (top + m.rowHeight) / density)
-    }
+    val caret = caretRect(m, caretLine)?.let { RectF(it.left / density, it.top / density, it.right / density, it.bottom / density) }
     frame = FrameInfo(
       firstLine,
       lastLine,
@@ -1252,8 +1189,6 @@ class CodeEditorView(context: Context) : View(context) {
 
   companion object {
     private const val TEXT_PADDING_DP = 8f
-    private const val GUTTER_PADDING_DP = 8f
-    private const val CARET_WIDTH_DP = 2f
     private const val CARET_BLINK_MS = 500L
     private const val INSERTION_HANDLE_MS = 4000L
     private const val EDITOR_INFO_WINDOW = 2048

@@ -41,4 +41,10 @@ class Decorations {
     drawRange(canvas, g, pair[0], pair[0] + 1, firstLine, color)
     drawRange(canvas, g, pair[1], pair[1] + 1, firstLine, color)
   }
+
+  /** A line of [thickness] along the bottom of every row of [start, end), the composing cue. */
+  fun drawUnderline(canvas: Canvas, g: RowGeometry, start: Int, end: Int, firstLine: Int, color: Int, thickness: Float) {
+    fill.color = color
+    RangeRects.forEach(g, start, end, firstLine) { left, _, right, bottom -> canvas.drawRect(left, bottom - thickness, right, bottom, fill) }
+  }
 }
