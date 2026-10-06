@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CodeEditor, type CodeEditorRef, githubDark, type Suggestions } from 'react-native-codepad';
+import { SearchBar } from '../components/SearchBar';
 
 const block = [
   '// readFile with retries',
@@ -46,6 +47,7 @@ export function EditorScreen() {
   const [change, setChange] = useState('no edits yet');
   const [suggestions, setSuggestions] = useState<Suggestions>('off');
   const [autoClose, setAutoClose] = useState(true);
+  const [brackets, setBrackets] = useState(true);
   const [focused, setFocused] = useState(false);
   return (
     <View style={styles.screen}>
@@ -77,9 +79,11 @@ export function EditorScreen() {
           }
         />
         <Toggle label="Auto" value={autoClose} onPress={() => setAutoClose((v) => !v)} />
+        <Toggle label="Brackets" value={brackets} onPress={() => setBrackets((v) => !v)} />
       </View>
       <Text style={styles.status}>{status}</Text>
       <Text style={styles.status}>{change}</Text>
+      <SearchBar editor={editor} onStatus={setStatus} />
       <CodeEditor
         key={empty ? 'empty' : 'sample'}
         ref={editor}
@@ -95,6 +99,7 @@ export function EditorScreen() {
         contentInsets={INSETS}
         suggestions={suggestions}
         autoCloseBrackets={autoClose}
+        matchBrackets={brackets}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onChange={(e) =>

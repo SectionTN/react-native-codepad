@@ -43,6 +43,21 @@ export function BenchmarkScreen() {
     console.log('codepad bench', message);
   };
 
+  // Worker time for a literal and a regex query over the open document, from the JS side.
+  const search = async () => {
+    const api = editor.current;
+    if (!api) return;
+    const t0 = performance.now();
+    const literal = await api.setSearch({ text: 'e' });
+    const t1 = performance.now();
+    const regex = await api.setSearch({ text: 'e.*e', regex: true });
+    const t2 = performance.now();
+    const message = `literal ${literal.count} in ${Math.round(t1 - t0)} ms, regex ${regex.count} in ${Math.round(t2 - t1)} ms`;
+    setStatus(message);
+    console.log('codepad bench', message);
+    await api.clearSearch();
+  };
+
   return (
     <View style={styles.root}>
       <View style={styles.bar}>
@@ -50,6 +65,7 @@ export function BenchmarkScreen() {
         <Button label="100k" onPress={() => open(100_000)} />
         <Button label="Clear" onPress={() => setDoc(null)} />
         <Button label="Highlight" active={highlight} onPress={() => setHighlight((v) => !v)} />
+        <Button label="Search" onPress={() => void search()} />
       </View>
       <Text style={styles.status}>{status}</Text>
       {doc ? (
