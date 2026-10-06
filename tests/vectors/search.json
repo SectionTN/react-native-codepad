@@ -40,6 +40,8 @@
       { "op": "replace", "start": 0, "end": 0, "text": "a" },
       { "op": "findNext", "expect": { "found": { "index": 1, "total": 3 } } }
     ] },
-    { "name": "clearSearch drops the matches", "text": "aa", "ops": [{ "op": "search", "text": "a" }, { "op": "clearSearch", "expect": { "matches": [] } }, { "op": "findNext", "expect": { "found": null } }] }
+    { "name": "clearSearch drops the matches", "text": "aa", "ops": [{ "op": "search", "text": "a" }, { "op": "clearSearch", "expect": { "matches": [] } }, { "op": "findNext", "expect": { "found": null } }] },
+    { "name": "replacement text is literal", "text": "ab ab", "ops": [{ "op": "search", "text": "(a)(b)", "regex": true }, { "op": "replaceAll", "text": "$1x", "expect": { "result": 2, "text": "$1x $1x" } }] },
+    { "name": "a regex can match across lines", "text": "a\nb\nc", "ops": [{ "op": "search", "text": "b\\nc", "regex": true, "expect": { "result": 1, "matches": [[2, 5]] } }, { "op": "findNext", "expect": { "selection": { "anchor": 2, "head": 5 } } }] }
   ]
 }
