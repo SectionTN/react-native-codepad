@@ -41,6 +41,7 @@ import me.sectiontn.codepad.layout.HeightMap
 import me.sectiontn.codepad.layout.LayoutCache
 import me.sectiontn.codepad.layout.LineGeometry
 import me.sectiontn.codepad.layout.LineLayout
+import me.sectiontn.codepad.layout.RowGeometry
 import me.sectiontn.codepad.layout.RowMetrics
 import me.sectiontn.codepad.layout.Viewport
 import me.sectiontn.codepad.syntax.Highlighter
@@ -104,6 +105,24 @@ class CodeEditorView(context: Context) : View(context) {
     override fun rowOf(line: Int, column: Int): Int = entry(line).layout.rowOf(column)
     override fun caretX(line: Int, column: Int): Float = entry(line).layout.caretX(column)
     override fun columnAt(line: Int, row: Int, x: Float): Int = entry(line).layout.columnAt(row, x)
+  }
+
+  private val decorations = Decorations()
+
+  // Fills read the cache only, so a line without a layout ends the walk instead of building one.
+  private val rowGeometry = object : RowGeometry {
+    override val rowHeight: Int get() = rowMetrics().rowHeight
+    override val spaceWidth: Float get() = rowMetrics().spaceWidth
+    override val viewHeight: Int get() = height
+    override val originX: Float get() = viewport.viewX(0f)
+    override fun lineAt(offset: Int): Int = core.document.lineAt(offset)
+    override fun lineStart(line: Int): Int = core.document.lineStart(line)
+    override fun lineLength(line: Int): Int = core.document.lineLength(line)
+    override fun lineTop(line: Int): Int = viewport.lineTop(line)
+    override fun rowCount(line: Int): Int = cache[line]?.layout?.rowCount ?: 0
+    override fun rowSpans(line: Int, from: Int, to: Int, out: (row: Int, left: Float, right: Float) -> Unit) {
+      cache[line]?.layout?.selectionRows(from, to, out)
+    }
   }
 
   private var lineNumbers = true
@@ -1038,7 +1057,7 @@ class CodeEditorView(context: Context) : View(context) {
     prepare(firstLine, lastBound, m)
     val caretLine = doc.lineAt(core.selection.head)
     drawActiveLine(canvas, caretLine)
-    drawSelection(canvas, m, firstLine)
+    drawSelection(canvas, firstLine)
     val lastLine = drawText(canvas, firstLine)
     drawComposing(canvas, m, firstLine)
     drawGutter(canvas, m, firstLine, lastLine, caretLine)
@@ -1106,31 +1125,12 @@ class CodeEditorView(context: Context) : View(context) {
     canvas.drawRect(viewport.textAreaLeft.toFloat(), top.toFloat(), width.toFloat(), bottom.toFloat(), fill)
   }
 
-  private fun drawSelection(canvas: Canvas, m: RowMetrics, firstLine: Int) {
+  private fun drawSelection(canvas: Canvas, firstLine: Int) {
     val sel = core.selection
     if (sel.isEmpty) return
-    val doc = core.document
-    val startLine = doc.lineAt(sel.min)
-    val endLine = doc.lineAt(sel.max)
-    if (endLine < firstLine) return
-    fill.color = theme.selection
-    val x0 = viewport.viewX(0f)
     canvas.save()
     canvas.clipRect(viewport.textAreaLeft, 0, width, height)
-    for (line in maxOf(startLine, firstLine)..endLine) {
-      val top = viewport.lineTop(line)
-      if (top >= height) break
-      val entry = cache[line] ?: break
-      val ls = doc.lineStart(line)
-      val from = if (line == startLine) sel.min - ls else 0
-      val to = if (line == endLine) sel.max - ls else doc.lineLength(line)
-      val lastRow = entry.layout.rowCount - 1
-      entry.layout.selectionRows(from, to) { row, left, right ->
-        val r = if (line != endLine && row == lastRow) right + m.spaceWidth else right
-        val y = (top + row * m.rowHeight).toFloat()
-        canvas.drawRect(x0 + left, y, x0 + r, y + m.rowHeight, fill)
-      }
-    }
+    decorations.drawRange(canvas, rowGeometry, sel.min, sel.max, firstLine, theme.selection)
     canvas.restore()
   }
 
