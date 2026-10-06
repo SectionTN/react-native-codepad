@@ -15,6 +15,8 @@ export type {
   Range,
   Rect,
   ScrollEvent,
+  SearchHit,
+  SearchQuery,
   Selection,
   SelectionChangeEvent,
   Suggestions,

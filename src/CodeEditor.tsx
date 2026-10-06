@@ -5,13 +5,14 @@ import type {
   CodeEditorViewProps,
   NativeChangeEvent,
   NativeScrollEvent,
+  NativeSearchHit,
   NativeSelection,
   NativeTheme,
   NativeTokenStyle,
 } from './specs/CodeEditorView.nitro';
 import CodeEditorViewConfig from './specs/CodeEditorViewConfig';
 import { githubLight } from './themes/githubLight';
-import type { CodeEditorProps, CodeEditorRef, Theme } from './types';
+import type { CodeEditorProps, CodeEditorRef, SearchHit, Theme } from './types';
 
 const NativeCodeEditor = getHostComponent<CodeEditorViewProps, CodeEditorViewMethods>(
   'CodeEditorView',
@@ -19,6 +20,9 @@ const NativeCodeEditor = getHostComponent<CodeEditorViewProps, CodeEditorViewMet
 );
 
 type NativeRef = CodeEditorViewMethods;
+
+// Nitro crosses "no match" as a total of 0.
+const toHit = (hit: NativeSearchHit): SearchHit | null => (hit.total === 0 ? null : hit);
 
 /** Every token crosses to native as a full struct. The string shorthand exists only in TypeScript. */
 export function normalizeTheme(theme: Theme): NativeTheme {
@@ -45,6 +49,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     softWrap = false,
     readOnly = false,
     highlightActiveLine = true,
+    matchBrackets = true,
     placeholder,
     scrollEnabled = true,
     contentInsets,
@@ -150,6 +155,20 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     paste: () => native.current?.paste() ?? Promise.resolve(),
     focus: () => native.current?.focus() ?? Promise.resolve(),
     blur: () => native.current?.blur() ?? Promise.resolve(),
+    setSearch: async (query) => {
+      const count = await native.current?.setSearch({
+        text: query.text,
+        regex: query.regex ?? false,
+        caseSensitive: query.caseSensitive ?? false,
+        wholeWord: query.wholeWord ?? false,
+      });
+      return { count: count ?? 0 };
+    },
+    findNext: () => native.current?.findNext().then(toHit) ?? Promise.resolve(null),
+    findPrevious: () => native.current?.findPrevious().then(toHit) ?? Promise.resolve(null),
+    replaceCurrent: (text) => native.current?.replaceCurrent(text) ?? Promise.resolve(false),
+    replaceAll: (text) => native.current?.replaceAll(text) ?? Promise.resolve(0),
+    clearSearch: () => native.current?.clearSearch() ?? Promise.resolve(),
   }));
 
   return (
@@ -165,6 +184,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       softWrap={softWrap}
       readOnly={readOnly}
       highlightActiveLine={highlightActiveLine}
+      matchBrackets={matchBrackets}
       placeholder={placeholder}
       scrollEnabled={scrollEnabled}
       contentInsets={contentInsets}

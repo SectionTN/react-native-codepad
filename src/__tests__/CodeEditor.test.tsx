@@ -20,6 +20,7 @@ type HostProps = {
   softWrap: boolean;
   readOnly: boolean;
   highlightActiveLine: boolean;
+  matchBrackets: boolean;
   placeholder?: string;
   contentInsets?: { top?: number; bottom?: number; left?: number; right?: number };
   scrollEnabled: boolean;
@@ -271,5 +272,67 @@ describe('CodeEditor', () => {
     ]) {
       expect(fn).toHaveBeenCalledTimes(1);
     }
+  });
+
+  it('defaults matchBrackets to true', async () => {
+    const props = host(await render(<CodeEditor />));
+    expect(props.matchBrackets).toBe(true);
+    expect(host(await render(<CodeEditor matchBrackets={false} />)).matchBrackets).toBe(false);
+  });
+
+  it('fills the search query defaults and returns the count', async () => {
+    const ref = createRef<CodeEditorRef>();
+    const props = host(await render(<CodeEditor ref={ref} />));
+    expect(await ref.current?.setSearch({ text: 'ab' })).toEqual({ count: 0 });
+    const native = { setSearch: jest.fn(() => Promise.resolve(3)) };
+    props.hybridRef.f(native);
+    expect(await ref.current?.setSearch({ text: 'ab' })).toEqual({ count: 3 });
+    expect(native.setSearch).toHaveBeenCalledWith({
+      text: 'ab',
+      regex: false,
+      caseSensitive: false,
+      wholeWord: false,
+    });
+    await ref.current?.setSearch({ text: 'a.', regex: true, caseSensitive: true, wholeWord: true });
+    expect(native.setSearch).toHaveBeenLastCalledWith({
+      text: 'a.',
+      regex: true,
+      caseSensitive: true,
+      wholeWord: true,
+    });
+  });
+
+  it('maps an empty hit to null and passes a hit through', async () => {
+    const ref = createRef<CodeEditorRef>();
+    const props = host(await render(<CodeEditor ref={ref} />));
+    expect(await ref.current?.findNext()).toBeNull();
+    expect(await ref.current?.findPrevious()).toBeNull();
+    const native = {
+      findNext: jest.fn(() => Promise.resolve({ index: -1, total: 0 })),
+      findPrevious: jest.fn(() => Promise.resolve({ index: 1, total: 3 })),
+    };
+    props.hybridRef.f(native);
+    expect(await ref.current?.findNext()).toBeNull();
+    expect(await ref.current?.findPrevious()).toEqual({ index: 1, total: 3 });
+  });
+
+  it('forwards replaceCurrent, replaceAll and clearSearch', async () => {
+    const ref = createRef<CodeEditorRef>();
+    const props = host(await render(<CodeEditor ref={ref} />));
+    expect(await ref.current?.replaceCurrent('x')).toBe(false);
+    expect(await ref.current?.replaceAll('x')).toBe(0);
+    await ref.current?.clearSearch();
+    const native = {
+      replaceCurrent: jest.fn(() => Promise.resolve(true)),
+      replaceAll: jest.fn(() => Promise.resolve(2)),
+      clearSearch: jest.fn(() => Promise.resolve()),
+    };
+    props.hybridRef.f(native);
+    expect(await ref.current?.replaceCurrent('x')).toBe(true);
+    expect(native.replaceCurrent).toHaveBeenCalledWith('x');
+    expect(await ref.current?.replaceAll('y')).toBe(2);
+    expect(native.replaceAll).toHaveBeenCalledWith('y');
+    await ref.current?.clearSearch();
+    expect(native.clearSearch).toHaveBeenCalledTimes(1);
   });
 });

@@ -74,6 +74,19 @@ export interface ChangeEvent {
 /** off disables keyboard suggestions, forceOff also kills composition on most keyboards, on allows autocorrect. */
 export type Suggestions = 'off' | 'forceOff' | 'on';
 
+export interface SearchQuery {
+  text: string;
+  /** Treat text as a Java regex. Replacement text is always literal. */
+  regex?: boolean;
+  caseSensitive?: boolean;
+  wholeWord?: boolean;
+}
+
+export interface SearchHit {
+  index: number;
+  total: number;
+}
+
 export interface CodeEditorProps extends ViewProps {
   initialValue?: string;
   language?: string;
@@ -85,6 +98,8 @@ export interface CodeEditorProps extends ViewProps {
   softWrap?: boolean;
   readOnly?: boolean;
   highlightActiveLine?: boolean;
+  /** Paint the bracket pair at the caret, skipping brackets inside strings and comments. */
+  matchBrackets?: boolean;
   placeholder?: string;
   scrollEnabled?: boolean;
   tabSize?: number;
@@ -138,4 +153,13 @@ export interface CodeEditorRef {
   paste(): Promise<void>;
   focus(): Promise<void>;
   blur(): Promise<void>;
+  /** Rejects when a regex query does not compile. */
+  setSearch(query: SearchQuery): Promise<{ count: number }>;
+  findNext(): Promise<SearchHit | null>;
+  findPrevious(): Promise<SearchHit | null>;
+  /** Replaces the selected match and selects the next one; false when the selection is not a match. */
+  replaceCurrent(text: string): Promise<boolean>;
+  /** One undo group; resolves with the number of replacements. */
+  replaceAll(text: string): Promise<number>;
+  clearSearch(): Promise<void>;
 }
