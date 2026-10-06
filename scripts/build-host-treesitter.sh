@@ -12,6 +12,10 @@ if [ ! -f "$JAVA_HOME/include/jni.h" ]; then
   JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
 fi
 CC="${CC:-cc}"
+case "$(uname -s)" in
+  Darwin) JNI_OS=darwin ;;
+  *) JNI_OS=linux ;;
+esac
 
 GRAMMAR_SRCS=()
 DECLS=""
@@ -59,7 +63,7 @@ EOC
 # The runtime calls fdopen and dup, which glibc hides under a strict -std=c11 without these macros.
 "$CC" -shared -fPIC -std=c11 -O1 -w -fvisibility=hidden -DTREE_SITTER_HIDE_SYMBOLS \
   -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE \
-  -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" \
+  -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/$JNI_OS" \
   -I"$ROOT/cpp/tree-sitter/lib/include" -I"$ROOT/cpp/tree-sitter/lib/src" \
   "$ROOT/cpp/tree-sitter/lib/src/lib.c" \
   "$ROOT/android/src/main/cpp/treesitter_jni.c" \
