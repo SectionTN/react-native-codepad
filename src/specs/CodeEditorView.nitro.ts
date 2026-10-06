@@ -70,6 +70,19 @@ export interface NativeChangeEvent {
   revision: number;
 }
 
+export interface NativeSearchQuery {
+  text: string;
+  regex: boolean;
+  caseSensitive: boolean;
+  wholeWord: boolean;
+}
+
+// A total of 0 means no match.
+export interface NativeSearchHit {
+  index: number;
+  total: number;
+}
+
 export interface CodeEditorViewProps extends HybridViewProps {
   initialValue?: string;
   language?: string;
@@ -81,6 +94,7 @@ export interface CodeEditorViewProps extends HybridViewProps {
   softWrap?: boolean;
   readOnly?: boolean;
   highlightActiveLine?: boolean;
+  matchBrackets?: boolean;
   placeholder?: string;
   scrollEnabled?: boolean;
   contentInsets?: NativeInsets;
@@ -131,6 +145,12 @@ export interface CodeEditorViewMethods extends HybridViewMethods {
   paste(): Promise<void>;
   focus(): Promise<void>;
   blur(): Promise<void>;
+  setSearch(query: NativeSearchQuery): Promise<number>;
+  findNext(): Promise<NativeSearchHit>;
+  findPrevious(): Promise<NativeSearchHit>;
+  replaceCurrent(text: string): Promise<boolean>;
+  replaceAll(text: string): Promise<number>;
+  clearSearch(): Promise<void>;
 }
 
 export type CodeEditorView = HybridView<CodeEditorViewProps, CodeEditorViewMethods>;

@@ -15,6 +15,7 @@ export default {
     "softWrap": true,
     "readOnly": true,
     "highlightActiveLine": true,
+    "matchBrackets": true,
     "placeholder": true,
     "scrollEnabled": true,
     "contentInsets": true,

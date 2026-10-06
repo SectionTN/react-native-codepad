@@ -20,6 +20,7 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   var softWrap: Bool? { get set }
   var readOnly: Bool? { get set }
   var highlightActiveLine: Bool? { get set }
+  var matchBrackets: Bool? { get set }
   var placeholder: String? { get set }
   var scrollEnabled: Bool? { get set }
   var contentInsets: NativeInsets? { get set }
@@ -68,6 +69,12 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   func paste() throws -> Promise<Void>
   func focus() throws -> Promise<Void>
   func blur() throws -> Promise<Void>
+  func setSearch(query: NativeSearchQuery) throws -> Promise<Double>
+  func findNext() throws -> Promise<NativeSearchHit>
+  func findPrevious() throws -> Promise<NativeSearchHit>
+  func replaceCurrent(text: String) throws -> Promise<Bool>
+  func replaceAll(text: String) throws -> Promise<Double>
+  func clearSearch() throws -> Promise<Void>
 }
 
 public extension HybridCodeEditorViewSpec_protocol {

@@ -30,6 +30,7 @@ namespace margelo::nitro::codepad::views {
     softWrap(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "softWrap", rawProps, sourceProps.softWrap)),
     readOnly(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "readOnly", rawProps, sourceProps.readOnly)),
     highlightActiveLine(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "highlightActiveLine", rawProps, sourceProps.highlightActiveLine)),
+    matchBrackets(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "matchBrackets", rawProps, sourceProps.matchBrackets)),
     placeholder(nitro::ReactProp<std::optional<std::string>>::fromRawValue("CodeEditorView", "placeholder", rawProps, sourceProps.placeholder)),
     scrollEnabled(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "scrollEnabled", rawProps, sourceProps.scrollEnabled)),
     contentInsets(nitro::ReactProp<std::optional<NativeInsets>>::fromRawValue("CodeEditorView", "contentInsets", rawProps, sourceProps.contentInsets)),
@@ -60,6 +61,7 @@ namespace margelo::nitro::codepad::views {
       case hashString("softWrap"): return true;
       case hashString("readOnly"): return true;
       case hashString("highlightActiveLine"): return true;
+      case hashString("matchBrackets"): return true;
       case hashString("placeholder"): return true;
       case hashString("scrollEnabled"): return true;
       case hashString("contentInsets"): return true;

@@ -63,6 +63,30 @@ namespace margelo::nitro::codepad::bridge::swift {
     };
   }
   
+  // pragma MARK: std::function<void(double /* result */)>
+  Func_void_double create_Func_void_double(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = Codepad::Func_void_double::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](double result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::function<void(const NativeSearchHit& /* result */)>
+  Func_void_NativeSearchHit create_Func_void_NativeSearchHit(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = Codepad::Func_void_NativeSearchHit::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const NativeSearchHit& result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::function<void(bool /* result */)>
+  Func_void_bool create_Func_void_bool(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = Codepad::Func_void_bool::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](bool result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
   // pragma MARK: std::shared_ptr<HybridCodeEditorViewSpec>
   std::shared_ptr<HybridCodeEditorViewSpec> create_std__shared_ptr_HybridCodeEditorViewSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
     Codepad::HybridCodeEditorViewSpec_cxx swiftPart = Codepad::HybridCodeEditorViewSpec_cxx::fromUnsafe(swiftUnsafePointer);

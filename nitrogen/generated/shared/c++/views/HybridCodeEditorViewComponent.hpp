@@ -59,6 +59,7 @@ namespace margelo::nitro::codepad::views {
     nitro::ReactProp<std::optional<bool>> softWrap;
     nitro::ReactProp<std::optional<bool>> readOnly;
     nitro::ReactProp<std::optional<bool>> highlightActiveLine;
+    nitro::ReactProp<std::optional<bool>> matchBrackets;
     nitro::ReactProp<std::optional<std::string>> placeholder;
     nitro::ReactProp<std::optional<bool>> scrollEnabled;
     nitro::ReactProp<std::optional<NativeInsets>> contentInsets;
@@ -89,6 +90,7 @@ namespace margelo::nitro::codepad::views {
              softWrap.hasSameValue(other.softWrap) &&
              readOnly.hasSameValue(other.readOnly) &&
              highlightActiveLine.hasSameValue(other.highlightActiveLine) &&
+             matchBrackets.hasSameValue(other.matchBrackets) &&
              placeholder.hasSameValue(other.placeholder) &&
              scrollEnabled.hasSameValue(other.scrollEnabled) &&
              contentInsets.hasSameValue(other.contentInsets) &&
@@ -120,6 +122,7 @@ namespace margelo::nitro::codepad::views {
              softWrap.isProvided() ||
              readOnly.isProvided() ||
              highlightActiveLine.isProvided() ||
+             matchBrackets.isProvided() ||
              placeholder.isProvided() ||
              scrollEnabled.isProvided() ||
              contentInsets.isProvided() ||

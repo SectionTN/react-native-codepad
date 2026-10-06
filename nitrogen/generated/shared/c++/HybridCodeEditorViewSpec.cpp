@@ -34,6 +34,8 @@ namespace margelo::nitro::codepad {
       prototype.registerHybridSetter("readOnly", &HybridCodeEditorViewSpec::setReadOnly);
       prototype.registerHybridGetter("highlightActiveLine", &HybridCodeEditorViewSpec::getHighlightActiveLine);
       prototype.registerHybridSetter("highlightActiveLine", &HybridCodeEditorViewSpec::setHighlightActiveLine);
+      prototype.registerHybridGetter("matchBrackets", &HybridCodeEditorViewSpec::getMatchBrackets);
+      prototype.registerHybridSetter("matchBrackets", &HybridCodeEditorViewSpec::setMatchBrackets);
       prototype.registerHybridGetter("placeholder", &HybridCodeEditorViewSpec::getPlaceholder);
       prototype.registerHybridSetter("placeholder", &HybridCodeEditorViewSpec::setPlaceholder);
       prototype.registerHybridGetter("scrollEnabled", &HybridCodeEditorViewSpec::getScrollEnabled);
@@ -96,6 +98,12 @@ namespace margelo::nitro::codepad {
       prototype.registerHybridMethod("paste", &HybridCodeEditorViewSpec::paste);
       prototype.registerHybridMethod("focus", &HybridCodeEditorViewSpec::focus);
       prototype.registerHybridMethod("blur", &HybridCodeEditorViewSpec::blur);
+      prototype.registerHybridMethod("setSearch", &HybridCodeEditorViewSpec::setSearch);
+      prototype.registerHybridMethod("findNext", &HybridCodeEditorViewSpec::findNext);
+      prototype.registerHybridMethod("findPrevious", &HybridCodeEditorViewSpec::findPrevious);
+      prototype.registerHybridMethod("replaceCurrent", &HybridCodeEditorViewSpec::replaceCurrent);
+      prototype.registerHybridMethod("replaceAll", &HybridCodeEditorViewSpec::replaceAll);
+      prototype.registerHybridMethod("clearSearch", &HybridCodeEditorViewSpec::clearSearch);
     });
   }
 

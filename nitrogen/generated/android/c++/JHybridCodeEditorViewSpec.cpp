@@ -29,6 +29,10 @@ namespace margelo::nitro::codepad { struct NativePosition; }
 namespace margelo::nitro::codepad { struct NativeRect; }
 // Forward declaration of `NativeVisibleLines` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeVisibleLines; }
+// Forward declaration of `NativeSearchHit` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchHit; }
+// Forward declaration of `NativeSearchQuery` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchQuery; }
 
 #include <string>
 #include <optional>
@@ -65,6 +69,10 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/JPromise.hpp>
 #include <NitroModules/JUnit.hpp>
+#include "NativeSearchHit.hpp"
+#include "JNativeSearchHit.hpp"
+#include "NativeSearchQuery.hpp"
+#include "JNativeSearchQuery.hpp"
 
 namespace margelo::nitro::codepad {
 
@@ -185,6 +193,15 @@ namespace margelo::nitro::codepad {
   void JHybridCodeEditorViewSpec::setHighlightActiveLine(std::optional<bool> highlightActiveLine) {
     static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JBoolean> /* highlightActiveLine */)>("setHighlightActiveLine");
     method(_javaPart, highlightActiveLine.has_value() ? jni::JBoolean::valueOf(highlightActiveLine.value()) : nullptr);
+  }
+  std::optional<bool> JHybridCodeEditorViewSpec::getMatchBrackets() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JBoolean>()>("getMatchBrackets");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(static_cast<bool>(__result->value())) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setMatchBrackets(std::optional<bool> matchBrackets) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JBoolean> /* matchBrackets */)>("setMatchBrackets");
+    method(_javaPart, matchBrackets.has_value() ? jni::JBoolean::valueOf(matchBrackets.value()) : nullptr);
   }
   std::optional<std::string> JHybridCodeEditorViewSpec::getPlaceholder() {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JString>()>("getPlaceholder");
@@ -685,6 +702,101 @@ namespace margelo::nitro::codepad {
   }
   std::shared_ptr<Promise<void>> JHybridCodeEditorViewSpec::blur() {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("blur");
+    auto __result = method(_javaPart);
+    return [&]() {
+      auto __promise = Promise<void>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& /* unit */) {
+        __promise->resolve();
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<double>> JHybridCodeEditorViewSpec::setSearch(const NativeSearchQuery& query) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<JNativeSearchQuery> /* query */)>("setSearch");
+    auto __result = method(_javaPart, JNativeSearchQuery::fromCpp(query));
+    return [&]() {
+      auto __promise = Promise<double>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<jni::JDouble>(__boxedResult);
+        __promise->resolve(__result->value());
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<NativeSearchHit>> JHybridCodeEditorViewSpec::findNext() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("findNext");
+    auto __result = method(_javaPart);
+    return [&]() {
+      auto __promise = Promise<NativeSearchHit>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<JNativeSearchHit>(__boxedResult);
+        __promise->resolve(__result->toCpp());
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<NativeSearchHit>> JHybridCodeEditorViewSpec::findPrevious() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("findPrevious");
+    auto __result = method(_javaPart);
+    return [&]() {
+      auto __promise = Promise<NativeSearchHit>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<JNativeSearchHit>(__boxedResult);
+        __promise->resolve(__result->toCpp());
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<bool>> JHybridCodeEditorViewSpec::replaceCurrent(const std::string& text) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* text */)>("replaceCurrent");
+    auto __result = method(_javaPart, jni::make_jstring(text));
+    return [&]() {
+      auto __promise = Promise<bool>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<jni::JBoolean>(__boxedResult);
+        __promise->resolve(static_cast<bool>(__result->value()));
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<double>> JHybridCodeEditorViewSpec::replaceAll(const std::string& text) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* text */)>("replaceAll");
+    auto __result = method(_javaPart, jni::make_jstring(text));
+    return [&]() {
+      auto __promise = Promise<double>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<jni::JDouble>(__boxedResult);
+        __promise->resolve(__result->value());
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<void>> JHybridCodeEditorViewSpec::clearSearch() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("clearSearch");
     auto __result = method(_javaPart);
     return [&]() {
       auto __promise = Promise<void>::create();

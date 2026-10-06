@@ -70,6 +70,8 @@ namespace margelo::nitro::codepad {
     void setReadOnly(std::optional<bool> readOnly) override;
     std::optional<bool> getHighlightActiveLine() override;
     void setHighlightActiveLine(std::optional<bool> highlightActiveLine) override;
+    std::optional<bool> getMatchBrackets() override;
+    void setMatchBrackets(std::optional<bool> matchBrackets) override;
     std::optional<std::string> getPlaceholder() override;
     void setPlaceholder(const std::optional<std::string>& placeholder) override;
     std::optional<bool> getScrollEnabled() override;
@@ -135,6 +137,12 @@ namespace margelo::nitro::codepad {
     std::shared_ptr<Promise<void>> paste() override;
     std::shared_ptr<Promise<void>> focus() override;
     std::shared_ptr<Promise<void>> blur() override;
+    std::shared_ptr<Promise<double>> setSearch(const NativeSearchQuery& query) override;
+    std::shared_ptr<Promise<NativeSearchHit>> findNext() override;
+    std::shared_ptr<Promise<NativeSearchHit>> findPrevious() override;
+    std::shared_ptr<Promise<bool>> replaceCurrent(const std::string& text) override;
+    std::shared_ptr<Promise<double>> replaceAll(const std::string& text) override;
+    std::shared_ptr<Promise<void>> clearSearch() override;
 
   private:
     jni::global_ref<JHybridCodeEditorViewSpec::JavaPart> _javaPart;

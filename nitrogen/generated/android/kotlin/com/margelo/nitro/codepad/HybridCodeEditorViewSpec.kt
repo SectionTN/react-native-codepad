@@ -92,6 +92,12 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @get:Keep
   @set:DoNotStrip
   @set:Keep
+  abstract var matchBrackets: Boolean?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
   abstract var placeholder: String?
   
   @get:DoNotStrip
@@ -360,6 +366,30 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @DoNotStrip
   @Keep
   abstract fun blur(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun setSearch(query: NativeSearchQuery): Promise<Double>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun findNext(): Promise<NativeSearchHit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun findPrevious(): Promise<NativeSearchHit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun replaceCurrent(text: String): Promise<Boolean>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun replaceAll(text: String): Promise<Double>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun clearSearch(): Promise<Unit>
 
   // Default implementation of `HybridObject.toString()`
   override fun toString(): String {

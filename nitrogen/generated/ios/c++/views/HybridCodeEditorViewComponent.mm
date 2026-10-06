@@ -158,6 +158,12 @@ using namespace margelo::nitro::codepad::views;
           : !newViewProps.highlightActiveLine.hasSameValue(oldViewProps->highlightActiveLine)) {
       swiftPart.setHighlightActiveLine(newViewProps.highlightActiveLine.get());
     }
+    // matchBrackets: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.matchBrackets.isProvided()
+          : !newViewProps.matchBrackets.hasSameValue(oldViewProps->matchBrackets)) {
+      swiftPart.setMatchBrackets(newViewProps.matchBrackets.get());
+    }
     // placeholder: optional
     if (oldViewProps == nullptr
           ? newViewProps.placeholder.isProvided()

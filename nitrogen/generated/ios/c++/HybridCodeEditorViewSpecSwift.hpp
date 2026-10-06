@@ -34,6 +34,10 @@ namespace margelo::nitro::codepad { struct NativePosition; }
 namespace margelo::nitro::codepad { struct NativeRect; }
 // Forward declaration of `NativeVisibleLines` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeVisibleLines; }
+// Forward declaration of `NativeSearchQuery` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchQuery; }
+// Forward declaration of `NativeSearchHit` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchHit; }
 
 #include <string>
 #include <optional>
@@ -51,6 +55,8 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 #include "NativeRect.hpp"
 #include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
+#include "NativeSearchQuery.hpp"
+#include "NativeSearchHit.hpp"
 
 #include "Codepad-Swift-Cxx-Umbrella.hpp"
 
@@ -167,6 +173,13 @@ namespace margelo::nitro::codepad {
     }
     inline void setHighlightActiveLine(std::optional<bool> highlightActiveLine) noexcept override {
       _swiftPart.setHighlightActiveLine(highlightActiveLine);
+    }
+    inline std::optional<bool> getMatchBrackets() noexcept override {
+      auto __result = _swiftPart.getMatchBrackets();
+      return __result;
+    }
+    inline void setMatchBrackets(std::optional<bool> matchBrackets) noexcept override {
+      _swiftPart.setMatchBrackets(matchBrackets);
     }
     inline std::optional<std::string> getPlaceholder() noexcept override {
       auto __result = _swiftPart.getPlaceholder();
@@ -517,6 +530,54 @@ namespace margelo::nitro::codepad {
     }
     inline std::shared_ptr<Promise<void>> blur() override {
       auto __result = _swiftPart.blur();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<double>> setSearch(const NativeSearchQuery& query) override {
+      auto __result = _swiftPart.setSearch(std::forward<decltype(query)>(query));
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<NativeSearchHit>> findNext() override {
+      auto __result = _swiftPart.findNext();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<NativeSearchHit>> findPrevious() override {
+      auto __result = _swiftPart.findPrevious();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<bool>> replaceCurrent(const std::string& text) override {
+      auto __result = _swiftPart.replaceCurrent(text);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<double>> replaceAll(const std::string& text) override {
+      auto __result = _swiftPart.replaceAll(text);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> clearSearch() override {
+      auto __result = _swiftPart.clearSearch();
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }

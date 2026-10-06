@@ -31,6 +31,10 @@ namespace margelo::nitro::codepad { struct NativePosition; }
 namespace margelo::nitro::codepad { struct NativeRect; }
 // Forward declaration of `NativeVisibleLines` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeVisibleLines; }
+// Forward declaration of `NativeSearchQuery` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchQuery; }
+// Forward declaration of `NativeSearchHit` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchHit; }
 
 #include <string>
 #include <optional>
@@ -45,6 +49,8 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 #include "NativeRect.hpp"
 #include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
+#include "NativeSearchQuery.hpp"
+#include "NativeSearchHit.hpp"
 
 namespace margelo::nitro::codepad {
 
@@ -93,6 +99,8 @@ namespace margelo::nitro::codepad {
       virtual void setReadOnly(std::optional<bool> readOnly) = 0;
       virtual std::optional<bool> getHighlightActiveLine() = 0;
       virtual void setHighlightActiveLine(std::optional<bool> highlightActiveLine) = 0;
+      virtual std::optional<bool> getMatchBrackets() = 0;
+      virtual void setMatchBrackets(std::optional<bool> matchBrackets) = 0;
       virtual std::optional<std::string> getPlaceholder() = 0;
       virtual void setPlaceholder(const std::optional<std::string>& placeholder) = 0;
       virtual std::optional<bool> getScrollEnabled() = 0;
@@ -158,6 +166,12 @@ namespace margelo::nitro::codepad {
       virtual std::shared_ptr<Promise<void>> paste() = 0;
       virtual std::shared_ptr<Promise<void>> focus() = 0;
       virtual std::shared_ptr<Promise<void>> blur() = 0;
+      virtual std::shared_ptr<Promise<double>> setSearch(const NativeSearchQuery& query) = 0;
+      virtual std::shared_ptr<Promise<NativeSearchHit>> findNext() = 0;
+      virtual std::shared_ptr<Promise<NativeSearchHit>> findPrevious() = 0;
+      virtual std::shared_ptr<Promise<bool>> replaceCurrent(const std::string& text) = 0;
+      virtual std::shared_ptr<Promise<double>> replaceAll(const std::string& text) = 0;
+      virtual std::shared_ptr<Promise<void>> clearSearch() = 0;
 
     protected:
       // Hybrid Setup

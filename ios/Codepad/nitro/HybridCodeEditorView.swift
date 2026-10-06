@@ -13,6 +13,7 @@ class HybridCodeEditorView: HybridCodeEditorViewSpec {
   var softWrap: Bool? = nil
   var readOnly: Bool? = nil
   var highlightActiveLine: Bool? = nil
+  var matchBrackets: Bool? = nil
   var placeholder: String? = nil
   var contentInsets: NativeInsets? = nil
   var onReady: (() -> Void)? = nil
@@ -150,6 +151,30 @@ class HybridCodeEditorView: HybridCodeEditorViewSpec {
   }
 
   func blur() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func setSearch(query: NativeSearchQuery) throws -> Promise<Double> {
+    return Promise.resolved(withResult: 0)
+  }
+
+  func findNext() throws -> Promise<NativeSearchHit> {
+    return Promise.resolved(withResult: NativeSearchHit(index: -1, total: 0))
+  }
+
+  func findPrevious() throws -> Promise<NativeSearchHit> {
+    return Promise.resolved(withResult: NativeSearchHit(index: -1, total: 0))
+  }
+
+  func replaceCurrent(text: String) throws -> Promise<Bool> {
+    return Promise.resolved(withResult: false)
+  }
+
+  func replaceAll(text: String) throws -> Promise<Double> {
+    return Promise.resolved(withResult: 0)
+  }
+
+  func clearSearch() throws -> Promise<Void> {
     return Promise.resolved(withResult: ())
   }
 

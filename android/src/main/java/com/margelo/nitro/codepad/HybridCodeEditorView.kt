@@ -7,7 +7,9 @@ import com.facebook.react.common.assets.ReactFontManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.margelo.nitro.core.Promise
 import me.sectiontn.codepad.core.ChangeOrigin
+import me.sectiontn.codepad.core.EditorCore
 import me.sectiontn.codepad.core.EditorSettings
+import me.sectiontn.codepad.core.SearchQuery
 import me.sectiontn.codepad.view.CodeEditorView
 import me.sectiontn.codepad.view.InputMethodBridge
 import me.sectiontn.codepad.view.ThemeColors
@@ -101,6 +103,12 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
     set(value) {
       field = value
       editor.setHighlightActiveLine(value ?: true)
+    }
+
+  override var matchBrackets: Boolean? = null
+    set(value) {
+      field = value
+      editor.setMatchBrackets(value ?: true)
     }
 
   override var placeholder: String? = null
@@ -273,6 +281,45 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
   override fun copy(): Promise<Unit> = onMain { editor.copy() }
 
   override fun paste(): Promise<Unit> = onMain { editor.paste(ChangeOrigin.Api) }
+
+  override fun setSearch(query: NativeSearchQuery): Promise<Double> = deferred { promise ->
+    editor.setSearch(SearchQuery(query.text, query.regex, query.caseSensitive, query.wholeWord))
+    editor.whenSearchFresh { promise.resolve(editor.matchCount.toDouble()) }
+  }
+
+  override fun findNext(): Promise<NativeSearchHit> = deferred { promise ->
+    editor.whenSearchFresh { promise.resolve(toHit(editor.findNext())) }
+  }
+
+  override fun findPrevious(): Promise<NativeSearchHit> = deferred { promise ->
+    editor.whenSearchFresh { promise.resolve(toHit(editor.findPrevious())) }
+  }
+
+  override fun replaceCurrent(text: String): Promise<Boolean> = deferred { promise ->
+    editor.whenSearchFresh { promise.resolve(editor.replaceCurrent(text)) }
+  }
+
+  override fun replaceAll(text: String): Promise<Double> = deferred { promise ->
+    editor.whenSearchFresh { promise.resolve(editor.replaceAll(text).toDouble()) }
+  }
+
+  override fun clearSearch(): Promise<Unit> = onMain { editor.clearSearch() }
+
+  private fun toHit(hit: EditorCore.SearchHit?): NativeSearchHit =
+    NativeSearchHit(hit?.index?.toDouble() ?: -1.0, hit?.total?.toDouble() ?: 0.0)
+
+  /** Runs [block] on the main thread with the promise it must settle; a thrown exception rejects it. */
+  private fun <T> deferred(block: (Promise<T>) -> Unit): Promise<T> {
+    val promise = Promise<T>()
+    editor.post {
+      try {
+        block(promise)
+      } catch (e: Exception) {
+        promise.reject(e)
+      }
+    }
+    return promise
+  }
 
   override fun focus(): Promise<Unit> = onMain { editor.focus() }
 

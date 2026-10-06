@@ -104,6 +104,11 @@ void JHybridCodeEditorViewStateUpdater::updateViewProps(jni::alias_ref<jni::JCla
     hybridView->setHighlightActiveLine(newProps->highlightActiveLine.get());
   }
   if (oldProps == nullptr
+        ? newProps->matchBrackets.isProvided()
+        : !newProps->matchBrackets.hasSameValue(oldProps->matchBrackets)) {
+    hybridView->setMatchBrackets(newProps->matchBrackets.get());
+  }
+  if (oldProps == nullptr
         ? newProps->placeholder.isProvided()
         : !newProps->placeholder.hasSameValue(oldProps->placeholder)) {
     hybridView->setPlaceholder(newProps->placeholder.get());
