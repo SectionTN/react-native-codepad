@@ -51,7 +51,9 @@ class VectorRunner(private val case: JSONObject) {
       "outdent" -> core.outdent()
       "bracketMatch" -> lastResult = core.bracketMatch(null)
       "search" -> try {
-        lastResult = core.setSearch(SearchQuery(op.getString("text"), op.optBoolean("regex", false), op.optBoolean("caseSensitive", false), op.optBoolean("wholeWord", false)))
+        core.setSearch(SearchQuery(op.getString("text"), op.optBoolean("regex", false), op.optBoolean("caseSensitive", false), op.optBoolean("wholeWord", false)))
+        core.ensureMatches()
+        lastResult = core.matchCount
       } catch (e: IllegalArgumentException) {
         lastError = e.message ?: "invalid"
       }

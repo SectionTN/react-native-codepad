@@ -217,66 +217,80 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
 
   data class SearchHit(val index: Int, val total: Int)
 
-  var searchQuery: SearchQuery? = null
+  var search: SearchSession? = null
     private set
-  var matches: IntArray = IntArray(0)
-    private set
-  private var matchesRevision = -1
 
-  /** Compiles first so an invalid regex throws before any state changes. Returns the match count. */
-  fun setSearch(query: SearchQuery): Int {
-    try {
+  val matches: IntArray get() = search?.matches ?: SearchSession.EMPTY
+  val matchCount: Int get() = search?.count ?: 0
+
+  /** True while a query is active and its matches belong to an older revision. */
+  val searchStale: Boolean get() = search?.let { it.revision != document.revision } ?: false
+
+  /** Compiles first so an invalid regex throws before any state changes. The matches stay stale until ensureMatches or acceptMatches. */
+  fun setSearch(query: SearchQuery) {
+    val pattern = try {
       Searcher.compile(query)
     } catch (e: IllegalArgumentException) {
       clearSearch()
       throw e
     }
-    searchQuery = query
-    refreshMatches(force = true)
-    return matches.size / 2
+    search = SearchSession(query, pattern)
   }
 
   fun clearSearch() {
-    searchQuery = null
-    matches = IntArray(0)
-    matchesRevision = -1
+    search = null
+  }
+
+  /** Computes the matches on the calling thread when they are stale. */
+  fun ensureMatches() {
+    val s = search ?: return
+    if (s.revision == document.revision) return
+    s.matches = Searcher.find(document.text(), s.query)
+    s.revision = document.revision
+  }
+
+  /** Stores matches computed elsewhere; false when the document moved on since [revision]. */
+  fun acceptMatches(revision: Int, matches: IntArray): Boolean {
+    val s = search ?: return false
+    if (revision != document.revision) return false
+    s.matches = matches
+    s.revision = revision
+    return true
   }
 
   fun findNext(): SearchHit? {
-    refreshMatches()
-    if (matches.isEmpty()) return null
-    val count = matches.size / 2
-    var index = firstMatchAtOrAfter(selection.min)
-    if (index < count && matches[index * 2] == selection.min && matches[index * 2 + 1] == selection.max) index++
-    if (index >= count) index = 0
-    return selectMatch(index)
+    ensureMatches()
+    val s = search ?: return null
+    val index = s.nextIndex(selection)
+    return if (index < 0) null else selectMatch(s, index)
   }
 
   fun findPrevious(): SearchHit? {
-    refreshMatches()
-    if (matches.isEmpty()) return null
-    var index = firstMatchAtOrAfter(selection.min) - 1
-    if (index < 0) index = matches.size / 2 - 1
-    return selectMatch(index)
+    ensureMatches()
+    val s = search ?: return null
+    val index = s.previousIndex(selection)
+    return if (index < 0) null else selectMatch(s, index)
   }
 
   fun replaceCurrent(text: String): Boolean {
-    refreshMatches()
-    val current = indexOfMatch(selection.range)
+    ensureMatches()
+    val s = search ?: return false
+    val current = s.indexOf(selection.range)
     if (current < 0) return false
-    applyChange(matches[current * 2], matches[current * 2 + 1], text, ChangeOrigin.Api, typing = false, caretAfter = true)
-    refreshMatches()
-    if (matches.isNotEmpty()) {
-      var index = firstMatchAtOrAfter(selection.min)
-      if (index >= matches.size / 2) index = 0
-      selectMatch(index)
+    applyChange(s.matches[current * 2], s.matches[current * 2 + 1], text, ChangeOrigin.Api, typing = false, caretAfter = true)
+    ensureMatches()
+    if (s.count > 0) {
+      var index = s.indexAtOrAfter(selection.min)
+      if (index >= s.count) index = 0
+      selectMatch(s, index)
     }
     return true
   }
 
   fun replaceAll(text: String): Int {
-    refreshMatches()
-    val targets = matches
+    ensureMatches()
+    val s = search ?: return 0
+    val targets = s.matches
     if (targets.isEmpty()) return 0
     undo.beginGroup(selection)
     var i = targets.size - 2
@@ -285,40 +299,13 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
       i -= 2
     }
     undo.endGroup(selection)
-    refreshMatches()
+    ensureMatches()
     return targets.size / 2
   }
 
-  private fun refreshMatches(force: Boolean = false) {
-    val query = searchQuery
-    if (query == null) {
-      matches = IntArray(0)
-      return
-    }
-    if (force || matchesRevision != document.revision) {
-      matches = Searcher.find(document.text(), query)
-      matchesRevision = document.revision
-    }
-  }
-
-  private fun firstMatchAtOrAfter(offset: Int): Int {
-    var i = 0
-    while (i < matches.size && matches[i] < offset) i += 2
-    return i / 2
-  }
-
-  private fun indexOfMatch(range: Range): Int {
-    var i = 0
-    while (i < matches.size) {
-      if (matches[i] == range.start && matches[i + 1] == range.end) return i / 2
-      i += 2
-    }
-    return -1
-  }
-
-  private fun selectMatch(index: Int): SearchHit {
-    moveSelection(Selection(matches[index * 2], matches[index * 2 + 1]))
-    return SearchHit(index, matches.size / 2)
+  private fun selectMatch(s: SearchSession, index: Int): SearchHit {
+    moveSelection(Selection(s.matches[index * 2], s.matches[index * 2 + 1]))
+    return SearchHit(index, s.count)
   }
 
   private fun clamped(s: Selection): Selection {
