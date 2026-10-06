@@ -1,4 +1,5 @@
 import UIKit
+import NitroModules
 
 class HybridCodeEditorView: HybridCodeEditorViewSpec {
   var view: UIView = UIView()

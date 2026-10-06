@@ -1,4 +1,5 @@
 import Foundation
+import Codepad
 
 @objc(CPLangJavascript)
 public final class CPLangJavascript: NSObject, CPLanguageProvider {
