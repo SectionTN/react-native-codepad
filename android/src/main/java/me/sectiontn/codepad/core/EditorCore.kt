@@ -219,7 +219,7 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
 
   var searchQuery: SearchQuery? = null
     private set
-  var matches: List<Range> = emptyList()
+  var matches: IntArray = IntArray(0)
     private set
   private var matchesRevision = -1
 
@@ -233,21 +233,22 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     }
     searchQuery = query
     refreshMatches(force = true)
-    return matches.size
+    return matches.size / 2
   }
 
   fun clearSearch() {
     searchQuery = null
-    matches = emptyList()
+    matches = IntArray(0)
     matchesRevision = -1
   }
 
   fun findNext(): SearchHit? {
     refreshMatches()
     if (matches.isEmpty()) return null
+    val count = matches.size / 2
     var index = firstMatchAtOrAfter(selection.min)
-    if (index < matches.size && matches[index] == selection.range) index++
-    if (index >= matches.size) index = 0
+    if (index < count && matches[index * 2] == selection.min && matches[index * 2 + 1] == selection.max) index++
+    if (index >= count) index = 0
     return selectMatch(index)
   }
 
@@ -255,18 +256,19 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     refreshMatches()
     if (matches.isEmpty()) return null
     var index = firstMatchAtOrAfter(selection.min) - 1
-    if (index < 0) index = matches.size - 1
+    if (index < 0) index = matches.size / 2 - 1
     return selectMatch(index)
   }
 
   fun replaceCurrent(text: String): Boolean {
     refreshMatches()
-    val current = matches.firstOrNull { it == selection.range } ?: return false
-    applyChange(current.start, current.end, text, ChangeOrigin.Api, typing = false, caretAfter = true)
+    val current = indexOfMatch(selection.range)
+    if (current < 0) return false
+    applyChange(matches[current * 2], matches[current * 2 + 1], text, ChangeOrigin.Api, typing = false, caretAfter = true)
     refreshMatches()
     if (matches.isNotEmpty()) {
       var index = firstMatchAtOrAfter(selection.min)
-      if (index >= matches.size) index = 0
+      if (index >= matches.size / 2) index = 0
       selectMatch(index)
     }
     return true
@@ -277,16 +279,20 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     val targets = matches
     if (targets.isEmpty()) return 0
     undo.beginGroup(selection)
-    for (m in targets.asReversed()) applyChange(m.start, m.end, text, ChangeOrigin.Api, typing = false, caretAfter = false)
+    var i = targets.size - 2
+    while (i >= 0) {
+      applyChange(targets[i], targets[i + 1], text, ChangeOrigin.Api, typing = false, caretAfter = false)
+      i -= 2
+    }
     undo.endGroup(selection)
     refreshMatches()
-    return targets.size
+    return targets.size / 2
   }
 
   private fun refreshMatches(force: Boolean = false) {
     val query = searchQuery
     if (query == null) {
-      matches = emptyList()
+      matches = IntArray(0)
       return
     }
     if (force || matchesRevision != document.revision) {
@@ -296,14 +302,23 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
   }
 
   private fun firstMatchAtOrAfter(offset: Int): Int {
-    val i = matches.indexOfFirst { it.start >= offset }
-    return if (i < 0) matches.size else i
+    var i = 0
+    while (i < matches.size && matches[i] < offset) i += 2
+    return i / 2
+  }
+
+  private fun indexOfMatch(range: Range): Int {
+    var i = 0
+    while (i < matches.size) {
+      if (matches[i] == range.start && matches[i + 1] == range.end) return i / 2
+      i += 2
+    }
+    return -1
   }
 
   private fun selectMatch(index: Int): SearchHit {
-    val m = matches[index]
-    moveSelection(Selection(m.start, m.end))
-    return SearchHit(index, matches.size)
+    moveSelection(Selection(matches[index * 2], matches[index * 2 + 1]))
+    return SearchHit(index, matches.size / 2)
   }
 
   private fun clamped(s: Selection): Selection {

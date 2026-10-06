@@ -2,6 +2,7 @@ package me.sectiontn.codepad.core
 
 import org.json.JSONArray
 import org.json.JSONObject
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.fail
@@ -103,8 +104,8 @@ class VectorRunner(private val case: JSONObject) {
     if (expect.has("line")) assertEquals("line $where", expect.getString("line"), lastResult)
     if (expect.has("matches")) {
       val arr = expect.getJSONArray("matches")
-      val expected = (0 until arr.length()).map { i -> arr.getJSONArray(i).let { Range(it.getInt(0), it.getInt(1)) } }
-      assertEquals("matches $where", expected, core.matches)
+      val expected = IntArray(arr.length() * 2) { i -> arr.getJSONArray(i / 2).getInt(i % 2) }
+      assertArrayEquals("matches $where", expected, core.matches)
     }
     if (expect.has("found")) {
       if (expect.isNull("found")) assertNull("found $where", lastResult)

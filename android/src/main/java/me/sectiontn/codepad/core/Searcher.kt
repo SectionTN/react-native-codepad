@@ -1,5 +1,6 @@
 package me.sectiontn.codepad.core
 
+import java.util.concurrent.CancellationException
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 
@@ -11,6 +12,8 @@ data class SearchQuery(
 )
 
 object Searcher {
+  val NEVER: () -> Boolean = { false }
+
   /** Throws IllegalArgumentException carrying the engine's message when the regex is invalid. */
   fun compile(q: SearchQuery): Pattern {
     var flags = Pattern.MULTILINE
@@ -23,23 +26,29 @@ object Searcher {
     }
   }
 
-  /** Non overlapping matches in document order. Empty matches are skipped. */
-  fun find(text: CharSequence, q: SearchQuery): List<Range> {
-    if (q.text.isEmpty()) return emptyList()
-    val m = compile(q).matcher(text)
-    val out = ArrayList<Range>()
+  /** Packed start and end pairs of the non overlapping matches in document order. Empty matches are skipped. */
+  fun find(text: CharSequence, q: SearchQuery, cancel: () -> Boolean = NEVER): IntArray {
+    if (q.text.isEmpty()) return IntArray(0)
+    val subject = if (cancel === NEVER) text else CancellableText(text, cancel)
+    val m = compile(q).matcher(subject)
+    var out = IntArray(64)
+    var n = 0
     var from = 0
-    while (from <= text.length && m.find(from)) {
+    while (from <= subject.length && m.find(from)) {
       val s = m.start()
       val e = m.end()
       if (e == s) {
         from = s + 1
         continue
       }
-      if (!q.wholeWord || isWordBounded(text, s, e)) out.add(Range(s, e))
+      if (!q.wholeWord || isWordBounded(subject, s, e)) {
+        if (n == out.size) out = out.copyOf(n * 2)
+        out[n++] = s
+        out[n++] = e
+      }
       from = e
     }
-    return out
+    return out.copyOf(n)
   }
 
   private fun isWordBounded(text: CharSequence, s: Int, e: Int): Boolean {
@@ -47,4 +56,19 @@ object Searcher {
     val after = e >= text.length || !TextMovement.isWordChar(text[e])
     return before && after
   }
+}
+
+/** Throws CancellationException from the next read once [cancel] answers true, so a regex scan stops inside the engine. */
+class CancellableText(private val text: CharSequence, private val cancel: () -> Boolean) : CharSequence {
+  override val length: Int get() = text.length
+
+  override fun get(index: Int): Char {
+    if (cancel()) throw CancellationException()
+    return text[index]
+  }
+
+  override fun subSequence(startIndex: Int, endIndex: Int): CharSequence =
+    CancellableText(text.subSequence(startIndex, endIndex), cancel)
+
+  override fun toString(): String = text.toString()
 }
