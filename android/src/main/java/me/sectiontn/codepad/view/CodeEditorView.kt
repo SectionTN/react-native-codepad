@@ -127,6 +127,8 @@ class CodeEditorView(context: Context) : View(context) {
 
   private var lineNumbers = true
   private var highlightActiveLine = true
+  private var matchBrackets = true
+  private var brackets = BracketHighlight(core)
   private var placeholder: String? = null
   private var drawn = false
 
@@ -270,6 +272,12 @@ class CodeEditorView(context: Context) : View(context) {
 
   fun setHighlightActiveLine(enabled: Boolean) {
     highlightActiveLine = enabled
+    invalidate()
+  }
+
+  fun setMatchBrackets(enabled: Boolean) {
+    matchBrackets = enabled
+    brackets.enabled = enabled
     invalidate()
   }
 
@@ -420,6 +428,7 @@ class CodeEditorView(context: Context) : View(context) {
     core.onChange = { change, origin -> onDocumentChange(change, origin) }
     core.onSelectionChange = { onSelectionMoved() }
     ime = ImeSession(core)
+    brackets = BracketHighlight(core).also { it.enabled = matchBrackets }
   }
 
   private fun onSelectionMoved() {
@@ -1057,7 +1066,7 @@ class CodeEditorView(context: Context) : View(context) {
     prepare(firstLine, lastBound, m)
     val caretLine = doc.lineAt(core.selection.head)
     drawActiveLine(canvas, caretLine)
-    drawSelection(canvas, firstLine)
+    drawFills(canvas, firstLine)
     val lastLine = drawText(canvas, firstLine)
     drawComposing(canvas, m, firstLine)
     drawGutter(canvas, m, firstLine, lastLine, caretLine)
@@ -1125,12 +1134,16 @@ class CodeEditorView(context: Context) : View(context) {
     canvas.drawRect(viewport.textAreaLeft.toFloat(), top.toFloat(), width.toFloat(), bottom.toFloat(), fill)
   }
 
-  private fun drawSelection(canvas: Canvas, firstLine: Int) {
-    val sel = core.selection
-    if (sel.isEmpty) return
+  /** Fills under the text in this order: bracket pair, then selection. */
+  private fun drawFills(canvas: Canvas, firstLine: Int) {
     canvas.save()
     canvas.clipRect(viewport.textAreaLeft, 0, width, height)
-    decorations.drawRange(canvas, rowGeometry, sel.min, sel.max, firstLine, theme.selection)
+    val consistent = snapshot?.takeIf { it.revision == core.document.revision }
+    brackets.pair(consistent, highlighter)?.let {
+      decorations.drawBrackets(canvas, rowGeometry, it, firstLine, theme.matchingBracket)
+    }
+    val sel = core.selection
+    if (!sel.isEmpty) decorations.drawRange(canvas, rowGeometry, sel.min, sel.max, firstLine, theme.selection)
     canvas.restore()
   }
 

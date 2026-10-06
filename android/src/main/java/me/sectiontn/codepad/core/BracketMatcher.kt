@@ -32,9 +32,10 @@ object BracketMatcher {
     var steps = 0
     while (i in 0 until len && steps < LIMIT) {
       val ch = doc.charAt(i)
-      if (skip?.invoke(i) != true) {
-        if (ch == c) depth++
-        else if (ch == partner) {
+      if ((ch == c || ch == partner) && skip?.invoke(i) != true) {
+        if (ch == c) {
+          depth++
+        } else {
           depth--
           if (depth == 0) return intArrayOf(at, i)
         }
