@@ -26,28 +26,27 @@ object Searcher {
     }
   }
 
-  /** Packed start and end pairs of the non overlapping matches in document order. Empty matches are skipped. */
+  /**
+   * Packed start and end pairs of the non overlapping matches in document order. Empty matches are skipped.
+   * Only the plain find() advances the scan: Android's ICU matcher copies the whole text again on find(from).
+   */
   fun find(text: CharSequence, q: SearchQuery, cancel: () -> Boolean = NEVER): IntArray {
     if (q.text.isEmpty()) return IntArray(0)
     val subject = if (cancel === NEVER) text else CancellableText(text, cancel)
     val m = compile(q).matcher(subject)
     var out = IntArray(64)
     var n = 0
-    var from = 0
-    while (from <= subject.length && m.find(from)) {
+    while (!cancel() && m.find()) {
       val s = m.start()
       val e = m.end()
-      if (e == s) {
-        from = s + 1
-        continue
-      }
+      if (e == s) continue
       if (!q.wholeWord || isWordBounded(subject, s, e)) {
         if (n == out.size) out = out.copyOf(n * 2)
         out[n++] = s
         out[n++] = e
       }
-      from = e
     }
+    if (cancel()) throw CancellationException()
     return out.copyOf(n)
   }
 
