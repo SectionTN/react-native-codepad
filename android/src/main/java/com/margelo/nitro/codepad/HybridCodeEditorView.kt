@@ -314,11 +314,18 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
     editor.post {
       try {
         block(promise)
+      } catch (e: IllegalArgumentException) {
+        promise.reject(ApiError(e.message ?: "invalid argument"))
       } catch (e: Exception) {
         promise.reject(e)
       }
     }
     return promise
+  }
+
+  /** Crosses to JS as its bare message: fbjni appends the Java stack and class name to any other throwable. */
+  private class ApiError(message: String) : RuntimeException(message, null, false, false) {
+    override fun toString(): String = message ?: ""
   }
 
   override fun focus(): Promise<Unit> = onMain { editor.focus() }
