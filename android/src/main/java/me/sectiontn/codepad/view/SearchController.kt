@@ -59,10 +59,11 @@ class SearchController(
 
   fun matchesForPaint(): IntArray = displayed
 
+  /** Queued continuations run now against the current state, so their promises settle instead of waiting for the GC. */
   override fun close() {
     closed = true
     cancelRunning()
-    continuations.clear()
+    runContinuations()
     (executor as? ExecutorService)?.shutdownNow()
   }
 

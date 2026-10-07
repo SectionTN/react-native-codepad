@@ -102,6 +102,17 @@ class SearchControllerTest {
   }
 
   @Test
+  fun closeSettlesPendingContinuations() {
+    controller.setQuery(SearchQuery("ab"))
+    var ran = 0
+    controller.whenFresh { ran++ }
+    controller.close()
+    assertEquals(1, ran)
+    settle()
+    assertEquals(1, ran)
+  }
+
+  @Test
   fun anInvalidRegexThrowsAndClears() {
     assertThrows(IllegalArgumentException::class.java) { controller.setQuery(SearchQuery("(", regex = true)) }
     assertFalse(controller.active)
