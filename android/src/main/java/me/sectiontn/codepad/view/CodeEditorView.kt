@@ -126,7 +126,6 @@ class CodeEditorView(context: Context) : View(context) {
 
   private var lineNumbers = true
   private var highlightActiveLine = true
-  private var matchBrackets = true
   private var brackets = BracketHighlight(core)
   private var search: SearchController? = null
   private var placeholder: String? = null
@@ -277,7 +276,6 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   fun setMatchBrackets(enabled: Boolean) {
-    matchBrackets = enabled
     brackets.enabled = enabled
     invalidate()
   }
@@ -409,9 +407,7 @@ class CodeEditorView(context: Context) : View(context) {
   /** Throws IllegalArgumentException for an invalid regex. The matches arrive through whenSearchFresh. */
   fun setSearch(query: SearchQuery) = search().setQuery(query)
 
-  fun clearSearch() {
-    search?.setQuery(null)
-  }
+  fun clearSearch(): Unit = search?.setQuery(null) ?: Unit
 
   fun whenSearchFresh(block: () -> Unit) = search?.whenFresh(block) ?: block()
 
@@ -443,7 +439,7 @@ class CodeEditorView(context: Context) : View(context) {
     core.onChange = { change, origin -> onDocumentChange(change, origin) }
     core.onSelectionChange = { onSelectionMoved() }
     ime = ImeSession(core)
-    brackets = BracketHighlight(core).also { it.enabled = matchBrackets }
+    brackets = BracketHighlight(core).also { it.enabled = brackets.enabled }
     search?.close()
     search = null
   }
@@ -971,22 +967,29 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+    if (!handlesKey(keyCode, event)) return super.onKeyDown(keyCode, event)
     val command = KeyCommands.map(keyCode, event.metaState)
-    if (command != null) {
-      if (command.edits && isReadOnly) return true
-      markInputTime(event.eventTime)
-      inputWork { runCommand(command) }
-      return true
-    }
-    if (isReadOnly || event.isCtrlPressed || event.isAltPressed || event.isMetaPressed) return super.onKeyDown(keyCode, event)
-    val ch = event.unicodeChar
-    if (ch == 0 || ch and KeyCharacterMap.COMBINING_ACCENT != 0) return super.onKeyDown(keyCode, event)
+    if (command?.edits == true && isReadOnly) return true
     markInputTime(event.eventTime)
     inputWork {
-      ime.finishComposingText()
-      core.typeText(String(Character.toChars(ch)))
+      if (command != null) {
+        runCommand(command)
+      } else {
+        ime.finishComposingText()
+        core.typeText(String(Character.toChars(event.unicodeChar)))
+      }
     }
     return true
+  }
+
+  // An unconsumed key up reaches the activity, where the RN debug client reloads JS on a double R.
+  override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean = handlesKey(keyCode, event) || super.onKeyUp(keyCode, event)
+
+  private fun handlesKey(keyCode: Int, event: KeyEvent): Boolean {
+    if (KeyCommands.map(keyCode, event.metaState) != null) return true
+    if (isReadOnly || event.isCtrlPressed || event.isAltPressed || event.isMetaPressed) return false
+    val ch = event.unicodeChar
+    return ch != 0 && ch and KeyCharacterMap.COMBINING_ACCENT == 0
   }
 
   private fun runCommand(command: KeyCommand) {
@@ -1171,8 +1174,7 @@ class CodeEditorView(context: Context) : View(context) {
     canvas.restore()
   }
 
-  private fun caretRect(m: RowMetrics, caretLine: Int): RectF? =
-    painter.caretRect(m, caretLine, core.selection.head - core.document.lineStart(caretLine))
+  private fun caretRect(m: RowMetrics, line: Int): RectF? = painter.caretRect(m, line, core.selection.head - core.document.lineStart(line))
 
   private fun publish(firstLine: Int, lastLine: Int, caretLine: Int, m: RowMetrics) {
     val caret = caretRect(m, caretLine)?.let { RectF(it.left / density, it.top / density, it.right / density, it.bottom / density) }

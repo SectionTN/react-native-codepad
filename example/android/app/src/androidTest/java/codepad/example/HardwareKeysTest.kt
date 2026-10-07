@@ -6,6 +6,8 @@ import android.view.View
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import me.sectiontn.codepad.core.Selection
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -42,6 +44,22 @@ class HardwareKeysTest {
         assertEquals("x", editor.core.document.text())
         key(editor, KeyEvent.KEYCODE_ENTER)
         assertEquals("x\n", editor.core.document.text())
+      }
+    }
+  }
+
+  // An unconsumed key up reaches the activity, where the RN dev client reloads on a double R.
+  @Test
+  fun typedKeysConsumeTheirKeyUp() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        editor.setInitialText("")
+        val now = SystemClock.uptimeMillis()
+        assertTrue(editor.dispatchKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_R, 0, 0)))
+        assertTrue(editor.dispatchKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_R, 0, 0)))
+        assertEquals("r", editor.core.document.text())
+        assertFalse(editor.dispatchKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_F1, 0, 0)))
       }
     }
   }
