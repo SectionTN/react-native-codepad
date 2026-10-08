@@ -260,6 +260,12 @@ using namespace margelo::nitro::codepad::views;
           : !newViewProps.onEditorBlur.hasSameValue(oldViewProps->onEditorBlur)) {
       swiftPart.setOnEditorBlur(newViewProps.onEditorBlur.get());
     }
+    // onContentSizeChange: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.onContentSizeChange.isProvided()
+          : !newViewProps.onContentSizeChange.hasSameValue(oldViewProps->onContentSizeChange)) {
+      swiftPart.setOnContentSizeChange(newViewProps.onContentSizeChange.get());
+    }
 
     // Update hybridRef if it changed
     if (oldViewProps == nullptr

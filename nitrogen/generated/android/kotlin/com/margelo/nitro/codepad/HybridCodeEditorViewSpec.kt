@@ -245,6 +245,20 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
     set(value) {
       onEditorBlur = value?.let { it }
     }
+  
+  abstract var onContentSizeChange: ((size: NativeContentSize) -> Unit)?
+  
+  private var onContentSizeChange_cxx: Func_void_NativeContentSize?
+    @Keep
+    @DoNotStrip
+    get() {
+      return onContentSizeChange?.let { Func_void_NativeContentSize_java(it) }
+    }
+    @Keep
+    @DoNotStrip
+    set(value) {
+      onContentSizeChange = value?.let { it }
+    }
 
   // Methods
   @DoNotStrip
@@ -390,6 +404,22 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @DoNotStrip
   @Keep
   abstract fun clearSearch(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun moveCaret(direction: NativeCaretDirection, select: Boolean): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun typeText(text: String): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun deleteBackward(): Promise<Unit>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun deleteForward(): Promise<Unit>
 
   // Default implementation of `HybridObject.toString()`
   override fun toString(): String {

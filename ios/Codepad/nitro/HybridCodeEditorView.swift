@@ -30,6 +30,7 @@ class HybridCodeEditorView: HybridCodeEditorViewSpec {
   var onChangeText: ((String) -> Void)? = nil
   var onEditorFocus: (() -> Void)? = nil
   var onEditorBlur: (() -> Void)? = nil
+  var onContentSizeChange: ((NativeContentSize) -> Void)? = nil
 
   func getText() throws -> String {
     return initialValue ?? ""
@@ -172,6 +173,22 @@ class HybridCodeEditorView: HybridCodeEditorViewSpec {
 
   func replaceAll(text: String) throws -> Promise<Double> {
     return Promise.resolved(withResult: 0)
+  }
+
+  func moveCaret(direction: NativeCaretDirection, select: Bool) throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func typeText(text: String) throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func deleteBackward() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
+  }
+
+  func deleteForward() throws -> Promise<Void> {
+    return Promise.resolved(withResult: ())
   }
 
   func clearSearch() throws -> Promise<Void> {

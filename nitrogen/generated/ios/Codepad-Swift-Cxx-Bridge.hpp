@@ -16,6 +16,8 @@ namespace margelo::nitro::codepad { class HybridCodepadSpec; }
 namespace margelo::nitro::codepad { struct NativeChangeEvent; }
 // Forward declaration of `NativeChangeOrigin` to properly resolve imports.
 namespace margelo::nitro::codepad { enum class NativeChangeOrigin; }
+// Forward declaration of `NativeContentSize` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeContentSize; }
 // Forward declaration of `NativeInsets` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeInsets; }
 // Forward declaration of `NativePosition` to properly resolve imports.
@@ -48,6 +50,7 @@ namespace Codepad { class HybridCodepadSpec_cxx; }
 #include "HybridCodepadSpec.hpp"
 #include "NativeChangeEvent.hpp"
 #include "NativeChangeOrigin.hpp"
+#include "NativeContentSize.hpp"
 #include "NativeInsets.hpp"
 #include "NativePosition.hpp"
 #include "NativeRect.hpp"
@@ -372,6 +375,43 @@ namespace margelo::nitro::codepad::bridge::swift {
     return optional.has_value();
   }
   inline std::function<void(const std::string& /* text */)> get_std__optional_std__function_void_const_std__string_____text______(const std::optional<std::function<void(const std::string& /* text */)>>& optional) noexcept {
+    return optional.value();
+  }
+  
+  // pragma MARK: std::function<void(const NativeContentSize& /* size */)>
+  /**
+   * Specialized version of `std::function<void(const NativeContentSize&)>`.
+   */
+  using Func_void_NativeContentSize = std::function<void(const NativeContentSize& /* size */)>;
+  /**
+   * Wrapper class for a `std::function<void(const NativeContentSize& / * size * /)>`, this can be used from Swift.
+   */
+  class Func_void_NativeContentSize_Wrapper final {
+  public:
+    explicit Func_void_NativeContentSize_Wrapper(std::function<void(const NativeContentSize& /* size */)>&& func): _function(std::make_unique<std::function<void(const NativeContentSize& /* size */)>>(std::move(func))) {}
+    inline void call(NativeContentSize size) const noexcept {
+      _function->operator()(size);
+    }
+  private:
+    std::unique_ptr<std::function<void(const NativeContentSize& /* size */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_NativeContentSize create_Func_void_NativeContentSize(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_NativeContentSize_Wrapper wrap_Func_void_NativeContentSize(Func_void_NativeContentSize value) noexcept {
+    return Func_void_NativeContentSize_Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::optional<std::function<void(const NativeContentSize& /* size */)>>
+  /**
+   * Specialized version of `std::optional<std::function<void(const NativeContentSize& / * size * /)>>`.
+   */
+  using std__optional_std__function_void_const_NativeContentSize_____size______ = std::optional<std::function<void(const NativeContentSize& /* size */)>>;
+  inline std::optional<std::function<void(const NativeContentSize& /* size */)>> create_std__optional_std__function_void_const_NativeContentSize_____size______(const std::function<void(const NativeContentSize& /* size */)>& value) noexcept {
+    return std::optional<std::function<void(const NativeContentSize& /* size */)>>(value);
+  }
+  inline bool has_value_std__optional_std__function_void_const_NativeContentSize_____size______(const std::optional<std::function<void(const NativeContentSize& /* size */)>>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline std::function<void(const NativeContentSize& /* size */)> get_std__optional_std__function_void_const_NativeContentSize_____size______(const std::optional<std::function<void(const NativeContentSize& /* size */)>>& optional) noexcept {
     return optional.value();
   }
   

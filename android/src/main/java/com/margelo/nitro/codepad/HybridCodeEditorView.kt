@@ -10,6 +10,8 @@ import me.sectiontn.codepad.core.ChangeOrigin
 import me.sectiontn.codepad.core.EditorCore
 import me.sectiontn.codepad.core.EditorSettings
 import me.sectiontn.codepad.core.SearchQuery
+import me.sectiontn.codepad.core.TextMovement
+import me.sectiontn.codepad.input.KeyCommand
 import me.sectiontn.codepad.view.CodeEditorView
 import me.sectiontn.codepad.view.InputMethodBridge
 import me.sectiontn.codepad.view.ThemeColors
@@ -28,6 +30,7 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
     onSelectionListener = { s ->
       onSelectionChange?.invoke(NativeSelection(s.anchor.toDouble(), s.head.toDouble(), core.document.revision.toDouble()))
     }
+    onContentSizeListener = { w, h -> onContentSizeChange?.invoke(NativeContentSize(w.toDouble(), h.toDouble())) }
     onChangeListener = { change, origin ->
       onChange?.invoke(NativeChangeEvent(change.start.toDouble(), change.end.toDouble(), change.inserted, toOrigin(origin), change.revision.toDouble()))
       onChangeText?.invoke(core.document.text())
@@ -191,6 +194,8 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
 
   override var onEditorBlur: (() -> Unit)? = null
 
+  override var onContentSizeChange: ((NativeContentSize) -> Unit)? = null
+
   override fun afterUpdate() {
     if (fontDirty) {
       fontDirty = false
@@ -305,13 +310,36 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
 
   override fun clearSearch(): Promise<Unit> = onMain { editor.clearSearch() }
 
+  override fun moveCaret(direction: NativeCaretDirection, select: Boolean): Promise<Unit> = onMain { editor.perform(toCommand(direction, select)) }
+
+  override fun typeText(text: String): Promise<Unit> = onMain { editor.typeText(text) }
+
+  override fun deleteBackward(): Promise<Unit> = onMain { editor.perform(KeyCommand.Backspace) }
+
+  override fun deleteForward(): Promise<Unit> = onMain { editor.perform(KeyCommand.Delete) }
+
+  private fun toCommand(direction: NativeCaretDirection, select: Boolean): KeyCommand = when (direction) {
+    NativeCaretDirection.LEFT -> KeyCommand.Move(TextMovement.Unit.Char, false, select)
+    NativeCaretDirection.RIGHT -> KeyCommand.Move(TextMovement.Unit.Char, true, select)
+    NativeCaretDirection.WORDLEFT -> KeyCommand.Move(TextMovement.Unit.Word, false, select)
+    NativeCaretDirection.WORDRIGHT -> KeyCommand.Move(TextMovement.Unit.Word, true, select)
+    NativeCaretDirection.LINESTART -> KeyCommand.Move(TextMovement.Unit.LineStart, false, select)
+    NativeCaretDirection.LINEEND -> KeyCommand.Move(TextMovement.Unit.LineEnd, true, select)
+    NativeCaretDirection.DOCUMENTSTART -> KeyCommand.Move(TextMovement.Unit.DocStart, false, select)
+    NativeCaretDirection.DOCUMENTEND -> KeyCommand.Move(TextMovement.Unit.DocEnd, true, select)
+    NativeCaretDirection.UP -> KeyCommand.Vertical(-1, false, select)
+    NativeCaretDirection.DOWN -> KeyCommand.Vertical(1, false, select)
+    NativeCaretDirection.PAGEUP -> KeyCommand.Vertical(-1, true, select)
+    NativeCaretDirection.PAGEDOWN -> KeyCommand.Vertical(1, true, select)
+  }
+
   private fun toHit(hit: EditorCore.SearchHit?): NativeSearchHit =
     NativeSearchHit(hit?.index?.toDouble() ?: -1.0, hit?.total?.toDouble() ?: 0.0)
 
   /** Runs [block] on the main thread with the promise it must settle; a thrown exception rejects it. */
   private fun <T> deferred(block: (Promise<T>) -> Unit): Promise<T> {
     val promise = Promise<T>()
-    editor.post {
+    editor.runOnMain {
       try {
         block(promise)
       } catch (e: IllegalArgumentException) {
@@ -342,7 +370,7 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
   /** Write methods run on the main thread and resolve once the change is applied and a redraw is queued. */
   private fun onMain(block: () -> Unit): Promise<Unit> {
     val promise = Promise<Unit>()
-    editor.post {
+    editor.runOnMain {
       block()
       editor.invalidate()
       promise.resolve(Unit)

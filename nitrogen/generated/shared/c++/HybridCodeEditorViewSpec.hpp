@@ -25,6 +25,8 @@ namespace margelo::nitro::codepad { struct NativeScrollEvent; }
 namespace margelo::nitro::codepad { struct NativeSelection; }
 // Forward declaration of `NativeChangeEvent` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeChangeEvent; }
+// Forward declaration of `NativeContentSize` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeContentSize; }
 // Forward declaration of `NativePosition` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativePosition; }
 // Forward declaration of `NativeRect` to properly resolve imports.
@@ -35,6 +37,8 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 namespace margelo::nitro::codepad { struct NativeSearchQuery; }
 // Forward declaration of `NativeSearchHit` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSearchHit; }
+// Forward declaration of `NativeCaretDirection` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeCaretDirection; }
 
 #include <string>
 #include <optional>
@@ -45,12 +49,14 @@ namespace margelo::nitro::codepad { struct NativeSearchHit; }
 #include "NativeScrollEvent.hpp"
 #include "NativeSelection.hpp"
 #include "NativeChangeEvent.hpp"
+#include "NativeContentSize.hpp"
 #include "NativePosition.hpp"
 #include "NativeRect.hpp"
 #include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
 #include "NativeSearchQuery.hpp"
 #include "NativeSearchHit.hpp"
+#include "NativeCaretDirection.hpp"
 
 namespace margelo::nitro::codepad {
 
@@ -133,6 +139,8 @@ namespace margelo::nitro::codepad {
       virtual void setOnEditorFocus(const std::optional<std::function<void()>>& onEditorFocus) = 0;
       virtual std::optional<std::function<void()>> getOnEditorBlur() = 0;
       virtual void setOnEditorBlur(const std::optional<std::function<void()>>& onEditorBlur) = 0;
+      virtual std::optional<std::function<void(const NativeContentSize& /* size */)>> getOnContentSizeChange() = 0;
+      virtual void setOnContentSizeChange(const std::optional<std::function<void(const NativeContentSize& /* size */)>>& onContentSizeChange) = 0;
 
     public:
       // Methods
@@ -172,6 +180,10 @@ namespace margelo::nitro::codepad {
       virtual std::shared_ptr<Promise<bool>> replaceCurrent(const std::string& text) = 0;
       virtual std::shared_ptr<Promise<double>> replaceAll(const std::string& text) = 0;
       virtual std::shared_ptr<Promise<void>> clearSearch() = 0;
+      virtual std::shared_ptr<Promise<void>> moveCaret(NativeCaretDirection direction, bool select) = 0;
+      virtual std::shared_ptr<Promise<void>> typeText(const std::string& text) = 0;
+      virtual std::shared_ptr<Promise<void>> deleteBackward() = 0;
+      virtual std::shared_ptr<Promise<void>> deleteForward() = 0;
 
     protected:
       // Hybrid Setup

@@ -47,6 +47,7 @@ namespace margelo::nitro::codepad::views {
     onChangeText(nitro::ReactProp<std::optional<std::function<void(const std::string& /* text */)>>>::fromRawValue("CodeEditorView", "onChangeText", rawProps, sourceProps.onChangeText)),
     onEditorFocus(nitro::ReactProp<std::optional<std::function<void()>>>::fromRawValue("CodeEditorView", "onEditorFocus", rawProps, sourceProps.onEditorFocus)),
     onEditorBlur(nitro::ReactProp<std::optional<std::function<void()>>>::fromRawValue("CodeEditorView", "onEditorBlur", rawProps, sourceProps.onEditorBlur)),
+    onContentSizeChange(nitro::ReactProp<std::optional<std::function<void(const NativeContentSize& /* size */)>>>::fromRawValue("CodeEditorView", "onContentSizeChange", rawProps, sourceProps.onContentSizeChange)),
     hybridRef(nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>>::fromRawValue("CodeEditorView", "hybridRef", rawProps, sourceProps.hybridRef)) { }
 
   bool HybridCodeEditorViewProps::filterObjectKeys(const std::string& propName) {
@@ -78,6 +79,7 @@ namespace margelo::nitro::codepad::views {
       case hashString("onChangeText"): return true;
       case hashString("onEditorFocus"): return true;
       case hashString("onEditorBlur"): return true;
+      case hashString("onContentSizeChange"): return true;
       case hashString("hybridRef"): return true;
       default: return false;
     }

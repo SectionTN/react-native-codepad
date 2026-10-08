@@ -58,6 +58,26 @@ export interface NativeScrollEvent {
   contentHeight: number;
 }
 
+// In dp, contentInsets included: the view size at which nothing scrolls.
+export interface NativeContentSize {
+  width: number;
+  height: number;
+}
+
+export type NativeCaretDirection =
+  | 'left'
+  | 'right'
+  | 'wordLeft'
+  | 'wordRight'
+  | 'lineStart'
+  | 'lineEnd'
+  | 'documentStart'
+  | 'documentEnd'
+  | 'up'
+  | 'down'
+  | 'pageUp'
+  | 'pageDown';
+
 export type NativeChangeOrigin = 'input' | 'api' | 'undo' | 'redo';
 
 export type NativeSuggestions = 'off' | 'forceOff' | 'on';
@@ -112,6 +132,7 @@ export interface CodeEditorViewProps extends HybridViewProps {
   // Not onFocus and onBlur: those names already exist on ViewProps with an event argument.
   onEditorFocus?: () => void;
   onEditorBlur?: () => void;
+  onContentSizeChange?: (size: NativeContentSize) => void;
 }
 
 export interface CodeEditorViewMethods extends HybridViewMethods {
@@ -151,6 +172,10 @@ export interface CodeEditorViewMethods extends HybridViewMethods {
   replaceCurrent(text: string): Promise<boolean>;
   replaceAll(text: string): Promise<number>;
   clearSearch(): Promise<void>;
+  moveCaret(direction: NativeCaretDirection, select: boolean): Promise<void>;
+  typeText(text: string): Promise<void>;
+  deleteBackward(): Promise<void>;
+  deleteForward(): Promise<void>;
 }
 
 export type CodeEditorView = HybridView<CodeEditorViewProps, CodeEditorViewMethods>;

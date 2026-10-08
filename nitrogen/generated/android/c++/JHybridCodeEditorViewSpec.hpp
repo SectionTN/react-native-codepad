@@ -104,6 +104,8 @@ namespace margelo::nitro::codepad {
     void setOnEditorFocus(const std::optional<std::function<void()>>& onEditorFocus) override;
     std::optional<std::function<void()>> getOnEditorBlur() override;
     void setOnEditorBlur(const std::optional<std::function<void()>>& onEditorBlur) override;
+    std::optional<std::function<void(const NativeContentSize& /* size */)>> getOnContentSizeChange() override;
+    void setOnContentSizeChange(const std::optional<std::function<void(const NativeContentSize& /* size */)>>& onContentSizeChange) override;
 
   public:
     // Methods
@@ -143,6 +145,10 @@ namespace margelo::nitro::codepad {
     std::shared_ptr<Promise<bool>> replaceCurrent(const std::string& text) override;
     std::shared_ptr<Promise<double>> replaceAll(const std::string& text) override;
     std::shared_ptr<Promise<void>> clearSearch() override;
+    std::shared_ptr<Promise<void>> moveCaret(NativeCaretDirection direction, bool select) override;
+    std::shared_ptr<Promise<void>> typeText(const std::string& text) override;
+    std::shared_ptr<Promise<void>> deleteBackward() override;
+    std::shared_ptr<Promise<void>> deleteForward() override;
 
   private:
     jni::global_ref<JHybridCodeEditorViewSpec::JavaPart> _javaPart;

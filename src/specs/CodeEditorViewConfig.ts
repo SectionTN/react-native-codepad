@@ -32,6 +32,7 @@ export default {
     "onChangeText": true,
     "onEditorFocus": true,
     "onEditorBlur": true,
+    "onContentSizeChange": true,
     "hybridRef": true
   }
 } as const;

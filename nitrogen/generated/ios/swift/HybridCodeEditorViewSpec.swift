@@ -37,6 +37,7 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   var onChangeText: ((_ text: String) -> Void)? { get set }
   var onEditorFocus: (() -> Void)? { get set }
   var onEditorBlur: (() -> Void)? { get set }
+  var onContentSizeChange: ((_ size: NativeContentSize) -> Void)? { get set }
 
   // Methods
   func getText() throws -> String
@@ -75,6 +76,10 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   func replaceCurrent(text: String) throws -> Promise<Bool>
   func replaceAll(text: String) throws -> Promise<Double>
   func clearSearch() throws -> Promise<Void>
+  func moveCaret(direction: NativeCaretDirection, select: Bool) throws -> Promise<Void>
+  func typeText(text: String) throws -> Promise<Void>
+  func deleteBackward() throws -> Promise<Void>
+  func deleteForward() throws -> Promise<Void>
 }
 
 public extension HybridCodeEditorViewSpec_protocol {

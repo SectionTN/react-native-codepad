@@ -55,6 +55,14 @@ namespace margelo::nitro::codepad::bridge::swift {
     };
   }
   
+  // pragma MARK: std::function<void(const NativeContentSize& /* size */)>
+  Func_void_NativeContentSize create_Func_void_NativeContentSize(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = Codepad::Func_void_NativeContentSize::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const NativeContentSize& size) mutable -> void {
+      swiftClosure.call(size);
+    };
+  }
+  
   // pragma MARK: std::function<void(const std::exception_ptr& /* error */)>
   Func_void_std__exception_ptr create_Func_void_std__exception_ptr(void* NON_NULL swiftClosureWrapper) noexcept {
     auto swiftClosure = Codepad::Func_void_std__exception_ptr::fromUnsafe(swiftClosureWrapper);

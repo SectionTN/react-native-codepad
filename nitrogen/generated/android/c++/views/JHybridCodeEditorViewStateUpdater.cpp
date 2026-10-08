@@ -188,6 +188,11 @@ void JHybridCodeEditorViewStateUpdater::updateViewProps(jni::alias_ref<jni::JCla
         : !newProps->onEditorBlur.hasSameValue(oldProps->onEditorBlur)) {
     hybridView->setOnEditorBlur(newProps->onEditorBlur.get());
   }
+  if (oldProps == nullptr
+        ? newProps->onContentSizeChange.isProvided()
+        : !newProps->onContentSizeChange.hasSameValue(oldProps->onContentSizeChange)) {
+    hybridView->setOnContentSizeChange(newProps->onContentSizeChange.get());
+  }
 
   // Update hybridRef if it changed
   if (oldProps == nullptr

@@ -68,6 +68,8 @@ namespace margelo::nitro::codepad {
       prototype.registerHybridSetter("onEditorFocus", &HybridCodeEditorViewSpec::setOnEditorFocus);
       prototype.registerHybridGetter("onEditorBlur", &HybridCodeEditorViewSpec::getOnEditorBlur);
       prototype.registerHybridSetter("onEditorBlur", &HybridCodeEditorViewSpec::setOnEditorBlur);
+      prototype.registerHybridGetter("onContentSizeChange", &HybridCodeEditorViewSpec::getOnContentSizeChange);
+      prototype.registerHybridSetter("onContentSizeChange", &HybridCodeEditorViewSpec::setOnContentSizeChange);
       prototype.registerHybridMethod("getText", &HybridCodeEditorViewSpec::getText);
       prototype.registerHybridMethod("getLength", &HybridCodeEditorViewSpec::getLength);
       prototype.registerHybridMethod("getLineCount", &HybridCodeEditorViewSpec::getLineCount);
@@ -104,6 +106,10 @@ namespace margelo::nitro::codepad {
       prototype.registerHybridMethod("replaceCurrent", &HybridCodeEditorViewSpec::replaceCurrent);
       prototype.registerHybridMethod("replaceAll", &HybridCodeEditorViewSpec::replaceAll);
       prototype.registerHybridMethod("clearSearch", &HybridCodeEditorViewSpec::clearSearch);
+      prototype.registerHybridMethod("moveCaret", &HybridCodeEditorViewSpec::moveCaret);
+      prototype.registerHybridMethod("typeText", &HybridCodeEditorViewSpec::typeText);
+      prototype.registerHybridMethod("deleteBackward", &HybridCodeEditorViewSpec::deleteBackward);
+      prototype.registerHybridMethod("deleteForward", &HybridCodeEditorViewSpec::deleteForward);
     });
   }
 

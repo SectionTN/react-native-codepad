@@ -28,6 +28,8 @@ namespace margelo::nitro::codepad { struct NativeSelection; }
 namespace margelo::nitro::codepad { struct NativeChangeEvent; }
 // Forward declaration of `NativeChangeOrigin` to properly resolve imports.
 namespace margelo::nitro::codepad { enum class NativeChangeOrigin; }
+// Forward declaration of `NativeContentSize` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeContentSize; }
 // Forward declaration of `NativePosition` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativePosition; }
 // Forward declaration of `NativeRect` to properly resolve imports.
@@ -38,6 +40,8 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 namespace margelo::nitro::codepad { struct NativeSearchQuery; }
 // Forward declaration of `NativeSearchHit` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSearchHit; }
+// Forward declaration of `NativeCaretDirection` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeCaretDirection; }
 
 #include <string>
 #include <optional>
@@ -51,12 +55,14 @@ namespace margelo::nitro::codepad { struct NativeSearchHit; }
 #include "NativeSelection.hpp"
 #include "NativeChangeEvent.hpp"
 #include "NativeChangeOrigin.hpp"
+#include "NativeContentSize.hpp"
 #include "NativePosition.hpp"
 #include "NativeRect.hpp"
 #include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
 #include "NativeSearchQuery.hpp"
 #include "NativeSearchHit.hpp"
+#include "NativeCaretDirection.hpp"
 
 #include "Codepad-Swift-Cxx-Umbrella.hpp"
 
@@ -292,6 +298,13 @@ namespace margelo::nitro::codepad {
     }
     inline void setOnEditorBlur(const std::optional<std::function<void()>>& onEditorBlur) noexcept override {
       _swiftPart.setOnEditorBlur(onEditorBlur);
+    }
+    inline std::optional<std::function<void(const NativeContentSize& /* size */)>> getOnContentSizeChange() noexcept override {
+      auto __result = _swiftPart.getOnContentSizeChange();
+      return __result;
+    }
+    inline void setOnContentSizeChange(const std::optional<std::function<void(const NativeContentSize& /* size */)>>& onContentSizeChange) noexcept override {
+      _swiftPart.setOnContentSizeChange(onContentSizeChange);
     }
 
   public:
@@ -578,6 +591,38 @@ namespace margelo::nitro::codepad {
     }
     inline std::shared_ptr<Promise<void>> clearSearch() override {
       auto __result = _swiftPart.clearSearch();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> moveCaret(NativeCaretDirection direction, bool select) override {
+      auto __result = _swiftPart.moveCaret(static_cast<int>(direction), std::forward<decltype(select)>(select));
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> typeText(const std::string& text) override {
+      auto __result = _swiftPart.typeText(text);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> deleteBackward() override {
+      auto __result = _swiftPart.deleteBackward();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::shared_ptr<Promise<void>> deleteForward() override {
+      auto __result = _swiftPart.deleteForward();
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }

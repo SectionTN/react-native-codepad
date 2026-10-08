@@ -23,6 +23,8 @@ namespace margelo::nitro::codepad { struct NativeSelection; }
 namespace margelo::nitro::codepad { struct NativeChangeEvent; }
 // Forward declaration of `NativeChangeOrigin` to properly resolve imports.
 namespace margelo::nitro::codepad { enum class NativeChangeOrigin; }
+// Forward declaration of `NativeContentSize` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeContentSize; }
 // Forward declaration of `NativePosition` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativePosition; }
 // Forward declaration of `NativeRect` to properly resolve imports.
@@ -33,6 +35,8 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 namespace margelo::nitro::codepad { struct NativeSearchHit; }
 // Forward declaration of `NativeSearchQuery` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSearchQuery; }
+// Forward declaration of `NativeCaretDirection` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeCaretDirection; }
 
 #include <string>
 #include <optional>
@@ -60,6 +64,9 @@ namespace margelo::nitro::codepad { struct NativeSearchQuery; }
 #include "NativeChangeOrigin.hpp"
 #include "JNativeChangeOrigin.hpp"
 #include "JFunc_void_std__string.hpp"
+#include "NativeContentSize.hpp"
+#include "JFunc_void_NativeContentSize.hpp"
+#include "JNativeContentSize.hpp"
 #include "NativePosition.hpp"
 #include "JNativePosition.hpp"
 #include "NativeRect.hpp"
@@ -73,6 +80,8 @@ namespace margelo::nitro::codepad { struct NativeSearchQuery; }
 #include "JNativeSearchHit.hpp"
 #include "NativeSearchQuery.hpp"
 #include "JNativeSearchQuery.hpp"
+#include "NativeCaretDirection.hpp"
+#include "JNativeCaretDirection.hpp"
 
 namespace margelo::nitro::codepad {
 
@@ -402,6 +411,23 @@ namespace margelo::nitro::codepad {
   void JHybridCodeEditorViewSpec::setOnEditorBlur(const std::optional<std::function<void()>>& onEditorBlur) {
     static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<JFunc_void::javaobject> /* onEditorBlur */)>("setOnEditorBlur_cxx");
     method(_javaPart, onEditorBlur.has_value() ? JFunc_void_cxx::fromCpp(onEditorBlur.value()) : nullptr);
+  }
+  std::optional<std::function<void(const NativeContentSize& /* size */)>> JHybridCodeEditorViewSpec::getOnContentSizeChange() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JFunc_void_NativeContentSize::javaobject>()>("getOnContentSizeChange_cxx");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional([&]() -> std::function<void(const NativeContentSize& /* size */)> {
+      if (__result->isInstanceOf(JFunc_void_NativeContentSize_cxx::javaClassStatic())) [[likely]] {
+        auto downcast = jni::static_ref_cast<JFunc_void_NativeContentSize_cxx::javaobject>(__result);
+        return downcast->cthis()->getFunction();
+      } else {
+        auto __resultRef = jni::make_global(__result);
+        return JNICallable<JFunc_void_NativeContentSize, void(NativeContentSize)>(std::move(__resultRef));
+      }
+    }()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setOnContentSizeChange(const std::optional<std::function<void(const NativeContentSize& /* size */)>>& onContentSizeChange) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<JFunc_void_NativeContentSize::javaobject> /* onContentSizeChange */)>("setOnContentSizeChange_cxx");
+    method(_javaPart, onContentSizeChange.has_value() ? JFunc_void_NativeContentSize_cxx::fromCpp(onContentSizeChange.value()) : nullptr);
   }
 
   // Methods
@@ -797,6 +823,66 @@ namespace margelo::nitro::codepad {
   }
   std::shared_ptr<Promise<void>> JHybridCodeEditorViewSpec::clearSearch() {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("clearSearch");
+    auto __result = method(_javaPart);
+    return [&]() {
+      auto __promise = Promise<void>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& /* unit */) {
+        __promise->resolve();
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<void>> JHybridCodeEditorViewSpec::moveCaret(NativeCaretDirection direction, bool select) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<JNativeCaretDirection> /* direction */, jboolean /* select */)>("moveCaret");
+    auto __result = method(_javaPart, JNativeCaretDirection::fromCpp(direction), select);
+    return [&]() {
+      auto __promise = Promise<void>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& /* unit */) {
+        __promise->resolve();
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<void>> JHybridCodeEditorViewSpec::typeText(const std::string& text) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<jni::JString> /* text */)>("typeText");
+    auto __result = method(_javaPart, jni::make_jstring(text));
+    return [&]() {
+      auto __promise = Promise<void>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& /* unit */) {
+        __promise->resolve();
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<void>> JHybridCodeEditorViewSpec::deleteBackward() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("deleteBackward");
+    auto __result = method(_javaPart);
+    return [&]() {
+      auto __promise = Promise<void>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& /* unit */) {
+        __promise->resolve();
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  std::shared_ptr<Promise<void>> JHybridCodeEditorViewSpec::deleteForward() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("deleteForward");
     auto __result = method(_javaPart);
     return [&]() {
       auto __promise = Promise<void>::create();

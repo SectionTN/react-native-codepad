@@ -26,6 +26,7 @@
 #include "NativeScrollEvent.hpp"
 #include "NativeSelection.hpp"
 #include "NativeChangeEvent.hpp"
+#include "NativeContentSize.hpp"
 #include <memory>
 #include "HybridCodeEditorViewSpec.hpp"
 
@@ -76,6 +77,7 @@ namespace margelo::nitro::codepad::views {
     nitro::ReactProp<std::optional<std::function<void(const std::string& /* text */)>>> onChangeText;
     nitro::ReactProp<std::optional<std::function<void()>>> onEditorFocus;
     nitro::ReactProp<std::optional<std::function<void()>>> onEditorBlur;
+    nitro::ReactProp<std::optional<std::function<void(const NativeContentSize& /* size */)>>> onContentSizeChange;
     nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>> hybridRef;
 
     [[nodiscard]]
@@ -107,6 +109,7 @@ namespace margelo::nitro::codepad::views {
              onChangeText.hasSameValue(other.onChangeText) &&
              onEditorFocus.hasSameValue(other.onEditorFocus) &&
              onEditorBlur.hasSameValue(other.onEditorBlur) &&
+             onContentSizeChange.hasSameValue(other.onContentSizeChange) &&
              hybridRef.hasSameValue(other.hybridRef);
     }
 
@@ -139,6 +142,7 @@ namespace margelo::nitro::codepad::views {
              onChangeText.isProvided() ||
              onEditorFocus.isProvided() ||
              onEditorBlur.isProvided() ||
+             onContentSizeChange.isProvided() ||
              hybridRef.isProvided();
     }
 
