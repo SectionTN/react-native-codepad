@@ -342,11 +342,12 @@ class CodeEditorView(context: Context) : View(context) {
 
   /** Insets in dp. The bottom inset is how consumers keep the caret above the keyboard. */
   fun setContentInsets(top: Float, bottom: Float, left: Float, right: Float) {
-    viewport.insetTop = dp(top)
-    viewport.insetBottom = dp(bottom)
-    viewport.insetLeft = dp(left)
-    viewport.insetRight = dp(right)
-    relayout()
+    when {
+      viewport.setInsets(dp(top), dp(bottom), dp(left), dp(right)) -> relayout()
+      viewport.clamp() -> onScrolled()
+      else -> invalidate()
+    }
+    if (isFocused) revealPending = true
   }
 
   fun setScrollEnabled(enabled: Boolean) {
@@ -904,11 +905,14 @@ class CodeEditorView(context: Context) : View(context) {
 
   override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
     super.onSizeChanged(w, h, oldw, oldh)
-    viewport.width = w
-    viewport.height = h
+    val widthChanged = viewport.resize(w, h)
     cache.capacity = maxOf(64, 3 * (h / rowMetrics().rowHeight + 1))
     scroller.setSize(w, h)
-    relayout()
+    when {
+      widthChanged -> relayout()
+      viewport.clamp() -> onScrolled()
+      else -> invalidate()
+    }
     if (oldh != 0 && isFocused) revealPending = true
   }
 

@@ -47,6 +47,24 @@ class Viewport(var heights: HeightMap) {
 
   fun clamp(): Boolean = scrollTo(scrollX, scrollY)
 
+  /** Stores a view size. True when the text area width changed, which is when layouts must be rebuilt. */
+  fun resize(width: Int, height: Int): Boolean {
+    val before = textAreaWidth
+    this.width = width
+    this.height = height
+    return textAreaWidth != before
+  }
+
+  /** Stores the insets. True when the text area width changed. */
+  fun setInsets(top: Int, bottom: Int, left: Int, right: Int): Boolean {
+    val before = textAreaWidth
+    insetTop = top
+    insetBottom = bottom
+    insetLeft = left
+    insetRight = right
+    return textAreaWidth != before
+  }
+
   /** Content deltas: positive dy means the content moves up, so the finger moved up. */
   fun canScroll(dx: Float, dy: Float): Boolean =
     (dx < 0 && scrollX > 0) || (dx > 0 && scrollX < maxScrollX) ||

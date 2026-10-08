@@ -134,6 +134,21 @@ class ViewportTest {
   }
 
   @Test
+  fun resizeAndInsetsReportOnlyTextAreaWidthChanges() {
+    val v = viewport()
+    assertFalse(v.resize(400, 300))
+    assertEquals(300, v.height)
+    assertTrue(v.resize(500, 300))
+    assertEquals(500, v.width)
+    assertFalse(v.setInsets(10, 20, 0, 0))
+    assertEquals(20, v.insetBottom)
+    assertTrue(v.setInsets(10, 20, 8, 0))
+    assertEquals(8, v.insetLeft)
+    assertTrue(v.setInsets(10, 20, 8, 4))
+    assertFalse(v.setInsets(0, 0, 8, 4))
+  }
+
+  @Test
   fun gutterWidthCountsDigits() {
     assertEquals(1, GutterMetrics.digits(0))
     assertEquals(1, GutterMetrics.digits(9))
