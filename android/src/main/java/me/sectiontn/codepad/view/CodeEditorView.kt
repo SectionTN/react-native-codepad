@@ -70,6 +70,7 @@ class CodeEditorView(context: Context) : View(context) {
   var onFirstDraw: (() -> Unit)? = null
   var onScrollListener: ((FrameInfo) -> Unit)? = null
   var onSelectionListener: ((Selection) -> Unit)? = null
+  var onContentSizeListener: ((Float, Float) -> Unit)? = null
 
   var isScrollEnabled = true
     private set
@@ -153,6 +154,9 @@ class CodeEditorView(context: Context) : View(context) {
   private var magnifier: Magnifier? = null
   private var caretVisible = true
   private var selectionDirty = false
+  private var contentDirty = false
+  private var lastContentWidth = -1f
+  private var lastContentHeight = -1f
   private var grabDy = 0f
   private var dragFixed = 0
   private var anchorX = 0f
@@ -977,7 +981,7 @@ class CodeEditorView(context: Context) : View(context) {
     markInputTime(event.eventTime)
     inputWork {
       if (command != null) {
-        runCommand(command)
+        perform(command)
       } else {
         ime.finishComposingText()
         core.typeText(String(Character.toChars(event.unicodeChar)))
@@ -996,7 +1000,22 @@ class CodeEditorView(context: Context) : View(context) {
     return ch != 0 && ch and KeyCharacterMap.COMBINING_ACCENT == 0
   }
 
-  private fun runCommand(command: KeyCommand) {
+  /** Types through the keyboard path: auto closing, the indenter on a newline, typing coalescing. */
+  fun typeText(text: String) {
+    if (isReadOnly || text.isEmpty()) return
+    ime.finishComposingText()
+    core.typeText(text)
+    revealPending = true
+    invalidate()
+  }
+
+  // View.post on a detached view waits for an attach that never comes after an unmount.
+  fun runOnMain(block: () -> Unit) {
+    mainHandler.post(block)
+  }
+
+  fun perform(command: KeyCommand) {
+    if (command.edits && isReadOnly) return
     if (command.edits) ime.finishComposingText()
     when (command) {
       is KeyCommand.Vertical -> moveVertically(command)
@@ -1101,6 +1120,10 @@ class CodeEditorView(context: Context) : View(context) {
       scrollDirty = false
       onScrollListener?.invoke(frame)
     }
+    if (contentDirty) {
+      contentDirty = false
+      onContentSizeListener?.invoke(lastContentWidth, lastContentHeight)
+    }
     if (selectionDirty) {
       selectionDirty = false
       onSelectionListener?.invoke(core.selection)
@@ -1191,6 +1214,13 @@ class CodeEditorView(context: Context) : View(context) {
       viewport.contentWidth / density,
       viewport.contentHeight / density,
     )
+    val w = (viewport.textAreaLeft + viewport.contentWidth + viewport.insetRight) / density
+    val h = (viewport.insetTop + viewport.contentHeight + viewport.insetBottom) / density
+    if (w != lastContentWidth || h != lastContentHeight) {
+      lastContentWidth = w
+      lastContentHeight = h
+      contentDirty = true
+    }
   }
 
   companion object {
