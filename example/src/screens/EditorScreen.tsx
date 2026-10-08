@@ -2,28 +2,7 @@ import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CodeEditor, type CodeEditorRef, githubDark, type Suggestions } from 'react-native-codepad';
 import { SearchBar } from '../components/SearchBar';
-
-const block = [
-  '// readFile with retries',
-  'import { readFile } from "node:fs/promises";',
-  '',
-  'const MAX_RETRIES = 3;',
-  'const MESSAGE = "a long string literal that keeps going past the edge of the screen so soft wrap has something to do";',
-  '',
-  'export async function load(path, retries = MAX_RETRIES) {',
-  '  for (let i = 0; i < retries; i++) {',
-  '    try {',
-  '      return await readFile(path, "utf8");',
-  '    } catch (error) {',
-  '      if (i === retries - 1) throw error;',
-  '    }',
-  '  }',
-  '  return null;',
-  '}',
-  '',
-].join('\n');
-
-const sample = new Array(40).fill(block).join('\n');
+import { sample } from '../sample';
 
 // Object props keep one identity across renders; a fresh literal would reach native on every scroll event.
 const INSETS = { bottom: 24 };
