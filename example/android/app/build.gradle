@@ -106,6 +106,14 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
+    // The instrumented tests run on the variant the dev loop installs; TestActivity lives in the debug source set.
+    testBuildType "debugOptimized"
+    sourceSets {
+        debugOptimized {
+            java.srcDirs += "src/debug/java"
+            manifest.srcFile "src/debug/AndroidManifest.xml"
+        }
+    }
 }
 
 dependencies {

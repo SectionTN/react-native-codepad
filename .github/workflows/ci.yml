@@ -133,7 +133,7 @@ jobs:
         if: env.turbo_cache_hit != 1
         run: |
           cd example/android
-          ./gradlew :app:compileDebugAndroidTestKotlin --console=plain -q
+          ./gradlew :app:compileDebugOptimizedAndroidTestKotlin --console=plain -q
 
   build-ios:
     runs-on: macos-latest
