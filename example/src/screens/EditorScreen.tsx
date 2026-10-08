@@ -49,6 +49,7 @@ export function EditorScreen() {
   const [autoClose, setAutoClose] = useState(true);
   const [brackets, setBrackets] = useState(true);
   const [focused, setFocused] = useState(false);
+  const [readOnly, setReadOnly] = useState(false);
   return (
     <View style={styles.screen}>
       <View style={styles.bar}>
@@ -80,6 +81,7 @@ export function EditorScreen() {
         />
         <Toggle label="Auto" value={autoClose} onPress={() => setAutoClose((v) => !v)} />
         <Toggle label="Brackets" value={brackets} onPress={() => setBrackets((v) => !v)} />
+        <Toggle label="Read only" value={readOnly} onPress={() => setReadOnly((v) => !v)} />
       </View>
       <Text style={styles.status}>{status}</Text>
       <Text style={styles.status}>{change}</Text>
@@ -100,6 +102,7 @@ export function EditorScreen() {
         suggestions={suggestions}
         autoCloseBrackets={autoClose}
         matchBrackets={brackets}
+        readOnly={readOnly}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onChange={(e) =>

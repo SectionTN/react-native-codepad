@@ -7,6 +7,8 @@ type Props = {
   onStatus: (text: string) => void;
 };
 
+const NO_MATCH = { index: 0, count: 0 };
+
 function Key({ label, value, onPress }: { label: string; value?: boolean; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={[styles.key, value && styles.keyOn]}>
@@ -21,8 +23,8 @@ export function SearchBar({ editor, onStatus }: Props) {
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
   const [replacement, setReplacement] = useState('');
-  const [count, setCount] = useState(0);
-  const [position, setPosition] = useState('0/0');
+  // index is the 1 based position of the selected match, 0 when none is selected.
+  const [match, setMatch] = useState(NO_MATCH);
 
   // Every query or option change runs a search; the promise settles once the worker has fresh matches.
   useEffect(() => {
@@ -30,22 +32,23 @@ export function SearchBar({ editor, onStatus }: Props) {
     const run = async () => {
       if (!text) {
         await editor.current?.clearSearch();
-        if (live) {
-          setCount(0);
-          setPosition('0/0');
-        }
+        if (live) setMatch(NO_MATCH);
         return;
       }
       try {
         const result = await editor.current?.setSearch({ text, regex, caseSensitive, wholeWord });
         if (!live) return;
         const n = result?.count ?? 0;
-        setCount(n);
-        setPosition(`0/${n}`);
+        if (n === 0) {
+          setMatch(NO_MATCH);
+          return;
+        }
+        const hit = await editor.current?.findNext();
+        if (!live) return;
+        setMatch(hit ? { index: hit.index + 1, count: hit.total } : { index: 0, count: n });
       } catch (e) {
         if (!live) return;
-        setCount(0);
-        setPosition('0/0');
+        setMatch(NO_MATCH);
         onStatus(`regex: ${e instanceof Error ? e.message : String(e)}`);
       }
     };
@@ -57,28 +60,22 @@ export function SearchBar({ editor, onStatus }: Props) {
 
   const move = async (forward: boolean) => {
     const hit = await (forward ? editor.current?.findNext() : editor.current?.findPrevious());
-    if (hit) {
-      setCount(hit.total);
-      setPosition(`${hit.index + 1}/${hit.total}`);
-    } else {
-      setPosition('0/0');
-    }
+    setMatch(hit ? { index: hit.index + 1, count: hit.total } : NO_MATCH);
   };
 
+  // replaceCurrent selects the next match, which takes over the replaced index unless it was the last one.
   const replaceOne = async () => {
     const replaced = await editor.current?.replaceCurrent(replacement);
     if (replaced) {
-      const left = Math.max(0, count - 1);
-      setCount(left);
-      setPosition(`0/${left}`);
+      const left = Math.max(0, match.count - 1);
+      setMatch({ index: left === 0 ? 0 : match.index > left ? 1 : match.index, count: left });
     }
     onStatus(replaced ? 'replaced one' : 'select a match first');
   };
 
   const replaceEverything = async () => {
     const n = (await editor.current?.replaceAll(replacement)) ?? 0;
-    setCount(0);
-    setPosition('0/0');
+    setMatch(NO_MATCH);
     onStatus(`replaced ${n}`);
   };
 
@@ -97,7 +94,7 @@ export function SearchBar({ editor, onStatus }: Props) {
         <Key label="Aa" value={caseSensitive} onPress={() => setCaseSensitive((v) => !v)} />
         <Key label=".*" value={regex} onPress={() => setRegex((v) => !v)} />
         <Key label="W" value={wholeWord} onPress={() => setWholeWord((v) => !v)} />
-        <Text style={styles.position}>{position}</Text>
+        <Text style={styles.position}>{`${match.index}/${match.count}`}</Text>
         <Key label="<" onPress={() => void move(false)} />
         <Key label=">" onPress={() => void move(true)} />
       </View>

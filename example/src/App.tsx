@@ -1,32 +1,63 @@
-import { useState } from 'react';
-import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { type ComponentType, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BenchmarkScreen } from './screens/BenchmarkScreen';
 import { EditorScreen } from './screens/EditorScreen';
+import { NestedScreen } from './screens/NestedScreen';
+import { ToolbarScreen } from './screens/ToolbarScreen';
 
-type Tab = 'editor' | 'benchmark';
+type Tab = 'editor' | 'toolbar' | 'nested' | 'benchmark';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'editor', label: 'Editor' },
+  { id: 'toolbar', label: 'Toolbar' },
+  { id: 'nested', label: 'Nested' },
+  { id: 'benchmark', label: 'Benchmark' },
+];
+
+const SCREENS: Record<Tab, ComponentType> = {
+  editor: EditorScreen,
+  toolbar: ToolbarScreen,
+  nested: NestedScreen,
+  benchmark: BenchmarkScreen,
+};
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('editor');
   return (
-    <View style={styles.root}>
+    <SafeAreaProvider>
+      <KeyboardProvider>
+        <Shell />
+      </KeyboardProvider>
+    </SafeAreaProvider>
+  );
+}
+
+// The inset hook needs the provider above it, so the tabs live one level down from App.
+function Shell() {
+  const [tab, setTab] = useState<Tab>('editor');
+  const insets = useSafeAreaInsets();
+  const Screen = SCREENS[tab];
+  return (
+    <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.tabs}>
-        {(['editor', 'benchmark'] as const).map((t) => (
+        {TABS.map((t) => (
           <Pressable
-            key={t}
-            onPress={() => setTab(t)}
-            style={[styles.tab, tab === t && styles.tabOn]}
+            key={t.id}
+            onPress={() => setTab(t.id)}
+            style={[styles.tab, tab === t.id && styles.tabOn]}
           >
-            <Text style={styles.tabText}>{t === 'editor' ? 'Editor' : 'Benchmark'}</Text>
+            <Text style={styles.tabText}>{t.label}</Text>
           </Pressable>
         ))}
       </View>
-      {tab === 'editor' ? <EditorScreen /> : <BenchmarkScreen />}
+      <Screen />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0d1117', paddingTop: StatusBar.currentHeight ?? 0 },
+  root: { flex: 1, backgroundColor: '#0d1117' },
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,

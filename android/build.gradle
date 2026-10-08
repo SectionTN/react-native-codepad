@@ -40,6 +40,11 @@ apply from: '../nitrogen/generated/android/codepad+autolinking.gradle'
 
 apply plugin: "com.facebook.react"
 
+// The bindings come from Nitro; keep the React codegen scan out of node_modules.
+react {
+  jsRootDir = file("../src")
+}
+
 android {
   namespace "me.sectiontn.codepad"
 
