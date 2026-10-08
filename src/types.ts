@@ -71,6 +71,26 @@ export interface ChangeEvent {
   revision: number;
 }
 
+/** View size in dp at which nothing scrolls, contentInsets included. */
+export interface ContentSizeEvent {
+  width: number;
+  height: number;
+}
+
+export type CaretDirection =
+  | 'left'
+  | 'right'
+  | 'wordLeft'
+  | 'wordRight'
+  | 'lineStart'
+  | 'lineEnd'
+  | 'documentStart'
+  | 'documentEnd'
+  | 'up'
+  | 'down'
+  | 'pageUp'
+  | 'pageDown';
+
 /** off disables keyboard suggestions, forceOff also kills composition on most keyboards, on allows autocorrect. */
 export type Suggestions = 'off' | 'forceOff' | 'on';
 
@@ -120,6 +140,8 @@ export interface CodeEditorProps extends ViewProps {
   onChangeText?: (text: string) => void;
   onFocus?: () => void;
   onBlur?: () => void;
+  /** Fires after a draw whose content size changed, at most once per frame; the first one precedes onReady. */
+  onContentSizeChange?: (e: ContentSizeEvent) => void;
 }
 
 export interface CodeEditorRef {
@@ -162,4 +184,12 @@ export interface CodeEditorRef {
   /** One undo group; resolves with the number of replacements. */
   replaceAll(text: string): Promise<number>;
   clearSearch(): Promise<void>;
+  /** Moves the caret like the matching hardware key; select extends the selection. Works under readOnly. */
+  moveCaret(direction: CaretDirection, opts?: { select?: boolean }): Promise<void>;
+  /** As typed on the keyboard: auto close, indentation on a newline, origin input; a no-op when readOnly. */
+  typeText(text: string): Promise<void>;
+  /** Backspace: an empty auto closed pair goes in one go; a no-op when readOnly. */
+  deleteBackward(): Promise<void>;
+  /** Delete; a no-op when readOnly. */
+  deleteForward(): Promise<void>;
 }

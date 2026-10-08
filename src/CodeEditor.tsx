@@ -4,6 +4,7 @@ import type {
   CodeEditorViewMethods,
   CodeEditorViewProps,
   NativeChangeEvent,
+  NativeContentSize,
   NativeScrollEvent,
   NativeSearchHit,
   NativeSelection,
@@ -66,6 +67,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onChangeText,
     onFocus,
     onBlur,
+    onContentSizeChange,
     ...viewProps
   },
   ref,
@@ -85,6 +87,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   onFocusRef.current = onFocus;
   const onBlurRef = useRef(onBlur);
   onBlurRef.current = onBlur;
+  const onContentSizeChangeRef = useRef(onContentSizeChange);
+  onContentSizeChangeRef.current = onContentSizeChange;
   const nativeTheme = useMemo(() => normalizeTheme(theme), [theme]);
 
   // Nitro re-sends a function prop and re-invokes hybridRef whenever the wrapped object changes,
@@ -115,6 +119,10 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   );
   const onFocusCallback = useMemo(() => callback(() => onFocusRef.current?.()), []);
   const onBlurCallback = useMemo(() => callback(() => onBlurRef.current?.()), []);
+  const onContentSizeChangeCallback = useMemo(
+    () => callback((e: NativeContentSize) => onContentSizeChangeRef.current?.(e)),
+    [],
+  );
 
   // Until the native view reports in, reads see an empty document, so calling the ref before onReady is safe.
   useImperativeHandle(ref, () => ({
@@ -169,6 +177,11 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     replaceCurrent: (text) => native.current?.replaceCurrent(text) ?? Promise.resolve(false),
     replaceAll: (text) => native.current?.replaceAll(text) ?? Promise.resolve(0),
     clearSearch: () => native.current?.clearSearch() ?? Promise.resolve(),
+    moveCaret: (direction, opts) =>
+      native.current?.moveCaret(direction, opts?.select ?? false) ?? Promise.resolve(),
+    typeText: (text) => native.current?.typeText(text) ?? Promise.resolve(),
+    deleteBackward: () => native.current?.deleteBackward() ?? Promise.resolve(),
+    deleteForward: () => native.current?.deleteForward() ?? Promise.resolve(),
   }));
 
   return (
@@ -201,6 +214,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       onChangeText={onChangeText ? onChangeTextCallback : undefined}
       onEditorFocus={onFocusCallback}
       onEditorBlur={onBlurCallback}
+      onContentSizeChange={onContentSizeChangeCallback}
       hybridRef={hybridRef}
     />
   );

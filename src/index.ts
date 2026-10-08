@@ -6,11 +6,13 @@ export { githubDark } from './themes/githubDark';
 export { githubLight } from './themes/githubLight';
 export { oneDark } from './themes/oneDark';
 export type {
+  CaretDirection,
   ChangeEvent,
   ChangeOrigin,
   CodeEditorProps,
   CodeEditorRef,
   ContentInsets,
+  ContentSizeEvent,
   Position,
   Range,
   Rect,

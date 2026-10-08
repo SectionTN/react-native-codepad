@@ -38,6 +38,7 @@ type HostProps = {
   onChangeText?: { f: (text: string) => void };
   onEditorFocus: { f: () => void };
   onEditorBlur: { f: () => void };
+  onContentSizeChange: { f: (e: unknown) => void };
 };
 
 type Rendered = Awaited<ReturnType<typeof render>>;
@@ -334,5 +335,44 @@ describe('CodeEditor', () => {
     expect(native.replaceAll).toHaveBeenCalledWith('y');
     await ref.current?.clearSearch();
     expect(native.clearSearch).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps the caret and typing methods onto the native object', async () => {
+    const ref = createRef<CodeEditorRef>();
+    const props = host(await render(<CodeEditor ref={ref} />));
+    await ref.current?.moveCaret('left');
+    await ref.current?.typeText('a');
+    await ref.current?.deleteBackward();
+    await ref.current?.deleteForward();
+    const native = {
+      moveCaret: jest.fn(() => Promise.resolve()),
+      typeText: jest.fn(() => Promise.resolve()),
+      deleteBackward: jest.fn(() => Promise.resolve()),
+      deleteForward: jest.fn(() => Promise.resolve()),
+    };
+    props.hybridRef.f(native);
+    await ref.current?.moveCaret('up');
+    expect(native.moveCaret).toHaveBeenCalledWith('up', false);
+    await ref.current?.moveCaret('wordRight', { select: true });
+    expect(native.moveCaret).toHaveBeenLastCalledWith('wordRight', true);
+    await ref.current?.typeText('{');
+    expect(native.typeText).toHaveBeenCalledWith('{');
+    await ref.current?.deleteBackward();
+    await ref.current?.deleteForward();
+    expect(native.deleteBackward).toHaveBeenCalledTimes(1);
+    expect(native.deleteForward).toHaveBeenCalledTimes(1);
+  });
+
+  it('wraps onContentSizeChange once and reads the latest handler', async () => {
+    const first = jest.fn();
+    const api = await render(<CodeEditor onContentSizeChange={first} />);
+    const before = host(api);
+    const later = jest.fn();
+    await api.rerender(<CodeEditor onContentSizeChange={later} />);
+    const after = host(api);
+    expect(after.onContentSizeChange).toBe(before.onContentSizeChange);
+    after.onContentSizeChange.f({ width: 360, height: 1200 });
+    expect(first).not.toHaveBeenCalled();
+    expect(later).toHaveBeenCalledWith({ width: 360, height: 1200 });
   });
 });
