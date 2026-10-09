@@ -1,0 +1,1 @@
+-keep class me.sectiontn.codepad.lang.java.JavaLanguage { *; }

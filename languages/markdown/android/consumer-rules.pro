@@ -1,0 +1,2 @@
+-keep class me.sectiontn.codepad.lang.markdown.MarkdownLanguage { *; }
+-keep class me.sectiontn.codepad.lang.markdown_inline.MarkdownInlineLanguage { *; }
