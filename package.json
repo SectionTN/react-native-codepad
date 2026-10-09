@@ -43,7 +43,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "tsc",
-    "test": "jest && node --test 'languages/generator/*.test.ts'",
+    "test": "jest && node --test \"languages/generator/*.test.ts\" \"tests/**/*.test.ts\"",
     "test:android": "cd example/android && ./gradlew :react-native-codepad:testDebugUnitTest --console=plain -q",
     "test:device": "scripts/device-tests.sh",
     "host:treesitter": "scripts/build-host-treesitter.sh",
@@ -177,7 +177,8 @@
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "<rootDir>/languages/"
+      "<rootDir>/languages/",
+      "<rootDir>/tests/"
     ]
   },
   "create-react-native-library": {
