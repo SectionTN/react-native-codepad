@@ -19,6 +19,15 @@ class SyntaxEngineTest {
 
   private fun await(): Snapshot = checkNotNull(snapshots.poll(5, TimeUnit.SECONDS))
 
+  // The setLanguage snapshot carries the previous revision; wait for the one setText produced.
+  private fun awaitRevision(revision: Int): Snapshot {
+    while (true) {
+      val s = await()
+      if (s.revision == revision) return s
+      s.close()
+    }
+  }
+
   @Test
   fun publishesSnapshotsForTextAndEdits() {
     val core = EditorCore("let a = 1;")
@@ -26,7 +35,12 @@ class SyntaxEngineTest {
     core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
     engine.setText(core.document.text(), core.document.revision)
-    val first = await()
+    // setLanguage can publish an empty document snapshot before setText does; skip it.
+    var first = await()
+    while (first.tree.rootNode().endUnit == 0) {
+      first.close()
+      first = await()
+    }
     assertEquals(0, first.revision)
     val lang = checkNotNull(LanguageRegistry.resolve("javascript"))
     val spans = Highlighter(lang).spans(first, core.document, 0, 0)
@@ -73,6 +87,34 @@ class SyntaxEngineTest {
     // but the pass must complete without errors and leave the host tree intact.
     assertEquals(0, snapshot.injected.size)
     assertEquals("program", snapshot.tree.rootNode().type)
+    snapshot.close()
+    engine.close()
+  }
+
+  @Test
+  fun offsetDirectiveTrimsTheTemplateStringDelimiters() {
+    HostLanguages.load("html", "html")
+    val text = "html`<b>x</b>`"
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+    engine.setLanguage("javascript")
+    engine.setText(text, 1)
+    val snapshot = awaitRevision(1)
+    assertEquals(1, snapshot.injected.size)
+    assertEquals("html", snapshot.injected[0].language.id)
+    assertEquals(5, snapshot.injected[0].ranges[0])
+    assertEquals(text.length - 1, snapshot.injected[0].ranges[1])
+    snapshot.close()
+    engine.close()
+  }
+
+  @Test
+  fun emptyTemplateStringInjectsNothing() {
+    HostLanguages.load("html", "html")
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+    engine.setLanguage("javascript")
+    engine.setText("html``", 1)
+    val snapshot = awaitRevision(1)
+    assertEquals(0, snapshot.injected.size)
     snapshot.close()
     engine.close()
   }

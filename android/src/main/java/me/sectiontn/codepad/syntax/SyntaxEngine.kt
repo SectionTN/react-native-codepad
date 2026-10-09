@@ -130,12 +130,25 @@ class SyntaxEngine(
           ?: continue
         val target = LanguageRegistry.resolveInjection(name) ?: continue
         if (settings.containsKey("injection.combined")) combined.add(target.id)
+        val offset = compiled.evaluator.offset(capture.patternIndex)
         for (c in all) {
           if (c.captureIndex != contentIndex) continue
           val n = c.node
           val sp = n.startPoint
           val ep = n.endPoint
-          groups.getOrPut(target.id) { ArrayList() }.add(intArrayOf(n.startUnit, n.endUnit, sp.row, sp.column, ep.row, ep.column))
+          var start = n.startUnit
+          var end = n.endUnit
+          var startColumn = sp.column
+          var endColumn = ep.column
+          // Column shifts trim delimiters on their own row, which is all nvim uses; row shifts are ignored.
+          if (offset != null && offset.captureIndex == c.captureIndex && offset.startRow == 0 && offset.endRow == 0) {
+            start += offset.startColumn
+            end += offset.endColumn
+            startColumn += offset.startColumn
+            endColumn += offset.endColumn
+          }
+          if (start >= end) continue
+          groups.getOrPut(target.id) { ArrayList() }.add(intArrayOf(start, end, sp.row, startColumn, ep.row, endColumn))
         }
       }
     }

@@ -14,12 +14,15 @@ object LanguageRegistry {
   private val providers = HashMap<String, LanguageProvider>()
   private val cache = HashMap<String, LoadedLanguage?>()
 
-  // Names nvim queries use for injections that differ from our package ids. Empty means never inject.
+  // Names nvim queries and fence info strings use for languages we ship under another id. Empty means never inject.
   private val aliases = mapOf(
-    "js" to "javascript", "jsx" to "javascript", "ts" to "typescript", "py" to "python",
-    "kt" to "kotlin", "rs" to "rust", "golang" to "go", "yml" to "yaml", "jsonc" to "json", "json5" to "json",
-    "htm" to "html", "c_sharp" to "", "sh" to "", "bash" to "", "regex" to "", "jsdoc" to "", "comment" to "",
-    "luap" to "", "printf" to "",
+    "js" to "javascript", "jsx" to "javascript", "mjs" to "javascript", "cjs" to "javascript",
+    "ts" to "typescript", "mts" to "typescript", "cts" to "typescript",
+    "py" to "python", "python3" to "python", "kt" to "kotlin", "kts" to "kotlin", "rs" to "rust", "golang" to "go",
+    "yml" to "yaml", "jsonc" to "json", "json5" to "json", "htm" to "html", "xhtml" to "html", "md" to "markdown", "h" to "c",
+    "cpp" to "", "c++" to "", "cc" to "", "hpp" to "", "objc" to "", "bash" to "", "sh" to "", "shell" to "", "zsh" to "",
+    "console" to "", "text" to "", "txt" to "", "plain" to "", "regex" to "", "jsdoc" to "", "comment" to "", "luap" to "",
+    "printf" to "", "styled" to "", "angular" to "", "groq" to "", "graphql" to "", "glimmer" to "", "sql" to "", "c_sharp" to "",
   )
 
   /** Explicit registration for tests and for grammars that do not follow the package naming. */
@@ -32,11 +35,14 @@ object LanguageRegistry {
   @Synchronized
   fun resolve(id: String): LoadedLanguage? = cache.getOrPut(id) { load(id) }
 
-  fun resolveInjection(name: String): LoadedLanguage? {
-    val mapped = aliases[name] ?: name
-    if (mapped.isEmpty()) return null
-    return resolve(mapped)
+  /** Lowercases a fence or query name and maps it through the aliases; null means never inject, unknown names pass through. */
+  fun canonicalInjectionId(name: String): String? {
+    val lower = name.lowercase()
+    val mapped = aliases[lower] ?: return lower
+    return mapped.ifEmpty { null }
   }
+
+  fun resolveInjection(name: String): LoadedLanguage? = canonicalInjectionId(name)?.let { resolve(it) }
 
   private fun load(id: String): LoadedLanguage? {
     val provider = providers[id] ?: reflect(id)

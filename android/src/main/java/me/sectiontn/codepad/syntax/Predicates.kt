@@ -2,6 +2,9 @@ package me.sectiontn.codepad.syntax
 
 class CaptureNode(val captureIndex: Int, val node: TSNodeRef)
 
+/** An offset! directive: row and column deltas for the start and end of one capture. */
+class Offset(val captureIndex: Int, val startRow: Int, val startColumn: Int, val endRow: Int, val endColumn: Int)
+
 /** Evaluates a pattern's predicate steps against one match. The C runtime only hands out the steps. */
 class PredicateEvaluator(private val query: Query) {
   private class Pred(val name: String, val negate: Boolean, val any: Boolean, val args: List<Pair<Int, Int>>)
@@ -13,9 +16,19 @@ class PredicateEvaluator(private val query: Query) {
       if (strings.isEmpty()) null else strings[0] to (strings.getOrNull(1) ?: "true")
     }.toMap()
   }
+  private val offsetByPattern: Array<Offset?> = Array(query.patternCount) { i ->
+    byPattern[i].firstOrNull { it.name == "offset!" }?.let { p ->
+      val capture = p.args.firstOrNull { it.first == CAPTURE }?.second
+      val ints = p.args.filter { it.first == STRING }.map { query.stringValues[it.second].toIntOrNull() }
+      if (capture == null || ints.size < 4 || ints.any { it == null }) null
+      else Offset(capture, ints[0]!!, ints[1]!!, ints[2]!!, ints[3]!!)
+    }
+  }
   private val regexCache = HashMap<String, Regex>()
 
   fun settings(pattern: Int): Map<String, String> = settingsByPattern[pattern]
+
+  fun offset(pattern: Int): Offset? = offsetByPattern[pattern]
 
   fun hasPredicates(pattern: Int): Boolean = byPattern[pattern].any { !it.name.endsWith("!") }
 
