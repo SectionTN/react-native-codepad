@@ -77,4 +77,21 @@ class HighlighterTest {
     assertNull(LanguageRegistry.resolveInjection("c_sharp"))
     assertTrue(LanguageRegistry.resolveInjection("js") === LanguageRegistry.resolve("javascript"))
   }
+
+  @Test
+  fun concealCapturesNeverPaint() {
+    val base = HostLanguages.javascript()
+    LanguageRegistry.register(object : LanguageProvider {
+      override val id = "javascript_conceal"
+      override val languagePointer = base.pointer
+      override val highlights = "(comment) @conceal\n(number) @number"
+      override val injections = ""
+    })
+    val lang = checkNotNull(LanguageRegistry.resolve("javascript_conceal"))
+    val (snapshot, doc) = parse(lang, "1 // hi")
+    val spans = Highlighter(lang).spans(snapshot, doc, 0, 0)
+    assertEquals("number", styleAt(spans[0], 0))
+    assertNull(styleAt(spans[0], 3))
+    snapshot.close()
+  }
 }

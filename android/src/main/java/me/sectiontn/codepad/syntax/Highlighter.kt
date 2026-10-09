@@ -94,7 +94,7 @@ class Highlighter(private val language: LoadedLanguage) {
   }
 
   private companion object {
-    // nvim reads these for spell checking. They never carry a color.
-    val MARKERS = setOf("spell", "nospell")
+    // nvim reads spell and conceal as editor hints. They never carry a color.
+    val MARKERS = setOf("spell", "nospell", "conceal")
   }
 }
