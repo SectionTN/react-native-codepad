@@ -27,5 +27,5 @@
     "types": ["node"],
     "verbatimModuleSyntax": true
   },
-  "exclude": ["lib", "languages/.cache"]
+  "exclude": ["lib", "languages/.cache", "website"]
 }

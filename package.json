@@ -51,7 +51,9 @@
     "bench:memory": "scripts/bench.sh memory",
     "bench:typing": "scripts/bench.sh typing",
     "ime:record": "scripts/ime-record.sh",
-    "release": "release-it --only-version"
+    "release": "release-it --only-version",
+    "docs": "yarn workspace react-native-codepad-website dev",
+    "docs:build": "yarn workspace react-native-codepad-website build"
   },
   "keywords": [
     "react-native",
@@ -105,7 +107,8 @@
   },
   "workspaces": [
     "example",
-    "languages/*"
+    "languages/*",
+    "website"
   ],
   "packageManager": "yarn@4.11.0",
   "react-native-builder-bob": {
@@ -173,12 +176,14 @@
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/",
-      "<rootDir>/languages/"
+      "<rootDir>/languages/",
+      "<rootDir>/website/"
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
       "<rootDir>/languages/",
-      "<rootDir>/tests/"
+      "<rootDir>/tests/",
+      "<rootDir>/website/"
     ]
   },
   "create-react-native-library": {

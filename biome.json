@@ -19,7 +19,9 @@
       "!languages/*/android",
       "!languages/*/ios",
       "!languages/*/queries",
-      "!src/specs/CodeEditorViewConfig.ts"
+      "!src/specs/CodeEditorViewConfig.ts",
+      "!website/.astro",
+      "!website/dist"
     ]
   },
   "formatter": {
