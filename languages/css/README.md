@@ -37,3 +37,5 @@ Then pass `language="css"` to `CodeEditor`. Theme token keys this package produc
 - `tag.attribute`
 - `type`
 - `variable`
+
+See the [languages guide](https://sectiontn.github.io/react-native-codepad/guides/languages/) for aliases, injections and themes.

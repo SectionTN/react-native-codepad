@@ -56,3 +56,5 @@ Then pass `language="kotlin"` to `CodeEditor`. Theme token keys this package pro
 - `variable.builtin`
 - `variable.member`
 - `variable.parameter`
+
+See the [languages guide](https://sectiontn.github.io/react-native-codepad/guides/languages/) for aliases, injections and themes.

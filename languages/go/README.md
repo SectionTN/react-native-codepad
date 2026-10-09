@@ -52,3 +52,5 @@ Then pass `language="go"` to `CodeEditor`. Theme token keys this package produce
 - `variable`
 - `variable.member`
 - `variable.parameter`
+
+See the [languages guide](https://sectiontn.github.io/react-native-codepad/guides/languages/) for aliases, injections and themes.

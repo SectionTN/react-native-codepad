@@ -349,6 +349,8 @@ yarn add react-native-codepad ${packageName(entry.id)}
 Then pass \`language="${entry.grammars[0]!.name}"\` to \`CodeEditor\`. Theme token keys this package produces:
 
 ${sections.join('\n\n')}
+
+See the [languages guide](https://sectiontn.github.io/react-native-codepad/guides/languages/) for aliases, injections and themes.
 `;
 }
 

@@ -1,5 +1,6 @@
 import { readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
+import { writeLanguagesPage } from './docs.ts';
 import { emitPackage, type GrammarQueries } from './emit.ts';
 import { dirPattern, ensureCheckout } from './git.ts';
 import { fetchGrammar, readAbiRange } from './grammar.ts';
@@ -77,6 +78,7 @@ function gen(ids: string[]): void {
     });
     process.stdout.write(`generated ${entry.id} (${droppedTotal} patterns dropped)\n`);
   }
+  writeLanguagesPage(languagesDir, repoRoot);
 }
 
 const [command, ...args] = process.argv.slice(2);

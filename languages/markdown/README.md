@@ -47,3 +47,5 @@ Then pass `language="markdown"` to `CodeEditor`. Theme token keys this package p
 - `markup.strikethrough`
 - `markup.strong`
 - `nospell`
+
+See the [languages guide](https://sectiontn.github.io/react-native-codepad/guides/languages/) for aliases, injections and themes.
