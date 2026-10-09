@@ -137,6 +137,7 @@ android {
 
 dependencies {
   implementation "com.facebook.react:react-android"
+  implementation "androidx.core:core:1.13.1"
   implementation project(":react-native-nitro-modules")
   testImplementation "junit:junit:4.13.2"
   testImplementation "org.json:json:20250517"

@@ -199,6 +199,14 @@ class CodeEditorView(context: Context) : View(context) {
   private var anchorDirty = false
   private var cursorUpdateOnce = false
   private var revealPending = false
+  // Keyboard avoidance: the tracker turns the window's IME overlap into a second bottom inset in px.
+  private var avoidsKeyboard = false
+  private var keyboardInset = 0
+  private var keyboardTracker: KeyboardInsetTracker? = null
+  private var contentInsetTop = 0f
+  private var contentInsetBottom = 0f
+  private var contentInsetLeft = 0f
+  private var contentInsetRight = 0f
   private var inputTime = 0L
   private var inputWork = 0L
   private var drawStart = 0L
@@ -344,14 +352,47 @@ class CodeEditorView(context: Context) : View(context) {
     invalidate()
   }
 
-  /** Insets in dp. The bottom inset is how consumers keep the caret above the keyboard. */
+  /** Insets in dp. The bottom inset is how consumers keep the caret above a toolbar. */
   fun setContentInsets(top: Float, bottom: Float, left: Float, right: Float) {
+    contentInsetTop = top
+    contentInsetBottom = bottom
+    contentInsetLeft = left
+    contentInsetRight = right
+    applyInsets()
+  }
+
+  /** Pixels of the view under the keyboard, from KeyboardInsetTracker; applied like a bottom inset. */
+  fun applyKeyboardInset(px: Int) {
+    if (px == keyboardInset) return
+    keyboardInset = px
+    applyInsets()
+  }
+
+  /** Follows the window's IME insets while attached; off by default. */
+  fun setAvoidKeyboard(on: Boolean) {
+    avoidsKeyboard = on
+    if (on && isAttachedToWindow) startKeyboardTracker() else stopKeyboardTracker()
+  }
+
+  val isAvoidingKeyboard: Boolean get() = keyboardTracker != null
+
+  private fun applyInsets() {
     when {
-      viewport.setInsets(dp(top), dp(bottom), dp(left), dp(right)) -> relayout()
+      viewport.setInsets(dp(contentInsetTop), dp(contentInsetBottom) + keyboardInset, dp(contentInsetLeft), dp(contentInsetRight)) -> relayout()
       viewport.clamp() -> onScrolled()
       else -> invalidate()
     }
     if (isFocused) revealPending = true
+  }
+
+  private fun startKeyboardTracker() {
+    if (keyboardTracker != null) return
+    keyboardTracker = KeyboardInsetTracker(this, ::applyKeyboardInset).also { it.start() }
+  }
+
+  private fun stopKeyboardTracker() {
+    keyboardTracker?.stop()
+    keyboardTracker = null
   }
 
   fun setScrollEnabled(enabled: Boolean) {
@@ -1072,11 +1113,13 @@ class CodeEditorView(context: Context) : View(context) {
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
     engine()
+    if (avoidsKeyboard) startKeyboardTracker()
     if (autoFocusPending) runAutoFocus()
   }
 
   override fun onDetachedFromWindow() {
     super.onDetachedFromWindow()
+    stopKeyboardTracker()
     removeCallbacks(longPressRunnable)
     removeCallbacks(blink)
     removeCallbacks(hideInsertion)
@@ -1219,7 +1262,7 @@ class CodeEditorView(context: Context) : View(context) {
       viewport.contentHeight / density,
     )
     val w = (viewport.textAreaLeft + viewport.contentWidth + viewport.insetRight) / density
-    val h = (viewport.insetTop + viewport.contentHeight + viewport.insetBottom) / density
+    val h = (viewport.insetTop + viewport.contentHeight + viewport.insetBottom - keyboardInset) / density
     if (w != lastContentWidth || h != lastContentHeight) {
       lastContentWidth = w
       lastContentHeight = h
