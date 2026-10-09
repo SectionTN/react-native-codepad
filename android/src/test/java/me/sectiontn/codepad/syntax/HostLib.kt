@@ -18,10 +18,13 @@ object HostLib {
     }
   }
 
-  fun javascript(): Long {
+  /** The grammar's TSLanguage pointer from the host library, skipping the test when it was not compiled in. */
+  fun language(name: String): Long {
     ensure()
-    val pointer = TreeSitterNative.hostLanguage("javascript")
-    assumeTrue("javascript grammar not in the host library", pointer != 0L)
+    val pointer = TreeSitterNative.hostLanguage(name)
+    assumeTrue("$name grammar not in the host library", pointer != 0L)
     return pointer
   }
+
+  fun javascript(): Long = language("javascript")
 }
