@@ -368,14 +368,10 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
   }
 
   /** Write methods run on the main thread and resolve once the change is applied and a redraw is queued. */
-  private fun onMain(block: () -> Unit): Promise<Unit> {
-    val promise = Promise<Unit>()
-    editor.runOnMain {
-      block()
-      editor.invalidate()
-      promise.resolve(Unit)
-    }
-    return promise
+  private fun onMain(block: () -> Unit): Promise<Unit> = deferred { promise ->
+    block()
+    editor.invalidate()
+    promise.resolve(Unit)
   }
 
   private fun toColors(t: NativeTheme): ThemeColors = ThemeColors(
