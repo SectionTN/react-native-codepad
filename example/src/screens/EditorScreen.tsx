@@ -1,12 +1,21 @@
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { CodeEditor, type CodeEditorRef, githubDark, type Suggestions } from 'react-native-codepad';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  CodeEditor,
+  type CodeEditorRef,
+  githubDark,
+  githubLight,
+  oneDark,
+  type Suggestions,
+} from 'react-native-codepad';
 import { SearchBar } from '../components/SearchBar';
-import { sample } from '../sample';
+import { LANGUAGES, type LanguageId, SAMPLES } from '../samples';
 
 // Object props keep one identity across renders; a fresh literal would reach native on every scroll event.
 const INSETS = { bottom: 24 };
 const SUGGESTIONS: Suggestions[] = ['off', 'forceOff', 'on'];
+const THEMES = [githubDark, githubLight, oneDark];
+const THEME_NAMES = ['githubDark', 'githubLight', 'oneDark'];
 
 function Toggle({ label, value, onPress }: { label: string; value: boolean; onPress: () => void }) {
   return (
@@ -29,6 +38,8 @@ export function EditorScreen() {
   const [brackets, setBrackets] = useState(true);
   const [focused, setFocused] = useState(false);
   const [readOnly, setReadOnly] = useState(false);
+  const [language, setLanguage] = useState<LanguageId>('javascript');
+  const [themeIndex, setThemeIndex] = useState(0);
   return (
     <View style={styles.screen}>
       <View style={styles.bar}>
@@ -61,7 +72,31 @@ export function EditorScreen() {
         <Toggle label="Auto" value={autoClose} onPress={() => setAutoClose((v) => !v)} />
         <Toggle label="Brackets" value={brackets} onPress={() => setBrackets((v) => !v)} />
         <Toggle label="Read only" value={readOnly} onPress={() => setReadOnly((v) => !v)} />
+        <Toggle
+          label={`Theme ${THEME_NAMES[themeIndex]}`}
+          value={false}
+          onPress={() => setThemeIndex((i) => (i + 1) % THEMES.length)}
+        />
       </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipRow}
+        contentContainerStyle={styles.chips}
+      >
+        {LANGUAGES.map((id) => (
+          <Toggle
+            key={id}
+            label={id}
+            value={id === language}
+            onPress={() => {
+              setLanguage(id);
+              setStatus(`language ${id}`);
+              editor.current?.setText(SAMPLES[id]);
+            }}
+          />
+        ))}
+      </ScrollView>
       <Text style={styles.status}>{status}</Text>
       <Text style={styles.status}>{change}</Text>
       <SearchBar editor={editor} onStatus={setStatus} />
@@ -69,9 +104,9 @@ export function EditorScreen() {
         key={empty ? 'empty' : 'sample'}
         ref={editor}
         style={styles.editor}
-        initialValue={empty ? '' : sample}
-        language="javascript"
-        theme={githubDark}
+        initialValue={empty ? '' : SAMPLES[language]}
+        language={language}
+        theme={THEMES[themeIndex]}
         softWrap={wrap}
         lineNumbers={numbers}
         highlightActiveLine={activeLine}
@@ -110,6 +145,8 @@ export function EditorScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   bar: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 8 },
+  chipRow: { flexGrow: 0 },
+  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 8, paddingBottom: 8 },
   status: { color: '#8b949e', paddingHorizontal: 8, paddingBottom: 4, fontSize: 12 },
   toggle: {
     paddingHorizontal: 12,

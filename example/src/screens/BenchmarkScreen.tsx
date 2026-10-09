@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CodeEditor, type CodeEditorRef, githubDark } from 'react-native-codepad';
-import { generateJavaScript } from '../bench/generate';
+import { generateJavaScript, generateMarkdown } from '../bench/generate';
 
-type Doc = { key: number; lines: number; text: string };
+type Doc = { key: number; lines: number; text: string; language: 'javascript' | 'markdown' };
 
 function Button({
   label,
@@ -28,17 +28,17 @@ export function BenchmarkScreen() {
   const [highlight, setHighlight] = useState(true);
   const [status, setStatus] = useState('Pick a size');
 
-  const open = (lines: number) => {
-    const text = generateJavaScript(lines);
-    setStatus(`opening ${lines} lines, ${text.length} chars`);
+  const open = (language: Doc['language'], text: string) => {
+    const lines = text.split('\n').length;
+    setStatus(`opening ${language}, ${lines} lines, ${text.length} chars`);
     started.current = Date.now();
-    setDoc({ key: Date.now(), lines, text });
+    setDoc({ key: Date.now(), lines, text, language });
   };
 
   // Fires after the first draw with the text applied, so this is the open to paint time.
   const onReady = () => {
     const ms = Date.now() - started.current;
-    const message = `${doc?.lines ?? 0} lines, first paint ${ms} ms, native ${editor.current?.getLineCount()} lines`;
+    const message = `${doc?.language ?? ''} ${doc?.lines ?? 0} lines, first paint ${ms} ms, native ${editor.current?.getLineCount()} lines`;
     setStatus(message);
     console.log('codepad bench', message);
   };
@@ -61,8 +61,9 @@ export function BenchmarkScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.bar}>
-        <Button label="10k" onPress={() => open(10_000)} />
-        <Button label="100k" onPress={() => open(100_000)} />
+        <Button label="10k" onPress={() => open('javascript', generateJavaScript(10_000))} />
+        <Button label="100k" onPress={() => open('javascript', generateJavaScript(100_000))} />
+        <Button label="Markdown 2k" onPress={() => open('markdown', generateMarkdown(2000))} />
         <Button label="Clear" onPress={() => setDoc(null)} />
         <Button label="Highlight" active={highlight} onPress={() => setHighlight((v) => !v)} />
         <Button label="Search" onPress={() => void search()} />
@@ -74,7 +75,7 @@ export function BenchmarkScreen() {
           ref={editor}
           style={styles.editor}
           initialValue={doc.text}
-          language={highlight ? 'javascript' : undefined}
+          language={highlight ? doc.language : undefined}
           theme={githubDark}
           onReady={onReady}
         />
@@ -87,7 +88,7 @@ export function BenchmarkScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  bar: { flexDirection: 'row', gap: 8, padding: 8 },
+  bar: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 8 },
   button: {
     paddingHorizontal: 12,
     paddingVertical: 6,

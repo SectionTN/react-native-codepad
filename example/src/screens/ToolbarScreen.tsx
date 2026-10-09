@@ -13,10 +13,10 @@ export function ToolbarScreen() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [position, setPosition] = useState('line 1, col 1');
-  const keyboardHeight = useKeyboardState((s) => s.height);
+  const keyboardVisible = useKeyboardState((s) => s.isVisible);
   const safe = useSafeAreaInsets();
-  // The toolbar rides the keyboard and rests above the navigation bar while the keyboard is closed.
-  const lift = keyboardHeight > 0 ? keyboardHeight : safe.bottom;
+  // The editor adds the keyboard overlap itself; the gesture bar band only matters while the keyboard is closed.
+  const lift = keyboardVisible ? 0 : safe.bottom;
   const insets = useMemo(() => ({ bottom: toolbarHeight + lift }), [toolbarHeight, lift]);
   const offset = useMemo(() => ({ closed: -safe.bottom, opened: 0 }), [safe.bottom]);
   return (
@@ -28,6 +28,7 @@ export function ToolbarScreen() {
         initialValue={sample}
         language="javascript"
         theme={githubDark}
+        avoidKeyboard
         contentInsets={insets}
         onSelectionChange={(s) => {
           const at = (offset: number) => {
