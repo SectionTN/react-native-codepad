@@ -117,7 +117,10 @@ class SyntaxEngine(
     tree?.close()
     tree = result
     val counts = Counts()
-    val injected = injections(lang, result, counts)
+    val injected = injections(lang, result, counts) ?: run {
+      if (!cancel.isSet) executor.execute { if (!closed) reparse() }
+      return
+    }
     val since = pendingSince.getAndSet(0L)
     val latency = if (since == 0L) 0 else ((System.nanoTime() - since) / 1_000_000L).toInt()
     val snapshot = Snapshot(revision, result.copy(), injected, ParseStats(latency, counts.fresh, counts.reused))
@@ -129,7 +132,7 @@ class SyntaxEngine(
     kept.clear()
   }
 
-  private fun injections(lang: LoadedLanguage, host: Tree, counts: Counts): List<Injected> {
+  private fun injections(lang: LoadedLanguage, host: Tree, counts: Counts): List<Injected>? {
     val compiled = lang.injections
     if (compiled == null) {
       dropKept()
@@ -204,11 +207,16 @@ class SyntaxEngine(
           sub.setIncludedRanges(flat)
           val old = index[RangeKey(id, flat)]?.removeFirstOrNull()
           val t = sub.parse(old?.tree, mirror, cancel, 0)
+          if (t == null) {
+            // Cancelled by a new edit: the trees parsed so far stay kept for the next pass, nothing is published.
+            for (i in out) i.tree.close()
+            kept.addAll(next)
+            return null
+          }
           if (old != null) {
             old.tree.close()
             kept.remove(old)
           }
-          if (t == null) break
           if (old != null) counts.reused++ else counts.fresh++
           out.add(Injected(target, t, flat))
           next.add(Kept(target, t.copy()))

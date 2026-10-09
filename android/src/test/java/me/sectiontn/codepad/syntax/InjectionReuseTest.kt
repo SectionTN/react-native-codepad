@@ -1,5 +1,6 @@
 package me.sectiontn.codepad.syntax
 
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import me.sectiontn.codepad.core.EditorCore
@@ -96,6 +97,39 @@ class InjectionReuseTest {
     assertEquals(0, third.stats.reusedInjections)
     assertEquals(fresh, third.stats.freshInjections)
     third.close()
+    engine.close()
+  }
+
+  // A key during the injection pass cancels it; the snapshot it was building must not go out half filled.
+  @Test
+  fun cancelledInjectionPassPublishesNoPartialSnapshot() {
+    val reached = CountDownLatch(1)
+    val gate = CountDownLatch(1)
+    LanguageRegistry.register(object : LanguageProvider {
+      override val id = "slow"
+      override val languagePointer: Long
+        get() {
+          reached.countDown()
+          gate.await(5, TimeUnit.SECONDS)
+          return HostLib.language("javascript")
+        }
+      override val highlights = ""
+      override val injections = ""
+    })
+    // The fence is long enough for the parser to reach a cancellation check once the edit lands.
+    val code = (0 until 200).joinToString("\n") { "function f$it(a, b) { return a + b * $it; }" }
+    val text = "# T\n\nfirst para\n\nsecond para\n\n```slow\n$code\n```\n"
+    val core = EditorCore(text)
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
+    engine.setLanguage("markdown")
+    engine.setText(text, 0)
+    assertTrue(reached.await(5, TimeUnit.SECONDS))
+    core.replace(text.indexOf("second"), text.indexOf("second"), "the ")
+    gate.countDown()
+    val snapshot = awaitParsed()
+    assertEquals(4, snapshot.injected.size)
+    snapshot.close()
     engine.close()
   }
 }
