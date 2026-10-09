@@ -182,6 +182,12 @@ using namespace margelo::nitro::codepad::views;
           : !newViewProps.contentInsets.hasSameValue(oldViewProps->contentInsets)) {
       swiftPart.setContentInsets(newViewProps.contentInsets.get());
     }
+    // avoidKeyboard: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.avoidKeyboard.isProvided()
+          : !newViewProps.avoidKeyboard.hasSameValue(oldViewProps->avoidKeyboard)) {
+      swiftPart.setAvoidKeyboard(newViewProps.avoidKeyboard.get());
+    }
     // suggestions: optional
     if (oldViewProps == nullptr
           ? newViewProps.suggestions.isProvided()

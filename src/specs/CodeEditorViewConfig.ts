@@ -19,6 +19,7 @@ export default {
     "placeholder": true,
     "scrollEnabled": true,
     "contentInsets": true,
+    "avoidKeyboard": true,
     "suggestions": true,
     "autoFocus": true,
     "tabSize": true,

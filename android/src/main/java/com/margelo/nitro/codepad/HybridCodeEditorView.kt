@@ -138,6 +138,12 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
       )
     }
 
+  override var avoidKeyboard: Boolean? = null
+    set(value) {
+      field = value
+      editor.setAvoidKeyboard(value ?: false)
+    }
+
   override var suggestions: NativeSuggestions? = null
     set(value) {
       field = value

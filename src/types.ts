@@ -131,6 +131,8 @@ export interface CodeEditorProps extends ViewProps {
   autoFocus?: boolean;
   /** Padding inside the scrollable area in dp. Style padding on the view is ignored. */
   contentInsets?: ContentInsets;
+  /** Inset the content by the keyboard's overlap with the view, following the keyboard animation. Android only until the iOS editor lands. */
+  avoidKeyboard?: boolean;
   onReady?: () => void;
   onScroll?: (e: ScrollEvent) => void;
   onSelectionChange?: (s: SelectionChangeEvent) => void;

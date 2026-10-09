@@ -34,6 +34,7 @@ namespace margelo::nitro::codepad::views {
     placeholder(nitro::ReactProp<std::optional<std::string>>::fromRawValue("CodeEditorView", "placeholder", rawProps, sourceProps.placeholder)),
     scrollEnabled(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "scrollEnabled", rawProps, sourceProps.scrollEnabled)),
     contentInsets(nitro::ReactProp<std::optional<NativeInsets>>::fromRawValue("CodeEditorView", "contentInsets", rawProps, sourceProps.contentInsets)),
+    avoidKeyboard(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "avoidKeyboard", rawProps, sourceProps.avoidKeyboard)),
     suggestions(nitro::ReactProp<std::optional<NativeSuggestions>>::fromRawValue("CodeEditorView", "suggestions", rawProps, sourceProps.suggestions)),
     autoFocus(nitro::ReactProp<std::optional<bool>>::fromRawValue("CodeEditorView", "autoFocus", rawProps, sourceProps.autoFocus)),
     tabSize(nitro::ReactProp<std::optional<double>>::fromRawValue("CodeEditorView", "tabSize", rawProps, sourceProps.tabSize)),
@@ -66,6 +67,7 @@ namespace margelo::nitro::codepad::views {
       case hashString("placeholder"): return true;
       case hashString("scrollEnabled"): return true;
       case hashString("contentInsets"): return true;
+      case hashString("avoidKeyboard"): return true;
       case hashString("suggestions"): return true;
       case hashString("autoFocus"): return true;
       case hashString("tabSize"): return true;

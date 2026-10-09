@@ -24,6 +24,7 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   var placeholder: String? { get set }
   var scrollEnabled: Bool? { get set }
   var contentInsets: NativeInsets? { get set }
+  var avoidKeyboard: Bool? { get set }
   var suggestions: NativeSuggestions? { get set }
   var autoFocus: Bool? { get set }
   var tabSize: Double? { get set }

@@ -42,6 +42,8 @@ namespace margelo::nitro::codepad {
       prototype.registerHybridSetter("scrollEnabled", &HybridCodeEditorViewSpec::setScrollEnabled);
       prototype.registerHybridGetter("contentInsets", &HybridCodeEditorViewSpec::getContentInsets);
       prototype.registerHybridSetter("contentInsets", &HybridCodeEditorViewSpec::setContentInsets);
+      prototype.registerHybridGetter("avoidKeyboard", &HybridCodeEditorViewSpec::getAvoidKeyboard);
+      prototype.registerHybridSetter("avoidKeyboard", &HybridCodeEditorViewSpec::setAvoidKeyboard);
       prototype.registerHybridGetter("suggestions", &HybridCodeEditorViewSpec::getSuggestions);
       prototype.registerHybridSetter("suggestions", &HybridCodeEditorViewSpec::setSuggestions);
       prototype.registerHybridGetter("autoFocus", &HybridCodeEditorViewSpec::getAutoFocus);

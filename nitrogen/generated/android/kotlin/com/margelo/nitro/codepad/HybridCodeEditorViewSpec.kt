@@ -116,6 +116,12 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @get:Keep
   @set:DoNotStrip
   @set:Keep
+  abstract var avoidKeyboard: Boolean?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
   abstract var suggestions: NativeSuggestions?
   
   @get:DoNotStrip

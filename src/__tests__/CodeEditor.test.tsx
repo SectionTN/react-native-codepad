@@ -21,6 +21,7 @@ type HostProps = {
   readOnly: boolean;
   highlightActiveLine: boolean;
   matchBrackets: boolean;
+  avoidKeyboard: boolean;
   placeholder?: string;
   contentInsets?: { top?: number; bottom?: number; left?: number; right?: number };
   scrollEnabled: boolean;
@@ -279,6 +280,12 @@ describe('CodeEditor', () => {
     const props = host(await render(<CodeEditor />));
     expect(props.matchBrackets).toBe(true);
     expect(host(await render(<CodeEditor matchBrackets={false} />)).matchBrackets).toBe(false);
+  });
+
+  it('defaults avoidKeyboard to false', async () => {
+    const props = host(await render(<CodeEditor />));
+    expect(props.avoidKeyboard).toBe(false);
+    expect(host(await render(<CodeEditor avoidKeyboard />)).avoidKeyboard).toBe(true);
   });
 
   it('fills the search query defaults and returns the count', async () => {

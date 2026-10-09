@@ -118,6 +118,7 @@ export interface CodeEditorViewProps extends HybridViewProps {
   placeholder?: string;
   scrollEnabled?: boolean;
   contentInsets?: NativeInsets;
+  avoidKeyboard?: boolean;
   suggestions?: NativeSuggestions;
   autoFocus?: boolean;
   tabSize?: number;

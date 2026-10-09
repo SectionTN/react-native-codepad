@@ -208,6 +208,13 @@ namespace margelo::nitro::codepad {
     inline void setContentInsets(const std::optional<NativeInsets>& contentInsets) noexcept override {
       _swiftPart.setContentInsets(contentInsets);
     }
+    inline std::optional<bool> getAvoidKeyboard() noexcept override {
+      auto __result = _swiftPart.getAvoidKeyboard();
+      return __result;
+    }
+    inline void setAvoidKeyboard(std::optional<bool> avoidKeyboard) noexcept override {
+      _swiftPart.setAvoidKeyboard(avoidKeyboard);
+    }
     inline std::optional<NativeSuggestions> getSuggestions() noexcept override {
       auto __result = _swiftPart.getSuggestions();
       return __result;

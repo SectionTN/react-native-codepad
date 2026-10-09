@@ -16,6 +16,7 @@ class HybridCodeEditorView: HybridCodeEditorViewSpec {
   var matchBrackets: Bool? = nil
   var placeholder: String? = nil
   var contentInsets: NativeInsets? = nil
+  var avoidKeyboard: Bool? = nil
   var onReady: (() -> Void)? = nil
   var scrollEnabled: Bool? = nil
   var onScroll: ((NativeScrollEvent) -> Void)? = nil

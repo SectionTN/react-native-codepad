@@ -113,6 +113,8 @@ namespace margelo::nitro::codepad {
       virtual void setScrollEnabled(std::optional<bool> scrollEnabled) = 0;
       virtual std::optional<NativeInsets> getContentInsets() = 0;
       virtual void setContentInsets(const std::optional<NativeInsets>& contentInsets) = 0;
+      virtual std::optional<bool> getAvoidKeyboard() = 0;
+      virtual void setAvoidKeyboard(std::optional<bool> avoidKeyboard) = 0;
       virtual std::optional<NativeSuggestions> getSuggestions() = 0;
       virtual void setSuggestions(std::optional<NativeSuggestions> suggestions) = 0;
       virtual std::optional<bool> getAutoFocus() = 0;
