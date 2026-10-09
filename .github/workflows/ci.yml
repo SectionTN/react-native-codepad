@@ -31,10 +31,16 @@ jobs:
       - name: Typecheck files
         run: yarn typecheck
 
+      - name: Cache grammar checkouts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: languages/.cache
+          key: ${{ runner.os }}-grammars-${{ hashFiles('languages/grammars.json') }}
+
       - name: Check generated language packages
         run: |
-          yarn gen:languages javascript
-          git diff --exit-code -- languages/javascript
+          yarn gen:languages
+          git diff --exit-code -- languages website/src/content/docs/reference/languages.md
 
   test:
     runs-on: ubuntu-latest

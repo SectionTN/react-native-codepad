@@ -8073,7 +8073,21 @@ __metadata:
     react: "npm:19.2.3"
     react-native: "npm:0.87.1"
     react-native-builder-bob: "npm:^0.43.1"
+    react-native-codepad-lang-c: "npm:*"
+    react-native-codepad-lang-css: "npm:*"
+    react-native-codepad-lang-go: "npm:*"
+    react-native-codepad-lang-html: "npm:*"
+    react-native-codepad-lang-java: "npm:*"
     react-native-codepad-lang-javascript: "npm:*"
+    react-native-codepad-lang-json: "npm:*"
+    react-native-codepad-lang-kotlin: "npm:*"
+    react-native-codepad-lang-markdown: "npm:*"
+    react-native-codepad-lang-python: "npm:*"
+    react-native-codepad-lang-rust: "npm:*"
+    react-native-codepad-lang-swift: "npm:*"
+    react-native-codepad-lang-tsx: "npm:*"
+    react-native-codepad-lang-typescript: "npm:*"
+    react-native-codepad-lang-yaml: "npm:*"
     react-native-keyboard-controller: "npm:^1.22.6"
     react-native-monorepo-config: "npm:^0.4.0"
     react-native-nitro-modules: "npm:^0.37.1"
@@ -8083,9 +8097,121 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"react-native-codepad-lang-c@npm:*, react-native-codepad-lang-c@workspace:languages/c":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-c@workspace:languages/c"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-css@npm:*, react-native-codepad-lang-css@workspace:languages/css":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-css@workspace:languages/css"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-go@npm:*, react-native-codepad-lang-go@workspace:languages/go":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-go@workspace:languages/go"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-html@npm:*, react-native-codepad-lang-html@workspace:languages/html":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-html@workspace:languages/html"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-java@npm:*, react-native-codepad-lang-java@workspace:languages/java":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-java@workspace:languages/java"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
 "react-native-codepad-lang-javascript@npm:*, react-native-codepad-lang-javascript@workspace:languages/javascript":
   version: 0.0.0-use.local
   resolution: "react-native-codepad-lang-javascript@workspace:languages/javascript"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-json@npm:*, react-native-codepad-lang-json@workspace:languages/json":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-json@workspace:languages/json"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-kotlin@npm:*, react-native-codepad-lang-kotlin@workspace:languages/kotlin":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-kotlin@workspace:languages/kotlin"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-markdown@npm:*, react-native-codepad-lang-markdown@workspace:languages/markdown":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-markdown@workspace:languages/markdown"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-python@npm:*, react-native-codepad-lang-python@workspace:languages/python":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-python@workspace:languages/python"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-rust@npm:*, react-native-codepad-lang-rust@workspace:languages/rust":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-rust@workspace:languages/rust"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-swift@npm:*, react-native-codepad-lang-swift@workspace:languages/swift":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-swift@workspace:languages/swift"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-tsx@npm:*, react-native-codepad-lang-tsx@workspace:languages/tsx":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-tsx@workspace:languages/tsx"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-typescript@npm:*, react-native-codepad-lang-typescript@workspace:languages/typescript":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-typescript@workspace:languages/typescript"
+  peerDependencies:
+    react-native-codepad: 0.1.0
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-yaml@npm:*, react-native-codepad-lang-yaml@workspace:languages/yaml":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-yaml@workspace:languages/yaml"
   peerDependencies:
     react-native-codepad: 0.1.0
   languageName: unknown

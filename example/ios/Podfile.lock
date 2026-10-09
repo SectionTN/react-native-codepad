@@ -25,7 +25,35 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - CodepadLangC (0.1.0):
+    - Codepad
+  - CodepadLangCss (0.1.0):
+    - Codepad
+  - CodepadLangGo (0.1.0):
+    - Codepad
+  - CodepadLangHtml (0.1.0):
+    - Codepad
+  - CodepadLangJava (0.1.0):
+    - Codepad
   - CodepadLangJavascript (0.1.0):
+    - Codepad
+  - CodepadLangJson (0.1.0):
+    - Codepad
+  - CodepadLangKotlin (0.1.0):
+    - Codepad
+  - CodepadLangMarkdown (0.1.0):
+    - Codepad
+  - CodepadLangPython (0.1.0):
+    - Codepad
+  - CodepadLangRust (0.1.0):
+    - Codepad
+  - CodepadLangSwift (0.1.0):
+    - Codepad
+  - CodepadLangTsx (0.1.0):
+    - Codepad
+  - CodepadLangTypescript (0.1.0):
+    - Codepad
+  - CodepadLangYaml (0.1.0):
     - Codepad
   - DoubleConversion (1.1.6):
     - ReactNativeDependencies
@@ -1945,7 +1973,21 @@ PODS:
 DEPENDENCIES:
   - boost (from `build/rndeps-facades/boost`)
   - Codepad (from `../..`)
+  - CodepadLangC (from `../node_modules/react-native-codepad-lang-c`)
+  - CodepadLangCss (from `../node_modules/react-native-codepad-lang-css`)
+  - CodepadLangGo (from `../node_modules/react-native-codepad-lang-go`)
+  - CodepadLangHtml (from `../node_modules/react-native-codepad-lang-html`)
+  - CodepadLangJava (from `../node_modules/react-native-codepad-lang-java`)
   - CodepadLangJavascript (from `../node_modules/react-native-codepad-lang-javascript`)
+  - CodepadLangJson (from `../node_modules/react-native-codepad-lang-json`)
+  - CodepadLangKotlin (from `../node_modules/react-native-codepad-lang-kotlin`)
+  - CodepadLangMarkdown (from `../node_modules/react-native-codepad-lang-markdown`)
+  - CodepadLangPython (from `../node_modules/react-native-codepad-lang-python`)
+  - CodepadLangRust (from `../node_modules/react-native-codepad-lang-rust`)
+  - CodepadLangSwift (from `../node_modules/react-native-codepad-lang-swift`)
+  - CodepadLangTsx (from `../node_modules/react-native-codepad-lang-tsx`)
+  - CodepadLangTypescript (from `../node_modules/react-native-codepad-lang-typescript`)
+  - CodepadLangYaml (from `../node_modules/react-native-codepad-lang-yaml`)
   - DoubleConversion (from `build/rndeps-facades/DoubleConversion`)
   - fast_float (from `build/rndeps-facades/fast_float`)
   - FBLazyVector (from `build/rncore-facades/FBLazyVector`)
@@ -2042,8 +2084,36 @@ EXTERNAL SOURCES:
     :path: build/rndeps-facades/boost
   Codepad:
     :path: "../.."
+  CodepadLangC:
+    :path: "../node_modules/react-native-codepad-lang-c"
+  CodepadLangCss:
+    :path: "../node_modules/react-native-codepad-lang-css"
+  CodepadLangGo:
+    :path: "../node_modules/react-native-codepad-lang-go"
+  CodepadLangHtml:
+    :path: "../node_modules/react-native-codepad-lang-html"
+  CodepadLangJava:
+    :path: "../node_modules/react-native-codepad-lang-java"
   CodepadLangJavascript:
     :path: "../node_modules/react-native-codepad-lang-javascript"
+  CodepadLangJson:
+    :path: "../node_modules/react-native-codepad-lang-json"
+  CodepadLangKotlin:
+    :path: "../node_modules/react-native-codepad-lang-kotlin"
+  CodepadLangMarkdown:
+    :path: "../node_modules/react-native-codepad-lang-markdown"
+  CodepadLangPython:
+    :path: "../node_modules/react-native-codepad-lang-python"
+  CodepadLangRust:
+    :path: "../node_modules/react-native-codepad-lang-rust"
+  CodepadLangSwift:
+    :path: "../node_modules/react-native-codepad-lang-swift"
+  CodepadLangTsx:
+    :path: "../node_modules/react-native-codepad-lang-tsx"
+  CodepadLangTypescript:
+    :path: "../node_modules/react-native-codepad-lang-typescript"
+  CodepadLangYaml:
+    :path: "../node_modules/react-native-codepad-lang-yaml"
   DoubleConversion:
     :path: build/rndeps-facades/DoubleConversion
   fast_float:
@@ -2227,7 +2297,21 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   boost: 8502bfdc46e2804408af2e163049ece181009af4
   Codepad: 8f5631d760b2445b9a2818ba3fccd635c8be290f
+  CodepadLangC: 4478797e0b26460b2bd54a52259a81ca4f63ac86
+  CodepadLangCss: f13a595cf3f40a6aebd713a4527e1ec8888aa5c4
+  CodepadLangGo: 604f3b9589e8f604613fe1c94a59cf01dbe8f2dc
+  CodepadLangHtml: fb570dada75a689d1efa2026c39667a39b85deec
+  CodepadLangJava: b8f6f97823391b1e49be5aebba99aa65bb9cf98a
   CodepadLangJavascript: bf3c56383e3643550afd409decfc9845d60eed73
+  CodepadLangJson: 549128ffd618d115529c03851998da0d218f36c5
+  CodepadLangKotlin: fdf34eb9d72954984bb3300996ed39eb5bd1d5f8
+  CodepadLangMarkdown: 84da25a1230dc80b66c86ede07e8405041480cfd
+  CodepadLangPython: d3197c81dee1927cdc019f3473f43f1bd0bbe981
+  CodepadLangRust: 06a7ddbb056f8c59f6d0b15a6b6c77eedd5e20d4
+  CodepadLangSwift: 5e2f26c53ef848d83ce05cdf3c4381c6cd2e659b
+  CodepadLangTsx: eb4dd07bf93035355defb70e9d9e71aa80769f7e
+  CodepadLangTypescript: 08c89f67712fd0e3e4142e982939f402101d4b66
+  CodepadLangYaml: 43cd46faeb41bece9d9c07931a0b5a25cd7f66f2
   DoubleConversion: 501a575c40c0b50c89685762dd3e415e6bb26fb0
   fast_float: 7c925d1cebf8328d4018d061f49377e9f887e3b4
   FBLazyVector: e08a27053b503eeb756ea4bd75d570d2f2522a1b
