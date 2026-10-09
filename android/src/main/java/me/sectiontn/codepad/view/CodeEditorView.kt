@@ -552,6 +552,10 @@ class CodeEditorView(context: Context) : View(context) {
   private fun onSnapshot(next: Snapshot) {
     snapshot?.close()
     snapshot = next
+    if (debugSwitch()) {
+      val s = next.stats
+      Log.i(DebugSwitch.TAG, "{\"call\":\"parse\",\"ms\":${s.latencyMillis},\"fresh\":${s.freshInjections},\"reused\":${s.reusedInjections}}")
+    }
     invalidate()
   }
 

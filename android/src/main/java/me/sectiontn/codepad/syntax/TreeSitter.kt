@@ -54,6 +54,9 @@ class Tree(val handle: Long) : AutoCloseable {
     e.startPoint.row, e.startPoint.column, e.oldEndPoint.row, e.oldEndPoint.column, e.newEndPoint.row, e.newEndPoint.column,
   )
   fun changedRanges(newTree: Tree): IntArray = TreeSitterNative.treeChangedRanges(handle, newTree.handle)
+
+  /** Six ints per range like Parser.setIncludedRanges; edits shift them along with the nodes. */
+  fun includedRanges(): IntArray = TreeSitterNative.treeIncludedRanges(handle)
   override fun close() = TreeSitterNative.treeDelete(handle)
 }
 

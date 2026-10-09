@@ -2,6 +2,7 @@ package me.sectiontn.codepad.syntax
 
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import me.sectiontn.codepad.core.Change
 import me.sectiontn.codepad.core.Document
 
@@ -15,16 +16,27 @@ class SyntaxEngine(
 ) : AutoCloseable {
   class EditPoints(val start: Point, val oldEnd: Point, val newEnd: Point)
 
+  private class Kept(val language: LoadedLanguage, val tree: Tree)
+  private class RangeKey(val id: String, val ranges: IntArray) {
+    override fun equals(other: Any?): Boolean = other is RangeKey && other.id == id && other.ranges.contentEquals(ranges)
+    override fun hashCode(): Int = 31 * id.hashCode() + ranges.contentHashCode()
+  }
+  private class Counts(var fresh: Int = 0, var reused: Int = 0)
+
   private val executor = Executors.newSingleThreadExecutor { r -> Thread(r, "codepad-syntax").apply { isDaemon = true } }
   private val pending = AtomicInteger(0)
   private val cancel = CancelFlag()
   private var budgetMicros = 50_000L
+  // Set by the first call after a snapshot, cleared when the next one posts: the difference is the parse latency.
+  private val pendingSince = AtomicLong(0)
 
   // Syntax thread only from here on.
   private val mirror = Mirror()
   private val parser = Parser()
   private var language: LoadedLanguage? = null
   private var tree: Tree? = null
+  // Injected trees of the last snapshot, edited along with the document so unchanged ranges reparse for free.
+  private val kept = ArrayList<Kept>()
   private var revision = 0
   private var closed = false
 
@@ -32,6 +44,7 @@ class SyntaxEngine(
     language = id?.let { LanguageRegistry.resolve(it) }
     tree?.close()
     tree = null
+    dropKept()
     parser.reset()
     language?.let { parser.setLanguage(it.pointer) }
     reparse()
@@ -42,18 +55,22 @@ class SyntaxEngine(
     this.revision = revision
     tree?.close()
     tree = null
+    dropKept()
     parser.reset()
     reparse()
   }
 
   fun edit(change: Change, points: EditPoints) {
+    pendingSince.compareAndSet(0L, System.nanoTime())
     pending.incrementAndGet()
     cancel.set(true)
     executor.execute {
       if (closed) return@execute
       mirror.replace(change.start, change.end, change.inserted)
       revision = change.revision
-      tree?.edit(InputEdit(change.start, change.end, change.newEnd, points.start, points.oldEnd, points.newEnd))
+      val edit = InputEdit(change.start, change.end, change.newEnd, points.start, points.oldEnd, points.newEnd)
+      tree?.edit(edit)
+      for (k in kept) k.tree.edit(edit)
       if (pending.decrementAndGet() == 0) {
         cancel.set(false)
         reparse()
@@ -66,6 +83,7 @@ class SyntaxEngine(
       closed = true
       tree?.close()
       tree = null
+      dropKept()
       parser.close()
       mirror.close()
       cancel.close()
@@ -74,6 +92,7 @@ class SyntaxEngine(
   }
 
   private fun submit(block: () -> Unit) {
+    pendingSince.compareAndSet(0L, System.nanoTime())
     pending.incrementAndGet()
     cancel.set(true)
     executor.execute {
@@ -97,14 +116,31 @@ class SyntaxEngine(
     }
     tree?.close()
     tree = result
-    val snapshot = Snapshot(revision, result.copy(), injections(lang, result))
+    val counts = Counts()
+    val injected = injections(lang, result, counts)
+    val since = pendingSince.getAndSet(0L)
+    val latency = if (since == 0L) 0 else ((System.nanoTime() - since) / 1_000_000L).toInt()
+    val snapshot = Snapshot(revision, result.copy(), injected, ParseStats(latency, counts.fresh, counts.reused))
     postToMain(Runnable { onSnapshot(snapshot) })
   }
 
-  private fun injections(lang: LoadedLanguage, host: Tree): List<Injected> {
-    val compiled = lang.injections ?: return emptyList()
+  private fun dropKept() {
+    for (k in kept) k.tree.close()
+    kept.clear()
+  }
+
+  private fun injections(lang: LoadedLanguage, host: Tree, counts: Counts): List<Injected> {
+    val compiled = lang.injections
+    if (compiled == null) {
+      dropKept()
+      return emptyList()
+    }
     val read: (TSNodeRef) -> String = { n -> mirror.text(n.startUnit, n.endUnit) }
-    val contentIndex = compiled.captureIndex["injection.content"] ?: return emptyList()
+    val contentIndex = compiled.captureIndex["injection.content"]
+    if (contentIndex == null) {
+      dropKept()
+      return emptyList()
+    }
     val languageIndex = compiled.captureIndex["injection.language"]
     val groups = LinkedHashMap<String, MutableList<IntArray>>()
     val combined = HashSet<String>()
@@ -152,7 +188,11 @@ class SyntaxEngine(
         }
       }
     }
+    // Kept trees are indexed once by their edited ranges; a hit reparses against the old tree.
+    val index = HashMap<RangeKey, ArrayDeque<Kept>>()
+    for (k in kept) index.getOrPut(RangeKey(k.language.id, k.tree.includedRanges())) { ArrayDeque() }.addLast(k)
     val out = ArrayList<Injected>()
+    val next = ArrayList<Kept>()
     for ((id, ranges) in groups) {
       val target = LanguageRegistry.resolve(id) ?: continue
       Parser().use { sub ->
@@ -162,11 +202,21 @@ class SyntaxEngine(
           val flat = IntArray(batch.size * 6)
           for ((i, r) in batch.withIndex()) System.arraycopy(r, 0, flat, i * 6, 6)
           sub.setIncludedRanges(flat)
-          val t = sub.parse(null, mirror, cancel, 0) ?: break
+          val old = index[RangeKey(id, flat)]?.removeFirstOrNull()
+          val t = sub.parse(old?.tree, mirror, cancel, 0)
+          if (old != null) {
+            old.tree.close()
+            kept.remove(old)
+          }
+          if (t == null) break
+          if (old != null) counts.reused++ else counts.fresh++
           out.add(Injected(target, t, flat))
+          next.add(Kept(target, t.copy()))
         }
       }
     }
+    dropKept()
+    kept.addAll(next)
     return out
   }
 

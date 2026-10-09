@@ -45,6 +45,11 @@ case "$cmd" in
     echo "frames $(echo "$lines" | wc -l)"
     echo "$lines" | awk '{ print $1 }' | summary latency
     echo "$lines" | awk '{ print $2 }' | summary work
+    parses=$(adb logcat -d -v raw -s codepad-ime:I | sed -n 's/.*"call":"parse","ms":\([0-9]*\).*/\1/p')
+    if [ -n "$parses" ]; then
+      echo "parses $(echo "$parses" | wc -l | tr -d ' ')"
+      echo "$parses" | summary parse
+    fi
     ;;
   *)
     echo "usage: $0 scroll [swipes] | memory | typing [chars]" >&2

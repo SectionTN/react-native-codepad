@@ -212,6 +212,28 @@ jintArray FN(treeChangedRanges)(JNIEnv *env, jclass cls, jlong old_tree, jlong n
   return out;
 }
 
+jintArray FN(treeIncludedRanges)(JNIEnv *env, jclass cls, jlong tree) {
+  (void) cls;
+  uint32_t count = 0;
+  TSRange *ranges = ts_tree_included_ranges((const TSTree *) (intptr_t) tree, &count);
+  jintArray out = (*env)->NewIntArray(env, (jsize) count * 6);
+  if (count) {
+    jint *v = malloc(sizeof(jint) * count * 6);
+    for (uint32_t i = 0; i < count; i++) {
+      v[i * 6] = U(ranges[i].start_byte);
+      v[i * 6 + 1] = U(ranges[i].end_byte);
+      v[i * 6 + 2] = (jint) ranges[i].start_point.row;
+      v[i * 6 + 3] = U(ranges[i].start_point.column);
+      v[i * 6 + 4] = (jint) ranges[i].end_point.row;
+      v[i * 6 + 5] = U(ranges[i].end_point.column);
+    }
+    (*env)->SetIntArrayRegion(env, out, 0, (jsize) count * 6, v);
+    free(v);
+  }
+  free(ranges);
+  return out;
+}
+
 /* node */
 
 jboolean FN(nodeIsNull)(JNIEnv *env, jclass cls, jlongArray node) {

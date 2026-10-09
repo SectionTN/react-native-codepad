@@ -1,5 +1,6 @@
 package me.sectiontn.codepad.syntax
 
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -110,6 +111,22 @@ class TreeSitterTest {
       throw AssertionError("expected QueryException")
     } catch (e: QueryException) {
       assertEquals(2, e.type)
+    }
+  }
+
+  @Test
+  fun includedRangesFollowEdits() {
+    Parser().use { parser ->
+      parser.setLanguage(HostLib.javascript())
+      Mirror().use { mirror ->
+        mirror.setText("aa let x = 1; bb")
+        parser.setIncludedRanges(intArrayOf(3, 13, 0, 3, 0, 13))
+        val tree = checkNotNull(parser.parse(null, mirror, null, 0))
+        assertArrayEquals(intArrayOf(3, 13, 0, 3, 0, 13), tree.includedRanges())
+        tree.edit(InputEdit(0, 0, 2, Point(0, 0), Point(0, 0), Point(0, 2)))
+        assertArrayEquals(intArrayOf(5, 15, 0, 5, 0, 15), tree.includedRanges())
+        tree.close()
+      }
     }
   }
 }
