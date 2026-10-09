@@ -43,7 +43,7 @@ class LanguagesTest {
           mirror.setText(text)
           val tree = parser.parse(null, mirror, null, 1_000_000L)
           assertNotNull("$id parse", tree)
-          val snapshot = Snapshot(0, checkNotNull(tree), emptyList())
+          val snapshot = Snapshot(0, checkNotNull(tree), emptyList(), id)
           val spans = Highlighter(language).spans(snapshot, Document(text), 0, 0)
           assertTrue("$id paints line 0", spans[0].isNotEmpty())
           snapshot.close()

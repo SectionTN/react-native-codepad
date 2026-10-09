@@ -250,6 +250,9 @@ class CodeEditorView(context: Context) : View(context) {
     languageId = id
     highlighter = id?.let { LanguageRegistry.resolve(it) }?.let { Highlighter(it) }
     engine().setLanguage(id)
+    // The old grammar's tree would paint garbage under the new query until the next snapshot lands.
+    snapshot?.close()
+    snapshot = null
     cache.clear()
     invalidate()
   }
@@ -591,6 +594,11 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   private fun onSnapshot(next: Snapshot) {
+    // A parse that started before a language switch still reports the old grammar; it must not paint.
+    if (next.languageId != languageId) {
+      next.close()
+      return
+    }
     snapshot?.close()
     snapshot = next
     if (debugSwitch()) {

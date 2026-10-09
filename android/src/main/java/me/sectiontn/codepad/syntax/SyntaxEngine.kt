@@ -123,7 +123,7 @@ class SyntaxEngine(
     }
     val since = pendingSince.getAndSet(0L)
     val latency = if (since == 0L) 0 else ((System.nanoTime() - since) / 1_000_000L).toInt()
-    val snapshot = Snapshot(revision, result.copy(), injected, ParseStats(latency, counts.fresh, counts.reused))
+    val snapshot = Snapshot(revision, result.copy(), injected, lang.id, ParseStats(latency, counts.fresh, counts.reused))
     postToMain(Runnable { onSnapshot(snapshot) })
   }
 

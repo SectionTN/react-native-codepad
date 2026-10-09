@@ -29,7 +29,7 @@ class HighlighterTest {
     val tree = checkNotNull(parser.parse(null, mirror, null, 0))
     mirror.close()
     parser.close()
-    return Snapshot(doc.revision, tree, emptyList()) to doc
+    return Snapshot(doc.revision, tree, emptyList(), "javascript") to doc
   }
 
   @Test

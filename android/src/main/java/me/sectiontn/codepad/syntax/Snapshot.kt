@@ -10,6 +10,7 @@ class Snapshot(
   val revision: Int,
   val tree: Tree,
   val injected: List<Injected>,
+  val languageId: String,
   val stats: ParseStats = ParseStats(0, 0, 0),
 ) : AutoCloseable {
   override fun close() {

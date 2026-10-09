@@ -118,4 +118,15 @@ class SyntaxEngineTest {
     snapshot.close()
     engine.close()
   }
+
+  @Test
+  fun snapshotsCarryTheirLanguage() {
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+    engine.setLanguage("javascript")
+    engine.setText("let a = 1;", 1)
+    val snapshot = awaitRevision(1)
+    assertEquals("javascript", snapshot.languageId)
+    snapshot.close()
+    engine.close()
+  }
 }

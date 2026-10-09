@@ -22,7 +22,7 @@ class BracketSkipTest {
     val tree = checkNotNull(parser.parse(null, mirror, null, 0))
     mirror.close()
     parser.close()
-    return Snapshot(doc.revision, tree, emptyList())
+    return Snapshot(doc.revision, tree, emptyList(), "javascript")
   }
 
   private fun pairAt(text: String, caret: Int): IntArray? {
