@@ -74,7 +74,7 @@ compile_one() {
   obj="$OBJ/$(echo "${src#"$ROOT/"}" | tr '/' '_').o"
   if [ -f "$obj" ] && [ ! "$src" -nt "$obj" ]; then return; fi
   # shellcheck disable=SC2086
-  "$CC" -c $CFLAGS "$opt" "$src" -o "$obj"
+  "$CC" -c $CFLAGS "$opt" -I"$(dirname "$src")" "$src" -o "$obj"
 }
 export -f compile_one
 

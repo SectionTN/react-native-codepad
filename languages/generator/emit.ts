@@ -58,12 +58,16 @@ function write(root: string, rel: string, text: string): void {
   writeFileSync(file, text.endsWith('\n') ? text : `${text}\n`);
 }
 
-function cmake(ctx: EmitContext): string {
+export function cmake(ctx: EmitContext): string {
   const { entry, grammarDir } = ctx;
   const sources = entry.grammars.flatMap((g) => [
     `  \${GRAMMAR}/${g.src}/parser.c`,
     ...(hasScanner(grammarDir, g.src) ? [`  \${GRAMMAR}/${g.src}/scanner.c`] : []),
   ]);
+  // A scanner may include tree_sitter/parser.h from a sibling dir (typescript/common), so each src dir is an include path.
+  const includes = entry.grammars.map(
+    (g) => `target_include_directories(${libName(entry.id)} PRIVATE \${GRAMMAR}/${g.src})`,
+  );
   const parserProps = entry.grammars.map(
     (g) =>
       `set_source_files_properties(\${GRAMMAR}/${g.src}/parser.c PROPERTIES COMPILE_OPTIONS "-O1")`,
@@ -76,6 +80,8 @@ add_library(${libName(entry.id)} SHARED
   src/main/cpp/lang.c
 ${sources.join('\n')}
 )
+
+${includes.join('\n')}
 
 # Parser tables are data. -O1 keeps large grammars from taking minutes to compile.
 ${parserProps.join('\n')}
