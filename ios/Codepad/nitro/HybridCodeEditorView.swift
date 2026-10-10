@@ -2,7 +2,8 @@ import UIKit
 import NitroModules
 
 class HybridCodeEditorView: HybridCodeEditorViewSpec {
-  var view: UIView = UIView()
+  // Nitro creates the hybrid on the main thread; the view is read from the JS thread through this object.
+  nonisolated(unsafe) var view: UIView
   var initialValue: String? = nil
   var language: String? = nil
   var theme: NativeTheme? = nil
@@ -32,6 +33,11 @@ class HybridCodeEditorView: HybridCodeEditorViewSpec {
   var onEditorFocus: (() -> Void)? = nil
   var onEditorBlur: (() -> Void)? = nil
   var onContentSizeChange: ((NativeContentSize) -> Void)? = nil
+
+  override init() {
+    view = MainActor.assumeIsolated { UIView() }
+    super.init()
+  }
 
   func getText() throws -> String {
     return initialValue ?? ""

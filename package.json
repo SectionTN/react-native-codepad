@@ -45,6 +45,7 @@
     "typecheck": "tsc",
     "test": "jest && node --test \"languages/generator/*.test.ts\" \"tests/**/*.test.ts\"",
     "test:android": "cd example/android && ./gradlew :react-native-codepad:testDebugUnitTest --console=plain -q",
+    "test:swift": "swift test",
     "test:device": "scripts/device-tests.sh",
     "host:treesitter": "scripts/build-host-treesitter.sh",
     "bench:scroll": "scripts/bench.sh scroll",

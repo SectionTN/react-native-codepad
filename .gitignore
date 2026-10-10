@@ -85,3 +85,7 @@ android/generated
 # grammar checkouts and host test build
 languages/.cache/
 *.tgz
+
+# Swift package build
+.build/
+.swiftpm/
