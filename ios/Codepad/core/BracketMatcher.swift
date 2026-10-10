@@ -1,9 +1,9 @@
 import Foundation
 
-public enum BracketMatcher {
+enum BracketMatcher {
   private static let limit = 100_000
 
-  public static func partnerOf(_ c: UInt16) -> UInt16? {
+  static func partnerOf(_ c: UInt16) -> UInt16? {
     switch c {
     case u16("("): return u16(")")
     case u16("["): return u16("]")
@@ -17,7 +17,7 @@ public enum BracketMatcher {
 
   /// Returns (bracket at the caret, partner) or nil. The bracket after the caret is tried first, then the one
   /// before it. `skip` excludes offsets inside strings and comments once a syntax snapshot exists.
-  public static func match(_ doc: Document, caret: Int, skip: ((Int) -> Bool)?) -> (Int, Int)? {
+  static func match(_ doc: Document, caret: Int, skip: ((Int) -> Bool)?) -> (Int, Int)? {
     let len = doc.length
     let at: Int
     if caret < len && partnerOf(doc.unit(at: caret)) != nil && skip?(caret) != true {

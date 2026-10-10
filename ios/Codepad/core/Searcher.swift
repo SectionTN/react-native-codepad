@@ -1,17 +1,17 @@
 import Foundation
 
 /// An invalid pattern. The message is what `setSearch` rejects with.
-public struct SearchError: Error, Equatable, Sendable {
-  public let message: String
+struct SearchError: Error, Equatable, Sendable {
+  let message: String
 
-  public init(message: String) {
+  init(message: String) {
     self.message = message
   }
 }
 
-public enum Searcher {
+enum Searcher {
   /// Throws SearchError when the regex is invalid.
-  public static func compile(_ q: SearchQuery) throws -> NSRegularExpression {
+  static func compile(_ q: SearchQuery) throws -> NSRegularExpression {
     var options: NSRegularExpression.Options = [.anchorsMatchLines]
     if !q.caseSensitive { options.insert(.caseInsensitive) }
     let body = q.regex ? q.text : NSRegularExpression.escapedPattern(for: q.text)
@@ -25,7 +25,7 @@ public enum Searcher {
 
   /// Packed start and end pairs of the non overlapping matches in document order. Empty matches are skipped.
   /// Throws CancellationError once `cancel` answers true, between matches and during a long one.
-  public static func find(_ text: String, _ q: SearchQuery, cancel: () -> Bool = { false }) throws -> [Int] {
+  static func find(_ text: String, _ q: SearchQuery, cancel: () -> Bool = { false }) throws -> [Int] {
     if q.text.isEmpty { return [] }
     let pattern = try compile(q)
     let subject = text as NSString

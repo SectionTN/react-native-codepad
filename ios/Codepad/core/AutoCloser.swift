@@ -1,7 +1,7 @@
 import Foundation
 
-public enum AutoCloser {
-  public enum Action: Equatable {
+enum AutoCloser {
+  enum Action: Equatable {
     case insertPair(String)
     case skipCloser
     case wrap(open: UInt16, close: UInt16)
@@ -14,11 +14,11 @@ public enum AutoCloser {
   ]
   private static let allowedNext: Set<UInt16> = [u16(")"), u16("]"), u16("}"), u16(","), u16(";")]
 
-  public static func isQuote(_ c: UInt16) -> Bool {
+  static func isQuote(_ c: UInt16) -> Bool {
     c == u16("\"") || c == u16("'") || c == u16("`")
   }
 
-  public static func actionFor(_ doc: Document, _ sel: Selection, typed: UInt16, _ settings: EditorSettings) -> Action {
+  static func actionFor(_ doc: Document, _ sel: Selection, typed: UInt16, _ settings: EditorSettings) -> Action {
     if !settings.autoCloseBrackets { return .none }
     let closer = pairs[typed]
     if !sel.isEmpty {
@@ -36,7 +36,7 @@ public enum AutoCloser {
   }
 
   /// Backspace between an empty pair removes both units.
-  public static func deletesPair(_ doc: Document, caret: Int) -> Bool {
+  static func deletesPair(_ doc: Document, caret: Int) -> Bool {
     if caret <= 0 || caret >= doc.length { return false }
     return pairs[doc.unit(at: caret - 1)] == doc.unit(at: caret)
   }

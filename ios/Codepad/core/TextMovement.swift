@@ -1,7 +1,7 @@
 import Foundation
 
-public enum TextMovement {
-  public enum Unit: Sendable {
+enum TextMovement {
+  enum Unit: Sendable {
     case char
     case word
     case lineStart
@@ -10,7 +10,7 @@ public enum TextMovement {
     case docEnd
   }
 
-  public static func isWordChar(_ c: UInt16) -> Bool {
+  static func isWordChar(_ c: UInt16) -> Bool {
     c == u16("_") || (c >= u16("a") && c <= u16("z")) || (c >= u16("A") && c <= u16("Z")) || (c >= u16("0") && c <= u16("9"))
   }
 
@@ -18,7 +18,7 @@ public enum TextMovement {
     Unicode.Scalar(c)?.properties.isWhitespace ?? false
   }
 
-  public static func nextGrapheme(_ doc: Document, _ offset: Int) -> Int {
+  static func nextGrapheme(_ doc: Document, _ offset: Int) -> Int {
     if offset >= doc.length { return doc.length }
     let line = doc.lineAt(offset)
     let start = doc.lineStart(line)
@@ -28,7 +28,7 @@ public enum TextMovement {
     return start + graphemeEnd(text, col)
   }
 
-  public static func prevGrapheme(_ doc: Document, _ offset: Int) -> Int {
+  static func prevGrapheme(_ doc: Document, _ offset: Int) -> Int {
     if offset <= 0 { return 0 }
     let line = doc.lineAt(offset)
     let start = doc.lineStart(line)
@@ -38,7 +38,7 @@ public enum TextMovement {
   }
 
   /// End of the word after `offset`. Skips whitespace first and steps over a line break at a line end.
-  public static func nextWordEnd(_ doc: Document, _ offset: Int) -> Int {
+  static func nextWordEnd(_ doc: Document, _ offset: Int) -> Int {
     if offset >= doc.length { return doc.length }
     let line = doc.lineAt(offset)
     let start = doc.lineStart(line)
@@ -54,7 +54,7 @@ public enum TextMovement {
     return start + graphemeEnd(text, col)
   }
 
-  public static func prevWordStart(_ doc: Document, _ offset: Int) -> Int {
+  static func prevWordStart(_ doc: Document, _ offset: Int) -> Int {
     if offset <= 0 { return 0 }
     let line = doc.lineAt(offset)
     let start = doc.lineStart(line)
@@ -71,7 +71,7 @@ public enum TextMovement {
   }
 
   /// Double tap target: an identifier run, a whitespace run, or a single punctuation grapheme.
-  public static func wordRangeAt(_ doc: Document, _ offset: Int) -> TextRange {
+  static func wordRangeAt(_ doc: Document, _ offset: Int) -> TextRange {
     let o = max(0, min(offset, doc.length))
     let line = doc.lineAt(o)
     let start = doc.lineStart(line)

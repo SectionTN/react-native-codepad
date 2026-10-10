@@ -16,9 +16,16 @@ Pod::Spec.new do |s|
 
   s.source_files = [
     "ios/**/*.{swift}",
-    "ios/**/*.{m,mm}",
+    "ios/**/*.{h,m,mm}",
     "cpp/**/*.{hpp,cpp}",
     "cpp/tree-sitter/lib/src/lib.c",
+    "cpp/tree-sitter/lib/include/tree_sitter/api.h",
+  ]
+  # The pod's Swift reads the tree-sitter API through CPTreeSitter.h in the umbrella header; api.h ships
+  # beside it because the public headers directory is flat.
+  s.public_header_files = [
+    "ios/Codepad/syntax/CPTreeSitter.h",
+    "cpp/tree-sitter/lib/include/tree_sitter/api.h",
   ]
   s.preserve_paths = ["cpp/tree-sitter/lib/**/*"]
   s.pod_target_xcconfig = {

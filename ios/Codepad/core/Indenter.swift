@@ -1,23 +1,23 @@
 import Foundation
 
-public enum Indenter {
-  public struct Newline: Equatable {
-    public let text: String
-    public let caretOffset: Int
+enum Indenter {
+  struct Newline: Equatable {
+    let text: String
+    let caretOffset: Int
   }
 
-  public static func unit(_ settings: EditorSettings) -> String {
+  static func unit(_ settings: EditorSettings) -> String {
     settings.insertSpaces ? String(repeating: " ", count: settings.tabSize) : "\t"
   }
 
-  public static func leadingWhitespace(_ line: [UInt16]) -> [UInt16] {
+  static func leadingWhitespace(_ line: [UInt16]) -> [UInt16] {
     var i = 0
     while i < line.count && (line[i] == u16(" ") || line[i] == u16("\t")) { i += 1 }
     return Array(line[..<i])
   }
 
   /// Text to insert for Enter replacing [start, end), and where the caret lands relative to the insertion start.
-  public static func newline(_ doc: Document, _ start: Int, _ end: Int, _ settings: EditorSettings) -> Newline {
+  static func newline(_ doc: Document, _ start: Int, _ end: Int, _ settings: EditorSettings) -> Newline {
     if !settings.autoIndent { return Newline(text: "\n", caretOffset: 1) }
     let line = doc.lineAt(start)
     let text = doc.line(line)
@@ -37,7 +37,7 @@ public enum Indenter {
   }
 
   /// Lines a selection covers. A selection that ends exactly at a line start does not include that line.
-  public static func selectedLines(_ doc: Document, _ sel: Selection) -> ClosedRange<Int> {
+  static func selectedLines(_ doc: Document, _ sel: Selection) -> ClosedRange<Int> {
     let first = doc.lineAt(sel.min)
     var last = doc.lineAt(sel.max)
     if last > first && sel.max == doc.lineStart(last) { last -= 1 }
@@ -45,7 +45,7 @@ public enum Indenter {
   }
 
   /// Units to drop from the line start for one outdent: a tab, or up to tabSize spaces.
-  public static func outdentCount(_ line: [UInt16], _ settings: EditorSettings) -> Int {
+  static func outdentCount(_ line: [UInt16], _ settings: EditorSettings) -> Int {
     if line.isEmpty { return 0 }
     if line[0] == u16("\t") { return 1 }
     var n = 0

@@ -4,6 +4,7 @@ import { writeLanguagesPage } from './docs.ts';
 import { emitPackage, type GrammarQueries } from './emit.ts';
 import { dirPattern, ensureCheckout } from './git.ts';
 import { fetchGrammar, readAbiRange } from './grammar.ts';
+import { writeHostHeader } from './host.ts';
 import { languagesDir, loadManifest, repoRoot } from './manifest.ts';
 import { checkoutReader, collectQueryLangs, QUERY_KINDS, resolveQuery } from './queries.ts';
 import { runReport } from './report.ts';
@@ -79,6 +80,7 @@ function gen(ids: string[]): void {
     process.stdout.write(`generated ${entry.id} (${droppedTotal} patterns dropped)\n`);
   }
   writeLanguagesPage(languagesDir, repoRoot);
+  writeHostHeader(languagesDir);
 }
 
 const [command, ...args] = process.argv.slice(2);

@@ -1,7 +1,7 @@
 import Foundation
 
 /// A hardware key as UIKit reports it, before the modifier table.
-public enum Key: Hashable, Sendable {
+enum Key: Hashable, Sendable {
   case left
   case right
   case up
@@ -18,21 +18,21 @@ public enum Key: Hashable, Sendable {
   case letter(Character)
 }
 
-public struct Modifiers: OptionSet, Hashable, Sendable {
-  public let rawValue: Int
+struct Modifiers: OptionSet, Hashable, Sendable {
+  let rawValue: Int
 
-  public init(rawValue: Int) {
+  init(rawValue: Int) {
     self.rawValue = rawValue
   }
 
-  public static let shift = Modifiers(rawValue: 1 << 0)
-  public static let option = Modifiers(rawValue: 1 << 1)
-  public static let command = Modifiers(rawValue: 1 << 2)
-  public static let control = Modifiers(rawValue: 1 << 3)
+  static let shift = Modifiers(rawValue: 1 << 0)
+  static let option = Modifiers(rawValue: 1 << 1)
+  static let command = Modifiers(rawValue: 1 << 2)
+  static let control = Modifiers(rawValue: 1 << 3)
 }
 
 /// What a hardware key asks the editor to do. `edits` marks the ones a read only editor ignores.
-public enum KeyCommand: Hashable, Sendable {
+enum KeyCommand: Hashable, Sendable {
   case move(unit: TextMovement.Unit, forward: Bool, extend: Bool)
   /// `direction` is -1 for up and 1 for down; `page` moves by a viewport instead of a row.
   case vertical(direction: Int, page: Bool, extend: Bool)
@@ -49,7 +49,7 @@ public enum KeyCommand: Hashable, Sendable {
   case copy
   case escape
 
-  public var edits: Bool {
+  var edits: Bool {
     switch self {
     case .move, .vertical, .selectAll, .copy, .escape: return false
     case .newline, .tab, .shiftTab, .backspace, .delete, .undo, .redo, .cut, .paste: return true
@@ -57,10 +57,10 @@ public enum KeyCommand: Hashable, Sendable {
   }
 }
 
-public enum KeyCommands {
+enum KeyCommands {
   /// The Android table with the Mac modifiers: Option moves by word, Command reaches the line and the document
   /// ends and carries the shortcuts, Control is left to the system.
-  public static func map(_ key: Key, _ modifiers: Modifiers) -> KeyCommand? {
+  static func map(_ key: Key, _ modifiers: Modifiers) -> KeyCommand? {
     if modifiers.contains(.control) { return nil }
     let shift = modifiers.contains(.shift)
     let option = modifiers.contains(.option)

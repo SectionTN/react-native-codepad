@@ -2,7 +2,7 @@ import Foundation
 
 /// Computes the matches on a worker queue over a text snapshot and hands them to the core on the main thread.
 /// Every member runs on the main thread; the painted matches shift through edits until fresh ones land.
-public final class SearchController: @unchecked Sendable {
+final class SearchController: @unchecked Sendable {
   private final class Job: @unchecked Sendable {
     let generation: Int
     private let lock = NSLock()
@@ -22,8 +22,8 @@ public final class SearchController: @unchecked Sendable {
   private let queue: DispatchQueue
   private let postToMain: @Sendable (@escaping @Sendable () -> Void) -> Void
 
-  public var onResult: ((_ count: Int, _ millis: Int64) -> Void)?
-  public var active: Bool { core.search != nil }
+  var onResult: ((_ count: Int, _ millis: Int64) -> Void)?
+  var active: Bool { core.search != nil }
 
   private var generation = 0
   private var running: Job?
@@ -31,14 +31,14 @@ public final class SearchController: @unchecked Sendable {
   private var continuations: [() -> Void] = []
   private var closed = false
 
-  public init(core: EditorCore, queue: DispatchQueue, postToMain: @escaping @Sendable (@escaping @Sendable () -> Void) -> Void) {
+  init(core: EditorCore, queue: DispatchQueue, postToMain: @escaping @Sendable (@escaping @Sendable () -> Void) -> Void) {
     self.core = core
     self.queue = queue
     self.postToMain = postToMain
   }
 
   /// Throws SearchError for an invalid regex and clears the search; nil clears it too.
-  public func setQuery(_ query: SearchQuery?) throws {
+  func setQuery(_ query: SearchQuery?) throws {
     cancelRunning()
     displayed = []
     guard let query else {
@@ -50,23 +50,23 @@ public final class SearchController: @unchecked Sendable {
     schedule()
   }
 
-  public func onChange(_ change: Change) {
+  func onChange(_ change: Change) {
     if !active { return }
     displayed = SearchSession.mapThrough(displayed, change)
     schedule()
   }
 
   /// Runs `block` now when nothing is stale, else once the next accepted result lands.
-  public func whenFresh(_ block: @escaping () -> Void) {
+  func whenFresh(_ block: @escaping () -> Void) {
     if core.searchStale { continuations.append(block) } else { block() }
   }
 
-  public func matchesForPaint() -> [Int] {
+  func matchesForPaint() -> [Int] {
     displayed
   }
 
   /// Queued continuations run now against the current state, so their promises settle instead of waiting forever.
-  public func close() {
+  func close() {
     closed = true
     cancelRunning()
     runContinuations()

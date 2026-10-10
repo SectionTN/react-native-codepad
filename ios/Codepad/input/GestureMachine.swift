@@ -1,7 +1,7 @@
 import Foundation
 
 /// What the editor does with the machine's decisions. The view conforms on the main actor.
-public protocol GestureHost: AnyObject {
+protocol GestureHost: AnyObject {
   func offsetAt(x: CGFloat, y: CGFloat) -> Int
   func insideSelection(_ offset: Int) -> Bool
   func caretHit(x: CGFloat, y: CGFloat) -> Bool
@@ -19,14 +19,14 @@ public protocol GestureHost: AnyObject {
 
 /// Touch state machine behind the editor's gesture recognizer. It sees plain points and timestamps, so taps,
 /// long presses and the loupe drag are unit tested without UITouch. Handles have their own recognizers.
-public final class GestureMachine {
-  public struct Config: Sendable {
-    public let touchSlop: CGFloat
-    public let doubleTapSlop: CGFloat
-    public let doubleTapTimeout: TimeInterval
-    public let longPressTimeout: TimeInterval
+final class GestureMachine {
+  struct Config: Sendable {
+    let touchSlop: CGFloat
+    let doubleTapSlop: CGFloat
+    let doubleTapTimeout: TimeInterval
+    let longPressTimeout: TimeInterval
 
-    public init(touchSlop: CGFloat, doubleTapSlop: CGFloat, doubleTapTimeout: TimeInterval, longPressTimeout: TimeInterval) {
+    init(touchSlop: CGFloat, doubleTapSlop: CGFloat, doubleTapTimeout: TimeInterval, longPressTimeout: TimeInterval) {
       self.touchSlop = touchSlop
       self.doubleTapSlop = doubleTapSlop
       self.doubleTapTimeout = doubleTapTimeout
@@ -51,19 +51,19 @@ public final class GestureMachine {
   private var lastTapY: CGFloat = 0
   private var tapCount = 0
 
-  public init(host: any GestureHost, config: Config) {
+  init(host: any GestureHost, config: Config) {
     self.host = host
     self.config = config
   }
 
-  public func down(x: CGFloat, y: CGFloat, time: TimeInterval) {
+  func down(x: CGFloat, y: CGFloat, time: TimeInterval) {
     downX = x
     downY = y
     state = .pressed
     host.postLongPress(delay: config.longPressTimeout)
   }
 
-  public func move(x: CGFloat, y: CGFloat, time: TimeInterval) {
+  func move(x: CGFloat, y: CGFloat, time: TimeInterval) {
     switch state {
     case .pressed:
       if distance(x - downX, y - downY) > config.touchSlop {
@@ -79,7 +79,7 @@ public final class GestureMachine {
     }
   }
 
-  public func up(x: CGFloat, y: CGFloat, time: TimeInterval) {
+  func up(x: CGFloat, y: CGFloat, time: TimeInterval) {
     host.cancelLongPress()
     switch state {
     case .pressed:
@@ -93,14 +93,14 @@ public final class GestureMachine {
     state = .idle
   }
 
-  public func cancel() {
+  func cancel() {
     host.cancelLongPress()
     if state == .loupe { host.endLoupe() }
     state = .idle
   }
 
   /// The view's long press timer fired.
-  public func longPress() {
+  func longPress() {
     if state != .pressed { return }
     state = .loupe
     host.placeCaret(host.offsetAt(x: downX, y: downY))

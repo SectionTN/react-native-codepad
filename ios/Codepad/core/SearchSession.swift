@@ -1,21 +1,21 @@
 import Foundation
 
 /// The compiled query and its matches for one document revision, packed as start and end pairs.
-public final class SearchSession {
-  public let query: SearchQuery
-  public let pattern: NSRegularExpression
-  public var matches: [Int] = []
-  public var revision = -1
+final class SearchSession {
+  let query: SearchQuery
+  let pattern: NSRegularExpression
+  var matches: [Int] = []
+  var revision = -1
 
-  public init(query: SearchQuery, pattern: NSRegularExpression) {
+  init(query: SearchQuery, pattern: NSRegularExpression) {
     self.query = query
     self.pattern = pattern
   }
 
-  public var count: Int { matches.count / 2 }
+  var count: Int { matches.count / 2 }
 
   /// Index of the first match starting at or after `offset`, else `count`.
-  public func indexAtOrAfter(_ offset: Int) -> Int {
+  func indexAtOrAfter(_ offset: Int) -> Int {
     var lo = 0
     var hi = count
     while lo < hi {
@@ -26,13 +26,13 @@ public final class SearchSession {
   }
 
   /// Index of the match equal to `range`, else -1.
-  public func indexOf(_ range: TextRange) -> Int {
+  func indexOf(_ range: TextRange) -> Int {
     let i = indexAtOrAfter(range.start)
     return i < count && matches[i * 2] == range.start && matches[i * 2 + 1] == range.end ? i : -1
   }
 
   /// The match after `selection`, skipping the selected one, wrapping to the first; -1 without matches.
-  public func nextIndex(_ selection: Selection) -> Int {
+  func nextIndex(_ selection: Selection) -> Int {
     if count == 0 { return -1 }
     var index = indexAtOrAfter(selection.min)
     if index < count && matches[index * 2] == selection.min && matches[index * 2 + 1] == selection.max { index += 1 }
@@ -40,14 +40,14 @@ public final class SearchSession {
   }
 
   /// The match before `selection`, wrapping to the last; -1 without matches.
-  public func previousIndex(_ selection: Selection) -> Int {
+  func previousIndex(_ selection: Selection) -> Int {
     if count == 0 { return -1 }
     let index = indexAtOrAfter(selection.min) - 1
     return index < 0 ? count - 1 : index
   }
 
   /// Shifts the pairs past `change` and drops the ones it touched.
-  public static func mapThrough(_ matches: [Int], _ change: Change) -> [Int] {
+  static func mapThrough(_ matches: [Int], _ change: Change) -> [Int] {
     var out: [Int] = []
     out.reserveCapacity(matches.count)
     var i = 0
@@ -67,7 +67,7 @@ public final class SearchSession {
   }
 
   /// Index of the first match ending after `offset`, else the count.
-  public static func firstEndingAfter(_ matches: [Int], _ offset: Int) -> Int {
+  static func firstEndingAfter(_ matches: [Int], _ offset: Int) -> Int {
     var lo = 0
     var hi = matches.count / 2
     while lo < hi {

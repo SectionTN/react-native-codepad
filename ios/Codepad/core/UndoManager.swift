@@ -1,17 +1,17 @@
 import Foundation
 
 /// Groups of changes for undo and redo. Typed units coalesce into the last group inside a one second window.
-public final class UndoManager {
-  public enum Kind {
+final class UndoManager {
+  enum Kind {
     case insert
     case backspace
     case other
   }
 
-  public final class Group {
-    public let selectionBefore: Selection
-    public var changes: [Change] = []
-    public var selectionAfter: Selection
+  final class Group {
+    let selectionBefore: Selection
+    var changes: [Change] = []
+    var selectionAfter: Selection
     var time: Int64 = 0
     var kind: Kind = .other
     var typing = false
@@ -30,22 +30,22 @@ public final class UndoManager {
   private var depth = 0
 
   /// True when the selection moved for a reason other than an edit. The next typed character starts a new group.
-  public var selectionDirty = false
+  var selectionDirty = false
 
-  public init(clock: @escaping () -> Int64, maxGroups: Int = 1000) {
+  init(clock: @escaping () -> Int64, maxGroups: Int = 1000) {
     self.clock = clock
     self.maxGroups = maxGroups
   }
 
-  public var canUndo: Bool { !undoStack.isEmpty }
-  public var canRedo: Bool { !redoStack.isEmpty }
+  var canUndo: Bool { !undoStack.isEmpty }
+  var canRedo: Bool { !redoStack.isEmpty }
 
-  public func beginGroup(_ selection: Selection) {
+  func beginGroup(_ selection: Selection) {
     if depth == 0 { open = Group(selectionBefore: selection) }
     depth += 1
   }
 
-  public func endGroup(_ selection: Selection) {
+  func endGroup(_ selection: Selection) {
     depth -= 1
     if depth > 0 { return }
     guard let group = open else { return }
@@ -57,7 +57,7 @@ public final class UndoManager {
     }
   }
 
-  public func record(_ change: Change, before: Selection, after: Selection, typing: Bool) {
+  func record(_ change: Change, before: Selection, after: Selection, typing: Bool) {
     redoStack.removeAll()
     let now = clock()
     if let explicit = open {
@@ -84,23 +84,23 @@ public final class UndoManager {
     selectionDirty = false
   }
 
-  public func amendSelectionAfter(_ selection: Selection) {
+  func amendSelectionAfter(_ selection: Selection) {
     if let group = open ?? undoStack.last { group.selectionAfter = selection }
   }
 
-  public func popUndo() -> Group? {
+  func popUndo() -> Group? {
     guard let group = undoStack.popLast() else { return nil }
     redoStack.append(group)
     return group
   }
 
-  public func popRedo() -> Group? {
+  func popRedo() -> Group? {
     guard let group = redoStack.popLast() else { return nil }
     undoStack.append(group)
     return group
   }
 
-  public func clear() {
+  func clear() {
     undoStack.removeAll()
     redoStack.removeAll()
     open = nil

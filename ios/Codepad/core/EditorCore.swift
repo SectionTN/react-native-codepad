@@ -2,33 +2,33 @@ import Foundation
 
 /// The editing state behind one editor: document, selection, history and settings. Only the main thread
 /// mutates it; other threads read under `read`.
-public final class EditorCore: @unchecked Sendable {
-  public let document: Document
-  public let lock = ReadWriteLock()
-  public let history: UndoManager
-  public var settings = EditorSettings()
+final class EditorCore: @unchecked Sendable {
+  let document: Document
+  let lock = ReadWriteLock()
+  let history: UndoManager
+  var settings = EditorSettings()
 
   // Written on the main thread; the JS thread reads it under the lock.
-  public private(set) var selection = Selection(anchor: 0, head: 0)
+  private(set) var selection = Selection(anchor: 0, head: 0)
 
-  public var onChange: ((Change, ChangeOrigin) -> Void)?
-  public var onSelectionChange: ((Selection) -> Void)?
+  var onChange: ((Change, ChangeOrigin) -> Void)?
+  var onSelectionChange: ((Selection) -> Void)?
 
-  public init(_ initialText: String = "", clock: @escaping () -> Int64 = { Int64(Date().timeIntervalSince1970 * 1000) }) {
+  init(_ initialText: String = "", clock: @escaping () -> Int64 = { Int64(Date().timeIntervalSince1970 * 1000) }) {
     document = Document(initialText)
     history = UndoManager(clock: clock)
   }
 
-  public var canUndo: Bool { history.canUndo }
-  public var canRedo: Bool { history.canRedo }
+  var canUndo: Bool { history.canUndo }
+  var canRedo: Bool { history.canRedo }
 
   /// Synchronous reads from the JS thread. Writers take the lock only inside Document.replace.
-  public func read<T>(_ body: () throws -> T) rethrows -> T {
+  func read<T>(_ body: () throws -> T) rethrows -> T {
     try lock.read(body)
   }
 
   @discardableResult
-  public func replace(_ start: Int, _ end: Int, _ text: String, origin: ChangeOrigin = .api) -> Change {
+  func replace(_ start: Int, _ end: Int, _ text: String, origin: ChangeOrigin = .api) -> Change {
     applyChange(start, end, text, origin: origin, typing: false, caretAfter: false)
   }
 
@@ -48,23 +48,23 @@ public final class EditorCore: @unchecked Sendable {
     return change
   }
 
-  public func insertText(_ text: String, origin: ChangeOrigin = .api) {
+  func insertText(_ text: String, origin: ChangeOrigin = .api) {
     applyChange(selection.min, selection.max, text, origin: origin, typing: false, caretAfter: true)
   }
 
   /// A keyboard edit. The selection maps through the change like any edit; single unit deletes coalesce like typed backspaces.
   @discardableResult
-  public func inputReplace(_ start: Int, _ end: Int, _ text: String, typing: Bool = false) -> Change {
+  func inputReplace(_ start: Int, _ end: Int, _ text: String, typing: Bool = false) -> Change {
     applyChange(start, end, text, origin: .input, typing: typing, caretAfter: false)
   }
 
-  public func setText(_ text: String, keepHistory: Bool = false) {
+  func setText(_ text: String, keepHistory: Bool = false) {
     applyChange(0, document.length, text, origin: .api, typing: false, caretAfter: false)
     moveSelection(Selection(anchor: 0, head: 0), fromEdit: true)
     if !keepHistory { history.clear() }
   }
 
-  public func typeText(_ text: String) {
+  func typeText(_ text: String) {
     for scalar in text.unicodeScalars { typeUnit(String(scalar)) }
   }
 
@@ -101,7 +101,7 @@ public final class EditorCore: @unchecked Sendable {
     applyChange(selection.min, selection.max, s, origin: .input, typing: s.unicodeScalars.count == 1, caretAfter: true)
   }
 
-  public func insertNewline() {
+  func insertNewline() {
     let start = selection.min
     let nl = Indenter.newline(document, start, selection.max, settings)
     applyChange(start, selection.max, nl.text, origin: .input, typing: false, caretAfter: false)
@@ -109,7 +109,7 @@ public final class EditorCore: @unchecked Sendable {
     history.amendSelectionAfter(selection)
   }
 
-  public func tab() {
+  func tab() {
     if document.lineAt(selection.min) != document.lineAt(selection.max) {
       indent()
     } else {
@@ -117,11 +117,11 @@ public final class EditorCore: @unchecked Sendable {
     }
   }
 
-  public func shiftTab() {
+  func shiftTab() {
     outdent()
   }
 
-  public func indent() {
+  func indent() {
     let unit = Indenter.unit(settings)
     history.beginGroup(selection)
     for line in Indenter.selectedLines(document, selection) {
@@ -131,7 +131,7 @@ public final class EditorCore: @unchecked Sendable {
     history.endGroup(selection)
   }
 
-  public func outdent() {
+  func outdent() {
     history.beginGroup(selection)
     for line in Indenter.selectedLines(document, selection) {
       let n = Indenter.outdentCount(document.line(line), settings)
@@ -142,7 +142,7 @@ public final class EditorCore: @unchecked Sendable {
     history.endGroup(selection)
   }
 
-  public func backspace() {
+  func backspace() {
     if !selection.isEmpty {
       applyChange(selection.min, selection.max, "", origin: .input, typing: false, caretAfter: true)
       return
@@ -157,7 +157,7 @@ public final class EditorCore: @unchecked Sendable {
     applyChange(from, caret, "", origin: .input, typing: caret - from == 1, caretAfter: true)
   }
 
-  public func delete() {
+  func delete() {
     if !selection.isEmpty {
       applyChange(selection.min, selection.max, "", origin: .input, typing: false, caretAfter: true)
       return
@@ -168,7 +168,7 @@ public final class EditorCore: @unchecked Sendable {
   }
 
   @discardableResult
-  public func undo() -> Bool {
+  func undo() -> Bool {
     guard let group = history.popUndo() else { return false }
     for c in group.changes.reversed() {
       let change = lock.write { document.replace(c.start, c.newEnd, c.removed) }
@@ -179,7 +179,7 @@ public final class EditorCore: @unchecked Sendable {
   }
 
   @discardableResult
-  public func redo() -> Bool {
+  func redo() -> Bool {
     guard let group = history.popRedo() else { return false }
     for c in group.changes {
       let change = lock.write { document.replace(c.start, c.end, c.inserted) }
@@ -189,15 +189,15 @@ public final class EditorCore: @unchecked Sendable {
     return true
   }
 
-  public func setSelection(anchor: Int, head: Int) {
+  func setSelection(anchor: Int, head: Int) {
     moveSelection(clamped(Selection(anchor: anchor, head: head)))
   }
 
-  public func selectAll() {
+  func selectAll() {
     moveSelection(Selection(anchor: 0, head: document.length))
   }
 
-  public func move(_ unit: TextMovement.Unit, forward: Bool, extend: Bool) {
+  func move(_ unit: TextMovement.Unit, forward: Bool, extend: Bool) {
     let doc = document
     let collapsing = !extend && !selection.isEmpty && unit == .char
     let from = collapsing ? (forward ? selection.max : selection.min) : selection.head
@@ -219,38 +219,38 @@ public final class EditorCore: @unchecked Sendable {
     moveSelection(extend ? Selection(anchor: selection.anchor, head: target) : Selection.caret(target))
   }
 
-  public func selectWordAt(_ offset: Int) {
+  func selectWordAt(_ offset: Int) {
     let r = TextMovement.wordRangeAt(document, offset)
     moveSelection(Selection(anchor: r.start, head: r.end))
   }
 
-  public func bracketMatch(skip: ((Int) -> Bool)?) -> (Int, Int)? {
+  func bracketMatch(skip: ((Int) -> Bool)?) -> (Int, Int)? {
     BracketMatcher.match(document, caret: selection.head, skip: skip)
   }
 
-  public struct SearchHit: Equatable, Sendable {
-    public let index: Int
-    public let total: Int
+  struct SearchHit: Equatable, Sendable {
+    let index: Int
+    let total: Int
 
-    public init(index: Int, total: Int) {
+    init(index: Int, total: Int) {
       self.index = index
       self.total = total
     }
   }
 
-  public private(set) var search: SearchSession?
+  private(set) var search: SearchSession?
 
-  public var matches: [Int] { search?.matches ?? [] }
-  public var matchCount: Int { search?.count ?? 0 }
+  var matches: [Int] { search?.matches ?? [] }
+  var matchCount: Int { search?.count ?? 0 }
 
   /// True while a query is active and its matches belong to an older revision.
-  public var searchStale: Bool {
+  var searchStale: Bool {
     guard let s = search else { return false }
     return s.revision != document.revision
   }
 
   /// Compiles first so an invalid regex throws before any state changes. The matches stay stale until ensureMatches or acceptMatches.
-  public func setSearch(_ query: SearchQuery) throws {
+  func setSearch(_ query: SearchQuery) throws {
     let pattern: NSRegularExpression
     do {
       pattern = try Searcher.compile(query)
@@ -261,12 +261,12 @@ public final class EditorCore: @unchecked Sendable {
     search = SearchSession(query: query, pattern: pattern)
   }
 
-  public func clearSearch() {
+  func clearSearch() {
     search = nil
   }
 
   /// Computes the matches on the calling thread when they are stale.
-  public func ensureMatches() {
+  func ensureMatches() {
     guard let s = search, s.revision != document.revision else { return }
     // The query compiled in setSearch and nothing cancels here, so find cannot throw.
     s.matches = (try? Searcher.find(document.text(), s.query)) ?? []
@@ -274,28 +274,28 @@ public final class EditorCore: @unchecked Sendable {
   }
 
   /// Stores matches computed elsewhere; false when the document moved on since `revision`.
-  public func acceptMatches(revision: Int, matches: [Int]) -> Bool {
+  func acceptMatches(revision: Int, matches: [Int]) -> Bool {
     guard let s = search, revision == document.revision else { return false }
     s.matches = matches
     s.revision = revision
     return true
   }
 
-  public func findNext() -> SearchHit? {
+  func findNext() -> SearchHit? {
     ensureMatches()
     guard let s = search else { return nil }
     let index = s.nextIndex(selection)
     return index < 0 ? nil : selectMatch(s, index)
   }
 
-  public func findPrevious() -> SearchHit? {
+  func findPrevious() -> SearchHit? {
     ensureMatches()
     guard let s = search else { return nil }
     let index = s.previousIndex(selection)
     return index < 0 ? nil : selectMatch(s, index)
   }
 
-  public func replaceCurrent(_ text: String) -> Bool {
+  func replaceCurrent(_ text: String) -> Bool {
     ensureMatches()
     guard let s = search else { return false }
     let current = s.indexOf(selection.range)
@@ -310,7 +310,7 @@ public final class EditorCore: @unchecked Sendable {
     return true
   }
 
-  public func replaceAll(_ text: String) -> Int {
+  func replaceAll(_ text: String) -> Int {
     ensureMatches()
     guard let s = search else { return 0 }
     let targets = s.matches
@@ -345,7 +345,7 @@ public final class EditorCore: @unchecked Sendable {
   }
 
   /// Maps an offset through a change. A caret sitting exactly at a pure insertion follows the insert.
-  public static func mapOffset(_ offset: Int, _ c: Change) -> Int {
+  static func mapOffset(_ offset: Int, _ c: Change) -> Int {
     if offset < c.start { return offset }
     if offset == c.start { return c.removed.isEmpty ? c.newEnd : offset }
     if offset >= c.end { return offset + c.delta }

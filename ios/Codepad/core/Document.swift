@@ -1,15 +1,15 @@
 import Foundation
 
 /// Lines of UTF-16 units without terminators, so every offset is the index JavaScript strings use.
-public final class Document {
+final class Document {
   private var lines: [[UInt16]] = []
   private var lineStarts = [Int](repeating: 0, count: 64)
   private var cleanLines = 0
 
-  public private(set) var length = 0
-  public private(set) var revision = 0
+  private(set) var length = 0
+  private(set) var revision = 0
 
-  public init(_ initialText: String = "") {
+  init(_ initialText: String = "") {
     let text = Array(Document.normalizeNewlines(initialText).utf16)
     var from = 0
     while true {
@@ -23,32 +23,32 @@ public final class Document {
     length = text.count
   }
 
-  public var lineCount: Int { lines.count }
+  var lineCount: Int { lines.count }
 
-  public func line(_ index: Int) -> [UInt16] {
+  func line(_ index: Int) -> [UInt16] {
     index >= 0 && index < lines.count ? lines[index] : []
   }
 
-  public func lineString(_ index: Int) -> String {
+  func lineString(_ index: Int) -> String {
     String(decoding: line(index), as: UTF16.self)
   }
 
-  public func lineLength(_ index: Int) -> Int {
+  func lineLength(_ index: Int) -> Int {
     index >= 0 && index < lines.count ? lines[index].count : 0
   }
 
   /// Start offset of line `index`. `index == lineCount` yields `length + 1` so the prefix sums stay uniform.
-  public func lineStart(_ index: Int) -> Int {
+  func lineStart(_ index: Int) -> Int {
     let i = max(0, min(index, lines.count))
     ensureStarts(i)
     return lineStarts[i]
   }
 
-  public func lineEnd(_ index: Int) -> Int {
+  func lineEnd(_ index: Int) -> Int {
     lineStart(index) + lineLength(index)
   }
 
-  public func lineAt(_ offset: Int) -> Int {
+  func lineAt(_ offset: Int) -> Int {
     let o = max(0, min(offset, length))
     ensureStarts(lines.count - 1)
     var lo = 0
@@ -60,20 +60,20 @@ public final class Document {
     return lo
   }
 
-  public func offsetToPosition(_ offset: Int) -> Position {
+  func offsetToPosition(_ offset: Int) -> Position {
     let o = max(0, min(offset, length))
     let line = lineAt(o)
     return Position(line: line, column: o - lineStart(line))
   }
 
-  public func positionToOffset(line: Int, column: Int) -> Int {
+  func positionToOffset(line: Int, column: Int) -> Int {
     let l = max(0, min(line, lines.count - 1))
     let c = max(0, min(column, lines[l].count))
     return lineStart(l) + c
   }
 
   /// The unit at `offset`, clamped into the document. A line end reads as the newline unit.
-  public func unit(at offset: Int) -> UInt16 {
+  func unit(at offset: Int) -> UInt16 {
     let o = max(0, min(offset, length))
     let line = lineAt(o)
     let col = o - lineStart(line)
@@ -81,11 +81,11 @@ public final class Document {
     return col < units.count ? units[col] : 10
   }
 
-  public func text() -> String {
+  func text() -> String {
     text(0, length)
   }
 
-  public func text(_ start: Int, _ end: Int) -> String {
+  func text(_ start: Int, _ end: Int) -> String {
     let (s, e) = clamp(start, end)
     if s == e { return "" }
     let sl = lineAt(s)
@@ -102,7 +102,7 @@ public final class Document {
   }
 
   @discardableResult
-  public func replace(_ start: Int, _ end: Int, _ text: String) -> Change {
+  func replace(_ start: Int, _ end: Int, _ text: String) -> Change {
     let (s, e) = clamp(start, end)
     let inserted = Document.normalizeNewlines(text)
     let removed = self.text(s, e)
@@ -160,7 +160,7 @@ public final class Document {
   }
 
   /// `\r\n` and a lone `\r` become `\n`, on the units so a `\r\n` grapheme never hides the `\r`.
-  public static func normalizeNewlines(_ text: String) -> String {
+  static func normalizeNewlines(_ text: String) -> String {
     guard text.utf16.contains(13) else { return text }
     var out = [UInt16]()
     out.reserveCapacity(text.utf16.count)

@@ -2,23 +2,23 @@ import Foundation
 
 /// The composition half of UITextInput over the core: the marked range and the edits that grow, commit or
 /// drop it. Pure, so recorded keyboard sessions replay under swift test.
-public final class MarkedTextSession {
+final class MarkedTextSession {
   private let core: EditorCore
-  public private(set) var marked: TextRange?
+  private(set) var marked: TextRange?
 
   /// True while a session call mutates the core, so the view can tell keyboard edits from external ones.
-  public private(set) var applying = false
+  private(set) var applying = false
 
   private var groupOpen = false
   private var doc: Document { core.document }
 
-  public init(core: EditorCore) {
+  init(core: EditorCore) {
     self.core = core
   }
 
   /// Replaces the marked text, or the selection when nothing is marked. `selectedRange` is relative to the
   /// marked text, as UIKit passes it.
-  public func setMarkedText(_ text: String, selectedRange: NSRange) {
+  func setMarkedText(_ text: String, selectedRange: NSRange) {
     mutate {
       let region = marked ?? core.selection.range
       beginComposition()
@@ -33,13 +33,13 @@ public final class MarkedTextSession {
     }
   }
 
-  public func unmarkText() {
+  func unmarkText() {
     mutate { endComposition() }
   }
 
   /// A commit. During a composition it replaces the marked text and ends it; otherwise single scalars take the
   /// typing path (auto close applies) and longer strings are one insert.
-  public func insertText(_ text: String) {
+  func insertText(_ text: String) {
     mutate {
       if let region = marked {
         replaceRegion(region, text)
@@ -57,7 +57,7 @@ public final class MarkedTextSession {
   }
 
   /// Backspace inside the marked text shrinks it; anywhere else it ends the composition and deletes as usual.
-  public func deleteBackward() {
+  func deleteBackward() {
     mutate {
       let sel = core.selection
       if let m = marked, sel.isEmpty, sel.head > m.start, sel.head <= m.end {
@@ -74,7 +74,7 @@ public final class MarkedTextSession {
   }
 
   /// The suggestion rewrite: end composing, swap an absolute range through the smallest edit, caret after it.
-  public func replace(_ range: TextRange, with text: String) {
+  func replace(_ range: TextRange, with text: String) {
     mutate {
       endComposition()
       let a = clamp(range.start, 0, doc.length)
@@ -87,7 +87,7 @@ public final class MarkedTextSession {
   }
 
   /// A selection the keyboard sets. One outside the marked text ends the composition.
-  public func setSelection(_ selection: Selection) {
+  func setSelection(_ selection: Selection) {
     mutate {
       if let m = marked, selection.min < m.start || selection.max > m.end { endComposition() }
       core.setSelection(anchor: selection.anchor, head: selection.head)
@@ -96,7 +96,7 @@ public final class MarkedTextSession {
 
   /// A change the session did not make. Returns true when it hit the marked text, which the view answers by
   /// telling the keyboard the text changed.
-  public func onExternalChange(_ change: Change) -> Bool {
+  func onExternalChange(_ change: Change) -> Bool {
     guard let c = marked else { return false }
     closeGroup()
     let inside = change.start > c.start && change.start < c.end
@@ -109,7 +109,7 @@ public final class MarkedTextSession {
     return false
   }
 
-  public func reset() {
+  func reset() {
     marked = nil
     closeGroup()
   }
