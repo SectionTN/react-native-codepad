@@ -96,7 +96,7 @@ export type Suggestions = 'off' | 'forceOff' | 'on';
 
 export interface SearchQuery {
   text: string;
-  /** Treat text as a Java regex. Replacement text is always literal. */
+  /** Treat text as a regular expression, ICU's dialect on both platforms. Replacement text is always literal. */
   regex?: boolean;
   caseSensitive?: boolean;
   wholeWord?: boolean;
@@ -131,7 +131,7 @@ export interface CodeEditorProps extends ViewProps {
   autoFocus?: boolean;
   /** Padding inside the scrollable area in dp. Style padding on the view is ignored. */
   contentInsets?: ContentInsets;
-  /** Inset the content by the keyboard's overlap with the view, following the keyboard animation. Android only until the iOS editor lands. */
+  /** Inset the content by the keyboard's overlap with the view, following the keyboard animation. */
   avoidKeyboard?: boolean;
   onReady?: () => void;
   onScroll?: (e: ScrollEvent) => void;

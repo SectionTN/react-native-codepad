@@ -20,7 +20,7 @@ const { count } = await editor.current.setSearch({
 
 `setSearch` runs the search over a snapshot of the document on the editor's background thread and resolves with the match count once the matches are painted. Options:
 
-- `regex` treats `text` as a regular expression. The dialect is the platform's, `java.util.regex` on Android with multiline anchors (`NSRegularExpression` on iOS later, which differs in a few constructs such as possessive quantifiers and named groups). An expression that does not compile rejects the promise with the engine's message and clears the search state, so a search bar can show the error and keep typing.
+- `regex` treats `text` as a regular expression with multiline anchors. Both platforms run ICU's engine, `java.util.regex` on Android (which Android implements over ICU) and `NSRegularExpression` on iOS, so a pattern behaves the same on both: Unicode aware `\w`, `\b` and `\d`, case folding across scripts, lazy and possessive quantifiers, lookahead, lookbehind with a bounded length, and named groups (`(?<name>...)`, Android API 26 and up). An expression that does not compile rejects the promise and clears the search state, so a search bar can show the error and keep typing; the message is the engine's on Android and `invalid regular expression: <text>` on iOS, where the framework reports nothing more.
 - `caseSensitive` is off by default; literal search folds case.
 - `wholeWord` requires identifier boundaries (`[A-Za-z0-9_]`) on both ends.
 

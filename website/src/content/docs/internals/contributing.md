@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-The repository is a yarn workspace: the library at the root, the example app under `example/`, one package per language under `languages/` and this site under `website/`. Node 24 and yarn 4 through corepack, JDK 17, the Android SDK with an emulator, and Xcode for the iOS build.
+The repository is a yarn workspace: the library at the root, the example app under `example/`, one package per language under `languages/` and this site under `website/`. Node 24 and yarn 4 through corepack, JDK 17, the Android SDK with an emulator, and Xcode 16 or newer with an iOS 17 simulator for the iOS side.
 
 ```sh
 git clone https://github.com/SectionTN/react-native-codepad
@@ -65,7 +65,29 @@ Generated files are never edited by hand; CI regenerates and diffs them. The [la
 
 ## iOS
 
-`yarn example ios` builds and runs the example on the simulator with the Swift stub, after `pod install` in `example/ios` when a Nitro spec or a pod changed. CI compiles it on every pull request so the iOS side stays green while the editor is written.
+The Swift core, input, syntax and layout layers build as a Swift package at the repository root and test on macOS without a simulator. The sixteen grammars compile into the test binary, so the first run takes a minute and the next ones seconds:
+
+```sh
+yarn test:swift
+swift test --filter CodepadTests.DocumentTests
+```
+
+The suite covers the shared vectors, the iOS keyboard recordings under `tests/ime-ios`, the document, layout, viewport, key table and gesture classes, the predicate evaluator, injections and the smoke test over all sixteen grammars. CI runs it on a macOS runner.
+
+For the simulator loop, start Metro and run the example on an iOS 17 simulator (its udid from `xcrun simctl list devices`); run `bundle exec pod install` in `example/ios` after a podspec, a Nitro spec or a dependency changed:
+
+```sh
+yarn example start --port 8081
+yarn example ios --udid <udid>
+```
+
+| Command | Does |
+| --- | --- |
+| `yarn test:ios [-only-testing:CodepadTests/<Class>]` | Builds the example with its XCTest bundle and runs the view and input suites on the simulator through `xcodebuild test`; `CODEPAD_IOS_UDID` picks the simulator |
+| `yarn bench:ios scroll`, `memory`, `typing` | Streams the view's frame, paint and parse log lines for `CODEPAD_BENCH_SECONDS` while you drive the editor and prints the percentiles; `memory` prints the resident size of the process. Simulator numbers, for regressions only |
+| `yarn ime:record:ios <name>` | Records the keyboard's `UITextInput` calls into `tests/ime-ios/<name>.json` while you type in the example; Ctrl-C ends it, `yarn test:swift` replays it |
+
+`xcrun simctl spawn <udid> defaults write codepad.example codepad_debug -bool true` turns on the recorder and the log lines in debug builds; the scripts set and clear it themselves.
 
 ## This site
 
@@ -73,11 +95,11 @@ Generated files are never edited by hand; CI regenerates and diffs them. The [la
 
 ## Conventions
 
-- Layers and their dependencies as on the [architecture](/react-native-codepad/internals/architecture/) page: `core` and `input` are pure Kotlin, Nitro code lives only in `com.margelo.nitro.codepad` and `src/specs`.
+- Layers and their dependencies as on the [architecture](/react-native-codepad/internals/architecture/) page: `core` and `input` are pure Kotlin and pure Swift, `layout` adds Core Text on iOS, Nitro code lives only in `com.margelo.nitro.codepad`, `ios/Codepad/nitro` and `src/specs`.
 - UTF-16 offsets, half open ranges, 0 based lines and columns, everywhere.
-- Tests first: a vector or a JUnit case for engine behavior, a jest case for the wrapper, a Gboard recording for a keyboard bug.
+- Tests first: a vector or a JUnit and XCTest case for engine behavior, a jest case for the wrapper, a keyboard recording (Gboard under `tests/ime`, the iOS keyboard under `tests/ime-ios`) for a keyboard bug.
 - Every callback prop in `src/CodeEditor.tsx` is wrapped once; native never emits events from prop setters during the first batch.
 - Biome formatting, conventional commits with an imperative subject under 72 characters, comments of one to three lines for platform quirks and invariants only.
-- Pull requests go through the CI jobs: `lint` (Biome, tsc, the regeneration diff), `test` (jest and node), `docs` (the site build), `build-library`, `build-android` (the JVM suite with the host build, the example APK, the instrumented test compile) and `build-ios`.
+- Pull requests go through the CI jobs: `lint` (Biome, tsc, the regeneration diff), `test` (jest and node), `test-swift` (the Swift package on a macOS runner), `docs` (the site build), `build-library`, `build-android` (the JVM suite with the host build, the example APK, the instrumented test compile) and `build-ios` (the example with the editor on the simulator SDK).
 
 The [CONTRIBUTING](https://github.com/SectionTN/react-native-codepad/blob/main/CONTRIBUTING.md) file in the repository is the short version of this page.

@@ -46,6 +46,10 @@ A markdown document is the heaviest case: every paragraph is an injection into t
 
 What the table says: at a typing pace every key gets its snapshot back within the key interval, so the edited paragraph re-highlights as you type, and the main thread never notices the pass. It also says that keeping the trees changes nothing measurable on this document: a one paragraph injection parses in a few microseconds either way, and the pass is bound by the 65 microseconds of bookkeeping per injection (range matching, the parser call, the tree copy). The reuse pays on documents with a few large injections, such as html with a long script, which this bench does not cover; the next step for documents like this one is to skip the parser call for trees the edit did not touch. A burst faster than the pass is cancelled by each key and resolves once at the end, and a cancelled pass is never published, so the inline spans never flicker.
 
+## iOS
+
+The targets apply to both platforms and the iOS editor is built to the same design: recycled line layers, a layout cache around the viewport, the parser on its own queue with the same first parse budget. `yarn bench:ios scroll`, `memory` and `typing` collect the same measures on the simulator as the Android scripts collect on the emulator, from the view's log lines and the process's resident size. Simulator numbers say nothing about a phone (the editor runs on the Mac's CPU, in the example's debug build), so they are kept for regressions and not published here; the device numbers come with the first iPhone in the loop.
+
 ## What costs what
 
 - `onChangeText` copies the whole document after every change and crosses the bridge as UTF-8. On a megabyte of text that is tens of milliseconds per keystroke. Use `onChange` deltas and `getText()` when you need the text.

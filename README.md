@@ -4,7 +4,7 @@ A native code editor component for React Native. The document, layout, selection
 
 ## Status
 
-Pre-release. The Android editor is complete and measured; the iOS editor is in progress and the first npm release, `0.1.0`, ships with it. The packages are not on npm yet. The [roadmap](https://sectiontn.github.io/react-native-codepad/internals/roadmap/) lists what comes next and what is deliberately out of the first version.
+Pre-release. Both editors are complete: Android is measured on an emulator against the performance targets, iOS is verified on the simulator and waits for a device for its numbers. The packages are not on npm yet; `0.1.0`, the first release, follows a hardening pass over both platforms. The [roadmap](https://sectiontn.github.io/react-native-codepad/internals/roadmap/) lists what comes next and what is deliberately out of the first version.
 
 ## Features
 
@@ -16,10 +16,11 @@ Pre-release. The Android editor is complete and measured; the iOS editor is in p
 - Incremental tree-sitter highlighting with injections for fenced blocks, embedded script and style and tagged templates; fifteen language packages, install only what you use.
 - Three themes keyed by capture name with prefix lookup, so nvim-treesitter themes port by renaming.
 - A delta `onChange`, sync readers on the JS thread, async writers that resolve once applied; UTF-16 offsets, the same as JavaScript strings.
+- The same editor on both platforms: the Kotlin and Swift engines run the same test vectors, and the views share the gestures, the edit menu and the key table with each platform's conventions (Ctrl on Android, Cmd and Option on iOS).
 
 ## Install
 
-React Native 0.81 or newer with the New Architecture, Android API 24. Install the core, Nitro Modules and one package per language:
+React Native 0.81 or newer with the New Architecture, Android API 24, iOS 17. Install the core, Nitro Modules and one package per language:
 
 ```sh
 yarn add react-native-codepad react-native-nitro-modules react-native-codepad-lang-javascript
@@ -31,13 +32,15 @@ Or:
 npm install react-native-codepad react-native-nitro-modules react-native-codepad-lang-javascript
 ```
 
-Then rebuild the app, since native code changed:
+Then install the pods and rebuild the app, since native code changed:
 
 ```sh
+cd ios && pod install && cd ..
+yarn react-native run-ios
 yarn react-native run-android
 ```
 
-Expo works through `npx expo prebuild` or a development build, with no config plugin; Expo Go cannot load native code. Autolinking covers the core and every language package. See [installation](https://sectiontn.github.io/react-native-codepad/start/installation/) for the details and the iOS state.
+The iOS floor is 17.0, so the Podfile's `platform :ios` has to say `'17.0'` rather than React Native's `min_ios_version_supported`. Expo works through `npx expo prebuild` or a development build, with no config plugin; Expo Go cannot load native code. Autolinking covers the core and every language package. See [installation](https://sectiontn.github.io/react-native-codepad/start/installation/) for the details, the Expo story and the iOS floor.
 
 ## Quick start
 
@@ -74,7 +77,7 @@ https://sectiontn.github.io/react-native-codepad/ has the guides (languages, the
 | Platform | State |
 | --- | --- |
 | Android | Complete: API 24 and up, measured against the targets in the [performance guide](https://sectiontn.github.io/react-native-codepad/guides/performance/) |
-| iOS | In progress: the package builds and links with a stub view; the editor renders in a later release |
+| iOS | Complete: iOS 17 and up, verified on the simulator; the device numbers come with the first iPhone in the loop |
 
 ## Contributing
 

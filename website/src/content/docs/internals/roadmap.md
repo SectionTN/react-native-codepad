@@ -1,27 +1,23 @@
 ---
 title: Roadmap
-description: What is deliberately not in the first version, the iOS editor and the release plan.
+description: Where both editors stand, the hardening pass, the release plan and what is deliberately not in the first version.
 sidebar:
   order: 3
 ---
 
 ## Now
 
-Android is complete: every feature on the [introduction](/react-native-codepad/start/introduction/) page is implemented, tested on the JVM and on an emulator, and measured against the [targets](/react-native-codepad/guides/performance/). Fifteen language packages are generated and committed, the themes cover every capture name, and this site documents the whole API.
+Both editors are complete. On Android every feature on the [introduction](/react-native-codepad/start/introduction/) page is implemented, tested on the JVM and on an emulator, and measured against the [targets](/react-native-codepad/guides/performance/). On iOS the Swift engine runs the same vectors under `swift test`, the view and input suites run as XCTest on the simulator, and the example walks the same list as Android on an iPhone simulator. Fifteen language packages are generated and committed, the themes cover every capture name, and this site documents the whole API.
 
-## Next: iOS
+Pending a device: the iOS editor is verified on the simulator, so touch feel, dictation and Scribble have not been tried on hardware, and its performance numbers are simulator numbers kept for regressions rather than published.
 
-The Swift engine, built to the same layers as the Kotlin one and run against the same vectors:
+## Next: hardening and the release
 
-- `core` in Swift, passing `tests/vectors` in XCTest.
-- A `UIScrollView` host with a `UITextInput` conformer as first responder, visible lines drawn through Core Text in recycled layers, `UITextInteraction` supplying the caret, handles, loupe and edit menu.
-- Marked text for CJK and dictation, the smart punctuation traits off, `UIKeyCommand`s for the [hardware key table](/react-native-codepad/guides/hardware-keyboard/) with Cmd and Option, the undo stack exposed to the system.
-- `avoidKeyboard` on iOS with the same overlap semantics.
-- The language packages already ship their iOS side: a pod per package with the parser and a Swift provider.
+A hardening pass over both platforms before anything ships: bug hunting on the walk the two editors share, a fresh review of the engines, the findings fixed under test. Then the release pipeline: a version script, release-it, a publish workflow with provenance, a changelog, and the "not on npm yet" notes removed.
 
 ## Release
 
-`0.1.0` is the first npm release and ships when iOS reaches parity with Android on the same device walk. It publishes the core and the fifteen language packages in lockstep with provenance, from a tag, through a publish workflow that does not exist yet by design: nothing is pushed, tagged or published before then. `1.0.0` needs the full feature list below on both platforms.
+`0.1.0` is the first npm release and ships at the end of that pass. It publishes the core and the fifteen language packages in lockstep with provenance, from a tag, through a publish workflow that does not exist yet by design: nothing is pushed, tagged or published before then. `1.0.0` needs the full feature list below on both platforms.
 
 ## Not in the first version
 
@@ -39,5 +35,7 @@ Each of these is an issue to open and, for the ones worth it, a milestone:
 - `#set! priority` in queries, which nvim uses to rank overlapping patterns regardless of order.
 - Second level injections and `injection.include-children` off.
 - Pinch to zoom the font size.
-- Samsung keyboard verification: Gboard is the tested keyboard; other keyboards get recordings as bugs come in.
+- Edge auto scroll while dragging a selection handle past the viewport, on both platforms.
+- On iOS: interactive keyboard dismissal (the drag that follows the finger), the keyboard appearance from the theme, and iOS 15 and 16 (the selection UI is built on iOS 17 API).
+- Other keyboards: Gboard is the tested keyboard on Android and the system keyboard on iOS; others get recordings as bugs come in.
 - A shared C++ core replacing the two engines.

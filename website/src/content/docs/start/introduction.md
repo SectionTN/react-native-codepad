@@ -10,12 +10,12 @@ react-native-codepad is a code editor component for React Native with its own te
 There is no WebView and no `TextInput` underneath. Scrolling, selection handles, the edit menu and the caret are drawn and handled by the view itself, which is what keeps a 100k line file scrolling at the frame rate.
 
 :::note[Status]
-Pre-release. The Android editor is complete and measured on every feature below. The iOS editor is in progress: the package compiles and links on iOS with a stub view so a cross platform app builds, but nothing renders there yet. The packages are not on npm; the first release, `0.1.0`, ships together with iOS.
+Pre-release. Both editors are complete and tested on every feature below: Android on the JVM and on an emulator, measured against the performance targets; iOS under `swift test` and XCTest on the simulator, with device numbers pending. The packages are not on npm; `0.1.0`, the first release, follows a hardening pass over both platforms.
 :::
 
 ## What you get
 
-- Editing: tap, double tap and long press selection with handles and the edit menu, soft keyboards with composition, undo and redo with typing coalescing, auto indent, auto closing brackets and quotes, Tab and Shift+Tab indentation, bracket matching, an active line highlight, a read only mode and a placeholder.
+- Editing: tap, double tap and long press selection with handles, the magnifier or loupe and the edit menu (a triple tap selects the line on iOS), soft keyboards with composition, undo and redo with typing coalescing, auto indent, auto closing brackets and quotes, Tab and Shift+Tab indentation, bracket matching, an active line highlight, a read only mode and a placeholder.
 - Hardware keyboards: the full [key table](/react-native-codepad/guides/hardware-keyboard/), and a [toolbar API](/react-native-codepad/reference/methods/#toolbar-input) that drives the same paths from JavaScript.
 - View: a line number gutter, soft wrap or horizontal scrolling, scroll to line, reveal selection, caret rect and visible lines for toolbars, content insets, and an editor that [follows the keyboard](/react-native-codepad/guides/keyboard/) frame by frame.
 - Search: literal or regex, case and whole word options, find next and previous with wrap around, replace one or all, painted matches.
@@ -23,6 +23,6 @@ Pre-release. The Android editor is complete and measured on every feature below.
 
 ## What comes next
 
-Phase 8 is the iOS editor: the Swift core runs the same test vectors as the Kotlin one, the view is a `UIScrollView` with a `UITextInput` conformer drawn through Core Text, and `avoidKeyboard` learns the iOS keyboard. `0.1.0` ships when both platforms pass the same walk. The [roadmap](/react-native-codepad/internals/roadmap/) lists what is deliberately out of the first version.
+A hardening pass over both platforms: bug hunting on the walk the two editors share, a fresh review of the engines, the findings fixed under test. Then the release pipeline and `0.1.0`. The [roadmap](/react-native-codepad/internals/roadmap/) has the details and lists what is deliberately out of the first version.
 
 Start with the [installation](/react-native-codepad/start/installation/) page, then the [quick start](/react-native-codepad/start/quick-start/).

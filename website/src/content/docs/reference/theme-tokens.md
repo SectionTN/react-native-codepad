@@ -23,7 +23,7 @@ A `Theme` is a plain object: eleven editor colors plus `tokens`, a map from tree
 | `searchMatch` | #ffd33d66 | #9e6a0366 | #e5c07b55 |
 | `searchMatchActive` | #ffb70099 | #d2992299 | #e5c07b99 |
 
-`selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are fills drawn under the text, so they carry alpha.
+`selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are fills drawn under the text, so they carry alpha. `cursor` colors the caret and the selection handles on both platforms: Android tints the platform handles with it, iOS draws its own knob and bar in it and hands it to the system loupe as the tint. Every other color applies the same on both platforms.
 
 ## Token keys
 

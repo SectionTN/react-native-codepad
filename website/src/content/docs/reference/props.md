@@ -37,7 +37,7 @@ sidebar:
 | `insertSpaces` | `boolean` | `true` | |
 | `autoIndent` | `boolean` | `true` | A newline copies the indentation of the line and adds one level inside an open bracket. |
 | `autoCloseBrackets` | `boolean` | `true` | Brackets and quotes close as you type, a closer typed before the pending one skips it, a selection gets wrapped, and a backspace inside an empty pair removes both. |
-| `suggestions` | `Suggestions` | `'off'` | `off` disables keyboard suggestions, `forceOff` also kills composition on most keyboards, `on` allows autocorrect. |
+| `suggestions` | `Suggestions` | `'off'` | `off` disables keyboard suggestions, `forceOff` also kills composition on most Android keyboards, `on` allows autocorrect. On iOS `forceOff` equals `off`, and `on` turns autocorrection, spell checking and inline predictions on while smart quotes and dashes stay off in every mode. |
 | `autoFocus` | `boolean` | `false` | Focus and show the keyboard once the view is attached. |
 
 ## Scrolling and keyboard
@@ -45,5 +45,5 @@ sidebar:
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `scrollEnabled` | `boolean` | `true` | With `false` the view never claims touch scrolling, so a parent ScrollView scrolls through it. |
-| `contentInsets` | `ContentInsets` | all 0 | Padding inside the scrollable area, in dp. The bottom inset is how a toolbar keeps the caret visible. |
-| `avoidKeyboard` | `boolean` | `false` | The view follows the window's keyboard insets itself and adds the overlap with its bounds to the bottom inset on every animation frame. `onContentSizeChange` excludes that overlap, and under `adjustPan` the view does nothing because the window moves instead. Android today, iOS when the Swift editor lands. See the [keyboard guide](/react-native-codepad/guides/keyboard/). |
+| `contentInsets` | `ContentInsets` | all 0 | Padding inside the scrollable area, in dp on Android and points on iOS. The bottom inset is how a toolbar keeps the caret visible. |
+| `avoidKeyboard` | `boolean` | `false` | The view follows the keyboard itself and adds the overlap between the keyboard and its bounds to the bottom inset on every animation frame, through the window insets animation on Android and the keyboard layout guide on iOS. `onContentSizeChange` excludes that overlap, and under Android's `adjustPan` the view does nothing because the window moves instead. See the [keyboard guide](/react-native-codepad/guides/keyboard/). |

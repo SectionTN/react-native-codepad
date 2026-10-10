@@ -73,4 +73,4 @@ Two rules:
 - Hoist the object. The prop is compared by identity before it crosses to native, so a literal in JSX would send the whole token map on every render.
 - Keep the roots. A theme built from scratch rather than spread from a shipped one should define at least `comment`, `keyword`, `string`, `number`, `function`, `variable`, `type`, `operator`, `punctuation`, `tag`, `attribute`, `constant`, `boolean`, `property`, `module`, `label`, `constructor`, `character` and the `markup.*` keys, or the tokens under them paint in `foreground`.
 
-Bold and italic need a font with those faces; the default `monospace` on Android has them.
+Bold and italic need a font with those faces; the defaults, `monospace` on Android and `Menlo` on iOS, have them.
