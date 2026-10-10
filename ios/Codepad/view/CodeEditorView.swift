@@ -116,6 +116,8 @@ final class CodeEditorView: UIScrollView {
   private var contentInsetLeft: CGFloat = 0
   private var contentInsetRight: CGFloat = 0
   private var keyboardInset: CGFloat = 0
+  private var avoidsKeyboard = false
+  private(set) var keyboardTracker: KeyboardInsetTracker?
   private var ready = false
   private var scrollDirty = false
   private var selectionDirty = false
@@ -268,6 +270,26 @@ final class CodeEditorView: UIScrollView {
     if points == keyboardInset { return }
     keyboardInset = points
     applyInsets()
+  }
+
+  /// Follows the window's keyboard while attached; off by default.
+  func setAvoidKeyboard(_ on: Bool) {
+    avoidsKeyboard = on
+    if on && window != nil { startKeyboardTracker() } else { stopKeyboardTracker() }
+  }
+
+  var isAvoidingKeyboard: Bool { keyboardTracker != nil }
+
+  private func startKeyboardTracker() {
+    if keyboardTracker != nil { return }
+    let tracker = KeyboardInsetTracker(view: self) { [weak self] points in self?.applyKeyboardInset(points) }
+    keyboardTracker = tracker
+    tracker.start()
+  }
+
+  private func stopKeyboardTracker() {
+    keyboardTracker?.stop()
+    keyboardTracker = nil
   }
 
   func setScrollEnabled(_ enabled: Bool) {
@@ -548,8 +570,10 @@ final class CodeEditorView: UIScrollView {
       engine?.close()
       engine = nil
       snapshot = nil
+      stopKeyboardTracker()
     } else {
       _ = ensureEngine()
+      if avoidsKeyboard { startKeyboardTracker() }
       if autoFocusPending { runAutoFocus() }
     }
   }
