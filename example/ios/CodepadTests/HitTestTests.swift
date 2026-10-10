@@ -34,4 +34,14 @@ final class HitTestTests: XCTestCase {
       XCTAssertEqual(editor.offsetAt(x: 150, y: below), editor.core.document.length, "wrap \(wrap) below")
     }
   }
+
+  func testATouchBelowTheLastLineReachesTheTextView() {
+    let editor = launch()
+    editor.setInitialText("one\ntwo")
+    layout(editor)
+    draw(editor)
+    let below = CGPoint(x: 150, y: editor.latestFrame.contentHeight + 40)
+    let hit = editor.hitTest(below, with: nil)
+    XCTAssertTrue(hit?.isDescendant(of: editor.textInput) ?? false, "hit \(String(describing: hit))")
+  }
 }

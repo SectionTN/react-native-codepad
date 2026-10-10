@@ -821,7 +821,8 @@ final class CodeEditorView: UIScrollView {
     if contentOffset != target { contentOffset = target }
   }
 
-  /// contentSize is the viewport's content plus its insets; the content view starts at the text area.
+  /// contentSize is the viewport's content plus its insets; the content view starts at the text area and
+  /// reaches the bottom of the visible area at least, so a touch below the last line still places the caret.
   private func updateContentSize() {
     let size = CGSize(
       width: CGFloat(viewport.textAreaLeft + viewport.contentWidth + viewport.insetRight),
@@ -829,7 +830,7 @@ final class CodeEditorView: UIScrollView {
     if contentSize != size { contentSize = size }
     let frame = CGRect(
       x: CGFloat(viewport.textAreaLeft), y: CGFloat(viewport.insetTop), width: CGFloat(viewport.contentWidth),
-      height: CGFloat(viewport.contentHeight))
+      height: max(CGFloat(viewport.contentHeight), bounds.height - CGFloat(viewport.insetTop)))
     if textInput.frame != frame { textInput.frame = frame }
   }
 
