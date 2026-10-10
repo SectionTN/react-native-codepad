@@ -119,4 +119,32 @@ final class MarkedTextSessionTests: XCTestCase {
     XCTAssertEqual(core.selection, Selection(anchor: 1, head: 1))
     XCTAssertEqual(core.document.text(), "xyzab")
   }
+
+  // The iOS keyboard deletes by selecting the previous character first, then calling deleteBackward.
+  func testKeyboardBackspaceAfterSelectingTheOpenerRemovesThePair() {
+    let (core, s) = session("a()", caret: 2)
+    s.setSelection(Selection(anchor: 1, head: 2))
+    s.deleteBackward()
+    XCTAssertEqual(core.document.text(), "a")
+    XCTAssertEqual(core.selection, Selection.caret(1))
+  }
+
+  func testKeyboardBackspaceCoalescesLikeTyping() {
+    let (core, s) = session("abc", caret: 3)
+    s.setSelection(Selection(anchor: 2, head: 3))
+    s.deleteBackward()
+    s.setSelection(Selection(anchor: 1, head: 2))
+    s.deleteBackward()
+    XCTAssertEqual(core.document.text(), "a")
+    core.undo()
+    XCTAssertEqual(core.document.text(), "abc")
+  }
+
+  func testBackspaceOverASelectionTheKeyboardDidNotMakeDeletesIt() {
+    let (core, s) = session("a()", caret: 2)
+    core.setSelection(anchor: 1, head: 2)
+    s.deleteBackward()
+    XCTAssertEqual(core.document.text(), "a)")
+    XCTAssertEqual(core.selection, Selection.caret(1))
+  }
 }

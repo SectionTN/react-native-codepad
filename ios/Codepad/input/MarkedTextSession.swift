@@ -9,6 +9,9 @@ final class MarkedTextSession {
   /// True while a session call mutates the core, so the view can tell keyboard edits from external ones.
   private(set) var applying = false
 
+  /// The selection the keyboard set last, with the history's dirty flag from before it, cleared by any other
+  /// call; the keyboard's select-then-delete pattern needs both.
+  private var keyboardSelection: (selection: Selection, historyDirty: Bool)?
   private var groupOpen = false
   private var doc: Document { core.document }
 
@@ -57,6 +60,7 @@ final class MarkedTextSession {
   }
 
   /// Backspace inside the marked text shrinks it; anywhere else it ends the composition and deletes as usual.
+  /// The keyboard deletes by selecting the previous grapheme first, which stands for a caret backspace.
   func deleteBackward() {
     mutate {
       let sel = core.selection
@@ -69,6 +73,10 @@ final class MarkedTextSession {
         return
       }
       endComposition()
+      if !sel.isEmpty, let kb = keyboardSelection, sel == kb.selection, sel.min == TextMovement.prevGrapheme(doc, sel.max) {
+        core.setSelection(anchor: sel.max, head: sel.max)
+        core.history.selectionDirty = kb.historyDirty
+      }
       core.backspace()
     }
   }
@@ -88,10 +96,12 @@ final class MarkedTextSession {
 
   /// A selection the keyboard sets. One outside the marked text ends the composition.
   func setSelection(_ selection: Selection) {
+    let historyDirty = core.history.selectionDirty
     mutate {
       if let m = marked, selection.min < m.start || selection.max > m.end { endComposition() }
       core.setSelection(anchor: selection.anchor, head: selection.head)
     }
+    keyboardSelection = (core.selection, historyDirty)
   }
 
   /// A change the session did not make. Returns true when it hit the marked text, which the view answers by
@@ -111,6 +121,7 @@ final class MarkedTextSession {
 
   func reset() {
     marked = nil
+    keyboardSelection = nil
     closeGroup()
   }
 
@@ -154,7 +165,10 @@ final class MarkedTextSession {
 
   private func mutate(_ block: () -> Void) {
     applying = true
-    defer { applying = false }
+    defer {
+      applying = false
+      keyboardSelection = nil
+    }
     block()
   }
 }
