@@ -93,3 +93,8 @@ public struct SearchQuery: Hashable, Sendable {
     self.wholeWord = wholeWord
   }
 }
+
+/// The UTF-16 unit of a BMP scalar, for the unit comparisons the core makes.
+@inline(__always) func u16(_ scalar: Unicode.Scalar) -> UInt16 {
+  UInt16(truncatingIfNeeded: scalar.value)
+}
