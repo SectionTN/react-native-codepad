@@ -1,0 +1,42 @@
+{
+  "name": "kana",
+  "source": "hand written from the Japanese romaji keyboard's setMarkedText pattern, replaced by a recording once the view exists",
+  "recordedAt": "2026-10-10",
+  "sessions": [
+    {
+      "initial": { "text": "x = ", "selection": [4, 4] },
+      "steps": [
+        {
+          "t": 0,
+          "call": "setMarkedText",
+          "args": ["k", [1, 0]],
+          "after": { "sel": [5, 5], "marked": [4, 5], "text": "x = k" }
+        },
+        {
+          "t": 1,
+          "call": "setMarkedText",
+          "args": ["か", [1, 0]],
+          "after": { "sel": [5, 5], "marked": [4, 5], "text": "x = か" }
+        },
+        {
+          "t": 2,
+          "call": "setMarkedText",
+          "args": ["かn", [2, 0]],
+          "after": { "sel": [6, 6], "marked": [4, 6], "text": "x = かn" }
+        },
+        {
+          "t": 3,
+          "call": "setMarkedText",
+          "args": ["かな", [2, 0]],
+          "after": { "sel": [6, 6], "marked": [4, 6], "text": "x = かな" }
+        },
+        {
+          "t": 4,
+          "call": "unmarkText",
+          "args": [],
+          "after": { "sel": [6, 6], "marked": null, "text": "x = かな" }
+        }
+      ]
+    }
+  ]
+}

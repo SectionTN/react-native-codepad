@@ -1,0 +1,30 @@
+{
+  "name": "pinyin",
+  "source": "hand written from the Pinyin keyboard's marked text then insertText commit, replaced by a recording once the view exists",
+  "recordedAt": "2026-10-10",
+  "sessions": [
+    {
+      "initial": { "text": "", "selection": [0, 0] },
+      "steps": [
+        {
+          "t": 0,
+          "call": "setMarkedText",
+          "args": ["ni", [2, 0]],
+          "after": { "sel": [2, 2], "marked": [0, 2], "text": "ni" }
+        },
+        {
+          "t": 1,
+          "call": "setMarkedText",
+          "args": ["nih", [3, 0]],
+          "after": { "sel": [3, 3], "marked": [0, 3], "text": "nih" }
+        },
+        {
+          "t": 2,
+          "call": "insertText",
+          "args": ["你好"],
+          "after": { "sel": [2, 2], "marked": null, "text": "你好" }
+        }
+      ]
+    }
+  ]
+}

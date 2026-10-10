@@ -1,0 +1,54 @@
+{
+  "name": "latin",
+  "source": "hand written from the UIKit insertText and deleteBackward pattern, replaced by a recording once the view exists",
+  "recordedAt": "2026-10-10",
+  "sessions": [
+    {
+      "initial": { "text": "", "selection": [0, 0] },
+      "steps": [
+        {
+          "t": 0,
+          "call": "insertText",
+          "args": ["a"],
+          "after": { "sel": [1, 1], "marked": null, "text": "a" }
+        },
+        {
+          "t": 1,
+          "call": "insertText",
+          "args": ["("],
+          "after": { "sel": [2, 2], "marked": null, "text": "a()" }
+        },
+        {
+          "t": 2,
+          "call": "insertText",
+          "args": ["b"],
+          "after": { "sel": [3, 3], "marked": null, "text": "a(b)" }
+        },
+        {
+          "t": 3,
+          "call": "insertText",
+          "args": [")"],
+          "after": { "sel": [4, 4], "marked": null, "text": "a(b)" }
+        },
+        {
+          "t": 4,
+          "call": "insertText",
+          "args": ["("],
+          "after": { "sel": [5, 5], "marked": null, "text": "a(b)()" }
+        },
+        {
+          "t": 5,
+          "call": "deleteBackward",
+          "args": [],
+          "after": { "sel": [4, 4], "marked": null, "text": "a(b)" }
+        },
+        {
+          "t": 6,
+          "call": "insertText",
+          "args": ["\n"],
+          "after": { "sel": [5, 5], "marked": null, "text": "a(b)\n" }
+        }
+      ]
+    }
+  ]
+}

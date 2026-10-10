@@ -1,0 +1,30 @@
+{
+  "name": "backspace-marked",
+  "source": "hand written from the deleteBackward inside marked text pattern, replaced by a recording once the view exists",
+  "recordedAt": "2026-10-10",
+  "sessions": [
+    {
+      "initial": { "text": "", "selection": [0, 0] },
+      "steps": [
+        {
+          "t": 0,
+          "call": "setMarkedText",
+          "args": ["ab", [2, 0]],
+          "after": { "sel": [2, 2], "marked": [0, 2], "text": "ab" }
+        },
+        {
+          "t": 1,
+          "call": "deleteBackward",
+          "args": [],
+          "after": { "sel": [1, 1], "marked": [0, 1], "text": "a" }
+        },
+        {
+          "t": 2,
+          "call": "deleteBackward",
+          "args": [],
+          "after": { "sel": [0, 0], "marked": null, "text": "" }
+        }
+      ]
+    }
+  ]
+}

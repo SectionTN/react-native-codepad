@@ -1,0 +1,24 @@
+{
+  "name": "autocorrect-replace",
+  "source": "hand written from the autocorrect replace(_:withText:) pattern, replaced by a recording once the view exists",
+  "recordedAt": "2026-10-10",
+  "sessions": [
+    {
+      "initial": { "text": "", "selection": [0, 0] },
+      "steps": [
+        {
+          "t": 0,
+          "call": "insertText",
+          "args": ["teh "],
+          "after": { "sel": [4, 4], "marked": null, "text": "teh " }
+        },
+        {
+          "t": 1,
+          "call": "replace",
+          "args": [[0, 3], "the"],
+          "after": { "sel": [3, 3], "marked": null, "text": "the " }
+        }
+      ]
+    }
+  ]
+}
