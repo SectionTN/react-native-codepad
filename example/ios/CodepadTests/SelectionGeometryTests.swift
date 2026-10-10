@@ -64,3 +64,24 @@ final class SelectionGeometryTests: XCTestCase {
     for handle in input.handleViews { XCTAssertEqual(handle.color.components, theme.cursor.components) }
   }
 }
+
+extension SelectionGeometryTests {
+  func testHandlesWrapTheSelectionEnds() {
+    let editor = launch()
+    editor.setInitialText("hello world")
+    layout(editor)
+    editor.focus()
+    editor.core.setSelection(anchor: 0, head: 5)
+    draw(editor)
+    let input = editor.textInput
+    let handles = input.handleViews
+    XCTAssertEqual(handles.map(\.direction), [.leading, .trailing])
+    XCTAssertEqual(handles.map(\.superview), [input, input])
+    XCTAssertEqual(handles.map(\.isHidden), [false, false])
+    XCTAssertEqual(handles[0].frame, handles[0].preferredFrame(for: editor.caretRect(offset: 0)))
+    XCTAssertEqual(handles[1].frame, handles[1].preferredFrame(for: editor.caretRect(offset: 5)))
+    editor.core.setSelection(anchor: 5, head: 5)
+    draw(editor)
+    XCTAssertEqual(handles.map(\.isHidden), [true, true], "no handles on a collapsed selection")
+  }
+}

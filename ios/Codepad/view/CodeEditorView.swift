@@ -83,6 +83,7 @@ final class CodeEditorView: UIScrollView {
   private(set) var isReadOnly = false
 
   let textInput: TextInputView
+  private let clipboard = ClipboardActions()
   private let gutter = GutterView()
   private var theme = ThemeColors.default
   private var font: CTFont
@@ -148,6 +149,9 @@ final class CodeEditorView: UIScrollView {
     textInput.decorations.setTheme(theme)
     addSubview(textInput)
     addSubview(gutter)
+    // Touches reach the content view at once, and a caret or handle drag beats the scroll, as in UITextView.
+    delaysContentTouches = false
+    for pan in textInput.dragRecognizers { panGestureRecognizer.require(toFail: pan) }
     wire(core)
   }
 
@@ -280,6 +284,24 @@ final class CodeEditorView: UIScrollView {
     if enabled && window != nil { runAutoFocus() }
   }
 
+  /// False when nothing is selected.
+  @discardableResult
+  func copySelection() -> Bool {
+    clipboard.copy(core)
+  }
+
+  func cut(origin: ChangeOrigin = .input) {
+    if !isReadOnly { clipboard.cut(core, origin: origin) }
+  }
+
+  func paste(origin: ChangeOrigin = .input) {
+    if !isReadOnly && clipboard.paste(core, origin: origin) { revealAfterInput() }
+  }
+
+  func selectAll() {
+    core.selectAll()
+  }
+
   func scrollToLine(_ line: Int, animated: Bool) {
     let target = heights.rowStart(max(0, min(line, core.document.lineCount - 1))) * viewport.rowHeight
     if animated {
@@ -393,7 +415,7 @@ final class CodeEditorView: UIScrollView {
   func textInputFocusChanged(_ focused: Bool) {
     focusLock.withLock { $0 = focused }
     selectionViewsDirty = true
-    if focused { revealPending = true }
+    if focused { revealPending = true } else { textInput.menu.hide() }
     setNeedsLayout()
     if focused { onEditorFocus?() } else { onEditorBlur?() }
   }
@@ -401,6 +423,8 @@ final class CodeEditorView: UIScrollView {
   override func didMoveToWindow() {
     super.didMoveToWindow()
     if window == nil {
+      textInput.menu.hide()
+      textInput.endLoupe()
       engine?.close()
       engine = nil
       snapshot = nil
@@ -434,10 +458,12 @@ final class CodeEditorView: UIScrollView {
     placeGutter(first, lastLine, caretLine)
     placeDecorations(first, caretLine, m)
     placeMarkedUnderline(first)
+    placeHandles()
     placePlaceholder(m)
     publish(first, lastLine, caretLine, m)
     if scrollDirty {
       scrollDirty = false
+      textInput.menu.hide()
       onScroll?(latestFrame)
     }
     if contentDirty {
@@ -501,6 +527,7 @@ final class CodeEditorView: UIScrollView {
       textInput.inputDelegate?.textDidChange(textInput)
     }
     textInput.cursorView.resetBlinkAnimation()
+    textInput.menu.hide()
     selectionViewsDirty = true
     updateContentSize()
     setNeedsLayout()
@@ -828,6 +855,18 @@ final class CodeEditorView: UIScrollView {
     underline.frame = bounds
     underline.path = path
     underline.isHidden = false
+  }
+
+  /// The handles wrap the caret rects of a ranged selection while the editor has focus.
+  private func placeHandles() {
+    let sel = core.selection
+    let shown = hasFocus && !sel.isEmpty
+    for (handle, offset) in zip(textInput.handleViews, [sel.min, sel.max]) {
+      handle.isHidden = !shown
+      if !shown { continue }
+      let frame = handle.preferredFrame(for: caretRect(offset: offset))
+      if handle.frame != frame { handle.frame = frame }
+    }
   }
 
   /// One layer in gutterForeground on the first row while the document is empty.

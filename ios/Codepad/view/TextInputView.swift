@@ -7,8 +7,11 @@ enum Suggestions {
 }
 
 /// The scroll view's content: the decoration layers, the selection container, the recycled line layers and the
-/// marked text underline. UITextInput over the editor's UTF-16 offsets, the composition through the session.
+/// marked text underline. UITextInput over the editor's UTF-16 offsets, the composition through the session,
+/// the touches through the gesture machine and the edit menu over the selection.
 final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractionDelegate {
+  static let gestureConfig = GestureMachine.Config(touchSlop: 10, doubleTapSlop: 40, doubleTapTimeout: 0.3, longPressTimeout: 0.5)
+
   let decorations = Decorations()
   let selectionContainer = UIView()
   let textHost = StillLayer()
@@ -17,9 +20,16 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
   let cursorView = CursorView()
   let handleViews = [HandleView(), HandleView()]
   private(set) var selectionInteraction: UITextSelectionDisplayInteraction!
+  private(set) var gestures: EditorGestureRecognizer!
+  private(set) var menu: EditMenu!
+  /// The caret and handle pans; the scroll view's pan waits for them to fail.
+  private(set) var dragRecognizers: [UIPanGestureRecognizer] = []
   weak var editor: CodeEditorView?
   var session: MarkedTextSession
   private let emptyInputView = UIView(frame: .zero)
+  private var loupe: UITextLoupeSession?
+  private var dragFixed = -1
+  private var grab = CGPoint.zero
 
   var isReadOnly = false {
     didSet {
@@ -56,8 +66,22 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
     selectionInteraction = UITextSelectionDisplayInteraction(textInput: self, delegate: self)
     selectionInteraction.cursorView = cursorView
     selectionInteraction.highlightView = highlightView
-    selectionInteraction.handleViews = handleViews
+    // The interaction installs handles only for its own text interaction, so the editor hosts and places ours.
+    selectionInteraction.handleViews = [HiddenHandleView(), HiddenHandleView()]
+    for (handle, direction) in zip(handleViews, [NSDirectionalRectEdge.leading, .trailing]) {
+      handle.direction = direction
+      handle.isHidden = true
+      addSubview(handle)
+    }
     addInteraction(selectionInteraction)
+    gestures = EditorGestureRecognizer(host: self, config: TextInputView.gestureConfig)
+    addGestureRecognizer(gestures)
+    menu = EditMenu(view: self)
+    for widget in [cursorView as UIView] + (handleViews as [UIView]) {
+      let pan = UIPanGestureRecognizer(target: self, action: #selector(drag(_:)))
+      widget.addGestureRecognizer(pan)
+      dragRecognizers.append(pan)
+    }
     apply(theme: .default)
   }
 
@@ -119,6 +143,84 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
 
   func selectionContainerViewBelowText(for interaction: UITextSelectionDisplayInteraction) -> UIView? {
     selectionContainer
+  }
+
+  // Edit menu
+
+  override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+    guard let editor else { return false }
+    let hasSelection = !editor.core.selection.isEmpty
+    switch action {
+    case #selector(cut(_:)): return !editor.isReadOnly && hasSelection
+    case #selector(UIResponderStandardEditActions.copy(_:)): return hasSelection
+    case #selector(paste(_:)): return !editor.isReadOnly && UIPasteboard.general.hasStrings
+    case #selector(selectAll(_:)): return true
+    default: return super.canPerformAction(action, withSender: sender)
+    }
+  }
+
+  override func cut(_ sender: Any?) {
+    editor?.cut()
+  }
+
+  override func copy(_ sender: Any?) {
+    editor?.copySelection()
+  }
+
+  override func paste(_ sender: Any?) {
+    editor?.paste()
+  }
+
+  override func selectAll(_ sender: Any?) {
+    editor?.selectAll()
+  }
+
+  /// Presents the menu at the visible selection rows, or at the caret when the selection is collapsed.
+  func showMenu() {
+    guard let editor else { return }
+    let sel = editor.core.selection
+    var rect = editor.caretRect(offset: sel.head)
+    if !sel.isEmpty {
+      let rects = editor.selectionRects(start: sel.min, end: sel.max).map(\.rect)
+      if let first = rects.first { rect = rects.dropFirst().reduce(first) { $0.union($1) } }
+    }
+    menu.show(at: rect)
+  }
+
+  // Drags
+
+  /// A caret or handle drag: the grabbed point keeps its offset from the finger and the loupe follows the finger.
+  @objc private func drag(_ pan: UIPanGestureRecognizer) {
+    guard let editor, let widget = pan.view else { return }
+    let point = pan.location(in: self)
+    let handle = widget as? HandleView
+    switch pan.state {
+    case .began:
+      let sel = editor.core.selection
+      dragFixed = handle.map { $0.direction == .leading ? sel.max : sel.min } ?? -1
+      let center = widget.convert(handle?.rowCenter ?? CGPoint(x: widget.bounds.midX, y: widget.bounds.midY), to: self)
+      grab = CGPoint(x: point.x - center.x, y: point.y - center.y)
+      menu.hide()
+      loupe?.invalidate()
+      loupe = UITextLoupeSession.begin(at: point, fromSelectionWidgetView: widget, in: self)
+      moveDrag(to: point)
+    case .changed:
+      moveDrag(to: point)
+    case .ended:
+      endLoupe()
+      if handle != nil { showMenu() }
+    case .cancelled, .failed:
+      endLoupe()
+    default:
+      break
+    }
+  }
+
+  private func moveDrag(to point: CGPoint) {
+    guard let editor else { return }
+    let offset = editor.offsetAt(contentPoint: CGPoint(x: point.x - grab.x, y: point.y - grab.y))
+    editor.core.setSelection(anchor: dragFixed < 0 ? offset : dragFixed, head: offset)
+    loupe?.move(to: point, withCaretRect: editor.caretRect(offset: offset), trackingCaret: true)
   }
 
   // UIKeyInput
@@ -280,5 +382,75 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
     guard let editor else { return nil }
     let offset = editor.offsetAt(contentPoint: point)
     return offset < length ? CPTextRange(start: offset, end: offset + 1) : nil
+  }
+}
+
+/// The machine's decisions, in content view coordinates.
+extension TextInputView: @MainActor GestureHost {
+  func offsetAt(x: CGFloat, y: CGFloat) -> Int {
+    editor?.offsetAt(contentPoint: CGPoint(x: x, y: y)) ?? 0
+  }
+
+  func insideSelection(_ offset: Int) -> Bool {
+    guard let sel = editor?.core.selection, !sel.isEmpty else { return false }
+    return offset >= sel.min && offset <= sel.max
+  }
+
+  func caretHit(x: CGFloat, y: CGFloat) -> Bool {
+    guard selectionInteraction.isActivated, cursorView.superview != nil, !cursorView.isHidden else { return false }
+    return cursorView.frame.insetBy(dx: -CursorView.hitSlop, dy: 0).contains(CGPoint(x: x, y: y))
+  }
+
+  func placeCaret(_ offset: Int) {
+    guard let editor else { return }
+    menu.hide()
+    editor.focus()
+    editor.core.setSelection(anchor: offset, head: offset)
+  }
+
+  func selectWord(_ offset: Int) {
+    guard let editor else { return }
+    menu.hide()
+    editor.focus()
+    editor.core.selectWordAt(offset)
+  }
+
+  /// The line with its line break, so a cut removes the whole line.
+  func selectLine(_ offset: Int) {
+    guard let editor else { return }
+    menu.hide()
+    editor.focus()
+    let doc = editor.core.document
+    let line = doc.lineAt(offset)
+    let end = line + 1 < doc.lineCount ? doc.lineStart(line + 1) : doc.lineEnd(line)
+    editor.core.setSelection(anchor: doc.lineStart(line), head: end)
+  }
+
+  func beginLoupe(x: CGFloat, y: CGFloat) {
+    loupe?.invalidate()
+    loupe = UITextLoupeSession.begin(at: CGPoint(x: x, y: y), fromSelectionWidgetView: cursorView, in: self)
+  }
+
+  func moveLoupe(x: CGFloat, y: CGFloat) {
+    guard let editor else { return }
+    let caret = editor.caretRect(offset: editor.core.selection.head)
+    loupe?.move(to: CGPoint(x: x, y: y), withCaretRect: caret, trackingCaret: true)
+  }
+
+  func endLoupe() {
+    loupe?.invalidate()
+    loupe = nil
+  }
+
+  func yieldToScroll() {
+    gestures.yield()
+  }
+
+  func postLongPress(delay: TimeInterval) {
+    gestures.postLongPress(delay: delay)
+  }
+
+  func cancelLongPress() {
+    gestures.cancelLongPress()
   }
 }

@@ -77,7 +77,10 @@ final class HighlightView: UIView, UITextSelectionHighlightView {
 }
 
 /// The caret: 2 pt wide in the theme's cursor color, blinking while the interaction says so, invisible under read only.
+/// It takes touches a few points to each side so a finger can grab and drag it.
 final class CursorView: UIView, UITextCursorView {
+  static let hitSlop: CGFloat = 10
+
   private(set) var color: CGColor = ThemeColors.default.cursor
 
   var readOnly = false {
@@ -95,12 +98,15 @@ final class CursorView: UIView, UITextCursorView {
 
   override init(frame: CGRect) {
     super.init(frame: frame)
-    isUserInteractionEnabled = false
     backgroundColor = UIColor(cgColor: color)
   }
 
   required init?(coder: NSCoder) {
     fatalError("init(coder:) is not supported")
+  }
+
+  override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+    bounds.insetBy(dx: -CursorView.hitSlop, dy: 0).contains(point)
   }
 
   func resetBlinkAnimation() {
@@ -127,6 +133,7 @@ final class CursorView: UIView, UITextCursorView {
 final class HandleView: UIView, UITextSelectionHandleView {
   static let knob: CGFloat = 10
   static let bar: CGFloat = 2
+  static let hitSlop: CGFloat = 12
 
   private let knobLayer = StillShapeLayer()
   private let barLayer = StillLayer()
@@ -136,6 +143,13 @@ final class HandleView: UIView, UITextSelectionHandleView {
 
   var direction: NSDirectionalRectEdge = .leading {
     didSet { setNeedsLayout() }
+  }
+
+  /// The middle of the bar in the handle's own coordinates: the point a drag keeps under the finger.
+  var rowCenter: CGPoint {
+    let knob = HandleView.knob
+    let bar = (bounds.height - knob) / 2
+    return CGPoint(x: bounds.midX, y: direction == .leading ? knob + bar : bar)
   }
 
   override init(frame: CGRect) {
@@ -148,6 +162,10 @@ final class HandleView: UIView, UITextSelectionHandleView {
 
   required init?(coder: NSCoder) {
     fatalError("init(coder:) is not supported")
+  }
+
+  override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+    bounds.insetBy(dx: -HandleView.hitSlop, dy: -HandleView.hitSlop / 2).contains(point)
   }
 
   /// `rect` is the caret rect of the selection end; the handle wraps it plus the knob.
@@ -171,5 +189,22 @@ final class HandleView: UIView, UITextSelectionHandleView {
     color = theme.cursor
     knobLayer.fillColor = color
     barLayer.backgroundColor = color
+  }
+}
+
+/// What the display interaction gets as handle views: it throws without two, and it places the views it is given
+/// without ever installing them, so the editor hosts the real handles and these stay hidden and empty.
+final class HiddenHandleView: UIView, UITextSelectionHandleView {
+  var direction: NSDirectionalRectEdge = .leading
+  var isVertical: Bool { false }
+  var customShape: UIBezierPath?
+
+  override var isHidden: Bool {
+    get { true }
+    set {}
+  }
+
+  func preferredFrame(for rect: CGRect) -> CGRect {
+    .zero
   }
 }

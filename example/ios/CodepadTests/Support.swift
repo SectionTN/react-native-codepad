@@ -114,3 +114,10 @@ func waitForSnapshot(
     RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.02))
   }
 }
+
+/// Spins the main run loop until the condition holds or the timeout passes.
+@MainActor
+func spin(until condition: () -> Bool, timeout: TimeInterval = 2) {
+  let deadline = Date(timeIntervalSinceNow: timeout)
+  while !condition() && Date() < deadline { RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.02)) }
+}
