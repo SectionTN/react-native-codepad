@@ -53,6 +53,8 @@
     "bench:memory": "scripts/bench.sh memory",
     "bench:typing": "scripts/bench.sh typing",
     "ime:record": "scripts/ime-record.sh",
+    "ime:record:ios": "scripts/ime-record-ios.sh",
+    "bench:ios": "scripts/bench-ios.sh",
     "release": "release-it --only-version",
     "docs": "yarn workspace react-native-codepad-website dev",
     "docs:build": "yarn workspace react-native-codepad-website build"

@@ -1,52 +1,102 @@
 {
   "name": "latin",
-  "source": "hand written from the UIKit insertText and deleteBackward pattern, replaced by a recording once the view exists",
+  "source": "recorded on iPhone 18 Pro",
+  "ime": "fr-FR",
   "recordedAt": "2026-10-10",
   "sessions": [
     {
-      "initial": { "text": "", "selection": [0, 0] },
+      "initial": {
+        "text": "",
+        "selection": [0, 0]
+      },
       "steps": [
         {
           "t": 0,
           "call": "insertText",
           "args": ["a"],
-          "after": { "sel": [1, 1], "marked": null, "text": "a" }
+          "after": {
+            "len": 1,
+            "marked": null,
+            "sel": [1, 1],
+            "text": "a"
+          }
         },
         {
-          "t": 1,
+          "t": 322,
           "call": "insertText",
           "args": ["("],
-          "after": { "sel": [2, 2], "marked": null, "text": "a()" }
+          "after": {
+            "len": 3,
+            "marked": null,
+            "sel": [2, 2],
+            "text": "a()"
+          }
         },
         {
-          "t": 2,
+          "t": 658,
           "call": "insertText",
           "args": ["b"],
-          "after": { "sel": [3, 3], "marked": null, "text": "a(b)" }
+          "after": {
+            "len": 4,
+            "marked": null,
+            "sel": [3, 3],
+            "text": "a(b)"
+          }
         },
         {
-          "t": 3,
+          "t": 975,
           "call": "insertText",
           "args": [")"],
-          "after": { "sel": [4, 4], "marked": null, "text": "a(b)" }
+          "after": {
+            "len": 4,
+            "marked": null,
+            "sel": [4, 4],
+            "text": "a(b)"
+          }
         },
         {
-          "t": 4,
-          "call": "insertText",
-          "args": ["("],
-          "after": { "sel": [5, 5], "marked": null, "text": "a(b)()" }
+          "t": 29998,
+          "call": "setSelection",
+          "args": [[3, 4]],
+          "after": {
+            "len": 4,
+            "marked": null,
+            "sel": [3, 4],
+            "text": "a(b)"
+          }
         },
         {
-          "t": 5,
+          "t": 29999,
           "call": "deleteBackward",
           "args": [],
-          "after": { "sel": [4, 4], "marked": null, "text": "a(b)" }
+          "after": {
+            "len": 3,
+            "marked": null,
+            "sel": [3, 3],
+            "text": "a(b"
+          }
         },
         {
-          "t": 6,
-          "call": "insertText",
-          "args": ["\n"],
-          "after": { "sel": [5, 5], "marked": null, "text": "a(b)\n" }
+          "t": 30336,
+          "call": "setSelection",
+          "args": [[2, 3]],
+          "after": {
+            "len": 3,
+            "marked": null,
+            "sel": [2, 3],
+            "text": "a(b"
+          }
+        },
+        {
+          "t": 30336,
+          "call": "deleteBackward",
+          "args": [],
+          "after": {
+            "len": 2,
+            "marked": null,
+            "sel": [2, 2],
+            "text": "a("
+          }
         }
       ]
     }

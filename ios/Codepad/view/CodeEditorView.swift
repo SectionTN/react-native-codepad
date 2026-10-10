@@ -596,6 +596,7 @@ final class CodeEditorView: UIScrollView {
     let h = Int(bounds.height.rounded())
     if w != viewport.width || h != viewport.height { sizeChanged(w, h) }
     if viewport.scrollTo(Int(contentOffset.x.rounded()), Int(contentOffset.y.rounded())) { scrollDirty = true }
+    let scrolled = scrollDirty
     if w == 0 || h == 0 { return }
     let doc = core.document
     let m = rowMetrics()
@@ -637,7 +638,7 @@ final class CodeEditorView: UIScrollView {
       ready = true
       onReady?()
     }
-    logPaint()
+    if inputTime != 0 { logPaint() } else if scrolled { logFrame() }
   }
 
   private func wire(_ core: EditorCore) {
@@ -1119,5 +1120,12 @@ final class CodeEditorView: UIScrollView {
     DebugSwitch.log.info("{\"call\":\"paint\",\"latency\":\(latency, privacy: .public),\"work\":\(work, privacy: .public)}")
     inputWork = 0
     inputTime = 0
+  }
+
+  /// One line per scrolled frame with its layout time, for the scroll bench.
+  private func logFrame() {
+    if !debugSwitch() { return }
+    let ms = Int(((CACurrentMediaTime() - frameStart) * 1000).rounded())
+    DebugSwitch.log.info("{\"call\":\"frame\",\"ms\":\(ms, privacy: .public)}")
   }
 }

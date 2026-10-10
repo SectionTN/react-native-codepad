@@ -30,6 +30,9 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
   private var loupe: UITextLoupeSession?
   private var dragFixed = -1
   private var grab = CGPoint.zero
+  /// Where the recorder's JSON lines go: os_log under the ime category, or a test's capture.
+  var recorderLog: (String) -> Void = { RecordingTextInput.log.info("\($0, privacy: .public)") }
+  private var recorder: RecordingTextInput?
 
   var isReadOnly = false {
     didSet {
@@ -121,6 +124,36 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
     if isFirstResponder { reloadInputViews() }
   }
 
+  // Recorder
+
+  /// Android keeps the text out of the entries past this length, so do we.
+  static let recordTextLimit = 1500
+
+  /// The selection, the marked range and the text after a keyboard call, the Android imeState twin.
+  func imeState() -> [String: Any] {
+    guard let editor else { return [:] }
+    let sel = editor.core.selection
+    let doc = editor.core.document
+    var state: [String: Any] = [
+      "sel": [sel.anchor, sel.head], "marked": session.marked.map { [$0.start, $0.end] as Any } ?? NSNull(),
+      "len": doc.length,
+    ]
+    if doc.length <= TextInputView.recordTextLimit { state["text"] = doc.text() }
+    return state
+  }
+
+  /// Routes a keyboard call through the recorder while codepad_debug is on: it opens on the first call after
+  /// focus and closes on blur, so each focus is one session.
+  private func recording(_ call: String, _ args: [Any], _ block: () -> Void) {
+    guard DebugSwitch.isOn else {
+      recorder = nil
+      block()
+      return
+    }
+    if recorder == nil { recorder = RecordingTextInput(view: self, ime: textInputMode?.primaryLanguage) }
+    recorder?.record(call, args, block)
+  }
+
   // Focus
 
   override var canBecomeFirstResponder: Bool { true }
@@ -143,6 +176,7 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
     let resigned = super.resignFirstResponder()
     if resigned && had {
       session.reset()
+      recorder = nil
       selectionInteraction.isActivated = false
       editor?.textInputFocusChanged(false)
     }
@@ -303,7 +337,9 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
     guard let editor, !editor.isReadOnly else { return }
     editor.markInputTime()
     editor.inputWork {
-      if text == "\t" && session.marked == nil { editor.core.tab() } else { session.insertText(text) }
+      recording("insertText", [text]) {
+        if text == "\t" && session.marked == nil { editor.core.tab() } else { session.insertText(text) }
+      }
     }
     editor.revealAfterInput()
   }
@@ -311,7 +347,7 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
   func deleteBackward() {
     guard let editor, !editor.isReadOnly else { return }
     editor.markInputTime()
-    editor.inputWork { session.deleteBackward() }
+    editor.inputWork { recording("deleteBackward", []) { session.deleteBackward() } }
     editor.revealAfterInput()
   }
 
@@ -332,7 +368,9 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
   func replace(_ range: UITextRange, withText text: String) {
     guard let editor, !editor.isReadOnly, let (start, end) = offsets(range) else { return }
     editor.markInputTime()
-    editor.inputWork { session.replace(TextRange(start: start, end: end), with: text) }
+    editor.inputWork {
+      recording("replace", [[start, end], text]) { session.replace(TextRange(start: start, end: end), with: text) }
+    }
     editor.revealAfterInput()
   }
 
@@ -344,7 +382,7 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
     }
     set {
       guard let (start, end) = newValue.flatMap({ offsets($0) }) else { return }
-      session.setSelection(Selection(anchor: start, head: end))
+      recording("setSelection", [[start, end]]) { session.setSelection(Selection(anchor: start, head: end)) }
     }
   }
 
@@ -355,13 +393,17 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
   func setMarkedText(_ markedText: String?, selectedRange: NSRange) {
     guard let editor, !editor.isReadOnly else { return }
     editor.markInputTime()
-    editor.inputWork { session.setMarkedText(markedText ?? "", selectedRange: selectedRange) }
+    editor.inputWork {
+      recording("setMarkedText", [markedText ?? "", [selectedRange.location, selectedRange.length]]) {
+        session.setMarkedText(markedText ?? "", selectedRange: selectedRange)
+      }
+    }
     editor.revealAfterInput()
   }
 
   func unmarkText() {
     guard let editor else { return }
-    editor.inputWork { session.unmarkText() }
+    editor.inputWork { recording("unmarkText", []) { session.unmarkText() } }
     editor.setNeedsLayout()
   }
 
