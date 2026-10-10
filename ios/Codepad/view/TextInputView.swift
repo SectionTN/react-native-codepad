@@ -187,6 +187,68 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
     menu.show(at: rect)
   }
 
+  // Hardware keys
+
+  private static let keyInputs: [(Key, String)] = [
+    (.left, UIKeyCommand.inputLeftArrow), (.right, UIKeyCommand.inputRightArrow), (.up, UIKeyCommand.inputUpArrow),
+    (.down, UIKeyCommand.inputDownArrow), (.home, UIKeyCommand.inputHome), (.end, UIKeyCommand.inputEnd),
+    (.pageUp, UIKeyCommand.inputPageUp), (.pageDown, UIKeyCommand.inputPageDown), (.escape, UIKeyCommand.inputEscape),
+    (.tab, "\t"), (.letter("z"), "z"), (.letter("a"), "a"), (.letter("c"), "c"), (.letter("x"), "x"), (.letter("v"), "v"),
+  ]
+  private static let modifierFlags: [(Modifiers, UIKeyModifierFlags)] = [
+    (.shift, .shift), (.option, .alternate), (.command, .command), (.control, .control),
+  ]
+
+  /// One command per combination the table maps, each ahead of the system's own text navigation.
+  private static let commandTable: [UIKeyCommand] = {
+    var commands: [UIKeyCommand] = []
+    for (key, input) in keyInputs {
+      for raw in 0..<8 {
+        var mods: Modifiers = []
+        var flags: UIKeyModifierFlags = []
+        for (i, pair) in modifierFlags.prefix(3).enumerated() where raw & (1 << i) != 0 {
+          mods.insert(pair.0)
+          flags.insert(pair.1)
+        }
+        if KeyCommands.map(key, mods) == nil { continue }
+        let command = UIKeyCommand(input: input, modifierFlags: flags, action: #selector(TextInputView.handleKeyCommand(_:)))
+        command.wantsPriorityOverSystemBehavior = true
+        commands.append(command)
+      }
+    }
+    return commands
+  }()
+
+  override var keyCommands: [UIKeyCommand]? { TextInputView.commandTable }
+
+  @objc private func handleKeyCommand(_ command: UIKeyCommand) {
+    guard let input = command.input, let key = TextInputView.keyInputs.first(where: { $0.1 == input })?.0 else { return }
+    var mods: Modifiers = []
+    for (modifier, flag) in TextInputView.modifierFlags where command.modifierFlags.contains(flag) { mods.insert(modifier) }
+    guard let editor, let mapped = KeyCommands.map(key, mods) else { return }
+    editor.markInputTime()
+    editor.inputWork { editor.perform(mapped) }
+  }
+
+  /// Forward delete has no key command input, so it arrives as a press.
+  override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+    var handled = false
+    for press in presses {
+      if let key = press.key, handle(hidUsage: key.keyCode, modifiers: key.modifierFlags) { handled = true }
+    }
+    if !handled { super.pressesBegan(presses, with: event) }
+  }
+
+  /// True when the key is the editor's to consume; read only consumes forward delete without editing.
+  func handle(hidUsage: UIKeyboardHIDUsage, modifiers: UIKeyModifierFlags) -> Bool {
+    guard hidUsage == .keyboardDeleteForward, let editor else { return false }
+    editor.markInputTime()
+    editor.inputWork { editor.perform(.delete) }
+    return true
+  }
+
+  override var undoManager: Foundation.UndoManager? { editor?.undoBridge }
+
   // Drags
 
   /// A caret or handle drag: the grabbed point keeps its offset from the finger and the loupe follows the finger.

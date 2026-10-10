@@ -27,7 +27,7 @@ final class SyntaxEngine: @unchecked Sendable {
 
   private let postToMain: @Sendable (@escaping @Sendable () -> Void) -> Void
   private let onSnapshot: @Sendable (Snapshot) -> Void
-  private let queue = DispatchQueue(label: "codepad-syntax", qos: .userInitiated)
+  let queue = DispatchQueue(label: "codepad-syntax", qos: .userInitiated)
   private let pending = OSAllocatedUnfairLock(initialState: 0)
   private let cancel = CancelFlag()
   private let budgetMicros: Int64 = 50_000

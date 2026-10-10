@@ -84,7 +84,11 @@ final class CodeEditorView: UIScrollView {
 
   let textInput: TextInputView
   private let clipboard = ClipboardActions()
+  private(set) lazy var undoBridge = CodeEditorUndoManager(editor: self)
   private let gutter = GutterView()
+  private var search: SearchController?
+  private var goalX: CGFloat?
+  private var movingVertically = false
   private var theme = ThemeColors.default
   private var font: CTFont
   private var lineHeight: CGFloat = 1.4
@@ -302,6 +306,120 @@ final class CodeEditorView: UIScrollView {
     core.selectAll()
   }
 
+  // Commands
+
+  /// Runs a hardware key or toolbar command; editing commands end a composition first and read only drops them.
+  func perform(_ command: KeyCommand) {
+    if command.edits && isReadOnly { return }
+    if command.edits && textInput.session.marked != nil { textInput.session.unmarkText() }
+    switch command {
+    case .vertical(let direction, let page, let extend): moveVertically(direction: direction, page: page, extend: extend)
+    case .copy: copySelection()
+    case .cut: cut()
+    case .paste: paste()
+    case .undo: undo()
+    case .redo: redo()
+    default: CoreCommands.run(core, command)
+    }
+    revealAfterInput()
+  }
+
+  /// Types through the keyboard path: auto closing, the indenter on a newline, typing coalescing.
+  func typeText(_ text: String) {
+    if isReadOnly || text.isEmpty { return }
+    if textInput.session.marked != nil { textInput.session.unmarkText() }
+    core.typeText(text)
+    revealAfterInput()
+  }
+
+  func undo() {
+    textInput.session.reset()
+    if core.undo() { revealAfterInput() }
+  }
+
+  func redo() {
+    textInput.session.reset()
+    if core.redo() { revealAfterInput() }
+  }
+
+  private func moveVertically(direction: Int, page: Bool, extend: Bool) {
+    let rows = page ? max(1, viewport.viewportHeight / rowMetrics().rowHeight) : 1
+    let result = CaretMover.move(
+      doc: core.document, geometry: lineGeometry, offset: core.selection.head, rows: rows * direction, goalX: goalX)
+    movingVertically = true
+    core.setSelection(anchor: extend ? core.selection.anchor : result.offset, head: result.offset)
+    movingVertically = false
+    goalX = result.goalX
+  }
+
+  // Search
+
+  /// Throws SearchError for an invalid regex. The matches arrive through whenSearchFresh.
+  func setSearch(_ query: SearchQuery) throws {
+    try searchController().setQuery(query)
+    setNeedsLayout()
+  }
+
+  func clearSearch() {
+    try? search?.setQuery(nil)
+    setNeedsLayout()
+  }
+
+  /// Runs the block once the painted matches belong to the current revision, right away without a search.
+  func whenSearchFresh(_ block: @escaping () -> Void) {
+    if let search { search.whenFresh(block) } else { block() }
+  }
+
+  var matchCount: Int { core.matchCount }
+
+  func findNext() -> EditorCore.SearchHit? {
+    let hit = core.findNext()
+    afterSearchMove()
+    return hit
+  }
+
+  func findPrevious() -> EditorCore.SearchHit? {
+    let hit = core.findPrevious()
+    afterSearchMove()
+    return hit
+  }
+
+  func replaceCurrent(_ text: String) -> Bool {
+    let replaced = core.replaceCurrent(text)
+    afterSearchMove()
+    return replaced
+  }
+
+  func replaceAll(_ text: String) -> Int {
+    let count = core.replaceAll(text)
+    afterSearchMove()
+    return count
+  }
+
+  private func afterSearchMove() {
+    revealPending = true
+    setNeedsLayout()
+  }
+
+  /// The controller shares the syntax queue, so a search never races a parse of the same text.
+  private func searchController() -> SearchController {
+    if let search { return search }
+    let controller = SearchController(
+      core: core, queue: ensureEngine().queue, postToMain: { block in DispatchQueue.main.async(execute: block) })
+    controller.onResult = { [weak self] count, millis in
+      MainActor.assumeIsolated { self?.searchResultLanded(count, millis) }
+    }
+    search = controller
+    return controller
+  }
+
+  private func searchResultLanded(_ count: Int, _ millis: Int64) {
+    if debugSwitch() {
+      DebugSwitch.log.info("{\"call\":\"search\",\"count\":\(count, privacy: .public),\"ms\":\(millis, privacy: .public)}")
+    }
+    setNeedsLayout()
+  }
+
   func scrollToLine(_ line: Int, animated: Bool) {
     let target = heights.rowStart(max(0, min(line, core.document.lineCount - 1))) * viewport.rowHeight
     if animated {
@@ -425,6 +543,8 @@ final class CodeEditorView: UIScrollView {
     if window == nil {
       textInput.menu.hide()
       textInput.endLoupe()
+      search?.close()
+      search = nil
       engine?.close()
       engine = nil
       snapshot = nil
@@ -456,7 +576,7 @@ final class CodeEditorView: UIScrollView {
     let caretLine = doc.lineAt(core.selection.head)
     let lastLine = placeLayers(first, lastBound, m)
     placeGutter(first, lastLine, caretLine)
-    placeDecorations(first, caretLine, m)
+    placeDecorations(first, lastLine, caretLine, m)
     placeMarkedUnderline(first)
     placeHandles()
     placePlaceholder(m)
@@ -492,6 +612,8 @@ final class CodeEditorView: UIScrollView {
     brackets = BracketHighlight(core: core)
     brackets.enabled = enabled
     textInput.session = MarkedTextSession(core: core)
+    search?.close()
+    search = nil
   }
 
   private func runAutoFocus() {
@@ -500,6 +622,7 @@ final class CodeEditorView: UIScrollView {
   }
 
   private func onSelectionMoved() {
+    if !movingVertically { goalX = nil }
     selectionDirty = true
     selectionViewsDirty = true
     if !textInput.session.applying {
@@ -517,6 +640,7 @@ final class CodeEditorView: UIScrollView {
     heights.replaceLines(first: first, oldCount: oldCount, newCount: newCount)
     cache.shift(first: first, oldCount: oldCount, newCount: newCount)
     ensureEngine().edit(change, points: SyntaxEngine.pointsFor(doc: doc, change: change))
+    search?.onChange(change)
     if updateGutter() { relayout() } else { viewport.clamp() }
     if origin != .api { revealPending = true }
     // A change the keyboard did not make: it ends a composition it touched and the keyboard hears of it.
@@ -812,9 +936,27 @@ final class CodeEditorView: UIScrollView {
     gutter.update(rows)
   }
 
-  /// Fills under the text: the bracket pair and the active line (search matches join them later).
-  private func placeDecorations(_ first: Int, _ caretLine: Int, _ m: RowMetrics) {
+  /// Fills under the text: the active line, the search matches with the selected one apart, and the bracket pair.
+  private func placeDecorations(_ first: Int, _ lastLine: Int, _ caretLine: Int, _ m: RowMetrics) {
     let d = textInput.decorations
+    if let search, search.active {
+      let doc = core.document
+      let windowStart = doc.lineStart(first)
+      let windowEnd = doc.lineEnd(lastLine)
+      let matches = search.matchesForPaint()
+      let sel = core.selection
+      let path = CGMutablePath()
+      let active = CGMutablePath()
+      var i = SearchSession.firstEndingAfter(matches, windowStart) * 2
+      while i + 1 < matches.count && matches[i] <= windowEnd {
+        let current = !sel.isEmpty && sel.min == matches[i] && sel.max == matches[i + 1]
+        Decorations.addRects(current ? active : path, geometry, start: matches[i], end: matches[i + 1], firstLine: first)
+        i += 2
+      }
+      d.setMatches(path.isEmpty ? nil : path, active: active.isEmpty ? nil : active)
+    } else {
+      d.setMatches(nil, active: nil)
+    }
     if highlightActiveLine && core.selection.isEmpty {
       d.setActiveLine(
         CGRect(

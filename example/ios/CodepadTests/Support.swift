@@ -121,3 +121,12 @@ func spin(until condition: () -> Bool, timeout: TimeInterval = 2) {
   let deadline = Date(timeIntervalSinceNow: timeout)
   while !condition() && Date() < deadline { RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.02)) }
 }
+
+/// The number of rects in a path built with addRect: one move per rect.
+func rectCount(_ path: CGPath?) -> Int {
+  var n = 0
+  path?.applyWithBlock { element in
+    if element.pointee.type == .moveToPoint { n += 1 }
+  }
+  return n
+}
