@@ -117,3 +117,26 @@ enum LanguageRegistry {
     return cls.init() as? any CPLanguageProvider
   }
 }
+
+/// The linked language packages, found once by walking the Objective C class list for the CPLang classes.
+enum LanguageScan {
+  private static let ids: [String] = {
+    let expected = objc_getClassList(nil, 0)
+    let classes = UnsafeMutablePointer<AnyClass>.allocate(capacity: Int(expected))
+    defer { classes.deallocate() }
+    let count = Int(objc_getClassList(AutoreleasingUnsafeMutablePointer(classes), expected))
+    var found: [String] = []
+    for i in 0..<min(count, Int(expected)) {
+      let cls: AnyClass = classes[i]
+      guard strncmp(class_getName(cls), "CPLang", 6) == 0, class_conformsToProtocol(cls, CPLanguageProvider.self),
+        let type = cls as? NSObject.Type, let provider = type.init() as? any CPLanguageProvider
+      else { continue }
+      found.append(provider.id)
+    }
+    return found.sorted()
+  }()
+
+  static func providerIds() -> [String] {
+    ids
+  }
+}

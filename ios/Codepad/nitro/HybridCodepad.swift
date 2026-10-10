@@ -1,7 +1,7 @@
 import Foundation
 
-class HybridCodepad: HybridCodepadSpec {
+final class HybridCodepad: HybridCodepadSpec {
   func availableLanguages() throws -> [String] {
-    return []
+    LanguageScan.providerIds()
   }
 }

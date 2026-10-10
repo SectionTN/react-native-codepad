@@ -256,6 +256,17 @@ final class CodeEditorView: UIScrollView {
     setNeedsLayout()
   }
 
+  /// Tab size, space insertion, auto indent and bracket closing; a tab size change re-measures the rows.
+  func setEditorSettings(_ settings: EditorSettings) {
+    if core.settings == settings { return }
+    let tabChanged = core.settings.tabSize != settings.tabSize
+    core.settings = settings
+    if tabChanged {
+      metrics = nil
+      relayout()
+    }
+  }
+
   /// Insets in points. The bottom inset is how consumers keep the caret above a toolbar.
   func setContentInsets(top: CGFloat, bottom: CGFloat, left: CGFloat, right: CGFloat) {
     contentInsetTop = top
