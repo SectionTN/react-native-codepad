@@ -23,6 +23,10 @@ target 'CodepadExample' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  target 'CodepadTests' do
+    inherit! :search_paths
+  end
+
   post_install do |installer|
     react_native_post_install(
       installer,

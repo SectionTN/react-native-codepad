@@ -47,6 +47,7 @@
     "test:android": "cd example/android && ./gradlew :react-native-codepad:testDebugUnitTest --console=plain -q",
     "test:swift": "swift test",
     "test:device": "scripts/device-tests.sh",
+    "test:ios": "scripts/device-tests-ios.sh",
     "host:treesitter": "scripts/build-host-treesitter.sh",
     "bench:scroll": "scripts/bench.sh scroll",
     "bench:memory": "scripts/bench.sh memory",

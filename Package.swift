@@ -57,7 +57,7 @@ let package = Package(
       name: "Codepad",
       dependencies: ["CTreeSitter"],
       path: "ios/Codepad",
-      exclude: ["nitro", "syntax/CPTreeSitter.h"]
+      exclude: ["nitro", "syntax/CPTreeSitter.h", "view"]
     ),
     .testTarget(
       name: "CodepadTests",
