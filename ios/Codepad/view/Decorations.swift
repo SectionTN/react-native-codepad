@@ -38,11 +38,16 @@ final class Decorations {
     activeMatch.isHidden = active == nil
   }
 
+  /// Calls `out` with one rect per row of [start, end).
+  static func forEachRect(_ g: RowGeometry, start: Int, end: Int, firstLine: Int, _ out: (CGRect) -> Void) {
+    RangeRects.forEach(g, start: start, end: end, firstLine: firstLine) { left, top, right, bottom in
+      out(CGRect(x: left, y: top, width: right - left, height: bottom - top))
+    }
+  }
+
   /// Appends one rect per row of [start, end) to `path`.
   static func addRects(_ path: CGMutablePath, _ g: RowGeometry, start: Int, end: Int, firstLine: Int) {
-    RangeRects.forEach(g, start: start, end: end, firstLine: firstLine) { left, top, right, bottom in
-      path.addRect(CGRect(x: left, y: top, width: right - left, height: bottom - top))
-    }
+    forEachRect(g, start: start, end: end, firstLine: firstLine) { path.addRect($0) }
   }
 }
 

@@ -12,15 +12,19 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		2A502ED6C3AAF97679C1550B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		41FD17EA3B5AEC11B3F46386 /* ContentSizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA2903C170B55B342A83D75 /* ContentSizeTests.swift */; };
+		55F34C7D88ADFB2728D44623 /* TextInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6191685A83EE035E525D2D44 /* TextInputTests.swift */; };
 		5A1D982E4E0FFEFAA662F67C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADB564FFC53EAD71BE35C574 /* Foundation.framework */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		789D6BA1A8D384C14452E7C6 /* LanguageSwitchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B813E2B1BCDEE1AE37F47D2 /* LanguageSwitchTests.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		93D4D0C2FF409C8089204288 /* HitTestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 543C222D1D27E3B97AD6F979 /* HitTestTests.swift */; };
+		9D43A8272A96B15F2D66A37C /* ShowcaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0105AC546A1B5F575E400FF /* ShowcaseTests.swift */; };
 		A8F1B3CCDFF02A1C4D50A3AF /* LanguagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6FE5BF6F2CE3729B6C7778C /* LanguagesTests.swift */; };
 		B90328885B7971F53B3C51BB /* Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = 881722B6817A11959BEA4DF1 /* Support.swift */; };
+		BAC63BF9B1F2ADDE90B8CB39 /* FocusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BEC0764E1AD0075FA52E873 /* FocusTests.swift */; };
 		CA6CE7E53F293CB16F1C3B93 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF2F66191F5D9509929167C5 /* SceneDelegate.swift */; };
 		D9EEDC5E837AA119672C1781 /* libPods-CodepadTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D29196F85A6B707DC6AE41B /* libPods-CodepadTests.a */; };
+		F8275B5B069646F56B7211C3 /* SelectionGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71F6DAC572A91572DDFA303C /* SelectionGeometryTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,15 +49,19 @@
 		5709B34CF0A7D63546082F79 /* Pods-CodepadExample.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CodepadExample.release.xcconfig"; path = "Target Support Files/Pods-CodepadExample/Pods-CodepadExample.release.xcconfig"; sourceTree = "<group>"; };
 		5BD68E46112559997B9B140B /* Pods-CodepadTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CodepadTests.debug.xcconfig"; path = "Target Support Files/Pods-CodepadTests/Pods-CodepadTests.debug.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-CodepadExample.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CodepadExample.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6191685A83EE035E525D2D44 /* TextInputTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TextInputTests.swift; sourceTree = "<group>"; };
 		6F5E9991D5A1AA0A5BA57DAB /* Pods-CodepadTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CodepadTests.release.xcconfig"; path = "Target Support Files/Pods-CodepadTests/Pods-CodepadTests.release.xcconfig"; sourceTree = "<group>"; };
+		71F6DAC572A91572DDFA303C /* SelectionGeometryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SelectionGeometryTests.swift; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = CodepadExample/AppDelegate.swift; sourceTree = "<group>"; };
 		7D29196F85A6B707DC6AE41B /* libPods-CodepadTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CodepadTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = CodepadExample/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		881722B6817A11959BEA4DF1 /* Support.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Support.swift; sourceTree = "<group>"; };
+		8BEC0764E1AD0075FA52E873 /* FocusTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FocusTests.swift; sourceTree = "<group>"; };
 		99BE42E14E67927D090B6E7E /* ScrollTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScrollTests.swift; sourceTree = "<group>"; };
 		ADB564FFC53EAD71BE35C574 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		C6FE5BF6F2CE3729B6C7778C /* LanguagesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LanguagesTests.swift; sourceTree = "<group>"; };
 		C92A78F99A4C4E705A113324 /* Pods-CodepadExample-CodepadTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CodepadExample-CodepadTests.debug.xcconfig"; path = "Target Support Files/Pods-CodepadExample-CodepadTests/Pods-CodepadExample-CodepadTests.debug.xcconfig"; sourceTree = "<group>"; };
+		D0105AC546A1B5F575E400FF /* ShowcaseTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShowcaseTests.swift; sourceTree = "<group>"; };
 		DCA2903C170B55B342A83D75 /* ContentSizeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentSizeTests.swift; sourceTree = "<group>"; };
 		E1E22126B3276FA596870BF2 /* CodepadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CodepadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -153,6 +161,10 @@
 				C6FE5BF6F2CE3729B6C7778C /* LanguagesTests.swift */,
 				99BE42E14E67927D090B6E7E /* ScrollTests.swift */,
 				881722B6817A11959BEA4DF1 /* Support.swift */,
+				D0105AC546A1B5F575E400FF /* ShowcaseTests.swift */,
+				8BEC0764E1AD0075FA52E873 /* FocusTests.swift */,
+				71F6DAC572A91572DDFA303C /* SelectionGeometryTests.swift */,
+				6191685A83EE035E525D2D44 /* TextInputTests.swift */,
 			);
 			name = CodepadTests;
 			path = CodepadTests;
@@ -383,6 +395,10 @@
 				A8F1B3CCDFF02A1C4D50A3AF /* LanguagesTests.swift in Sources */,
 				1354D6A20C5555B22DAFDEE9 /* ScrollTests.swift in Sources */,
 				B90328885B7971F53B3C51BB /* Support.swift in Sources */,
+				9D43A8272A96B15F2D66A37C /* ShowcaseTests.swift in Sources */,
+				BAC63BF9B1F2ADDE90B8CB39 /* FocusTests.swift in Sources */,
+				F8275B5B069646F56B7211C3 /* SelectionGeometryTests.swift in Sources */,
+				55F34C7D88ADFB2728D44623 /* TextInputTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

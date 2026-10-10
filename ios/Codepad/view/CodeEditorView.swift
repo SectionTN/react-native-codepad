@@ -44,15 +44,33 @@ final class CodeEditorView: UIScrollView {
     }
   }
 
+  /// Visual rows for the caret mover; lays out the lines it is asked about.
+  @MainActor
+  private final class ContentLineGeometry: @MainActor LineGeometry {
+    unowned let view: CodeEditorView
+
+    init(_ view: CodeEditorView) {
+      self.view = view
+    }
+
+    private func layout(_ line: Int) -> LineLayout { (view.cache[line] ?? view.layoutLine(line)).layout }
+    func rows(_ line: Int) -> Int { layout(line).rowCount }
+    func rowOf(line: Int, column: Int) -> Int { layout(line).rowOf(column) }
+    func caretX(line: Int, column: Int) -> CGFloat { layout(line).caretX(column) }
+    func columnAt(line: Int, row: Int, x: CGFloat) -> Int { layout(line).columnAt(row: row, x: x) }
+  }
+
   static let textPadding: CGFloat = 8
   static let gutterPadding: CGFloat = 8
   static let caretWidth: CGFloat = 2
 
-  // The JS thread reads the core and the last frame through these locks.
+  // The JS thread reads the core, the last frame and the focus through these locks.
   private let coreLock: OSAllocatedUnfairLock<EditorCore>
   private let frameLock = OSAllocatedUnfairLock(initialState: FrameInfo.empty)
+  private let focusLock = OSAllocatedUnfairLock(initialState: false)
   nonisolated var core: EditorCore { coreLock.withLock { $0 } }
   nonisolated var latestFrame: FrameInfo { frameLock.withLock { $0 } }
+  nonisolated var hasFocus: Bool { focusLock.withLock { $0 } }
 
   var onReady: (() -> Void)?
   var onScroll: ((FrameInfo) -> Void)?
@@ -60,9 +78,11 @@ final class CodeEditorView: UIScrollView {
   var onChange: ((Change, ChangeOrigin) -> Void)?
   var onChangeText: ((String) -> Void)?
   var onContentSizeChange: ((CGSize) -> Void)?
+  var onEditorFocus: (() -> Void)?
+  var onEditorBlur: (() -> Void)?
   private(set) var isReadOnly = false
 
-  let textInput = TextInputView()
+  let textInput: TextInputView
   private let gutter = GutterView()
   private var theme = ThemeColors.default
   private var font: CTFont
@@ -78,6 +98,7 @@ final class CodeEditorView: UIScrollView {
   private var nextEntryId = 0
   private var brackets: BracketHighlight
   private lazy var geometry = ContentGeometry(self)
+  private lazy var lineGeometry = ContentLineGeometry(self)
   private var layers: [Int: LineLayer] = [:]
   private var pool: [LineLayer] = []
   private var placeholderLayer: LineLayer?
@@ -93,8 +114,10 @@ final class CodeEditorView: UIScrollView {
   private var ready = false
   private var scrollDirty = false
   private var selectionDirty = false
+  private var selectionViewsDirty = false
   private var contentDirty = false
   private var revealPending = false
+  private var autoFocusPending = false
   private var lastContentSize = CGSize(width: -1, height: -1)
   private var inputTime: TimeInterval = 0
   private var inputWork: TimeInterval = 0
@@ -110,6 +133,7 @@ final class CodeEditorView: UIScrollView {
     self.heights = heights
     viewport = Viewport(heights: heights)
     brackets = BracketHighlight(core: core)
+    textInput = TextInputView(core: core)
     super.init(frame: frame)
     contentInsetAdjustmentBehavior = .never
     alwaysBounceVertical = true
@@ -120,6 +144,7 @@ final class CodeEditorView: UIScrollView {
     backgroundColor = UIColor(cgColor: theme.background)
     viewport.textPadding = Int(CodeEditorView.textPadding)
     gutter.padding = CodeEditorView.gutterPadding
+    textInput.editor = self
     textInput.decorations.setTheme(theme)
     addSubview(textInput)
     addSubview(gutter)
@@ -144,6 +169,7 @@ final class CodeEditorView: UIScrollView {
   }
 
   func setText(_ text: String, keepHistory: Bool) {
+    textInput.session.reset()
     core.setText(text, keepHistory: keepHistory)
     viewport.scrollTo(0, 0)
     pushScroll()
@@ -166,8 +192,10 @@ final class CodeEditorView: UIScrollView {
     backgroundColor = UIColor(cgColor: colors.background)
     gutter.theme = colors
     textInput.decorations.setTheme(colors)
+    textInput.apply(theme: colors)
     placeholderLayout = nil
     cache.clear()
+    selectionViewsDirty = true
     setNeedsLayout()
   }
 
@@ -205,6 +233,11 @@ final class CodeEditorView: UIScrollView {
 
   func setReadOnly(_ enabled: Bool) {
     isReadOnly = enabled
+    textInput.isReadOnly = enabled
+  }
+
+  func setSuggestions(_ mode: Suggestions) {
+    textInput.setSuggestions(mode)
   }
 
   func setPlaceholder(_ text: String?) {
@@ -231,6 +264,20 @@ final class CodeEditorView: UIScrollView {
 
   func setScrollEnabled(_ enabled: Bool) {
     isScrollEnabled = enabled
+  }
+
+  func focus() {
+    _ = textInput.becomeFirstResponder()
+  }
+
+  func blur() {
+    _ = textInput.resignFirstResponder()
+  }
+
+  /// Focuses once, right away in a window or when the view joins one.
+  func setAutoFocus(_ enabled: Bool) {
+    autoFocusPending = enabled
+    if enabled && window != nil { runAutoFocus() }
   }
 
   func scrollToLine(_ line: Int, animated: Bool) {
@@ -262,14 +309,67 @@ final class CodeEditorView: UIScrollView {
 
   /// Document offset under a point of the visible area. Points left of the text snap to the row start, points below to the end.
   func offsetAt(x: CGFloat, y: CGFloat) -> Int {
+    offsetAt(row: viewport.rowAt(Int(y.rounded(.down))), contentX: viewport.contentX(x))
+  }
+
+  /// The same for a point in the content view's coordinates, what UITextInput receives.
+  func offsetAt(contentPoint point: CGPoint) -> Int {
+    let row = Int((point.y / CGFloat(rowMetrics().rowHeight)).rounded(.down))
+    return offsetAt(row: row, contentX: point.x - CodeEditorView.textPadding)
+  }
+
+  private func offsetAt(row: Int, contentX: CGFloat) -> Int {
     let doc = core.document
-    let row = viewport.rowAt(Int(y.rounded(.down)))
     if row < 0 { return 0 }
     if row >= heights.totalRows { return doc.length }
     let line = heights.lineAtRow(row)
     let entry = cache[line] ?? layoutLine(line)
     let rowInLine = max(0, min(row - heights.rowStart(line), entry.layout.rowCount - 1))
-    return doc.lineStart(line) + entry.layout.columnAt(row: rowInLine, x: viewport.contentX(x))
+    return doc.lineStart(line) + entry.layout.columnAt(row: rowInLine, x: contentX)
+  }
+
+  /// The caret rect at an offset in content view coordinates.
+  func caretRect(offset: Int) -> CGRect {
+    let m = rowMetrics()
+    let doc = core.document
+    let line = doc.lineAt(offset)
+    let entry = cache[line] ?? layoutLine(line)
+    let col = offset - doc.lineStart(line)
+    let top = CGFloat((heights.rowStart(line) + entry.layout.rowOf(col)) * m.rowHeight)
+    return CGRect(
+      x: CodeEditorView.textPadding + entry.layout.caretX(col), y: top, width: CodeEditorView.caretWidth,
+      height: CGFloat(m.rowHeight))
+  }
+
+  /// One rect per visible row of [start, end) in content view coordinates, flagged at the selection ends.
+  func selectionRects(start: Int, end: Int) -> [CPSelectionRect] {
+    let doc = core.document
+    let m = rowMetrics()
+    var rects: [CGRect] = []
+    Decorations.forEachRect(geometry, start: start, end: end, firstLine: viewport.firstVisibleLine()) { rects.append($0) }
+    let startLine = doc.lineAt(start)
+    let endLine = doc.lineAt(end)
+    // The last rect carries the end only when the end's row was reached, not cut off by the view bottom.
+    var endTop: CGFloat = -1
+    if let entry = cache[endLine] {
+      endTop = CGFloat((heights.rowStart(endLine) + entry.layout.rowOf(end - doc.lineStart(endLine))) * m.rowHeight)
+    }
+    return rects.enumerated().map { i, rect in
+      CPSelectionRect(
+        rect: rect, containsStart: i == 0 && startLine >= viewport.firstVisibleLine(),
+        containsEnd: i == rects.count - 1 && rect.minY == endTop)
+    }
+  }
+
+  /// Up or down by visual rows from an offset, for the keyboard's arrow handling.
+  func verticalMove(from offset: Int, rows: Int) -> Int {
+    CaretMover.move(doc: core.document, geometry: lineGeometry, offset: offset, rows: rows, goalX: nil).offset
+  }
+
+  /// Keyboard input moves the caret, so the next frame reveals it.
+  func revealAfterInput() {
+    revealPending = true
+    setNeedsLayout()
   }
 
   /// Runs a block on the main thread from any thread, for the JS side.
@@ -289,6 +389,15 @@ final class CodeEditorView: UIScrollView {
     return try block()
   }
 
+  /// The content view became or stopped being first responder.
+  func textInputFocusChanged(_ focused: Bool) {
+    focusLock.withLock { $0 = focused }
+    selectionViewsDirty = true
+    if focused { revealPending = true }
+    setNeedsLayout()
+    if focused { onEditorFocus?() } else { onEditorBlur?() }
+  }
+
   override func didMoveToWindow() {
     super.didMoveToWindow()
     if window == nil {
@@ -297,6 +406,7 @@ final class CodeEditorView: UIScrollView {
       snapshot = nil
     } else {
       _ = ensureEngine()
+      if autoFocusPending { runAutoFocus() }
     }
   }
 
@@ -323,6 +433,7 @@ final class CodeEditorView: UIScrollView {
     let lastLine = placeLayers(first, lastBound, m)
     placeGutter(first, lastLine, caretLine)
     placeDecorations(first, caretLine, m)
+    placeMarkedUnderline(first)
     placePlaceholder(m)
     publish(first, lastLine, caretLine, m)
     if scrollDirty {
@@ -337,6 +448,10 @@ final class CodeEditorView: UIScrollView {
       selectionDirty = false
       onSelectionChange?(core.selection)
     }
+    if selectionViewsDirty {
+      selectionViewsDirty = false
+      textInput.selectionInteraction.setNeedsSelectionUpdate()
+    }
     if !ready {
       ready = true
       onReady?()
@@ -350,10 +465,21 @@ final class CodeEditorView: UIScrollView {
     let enabled = brackets.enabled
     brackets = BracketHighlight(core: core)
     brackets.enabled = enabled
+    textInput.session = MarkedTextSession(core: core)
+  }
+
+  private func runAutoFocus() {
+    autoFocusPending = false
+    focus()
   }
 
   private func onSelectionMoved() {
     selectionDirty = true
+    selectionViewsDirty = true
+    if !textInput.session.applying {
+      textInput.inputDelegate?.selectionWillChange(textInput)
+      textInput.inputDelegate?.selectionDidChange(textInput)
+    }
     setNeedsLayout()
   }
 
@@ -367,6 +493,15 @@ final class CodeEditorView: UIScrollView {
     ensureEngine().edit(change, points: SyntaxEngine.pointsFor(doc: doc, change: change))
     if updateGutter() { relayout() } else { viewport.clamp() }
     if origin != .api { revealPending = true }
+    // A change the keyboard did not make: it ends a composition it touched and the keyboard hears of it.
+    let session = textInput.session
+    if !session.applying {
+      textInput.inputDelegate?.textWillChange(textInput)
+      _ = session.onExternalChange(change)
+      textInput.inputDelegate?.textDidChange(textInput)
+    }
+    textInput.cursorView.resetBlinkAnimation()
+    selectionViewsDirty = true
     updateContentSize()
     setNeedsLayout()
     onChange?(change, origin)
@@ -385,6 +520,7 @@ final class CodeEditorView: UIScrollView {
     updateGutter()
     viewport.scrollTo(0, 0)
     pushScroll()
+    selectionViewsDirty = true
     setNeedsLayout()
   }
 
@@ -402,6 +538,7 @@ final class CodeEditorView: UIScrollView {
     layoutVisibleLines()
     viewport.scrollTo(scrollX, viewport.scrollY)
     pushScroll()
+    selectionViewsDirty = true
     setNeedsLayout()
   }
 
@@ -522,6 +659,7 @@ final class CodeEditorView: UIScrollView {
       updateContentSize()
       setNeedsLayout()
     }
+    if hasFocus { revealPending = true }
   }
 
   private func sizeChanged(_ w: Int, _ h: Int) {
@@ -668,6 +806,28 @@ final class CodeEditorView: UIScrollView {
     } else {
       d.setBrackets(nil)
     }
+  }
+
+  /// A one point line along the bottom of every row of the marked text, the composing cue.
+  private func placeMarkedUnderline(_ first: Int) {
+    let underline = textInput.markedUnderline
+    guard let marked = textInput.session.marked else {
+      underline.isHidden = true
+      return
+    }
+    var strips: [CGRect] = []
+    Decorations.forEachRect(geometry, start: marked.start, end: marked.end, firstLine: first) { rect in
+      strips.append(CGRect(x: rect.minX, y: rect.maxY - 1, width: rect.width, height: 1))
+    }
+    guard let bounds = strips.dropFirst().reduce(strips.first, { $0?.union($1) }) else {
+      underline.isHidden = true
+      return
+    }
+    let path = CGMutablePath()
+    for strip in strips { path.addRect(strip.offsetBy(dx: -bounds.minX, dy: -bounds.minY)) }
+    underline.frame = bounds
+    underline.path = path
+    underline.isHidden = false
   }
 
   /// One layer in gutterForeground on the first row while the document is empty.
