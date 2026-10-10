@@ -338,12 +338,18 @@ enum TreeSitterRuntime {
   }
 
   static func ranges(from flat: [Int]) -> [TSRange] {
-    stride(from: 0, to: flat.count - 5, by: 6).map { i in
-      TSRange(
-        start_point: TSPoint(row: UInt32(flat[i + 2]), column: UInt32(flat[i + 3] * 2)),
-        end_point: TSPoint(row: UInt32(flat[i + 4]), column: UInt32(flat[i + 5] * 2)),
-        start_byte: UInt32(flat[i] * 2), end_byte: UInt32(flat[i + 1] * 2))
+    var out: [TSRange] = []
+    out.reserveCapacity(flat.count / 6)
+    var i = 0
+    while i + 5 < flat.count {
+      let startByte = UInt32(flat[i] * 2)
+      let endByte = UInt32(flat[i + 1] * 2)
+      let start = TSPoint(row: UInt32(flat[i + 2]), column: UInt32(flat[i + 3] * 2))
+      let end = TSPoint(row: UInt32(flat[i + 4]), column: UInt32(flat[i + 5] * 2))
+      out.append(TSRange(start_point: start, end_point: end, start_byte: startByte, end_byte: endByte))
+      i += 6
     }
+    return out
   }
 
   static func flatten(_ ranges: UnsafeMutablePointer<TSRange>, _ count: Int) -> [Int] {
