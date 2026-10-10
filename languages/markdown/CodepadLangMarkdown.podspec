@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.homepage     = package["homepage"]
   s.license      = package["license"]
   s.authors      = package["author"]
-  s.platforms    = { :ios => min_ios_version_supported }
+  s.platforms    = { :ios => "17.0" }
   s.source       = { :git => "https://github.com/SectionTN/react-native-codepad.git", :tag => "v#{s.version}" }
 
   s.source_files = ["ios/*.{h,swift}", "grammar/tree-sitter-markdown/src/parser.c", "grammar/tree-sitter-markdown/src/scanner.c", "grammar/tree-sitter-markdown-inline/src/parser.c", "grammar/tree-sitter-markdown-inline/src/scanner.c"]
