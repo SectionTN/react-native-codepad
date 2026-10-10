@@ -13,6 +13,7 @@ final class VectorTest: XCTestCase {
   func testIndent() { runFile("indent", cases: 16) }
   func testAutoclose() { runFile("autoclose", cases: 16) }
   func testBrackets() { runFile("brackets", cases: 9) }
+  func testSearch() { runFile("search", cases: 17) }
 
   private func runFile(_ area: String, cases expected: Int) {
     let url = URL(fileURLWithPath: #filePath)

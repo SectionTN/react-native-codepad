@@ -228,6 +228,110 @@ public final class EditorCore: @unchecked Sendable {
     BracketMatcher.match(document, caret: selection.head, skip: skip)
   }
 
+  public struct SearchHit: Equatable, Sendable {
+    public let index: Int
+    public let total: Int
+
+    public init(index: Int, total: Int) {
+      self.index = index
+      self.total = total
+    }
+  }
+
+  public private(set) var search: SearchSession?
+
+  public var matches: [Int] { search?.matches ?? [] }
+  public var matchCount: Int { search?.count ?? 0 }
+
+  /// True while a query is active and its matches belong to an older revision.
+  public var searchStale: Bool {
+    guard let s = search else { return false }
+    return s.revision != document.revision
+  }
+
+  /// Compiles first so an invalid regex throws before any state changes. The matches stay stale until ensureMatches or acceptMatches.
+  public func setSearch(_ query: SearchQuery) throws {
+    let pattern: NSRegularExpression
+    do {
+      pattern = try Searcher.compile(query)
+    } catch {
+      clearSearch()
+      throw error
+    }
+    search = SearchSession(query: query, pattern: pattern)
+  }
+
+  public func clearSearch() {
+    search = nil
+  }
+
+  /// Computes the matches on the calling thread when they are stale.
+  public func ensureMatches() {
+    guard let s = search, s.revision != document.revision else { return }
+    // The query compiled in setSearch and nothing cancels here, so find cannot throw.
+    s.matches = (try? Searcher.find(document.text(), s.query)) ?? []
+    s.revision = document.revision
+  }
+
+  /// Stores matches computed elsewhere; false when the document moved on since `revision`.
+  public func acceptMatches(revision: Int, matches: [Int]) -> Bool {
+    guard let s = search, revision == document.revision else { return false }
+    s.matches = matches
+    s.revision = revision
+    return true
+  }
+
+  public func findNext() -> SearchHit? {
+    ensureMatches()
+    guard let s = search else { return nil }
+    let index = s.nextIndex(selection)
+    return index < 0 ? nil : selectMatch(s, index)
+  }
+
+  public func findPrevious() -> SearchHit? {
+    ensureMatches()
+    guard let s = search else { return nil }
+    let index = s.previousIndex(selection)
+    return index < 0 ? nil : selectMatch(s, index)
+  }
+
+  public func replaceCurrent(_ text: String) -> Bool {
+    ensureMatches()
+    guard let s = search else { return false }
+    let current = s.indexOf(selection.range)
+    if current < 0 { return false }
+    applyChange(s.matches[current * 2], s.matches[current * 2 + 1], text, origin: .api, typing: false, caretAfter: true)
+    ensureMatches()
+    if s.count > 0 {
+      var index = s.indexAtOrAfter(selection.min)
+      if index >= s.count { index = 0 }
+      selectMatch(s, index)
+    }
+    return true
+  }
+
+  public func replaceAll(_ text: String) -> Int {
+    ensureMatches()
+    guard let s = search else { return 0 }
+    let targets = s.matches
+    if targets.isEmpty { return 0 }
+    history.beginGroup(selection)
+    var i = targets.count - 2
+    while i >= 0 {
+      applyChange(targets[i], targets[i + 1], text, origin: .api, typing: false, caretAfter: false)
+      i -= 2
+    }
+    history.endGroup(selection)
+    ensureMatches()
+    return targets.count / 2
+  }
+
+  @discardableResult
+  private func selectMatch(_ s: SearchSession, _ index: Int) -> SearchHit {
+    moveSelection(Selection(anchor: s.matches[index * 2], head: s.matches[index * 2 + 1]))
+    return SearchHit(index: index, total: s.count)
+  }
+
   private func clamped(_ s: Selection) -> Selection {
     let limit = document.length
     return Selection(anchor: max(0, min(s.anchor, limit)), head: max(0, min(s.head, limit)))

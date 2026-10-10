@@ -58,8 +58,22 @@ final class VectorRunner {
     case "indent": core.indent()
     case "outdent": core.outdent()
     case "bracketMatch": lastResult = core.bracketMatch(skip: nil)
-    case "search", "findNext", "findPrevious", "replaceCurrent", "replaceAll", "clearSearch":
-      XCTFail("search is not ported yet: \(name)")
+    case "search":
+      do {
+        try core.setSearch(
+          SearchQuery(
+            text: string(op, "text"), regex: bool(op, "regex", false), caseSensitive: bool(op, "caseSensitive", false),
+            wholeWord: bool(op, "wholeWord", false)))
+        core.ensureMatches()
+        lastResult = core.matchCount
+      } catch {
+        lastError = (error as? SearchError)?.message ?? "invalid"
+      }
+    case "findNext": lastResult = core.findNext()
+    case "findPrevious": lastResult = core.findPrevious()
+    case "replaceCurrent": lastResult = core.replaceCurrent(string(op, "text"))
+    case "replaceAll": lastResult = core.replaceAll(string(op, "text"))
+    case "clearSearch": core.clearSearch()
     case "config":
       core.settings = EditorSettings(
         tabSize: op["tabSize"] as? Int ?? core.settings.tabSize,
@@ -103,8 +117,18 @@ final class VectorRunner {
     if let v = expect["canRedo"] as? Bool { XCTAssertEqual(core.canRedo, v, "canRedo \(at)") }
     if let v = expect["offset"] as? Int { XCTAssertEqual(lastResult as? Int, v, "offset \(at)") }
     if let v = expect["line"] as? String { XCTAssertEqual(lastResult as? String, v, "line \(at)") }
-    if expect["matches"] != nil { XCTFail("matches is not ported yet \(at)") }
-    if expect.keys.contains("found") { XCTFail("found is not ported yet \(at)") }
+    if let arr = expect["matches"] as? [[Int]] {
+      XCTAssertEqual(core.matches, arr.flatMap { $0 }, "matches \(at)")
+    }
+    if expect.keys.contains("found") {
+      if let f = expect["found"] as? [String: Any] {
+        XCTAssertEqual(
+          lastResult as? EditorCore.SearchHit, EditorCore.SearchHit(index: int(f, "index"), total: int(f, "total")),
+          "found \(at)")
+      } else {
+        XCTAssertNil(lastResult as? EditorCore.SearchHit, "found \(at)")
+      }
+    }
     if let v = expect["result"] { checkResult(v, at) }
     if expect.keys.contains("brackets") {
       if expect["brackets"] is NSNull {
