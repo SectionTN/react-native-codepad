@@ -94,6 +94,14 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
     if selectionContainer.frame != bounds { selectionContainer.frame = bounds }
   }
 
+  /// The display interaction adds a container for its own range adjustment lollipops, shows it on every ranged
+  /// selection and never positions them, so they would sit at the content origin. It resets hidden and alpha on
+  /// each show, so an empty mask keeps it invisible.
+  override func didAddSubview(_ subview: UIView) {
+    super.didAddSubview(subview)
+    if NSStringFromClass(type(of: subview)).contains("RangeAdjustment") { subview.layer.mask = CALayer() }
+  }
+
   func apply(theme: ThemeColors) {
     highlightView.apply(theme: theme)
     cursorView.apply(theme: theme)

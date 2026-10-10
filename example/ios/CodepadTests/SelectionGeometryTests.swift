@@ -84,4 +84,30 @@ extension SelectionGeometryTests {
     draw(editor)
     XCTAssertEqual(handles.map(\.isHidden), [true, true], "no handles on a collapsed selection")
   }
+
+  func testSystemLollipopsStayInvisible() {
+    let editor = launch()
+    editor.setContentInsets(top: 20, bottom: 0, left: 0, right: 0)
+    editor.setInitialText("hello world")
+    layout(editor)
+    editor.focus()
+    editor.core.setSelection(anchor: 0, head: 5)
+    draw(editor)
+    let input = editor.textInput
+    let ours: [UIView] = [input.selectionContainer, input.cursorView] + (input.handleViews as [UIView])
+    let strangers = input.subviews.filter { view in !ours.contains { $0 === view } }
+    // The display interaction unhides its range views from a delayed perform once the selection is a range.
+    spin(until: { strangers.contains { !$0.isHidden } }, timeout: 3)
+    XCTAssertTrue(strangers.contains { !$0.isHidden }, "the display interaction never showed its range views")
+    // Its lollipops never get a frame, so their 16.5 pt knobs would sit at the content origin, inside the inset here.
+    let pixels = Pixels(draw(editor))
+    var blue = 0
+    for y in 0..<60 {
+      for x in 0..<pixels.width {
+        let p = pixels[x, y]
+        if p.b > 200 && p.r < 80 && p.g < 150 { blue += 1 }
+      }
+    }
+    XCTAssertEqual(blue, 0, "system blue pixels above the content")
+  }
 }
