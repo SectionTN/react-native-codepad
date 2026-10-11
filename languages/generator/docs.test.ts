@@ -17,10 +17,10 @@ test('languagesPage lists every generated package with its grammar, scanner, inj
       codepad: { generated: true, grammar: 'org/tree-sitter-foo@abc' },
     }),
   );
-  // The capture list drops private captures, dedupes and sorts.
+  // The capture list drops private captures, dedupes and sorts, so the fixture lists them out of order.
   writeFileSync(
     path.join(pkg, 'queries/foo/highlights.scm'),
-    '(a) @keyword\n((b) @_hidden @string.special)\n(c) @keyword\n',
+    '(a) @string.special\n((b) @_hidden @keyword)\n(c) @string.special\n',
   );
   writeFileSync(
     path.join(pkg, 'queries/foo/injections.scm'),

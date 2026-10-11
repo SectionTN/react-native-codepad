@@ -28,12 +28,14 @@ class LanguageRegistryTest {
     assertNull(LanguageRegistry.resolve("no_such_language"))
     assertNull(LanguageRegistry.resolveInjection("c_sharp"))
     assertTrue(LanguageRegistry.resolveInjection("js") === LanguageRegistry.resolve("javascript"))
+    var reads = 0
     LanguageRegistry.register(object : LanguageProvider {
       override val id = "javascript_bad"
-      override val languagePointer = base.pointer
+      override val languagePointer: Long get() { reads++; return base.pointer }
       override val highlights = "(no_such_node) @x"
       override val injections = ""
     })
     assertNull("a highlights query naming a missing node fails the load", LanguageRegistry.resolve("javascript_bad"))
+    assertEquals("the provider was asked, so the null is the bad query and not an unknown id", 1, reads)
   }
 }

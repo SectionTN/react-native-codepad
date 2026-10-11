@@ -1,5 +1,6 @@
 package codepad.example
 
+import android.content.ClipboardManager
 import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.View
@@ -77,17 +78,23 @@ class HardwareKeysTest {
     launch().use { s ->
       val editor = s.editor()
       onMain {
-        editor.setInitialText("ab")
+        editor.setInitialText("ab\ncd")
+        layout(editor)
         editor.setReadOnly(true)
         key(editor, KeyEvent.KEYCODE_DEL)
         key(editor, KeyEvent.KEYCODE_Q)
         key(editor, KeyEvent.KEYCODE_ENTER)
         key(editor, KeyEvent.KEYCODE_TAB)
-        assertEquals("ab", editor.core.document.text())
+        assertEquals("ab\ncd", editor.core.document.text())
         key(editor, KeyEvent.KEYCODE_DPAD_RIGHT)
         assertEquals(Selection(1, 1), editor.core.selection)
+        key(editor, KeyEvent.KEYCODE_DPAD_DOWN)
+        assertEquals("a vertical move still runs", Selection(4, 4), editor.core.selection)
         key(editor, KeyEvent.KEYCODE_A, ctrl)
-        assertEquals(Selection(0, 2), editor.core.selection)
+        assertEquals(Selection(0, 5), editor.core.selection)
+        key(editor, KeyEvent.KEYCODE_C, ctrl)
+        val clip = editor.context.getSystemService(ClipboardManager::class.java)?.primaryClip
+        assertEquals("copy still runs", "ab\ncd", clip?.getItemAt(0)?.text?.toString())
       }
     }
   }
