@@ -195,8 +195,7 @@ class SyntaxEngine(
 
   // The whole document before the first completed pass, else tree-sitter's diff plus the edits' own spans.
   private fun regions(host: Tree, length: Int): IntArray {
-    val ref = reconciled
-    if (ref == null || kept.any { it.combined }) return intArrayOf(0, length)
+    val ref = reconciled ?: return intArrayOf(0, length)
     val changed = host.changedRanges(since = ref)
     val out = IntArray(changed.size + dirty.size)
     System.arraycopy(changed, 0, out, 0, changed.size)
@@ -284,15 +283,22 @@ class SyntaxEngine(
       if (k.hit || k.combined) touched.add(k) else carried.add(k)
     }
     val matches = ArrayList<Match>()
-    if (regions.isNotEmpty()) {
-      val root = host.rootNode()
-      val seen = HashSet<MatchKey>()
-      QueryCursor().use { cursor ->
-        var i = 0
-        while (i < regions.size) {
-          // Widened by one unit so a touched hull, however the edit sits against it, intersects the run.
-          collectMatches(lang, cursor, root, maxOf(0, regions[i] - 1), minOf(length, regions[i + 1] + 1), seen, matches)
-          i += 2
+    val root = host.rootNode()
+    val seen = HashSet<MatchKey>()
+    QueryCursor().use { cursor ->
+      var i = 0
+      while (i < regions.size) {
+        // Widened by one unit so a touched hull, however the edit sits against it, intersects the run.
+        collectMatches(lang, cursor, root, maxOf(0, regions[i] - 1), minOf(length, regions[i + 1] + 1), seen, matches)
+        i += 2
+      }
+      // A combined group is re-derived every pass: each member hull is queried so unchanged members are found again.
+      for (k in touched) {
+        if (!k.combined) continue
+        var j = 0
+        while (j < k.hulls.size) {
+          collectMatches(lang, cursor, root, maxOf(0, k.hulls[j] - 1), minOf(length, k.hulls[j + 1] + 1), seen, matches)
+          j += 2
         }
       }
     }
@@ -350,11 +356,17 @@ class SyntaxEngine(
         hulls[i * 2] = m.hullStart
         hulls[i * 2 + 1] = m.hullEnd
       }
+      val old = touched.firstOrNull { it.combined && !it.consumed && it.language.id == id }
+      val same = old != null && old.tree.includedRanges().contentEquals(flat)
+      if (old != null && same && !old.hit) {
+        // No member met a region and the ranges are unchanged: the group is carried like a plain tree.
+        touched.remove(old)
+        carried.add(old)
+        continue
+      }
       Parser().use { sub ->
         if (!sub.setLanguage(target.pointer)) return@use
         sub.setIncludedRanges(flat)
-        val old = touched.firstOrNull { it.combined && !it.consumed && it.language.id == id }
-        val same = old != null && old.tree.includedRanges().contentEquals(flat)
         val t = sub.parse(if (same) old?.tree else null, mirror, cancel, 0) ?: return cancelled()
         if (old != null) {
           old.tree.close()

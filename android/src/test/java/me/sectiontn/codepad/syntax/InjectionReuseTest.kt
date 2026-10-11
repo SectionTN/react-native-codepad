@@ -224,6 +224,36 @@ class InjectionReuseTest {
     engine.close()
   }
 
+  @Test
+  fun editingOneHtmlBlockReparsesTheCombinedTree() {
+    val text = "<div>\na\n</div>\n\npara\n\n<div>\nb\n</div>\n"
+    val (core, engine) = start("markdown", text)
+    val first = awaitParsed()
+    assertEquals(2, first.injected.size)
+    assertEquals(12, first.injected.single { it.language.id == "html" }.tree.includedRanges().size)
+    first.close()
+    val b = text.indexOf("b\n")
+    core.replace(b, b + 1, "bb")
+    val second = awaitParsed()
+    assertEquals(1, second.injected.count { it.language.id == "html" })
+    assertEquals(12, second.injected.single { it.language.id == "html" }.tree.includedRanges().size)
+    assertEquals(1, second.stats.freshInjections + second.stats.reusedInjections)
+    assertEquals(1, second.stats.carriedInjections)
+    second.close()
+    val len = core.document.length
+    core.replace(len, len, "\n<div>\nc\n</div>\n")
+    val third = awaitParsed()
+    assertEquals(18, third.injected.single { it.language.id == "html" }.tree.includedRanges().size)
+    assertEquals(1, third.stats.carriedInjections)
+    third.close()
+    core.replace(0, text.indexOf("para"), "")
+    val fourth = awaitParsed()
+    assertEquals(12, fourth.injected.single { it.language.id == "html" }.tree.includedRanges().size)
+    assertEquals(2, fourth.injected.size)
+    fourth.close()
+    engine.close()
+  }
+
   // The slow fence is inserted after the first pass, so pass two is the first to resolve it and blocks there.
   @Test
   fun aCancelledPassDoesNotAdvanceTheReferenceTree() {
