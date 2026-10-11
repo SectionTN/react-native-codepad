@@ -6,14 +6,13 @@ import org.junit.Test
 
 class UndoManagerTest {
   @Test
-  fun historyKeepsAtMostMaxGroups() {
-    val undo = UndoManager({ 0L }, maxGroups = 2)
-    for (i in 0 until 3) {
+  fun historyKeepsAtMostAThousandGroups() {
+    val undo = UndoManager({ 0L })
+    for (i in 0 until 1001) {
       val change = Change(start = i, removed = "", inserted = "\n", revision = i + 1)
       undo.record(change, Selection.caret(i), Selection.caret(i + 1), typing = false)
     }
-    assertNotNull(undo.popUndo())
-    assertNotNull(undo.popUndo())
+    repeat(1000) { assertNotNull(undo.popUndo()) }
     assertNull(undo.popUndo())
   }
 }

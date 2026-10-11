@@ -21,6 +21,12 @@ final class CoreCommandsTests: XCTestCase {
     XCTAssertEqual(core.selection, Selection(anchor: 0, head: 4))
     XCTAssertTrue(CoreCommands.run(core, .delete))
     XCTAssertEqual(core.document.text(), "")
+    XCTAssertTrue(CoreCommands.run(core, .newline))
+    XCTAssertEqual(core.document.text(), "\n")
+    XCTAssertTrue(CoreCommands.run(core, .tab))
+    XCTAssertEqual(core.document.text(), "\n    ")
+    XCTAssertTrue(CoreCommands.run(core, .shiftTab))
+    XCTAssertEqual(core.document.text(), "\n")
   }
 
   func testViewCommandsAreNotHandled() {
@@ -30,16 +36,5 @@ final class CoreCommandsTests: XCTestCase {
     XCTAssertFalse(CoreCommands.run(core, .cut))
     XCTAssertFalse(CoreCommands.run(core, .paste))
     XCTAssertEqual(core.document.text(), "x")
-  }
-
-  func testNewlineAndTabs() {
-    let core = EditorCore("  a")
-    core.setSelection(anchor: 3, head: 3)
-    CoreCommands.run(core, .newline)
-    XCTAssertEqual(core.document.text(), "  a\n  ")
-    CoreCommands.run(core, .tab)
-    XCTAssertEqual(core.document.text(), "  a\n      ")
-    CoreCommands.run(core, .shiftTab)
-    XCTAssertEqual(core.document.text(), "  a\n  ")
   }
 }

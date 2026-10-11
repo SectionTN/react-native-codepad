@@ -74,8 +74,9 @@
     ] },
     { "name": "backspace at the start is a no-op", "text": "ab", "ops": [{ "op": "backspace" }], "expect": { "revision": 0 } },
     { "name": "backspace removes a whole emoji", "text": "a\uD83D\uDE00", "ops": [
-      { "op": "setSelection", "anchor": 3, "head": 3 }, { "op": "backspace" }
-    ], "expect": { "text": "a", "selection": { "anchor": 1, "head": 1 } } },
+      { "op": "setSelection", "anchor": 3, "head": 3 }, { "op": "backspace", "expect": { "text": "a", "selection": { "anchor": 1, "head": 1 } } },
+      { "op": "undo", "expect": { "length": 3, "selection": { "anchor": 3, "head": 3 } } }
+    ] },
     { "name": "backspace with a selection deletes it", "text": "abcd", "ops": [
       { "op": "setSelection", "anchor": 1, "head": 3 }, { "op": "backspace" }
     ], "expect": { "text": "ad", "selection": { "anchor": 1, "head": 1 } } }

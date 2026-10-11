@@ -23,7 +23,7 @@ final class UndoManager {
   }
 
   private let clock: () -> Int64
-  private let maxGroups: Int
+  private let maxGroups = 1000
   private var undoStack: [Group] = []
   private var redoStack: [Group] = []
   private var open: Group? = nil
@@ -32,9 +32,8 @@ final class UndoManager {
   /// True when the selection moved for a reason other than an edit. The next typed character starts a new group.
   var selectionDirty = false
 
-  init(clock: @escaping () -> Int64, maxGroups: Int = 1000) {
+  init(clock: @escaping () -> Int64) {
     self.clock = clock
-    self.maxGroups = maxGroups
   }
 
   var canUndo: Bool { !undoStack.isEmpty }

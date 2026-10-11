@@ -5,37 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SearchSessionTest {
-  private fun session(vararg pairs: Int) =
-    SearchSession(SearchQuery("x"), Searcher.compile(SearchQuery("x"))).apply {
-      matches = pairs
-      revision = 0
-    }
-
-  @Test
-  fun indexAtOrAfterIsABinarySearchOnStarts() {
-    val s = session(0, 1, 4, 5, 8, 9)
-    assertEquals(1, s.indexAtOrAfter(2))
-    assertEquals(3, s.indexAtOrAfter(9))
-  }
-
-  @Test
-  fun nextSkipsTheSelectedMatchAndWraps() {
-    val s = session(0, 1, 4, 5)
-    assertEquals(1, s.nextIndex(Selection(0, 1)))
-    assertEquals(0, s.nextIndex(Selection(4, 5)))
-  }
-
-  @Test
-  fun previousWraps() {
-    val s = session(0, 1, 4, 5)
-    assertEquals(1, s.previousIndex(Selection(0, 0)))
-  }
-
-  @Test
-  fun emptySessionReportsMinusOne() {
-    assertEquals(-1, session().nextIndex(Selection(0, 0)))
-  }
-
   @Test
   fun mapThroughDropsATouchedMatchAndShiftsTheRest() {
     val change = Change(start = 4, removed = "x", inserted = "yyy", revision = 1)

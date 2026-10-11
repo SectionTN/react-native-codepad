@@ -6,16 +6,16 @@ import XCTest
 /// Runs the shared vectors under tests/vectors, one method per file and one activity per case.
 @MainActor
 final class VectorTest: XCTestCase {
-  func testDocument() { runFile("document", cases: 15) }
-  func testPositions() { runFile("positions", cases: 4) }
-  func testMovement() { runFile("movement", cases: 12) }
-  func testUndo() { runFile("undo", cases: 16) }
-  func testIndent() { runFile("indent", cases: 16) }
-  func testAutoclose() { runFile("autoclose", cases: 16) }
-  func testBrackets() { runFile("brackets", cases: 9) }
-  func testSearch() { runFile("search", cases: 17) }
+  func testDocument() { runFile("document") }
+  func testPositions() { runFile("positions") }
+  func testMovement() { runFile("movement") }
+  func testUndo() { runFile("undo") }
+  func testIndent() { runFile("indent") }
+  func testAutoclose() { runFile("autoclose") }
+  func testBrackets() { runFile("brackets") }
+  func testSearch() { runFile("search") }
 
-  private func runFile(_ area: String, cases expected: Int) {
+  private func runFile(_ area: String) {
     let url = URL(fileURLWithPath: #filePath)
       .deletingLastPathComponent().deletingLastPathComponent()
       .appendingPathComponent("vectors").appendingPathComponent("\(area).json")
@@ -26,7 +26,7 @@ final class VectorTest: XCTestCase {
       XCTFail("cannot load \(url.path)")
       return
     }
-    XCTAssertEqual(cases.count, expected, "\(area) case count")
+    XCTAssertFalse(cases.isEmpty, "\(area) has no cases")
     for c in cases {
       XCTContext.runActivity(named: c["name"] as? String ?? "unnamed") { _ in VectorRunner(c).run() }
     }

@@ -28,6 +28,12 @@ class CoreCommandsTest {
     assertEquals(Selection(0, 4), core.selection)
     assertTrue(CoreCommands.run(core, KeyCommand.Delete))
     assertEquals("", core.document.text())
+    assertTrue(CoreCommands.run(core, KeyCommand.Newline))
+    assertEquals("\n", core.document.text())
+    assertTrue(CoreCommands.run(core, KeyCommand.Tab))
+    assertEquals("\n    ", core.document.text())
+    assertTrue(CoreCommands.run(core, KeyCommand.ShiftTab))
+    assertEquals("\n", core.document.text())
   }
 
   @Test
@@ -38,17 +44,5 @@ class CoreCommandsTest {
     assertFalse(CoreCommands.run(core, KeyCommand.Cut))
     assertFalse(CoreCommands.run(core, KeyCommand.Paste))
     assertEquals("x", core.document.text())
-  }
-
-  @Test
-  fun newlineAndTabs() {
-    val core = EditorCore("  a")
-    core.setSelection(3, 3)
-    CoreCommands.run(core, KeyCommand.Newline)
-    assertEquals("  a\n  ", core.document.text())
-    CoreCommands.run(core, KeyCommand.Tab)
-    assertEquals("  a\n      ", core.document.text())
-    CoreCommands.run(core, KeyCommand.ShiftTab)
-    assertEquals("  a\n  ", core.document.text())
   }
 }

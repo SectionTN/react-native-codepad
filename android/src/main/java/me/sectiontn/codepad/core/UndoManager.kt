@@ -1,6 +1,8 @@
 package me.sectiontn.codepad.core
 
-class UndoManager(private val clock: () -> Long, private val maxGroups: Int = 1000) {
+private const val MAX_GROUPS = 1000
+
+class UndoManager(private val clock: () -> Long) {
   enum class Kind { Insert, Backspace, Other }
 
   class Group(val selectionBefore: Selection) {
@@ -83,7 +85,7 @@ class UndoManager(private val clock: () -> Long, private val maxGroups: Int = 10
 
   private fun push(group: Group) {
     undoStack.addLast(group)
-    while (undoStack.size > maxGroups) undoStack.removeFirst()
+    while (undoStack.size > MAX_GROUPS) undoStack.removeFirst()
   }
 
   private fun kindOf(c: Change, typing: Boolean): Kind = when {
