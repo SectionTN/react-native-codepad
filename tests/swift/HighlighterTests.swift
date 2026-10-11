@@ -35,13 +35,6 @@ final class HighlighterTests: XCTestCase {
     XCTAssertEqual(styleAt(spans[1], 5), "variable")
   }
 
-  func testUnknownLanguageResolvesToNil() {
-    _ = HostLanguages.javascript()
-    XCTAssertNil(LanguageRegistry.resolve("no_such_language"))
-    XCTAssertNil(LanguageRegistry.resolveInjection("c_sharp"))
-    XCTAssertTrue(LanguageRegistry.resolveInjection("js") === LanguageRegistry.resolve("javascript"))
-  }
-
   func testConcealCapturesNeverPaint() {
     let base = HostLanguages.javascript()
     LanguageRegistry.register(

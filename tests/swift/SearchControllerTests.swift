@@ -39,22 +39,16 @@ final class SearchControllerTests: XCTestCase {
   }
 
   func testWhenFreshQueuesUntilTheResultLands() throws {
-    try controller.setQuery(SearchQuery(text: "ab"))
     var ran = 0
     controller.whenFresh { ran += 1 }
-    XCTAssertEqual(ran, 0)
-    settle()
-    XCTAssertEqual(ran, 1)
-  }
-
-  func testWhenFreshRunsNowWhenNothingIsStale() throws {
-    var ran = 0
-    controller.whenFresh { ran += 1 }
-    XCTAssertEqual(ran, 1)
+    XCTAssertEqual(ran, 1, "nothing stale runs at once")
     try controller.setQuery(SearchQuery(text: "ab"))
-    settle()
     controller.whenFresh { ran += 1 }
+    XCTAssertEqual(ran, 1)
+    settle()
     XCTAssertEqual(ran, 2)
+    controller.whenFresh { ran += 1 }
+    XCTAssertEqual(ran, 3, "a settled query runs at once")
   }
 
   func testAStaleResultIsDroppedAndTheContinuationWaits() throws {

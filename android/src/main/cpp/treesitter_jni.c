@@ -95,7 +95,6 @@ void FN(parserReset)(JNIEnv *env, jclass cls, jlong parser) {
 jboolean FN(parserSetIncludedRanges)(JNIEnv *env, jclass cls, jlong parser, jintArray ranges) {
   (void) cls;
   TSParser *p = (TSParser *) (intptr_t) parser;
-  if (!ranges) return ts_parser_set_included_ranges(p, NULL, 0) ? JNI_TRUE : JNI_FALSE;
   jsize n = (*env)->GetArrayLength(env, ranges) / 6;
   if (n == 0) return ts_parser_set_included_ranges(p, NULL, 0) ? JNI_TRUE : JNI_FALSE;
   jint *v = (*env)->GetIntArrayElements(env, ranges, NULL);
@@ -194,23 +193,6 @@ void FN(treeEdit)(JNIEnv *env, jclass cls, jlong tree, jint start, jint old_end,
   ts_tree_edit((TSTree *) (intptr_t) tree, &edit);
 }
 
-jintArray FN(treeChangedRanges)(JNIEnv *env, jclass cls, jlong old_tree, jlong new_tree) {
-  (void) cls;
-  uint32_t count = 0;
-  TSRange *ranges = ts_tree_get_changed_ranges((const TSTree *) (intptr_t) old_tree, (const TSTree *) (intptr_t) new_tree, &count);
-  jintArray out = (*env)->NewIntArray(env, (jsize) count * 2);
-  if (count) {
-    jint *v = malloc(sizeof(jint) * count * 2);
-    for (uint32_t i = 0; i < count; i++) {
-      v[i * 2] = U(ranges[i].start_byte);
-      v[i * 2 + 1] = U(ranges[i].end_byte);
-    }
-    (*env)->SetIntArrayRegion(env, out, 0, (jsize) count * 2, v);
-    free(v);
-  }
-  free(ranges);
-  return out;
-}
 
 jintArray FN(treeIncludedRanges)(JNIEnv *env, jclass cls, jlong tree) {
   (void) cls;

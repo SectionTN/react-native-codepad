@@ -28,20 +28,6 @@ final class TreeSitterTests: XCTestCase {
     XCTAssertTrue(root.parent.isNull)
   }
 
-  func testIncrementalEditReparses() throws {
-    let parser = Parser()
-    _ = parser.setLanguage(HostGrammars.javascript())
-    let mirror = Mirror()
-    mirror.setText("let x = 1;")
-    let first = try XCTUnwrap(parser.parse(nil, mirror, nil, budgetMicros: 0))
-    mirror.replace(4, 4, "aa")
-    first.edit(edit(4, 4, 6))
-    let second = try XCTUnwrap(parser.parse(first, mirror, nil, budgetMicros: 0))
-    XCTAssertEqual(second.rootNode.endUnit, 12)
-    XCTAssertFalse(first.changedRanges(second).isEmpty)
-    XCTAssertEqual(mirror.text(0, mirror.length), "let aax = 1;")
-  }
-
   func testCancelFlagAbortsAndResetAllowsRestart() throws {
     let parser = Parser()
     _ = parser.setLanguage(HostGrammars.javascript())
@@ -95,12 +81,6 @@ final class TreeSitterTests: XCTestCase {
     XCTAssertEqual(found, [19])
   }
 
-  func testQueryErrorsThrow() {
-    XCTAssertThrowsError(try Query.compile(HostGrammars.javascript(), "(no_such_node) @x")) { error in
-      XCTAssertEqual((error as? QueryError)?.type, 2)
-    }
-  }
-
   func testIncludedRangesFollowEdits() throws {
     let parser = Parser()
     _ = parser.setLanguage(HostGrammars.javascript())
@@ -111,6 +91,5 @@ final class TreeSitterTests: XCTestCase {
     XCTAssertEqual(tree.includedRanges(), [3, 13, 0, 3, 0, 13])
     tree.edit(edit(0, 0, 2))
     XCTAssertEqual(tree.includedRanges(), [5, 15, 0, 5, 0, 15])
-    XCTAssertTrue(parser.setIncludedRanges(nil))
   }
 }

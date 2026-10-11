@@ -47,23 +47,16 @@ class SearchControllerTest {
 
   @Test
   fun whenFreshQueuesUntilTheResultLands() {
-    controller.setQuery(SearchQuery("ab"))
     var ran = 0
     controller.whenFresh { ran++ }
-    assertEquals(0, ran)
-    settle()
-    assertEquals(1, ran)
-  }
-
-  @Test
-  fun whenFreshRunsNowWhenNothingIsStale() {
-    var ran = 0
-    controller.whenFresh { ran++ }
-    assertEquals(1, ran)
+    assertEquals("nothing stale runs at once", 1, ran)
     controller.setQuery(SearchQuery("ab"))
-    settle()
     controller.whenFresh { ran++ }
+    assertEquals(1, ran)
+    settle()
     assertEquals(2, ran)
+    controller.whenFresh { ran++ }
+    assertEquals("a settled query runs at once", 3, ran)
   }
 
   @Test

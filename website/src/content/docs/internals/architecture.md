@@ -32,7 +32,7 @@ The document is an array of lines, each a growable UTF-16 buffer without its ter
 
 ### syntax
 
-One serial thread per editor owns the parser and the live tree. It receives edits in document order, applies `ts_tree_edit`, reparses incrementally, runs the injection query, parses each injected range set with `ts_parser_set_included_ranges`, and publishes an immutable snapshot (a tree copy, the injected trees, the changed ranges, parse statistics) to the main thread. The first parse of a large file runs with a time budget and resumes; an edit during a parse cancels it.
+One serial thread per editor owns the parser and the live tree. It receives edits in document order, applies `ts_tree_edit`, reparses incrementally, runs the injection query, parses each injected range set with `ts_parser_set_included_ranges`, and publishes an immutable snapshot (a tree copy, the injected trees, parse statistics) to the main thread. The first parse of a large file runs with a time budget and resumes; an edit during a parse cancels it.
 
 The main thread queries only the published snapshot, restricted to the visible range, and caches spans per line keyed by the line's revision. A line edited after the snapshot paints plain until the next snapshot lands, one frame in practice. Spans are `(startColumn, endColumn, capture)` in UTF-16 columns, clipped per line; overlapping captures apply in pattern order and the later pattern wins, which is the rule nvim queries are written for.
 

@@ -21,9 +21,6 @@ final class BracketSkipTests: XCTestCase {
 
   func testBracketsInsideStringsAndCommentsAreSkipped() {
     XCTAssertEqual(pairAt("a = (\"(\" + b) // )", 4), [4, 12])
-  }
-
-  func testUnmatchedOpenerSeesThroughAComment() {
     XCTAssertEqual(pairAt("f( // )\n)", 1), [1, 8])
   }
 

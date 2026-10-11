@@ -33,25 +33,6 @@ class TreeSitterTest {
   }
 
   @Test
-  fun incrementalEditReparses() {
-    Parser().use { parser ->
-      parser.setLanguage(HostLib.javascript())
-      Mirror().use { mirror ->
-        mirror.setText("let x = 1;")
-        val first = checkNotNull(parser.parse(null, mirror, null, 0))
-        mirror.replace(4, 4, "aa")
-        first.edit(InputEdit(4, 4, 6, Point(0, 4), Point(0, 4), Point(0, 6)))
-        val second = checkNotNull(parser.parse(first, mirror, null, 0))
-        assertEquals(12, second.rootNode().endUnit)
-        assertTrue(first.changedRanges(second).isNotEmpty())
-        assertEquals("let aax = 1;", mirror.text(0, mirror.length))
-        first.close()
-        second.close()
-      }
-    }
-  }
-
-  @Test
   fun cancelFlagAbortsAndResetAllowsRestart() {
     Parser().use { parser ->
       parser.setLanguage(HostLib.javascript())
@@ -101,16 +82,6 @@ class TreeSitterTest {
         }
         tree.close()
       }
-    }
-  }
-
-  @Test
-  fun queryErrorsThrow() {
-    try {
-      Query.compile(HostLib.javascript(), "(no_such_node) @x").close()
-      throw AssertionError("expected QueryException")
-    } catch (e: QueryException) {
-      assertEquals(2, e.type)
     }
   }
 

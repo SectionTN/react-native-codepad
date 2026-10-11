@@ -2,6 +2,7 @@ package me.sectiontn.codepad.syntax
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LanguageRegistryTest {
@@ -19,5 +20,20 @@ class LanguageRegistryTest {
     assertNull(LanguageRegistry.canonicalInjectionId("cpp"))
     assertNull(LanguageRegistry.canonicalInjectionId("regex"))
     assertEquals("ruby", LanguageRegistry.canonicalInjectionId("ruby"))
+  }
+
+  @Test
+  fun unknownLanguagesAndBadQueriesResolveToNull() {
+    val base = HostLanguages.javascript()
+    assertNull(LanguageRegistry.resolve("no_such_language"))
+    assertNull(LanguageRegistry.resolveInjection("c_sharp"))
+    assertTrue(LanguageRegistry.resolveInjection("js") === LanguageRegistry.resolve("javascript"))
+    LanguageRegistry.register(object : LanguageProvider {
+      override val id = "javascript_bad"
+      override val languagePointer = base.pointer
+      override val highlights = "(no_such_node) @x"
+      override val injections = ""
+    })
+    assertNull("a highlights query naming a missing node fails the load", LanguageRegistry.resolve("javascript_bad"))
   }
 }

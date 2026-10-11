@@ -38,10 +38,6 @@ class BracketSkipTest {
   fun bracketsInsideStringsAndCommentsAreSkipped() {
     val text = "a = (\"(\" + b) // )"
     assertArrayEquals(intArrayOf(4, 12), pairAt(text, 4))
-  }
-
-  @Test
-  fun unmatchedOpenerSeesThroughAComment() {
     assertArrayEquals(intArrayOf(1, 8), pairAt("f( // )\n)", 1))
   }
 

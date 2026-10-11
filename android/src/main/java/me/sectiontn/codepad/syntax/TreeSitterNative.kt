@@ -10,7 +10,7 @@ internal object TreeSitterNative {
   @JvmStatic external fun parserDelete(parser: Long)
   @JvmStatic external fun parserSetLanguage(parser: Long, language: Long): Boolean
   @JvmStatic external fun parserReset(parser: Long)
-  @JvmStatic external fun parserSetIncludedRanges(parser: Long, ranges: IntArray?): Boolean
+  @JvmStatic external fun parserSetIncludedRanges(parser: Long, ranges: IntArray): Boolean
   @JvmStatic external fun parserParse(parser: Long, oldTree: Long, mirror: Long, flag: Long, budgetMicros: Long): Long
   @JvmStatic external fun flagNew(): Long
   @JvmStatic external fun flagSet(flag: Long, value: Boolean)
@@ -22,7 +22,6 @@ internal object TreeSitterNative {
     tree: Long, start: Int, oldEnd: Int, newEnd: Int,
     startRow: Int, startCol: Int, oldEndRow: Int, oldEndCol: Int, newEndRow: Int, newEndCol: Int,
   )
-  @JvmStatic external fun treeChangedRanges(oldTree: Long, newTree: Long): IntArray
   @JvmStatic external fun treeIncludedRanges(tree: Long): IntArray
   @JvmStatic external fun nodeIsNull(node: LongArray): Boolean
   @JvmStatic external fun nodeStartUnit(node: LongArray): Int

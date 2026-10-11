@@ -53,7 +53,6 @@ class Tree(val handle: Long) : AutoCloseable {
     handle, e.start, e.oldEnd, e.newEnd,
     e.startPoint.row, e.startPoint.column, e.oldEndPoint.row, e.oldEndPoint.column, e.newEndPoint.row, e.newEndPoint.column,
   )
-  fun changedRanges(newTree: Tree): IntArray = TreeSitterNative.treeChangedRanges(handle, newTree.handle)
 
   /** Six ints per range like Parser.setIncludedRanges; edits shift them along with the nodes. */
   fun includedRanges(): IntArray = TreeSitterNative.treeIncludedRanges(handle)
@@ -64,7 +63,7 @@ class Parser : AutoCloseable {
   val handle: Long = TreeSitterNative.parserNew()
   fun setLanguage(language: Long): Boolean = TreeSitterNative.parserSetLanguage(handle, language)
   fun reset() = TreeSitterNative.parserReset(handle)
-  fun setIncludedRanges(ranges: IntArray?): Boolean = TreeSitterNative.parserSetIncludedRanges(handle, ranges)
+  fun setIncludedRanges(ranges: IntArray): Boolean = TreeSitterNative.parserSetIncludedRanges(handle, ranges)
 
   /** Null means [flag] or [budgetMicros] cancelled the parse. Parse again to resume, or reset first. */
   fun parse(oldTree: Tree?, mirror: Mirror, flag: CancelFlag?, budgetMicros: Long): Tree? {

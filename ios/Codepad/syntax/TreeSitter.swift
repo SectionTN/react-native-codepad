@@ -161,13 +161,6 @@ final class Tree: @unchecked Sendable {
     ts_tree_edit(raw, &edit)
   }
 
-  func changedRanges(_ newTree: Tree) -> [Int] {
-    var count: UInt32 = 0
-    guard let ranges = ts_tree_get_changed_ranges(raw, newTree.raw, &count) else { return [] }
-    defer { free(ranges) }
-    return TreeSitterRuntime.flatten(ranges, Int(count))
-  }
-
   /// Six ints per range like Parser.setIncludedRanges; edits shift them along with the nodes.
   func includedRanges() -> [Int] {
     var count: UInt32 = 0
@@ -197,10 +190,9 @@ final class Parser {
     ts_parser_reset(raw)
   }
 
-  /// Six ints per range (start, end, startRow, startColumn, endRow, endColumn) in units; nil parses everything.
+  /// Six ints per range (start, end, startRow, startColumn, endRow, endColumn) in units.
   @discardableResult
-  func setIncludedRanges(_ ranges: [Int]?) -> Bool {
-    guard let ranges else { return ts_parser_set_included_ranges(raw, nil, 0) }
+  func setIncludedRanges(_ ranges: [Int]) -> Bool {
     let converted = TreeSitterRuntime.ranges(from: ranges)
     return converted.withUnsafeBufferPointer { ts_parser_set_included_ranges(raw, $0.baseAddress, UInt32($0.count)) }
   }

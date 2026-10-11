@@ -55,49 +55,35 @@ final class SyntaxEngineTests: XCTestCase {
     engine.close()
   }
 
-  func testInjectionsParseEmbeddedLanguages() throws {
-    let core = EditorCore("const q = /ab+/; const s = `x`;")
-    let engine = engine()
-    engine.setLanguage("javascript")
-    engine.setText(core.document.text(), revision: 0)
-    // regex and template injections target languages that are not installed, so nothing is injected,
-    // but the pass must complete and leave the host tree intact.
-    let snapshot = try XCTUnwrap(snapshots.take())
-    XCTAssertEqual(snapshot.injected.count, 0)
-    XCTAssertEqual(snapshot.tree.rootNode.type, "program")
-    engine.close()
-  }
-
   func testOffsetDirectiveTrimsTheTemplateStringDelimiters() throws {
     HostLanguages.load("html", "html")
-    let text = "html`<b>x</b>`"
+    // The regex literal targets a never-injected language and must leave the pass and the html injection intact.
+    let text = "html`<b>x</b>`; /ab+/"
     let engine = engine()
     engine.setLanguage("javascript")
     engine.setText(text, revision: 1)
     let snapshot = try XCTUnwrap(snapshots.takeRevision(1))
+    XCTAssertEqual(snapshot.tree.rootNode.type, "program")
     XCTAssertEqual(snapshot.injected.count, 1)
     XCTAssertEqual(snapshot.injected.first?.language.id, "html")
     XCTAssertEqual(snapshot.injected.first?.ranges[0], 5)
-    XCTAssertEqual(snapshot.injected.first?.ranges[1], text.utf16.count - 1)
-    engine.close()
-  }
-
-  func testEmptyTemplateStringInjectsNothing() throws {
-    HostLanguages.load("html", "html")
-    let engine = engine()
-    engine.setLanguage("javascript")
-    engine.setText("html``", revision: 1)
-    let snapshot = try XCTUnwrap(snapshots.takeRevision(1))
-    XCTAssertEqual(snapshot.injected.count, 0)
+    XCTAssertEqual(snapshot.injected.first?.ranges[1], 13)
+    engine.setText("html``", revision: 2)
+    let empty = try XCTUnwrap(snapshots.takeRevision(2))
+    XCTAssertEqual(empty.injected.count, 0, "an empty template string injects nothing")
     engine.close()
   }
 
   func testSnapshotsCarryTheirLanguage() throws {
+    HostLanguages.load("html", "html")
     let engine = engine()
     engine.setLanguage("javascript")
     engine.setText("let a = 1;", revision: 1)
     let snapshot = try XCTUnwrap(snapshots.takeRevision(1))
     XCTAssertEqual(snapshot.languageId, "javascript")
+    engine.setLanguage("html")
+    let switched = try XCTUnwrap(snapshots.take())
+    XCTAssertEqual(switched.languageId, "html")
     engine.close()
   }
 }

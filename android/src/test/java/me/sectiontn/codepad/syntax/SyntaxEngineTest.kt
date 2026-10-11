@@ -77,56 +77,40 @@ class SyntaxEngineTest {
   }
 
   @Test
-  fun injectionsParseEmbeddedLanguages() {
-    val core = EditorCore("const q = /ab+/; const s = `x`;")
-    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    engine.setLanguage("javascript")
-    engine.setText(core.document.text(), 0)
-    val snapshot = await()
-    // regex and template injections target languages that are not installed, so nothing is injected,
-    // but the pass must complete without errors and leave the host tree intact.
-    assertEquals(0, snapshot.injected.size)
-    assertEquals("program", snapshot.tree.rootNode().type)
-    snapshot.close()
-    engine.close()
-  }
-
-  @Test
   fun offsetDirectiveTrimsTheTemplateStringDelimiters() {
     HostLanguages.load("html", "html")
-    val text = "html`<b>x</b>`"
+    // The regex literal targets a never-injected language and must leave the pass and the html injection intact.
+    val text = "html`<b>x</b>`; /ab+/"
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
     engine.setLanguage("javascript")
     engine.setText(text, 1)
     val snapshot = awaitRevision(1)
+    assertEquals("program", snapshot.tree.rootNode().type)
     assertEquals(1, snapshot.injected.size)
     assertEquals("html", snapshot.injected[0].language.id)
     assertEquals(5, snapshot.injected[0].ranges[0])
-    assertEquals(text.length - 1, snapshot.injected[0].ranges[1])
+    assertEquals(text.indexOf("`;"), snapshot.injected[0].ranges[1])
     snapshot.close()
-    engine.close()
-  }
-
-  @Test
-  fun emptyTemplateStringInjectsNothing() {
-    HostLanguages.load("html", "html")
-    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    engine.setLanguage("javascript")
-    engine.setText("html``", 1)
-    val snapshot = awaitRevision(1)
-    assertEquals(0, snapshot.injected.size)
-    snapshot.close()
+    engine.setText("html``", 2)
+    val empty = awaitRevision(2)
+    assertEquals("an empty template string injects nothing", 0, empty.injected.size)
+    empty.close()
     engine.close()
   }
 
   @Test
   fun snapshotsCarryTheirLanguage() {
+    HostLanguages.load("html", "html")
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
     engine.setLanguage("javascript")
     engine.setText("let a = 1;", 1)
     val snapshot = awaitRevision(1)
     assertEquals("javascript", snapshot.languageId)
     snapshot.close()
+    engine.setLanguage("html")
+    val switched = await()
+    assertEquals("html", switched.languageId)
+    switched.close()
     engine.close()
   }
 }

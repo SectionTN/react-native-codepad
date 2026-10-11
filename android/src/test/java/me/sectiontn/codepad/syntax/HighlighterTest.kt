@@ -71,14 +71,6 @@ class HighlighterTest {
   }
 
   @Test
-  fun unknownLanguageResolvesToNull() {
-    HostLanguages.javascript()
-    assertNull(LanguageRegistry.resolve("no_such_language"))
-    assertNull(LanguageRegistry.resolveInjection("c_sharp"))
-    assertTrue(LanguageRegistry.resolveInjection("js") === LanguageRegistry.resolve("javascript"))
-  }
-
-  @Test
   fun concealCapturesNeverPaint() {
     val base = HostLanguages.javascript()
     LanguageRegistry.register(object : LanguageProvider {
