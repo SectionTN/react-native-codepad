@@ -2,6 +2,31 @@ PODS:
   - boost (1.84.0):
     - ReactNativeDependencies
   - Codepad (0.1.0):
+    - Codepad/TreeSitter (= 0.1.0)
+    - hermes-engine
+    - NitroModules
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-callinvoker
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - Codepad/TreeSitter (0.1.0):
     - hermes-engine
     - NitroModules
     - RCTRequired
@@ -2296,7 +2321,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   boost: 8502bfdc46e2804408af2e163049ece181009af4
-  Codepad: d1be8019d3384226eb9e0671339c9bfc74e697a3
+  Codepad: 9199d006169d9c51a65271259f1af2838e106a1b
   CodepadLangC: 68536ff80b87aeed69bb1809a50bbe884c481d6b
   CodepadLangCss: 782554b6ed732a4572e3f82f99f0422c666aa47b
   CodepadLangGo: ed2488ea8cce68741d9c9e889789a5b7ad49dee8

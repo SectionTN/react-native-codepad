@@ -18,9 +18,14 @@ Pod::Spec.new do |s|
     "ios/**/*.{swift}",
     "ios/**/*.{h,m,mm}",
     "cpp/**/*.{hpp,cpp}",
-    "cpp/tree-sitter/lib/src/lib.c",
     "cpp/tree-sitter/lib/include/tree_sitter/api.h",
   ]
+  # The runtime compiles at -O2 whatever the app's configuration, as the Android CMake build does: at the
+  # Debug -O0 the query cursor walk behind every keystroke runs four times slower.
+  s.subspec "TreeSitter" do |ss|
+    ss.source_files = "cpp/tree-sitter/lib/src/lib.c"
+    ss.compiler_flags = "-O2"
+  end
   # The pod's Swift reads the tree-sitter API through CPTreeSitter.h in the umbrella header; api.h ships
   # beside it because the public headers directory is flat.
   s.public_header_files = [
