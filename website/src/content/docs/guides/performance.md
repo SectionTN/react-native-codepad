@@ -35,16 +35,16 @@ Highlighting never blocks these: the parser runs on its own thread with a time b
 
 ## Markdown and injections
 
-A markdown document is the heaviest case: every paragraph is an injection into the inline grammar and every fenced block one into its language, so a keystroke used to parse all of them again. Injected trees are now kept across edits: each one receives the edit, and the next pass parses only the one the edit touched against its old tree while the others are reused. The Benchmark tab's "Markdown 2k" document (2000 paragraphs, a fenced javascript block every tenth, 5880 lines, 2239 injections) is the bench. Same device and build as above; "before" is the same build with the kept trees disabled, "after" is the shipped engine.
+A markdown document is the heaviest case: every paragraph is an injection into the inline grammar and every fenced block one into its language, so a keystroke used to parse all of them again. The engine now reconciles the injected trees against what changed: it keeps a copy of the host tree from the last completed pass, asks tree-sitter for the ranges whose structure changed since (plus the edits' own spans), runs the injections query over those ranges only, reparses the kept trees they touch and carries every other tree over with no parser call. The painter likewise queries only the injected trees that meet the painted lines. The Benchmark tab's "Markdown 2k" document (2000 paragraphs, a fenced javascript block every tenth, 5880 lines, 2239 injections) is the bench. Same device and build as above; "before" is the phase 7 build with the kept trees disabled, "kept trees" the phase 7 engine, "after reconciliation" the shipped engine.
 
-| Measure | Before | After |
-| --- | --- | --- |
-| First paint | 43 to 50 ms, 246 ms the first time in a process (two grammars load and compile their queries) | same |
-| Typing, a key every 210 ms: edit to snapshot | p50 146 ms, p95 165 ms, all 2239 injections parsed per key | p50 147 ms, p95 166 ms, max 172 ms, 0 parsed and 2239 reused per key |
-| A burst of 60 keys in a quarter second | one snapshot 359 ms after the first key | one snapshot 380 to 400 ms after the first key |
-| Key handler plus draw during that typing | p50 3 ms | p50 2 to 4 ms |
+| Measure | Before | Kept trees | After reconciliation |
+| --- | --- | --- | --- |
+| First paint | 43 to 50 ms, 246 ms the first time in a process (two grammars load and compile their queries) | same | same, the first pass is still a full one |
+| Typing, a key every 210 ms: edit to snapshot | p50 146 ms, p95 165 ms, all 2239 injections parsed per key | p50 147 ms, p95 166 ms, max 172 ms, 0 parsed and 2239 reused per key | p50 11 ms, p95 51 ms, max 134 ms, 1 reused and 2239 carried per key |
+| A burst of 60 keys in a quarter second | one snapshot 359 ms after the first key | one snapshot 380 to 400 ms after the first key | 17 snapshots during the burst, p50 14 ms, p95 27 ms each |
+| Key handler plus draw during that typing | p50 3 ms | p50 2 to 4 ms | p50 3 ms, p95 8 ms |
 
-What the table says: at a typing pace every key gets its snapshot back within the key interval, so the edited paragraph re-highlights as you type, and the main thread never notices the pass. It also says that keeping the trees changes nothing measurable on this document: a one paragraph injection parses in a few microseconds either way, and the pass is bound by the 65 microseconds of bookkeeping per injection (range matching, the parser call, the tree copy). The reuse pays on documents with a few large injections, such as html with a long script, which this bench does not cover; the next step for documents like this one is to skip the parser call for trees the edit did not touch. A burst faster than the pass is cancelled by each key and resolves once at the end, and a cancelled pass is never published, so the inline spans never flicker.
+What the table says: a key inside a paragraph now costs the diff, a query over a few lines and the parse of that one paragraph's inline tree, and the other trees are carried, so the snapshot lands well inside the key interval and the edited paragraph re-highlights as you type. The `"carried"` field of the parse log line counts the injected trees a pass kept without calling the parser; on this document it reads 2238 for a key inside a paragraph (the paragraph's own tree is the one reused). A burst faster than the pass is cancelled by each key and resolves once at the end, and a cancelled pass is never published, so the inline spans never flicker.
 
 ## iOS
 
