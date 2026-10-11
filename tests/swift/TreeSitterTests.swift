@@ -92,4 +92,21 @@ final class TreeSitterTests: XCTestCase {
     tree.edit(edit(0, 0, 2))
     XCTAssertEqual(tree.includedRanges(), [5, 15, 0, 5, 0, 15])
   }
+
+  func testChangedRangesCoverTheEditInUnits() throws {
+    let parser = Parser()
+    _ = parser.setLanguage(HostGrammars.javascript())
+    let mirror = Mirror()
+    mirror.setText("let a = 1;\nlet b = 2;\n")
+    let old = try XCTUnwrap(parser.parse(nil, mirror, nil, budgetMicros: 0))
+    // A number becoming a call changes the structure; tree-sitter reports no range for a retyped leaf.
+    mirror.replace(8, 9, "f(1)")
+    old.edit(edit(8, 9, 12))
+    let new = try XCTUnwrap(parser.parse(old, mirror, nil, budgetMicros: 0))
+    let r = new.changedRanges(since: old)
+    XCTAssertTrue(r.count >= 2 && r.count % 2 == 0)
+    XCTAssertLessThanOrEqual(r.first ?? 99, 8)
+    XCTAssertGreaterThanOrEqual(r.count > 1 ? r[1] : 0, 12)
+    XCTAssertLessThanOrEqual(r.last ?? 99, 14, "units, not bytes")
+  }
 }

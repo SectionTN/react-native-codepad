@@ -23,6 +23,7 @@ internal object TreeSitterNative {
     startRow: Int, startCol: Int, oldEndRow: Int, oldEndCol: Int, newEndRow: Int, newEndCol: Int,
   )
   @JvmStatic external fun treeIncludedRanges(tree: Long): IntArray
+  @JvmStatic external fun treeChangedRanges(oldTree: Long, newTree: Long): IntArray
   @JvmStatic external fun nodeIsNull(node: LongArray): Boolean
   @JvmStatic external fun nodeStartUnit(node: LongArray): Int
   @JvmStatic external fun nodeEndUnit(node: LongArray): Int

@@ -168,6 +168,21 @@ final class Tree: @unchecked Sendable {
     defer { free(ranges) }
     return TreeSitterRuntime.flatten(ranges, Int(count))
   }
+
+  /// Unit pairs whose syntax differs from `old`, the edited tree this one was parsed against.
+  func changedRanges(since old: Tree) -> [Int] {
+    var count: UInt32 = 0
+    guard let ranges = ts_tree_get_changed_ranges(old.raw, raw, &count) else { return [] }
+    defer { free(ranges) }
+    var out: [Int] = []
+    out.reserveCapacity(Int(count) * 2)
+    for i in 0..<Int(count) {
+      let r = ranges[i]
+      out.append(Int(r.start_byte) / 2)
+      out.append(Int(r.end_byte) / 2)
+    }
+    return out
+  }
 }
 
 final class Parser {

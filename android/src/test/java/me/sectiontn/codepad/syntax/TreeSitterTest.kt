@@ -100,4 +100,26 @@ class TreeSitterTest {
       }
     }
   }
+
+  @Test
+  fun changedRangesCoverTheEditInUnits() {
+    Parser().use { parser ->
+      parser.setLanguage(HostLib.javascript())
+      Mirror().use { mirror ->
+        mirror.setText("let a = 1;\nlet b = 2;\n")
+        val old = checkNotNull(parser.parse(null, mirror, null, 0))
+        // A number becoming a call changes the structure; tree-sitter reports no range for a retyped leaf.
+        mirror.replace(8, 9, "f(1)")
+        old.edit(InputEdit(8, 9, 12, Point(0, 8), Point(0, 9), Point(0, 12)))
+        val new = checkNotNull(parser.parse(old, mirror, null, 0))
+        val r = new.changedRanges(since = old)
+        assertTrue(r.size >= 2 && r.size % 2 == 0)
+        assertTrue(r[0] <= 8)
+        assertTrue(r[1] >= 12)
+        assertTrue("units, not bytes", r[r.size - 1] <= 14)
+        old.close()
+        new.close()
+      }
+    }
+  }
 }
