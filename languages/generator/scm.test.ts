@@ -1,30 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { splitPatterns, tokenize } from './scm.ts';
-
-test('tokenize handles comments, strings with escapes, captures and predicates', () => {
-  const toks = tokenize('; comment\n((identifier) @x (#eq? @x "a\\"b"))');
-  assert.deepEqual(
-    toks.map((t) => [t.t, t.v]),
-    [
-      ['open', '('],
-      ['open', '('],
-      ['word', 'identifier'],
-      ['close', ')'],
-      ['cap', '@x'],
-      ['open', '('],
-      ['pred', '#eq?'],
-      ['cap', '@x'],
-      ['str', 'a"b'],
-      ['close', ')'],
-      ['close', ')'],
-    ],
-  );
-});
+import { splitPatterns } from './scm.ts';
 
 test('splitPatterns separates top level patterns and keeps trailing captures', () => {
+  // The comment line carries parens and a capture that must not become tokens; the string argument has an escape.
   const src =
-    '(identifier) @variable\n["const" "let"] @keyword\n"=" @operator\n((string) @s (#set! priority 105))';
+    '; comment (with parens) @fake\n(identifier) @variable\n["const" "let"] @keyword\n"=" @operator\n((string) @s (#set! priority 105) (#eq? @s "a\\"b"))';
   const patterns = splitPatterns(src);
   assert.equal(patterns.length, 4);
   assert.equal(patterns[0]!.text, '(identifier) @variable');
@@ -32,11 +13,15 @@ test('splitPatterns separates top level patterns and keeps trailing captures', (
   assert.equal(patterns[2]!.text, '"=" @operator');
   assert.deepEqual(
     patterns[3]!.predicates.map((p) => p.name),
-    ['set!'],
+    ['set!', 'eq?'],
   );
   assert.deepEqual(patterns[3]!.predicates[0]!.args, [
     { kind: 'ident', value: 'priority' },
     { kind: 'ident', value: '105' },
+  ]);
+  assert.deepEqual(patterns[3]!.predicates[1]!.args, [
+    { kind: 'capture', value: 's' },
+    { kind: 'string', value: 'a"b' },
   ]);
 });
 

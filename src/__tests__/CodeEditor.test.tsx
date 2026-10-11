@@ -2,8 +2,9 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { render } from '@testing-library/react-native';
 import { createRef } from 'react';
 import { CodeEditor } from '../CodeEditor';
+import type { CodeEditorViewProps } from '../specs/CodeEditorView.nitro';
 import { githubLight } from '../themes/githubLight';
-import type { CodeEditorRef } from '../types';
+import type { CodeEditorProps, CodeEditorRef } from '../types';
 
 jest.mock('react-native-nitro-modules', () => ({
   getHostComponent: () => 'CodeEditorView',
@@ -11,36 +12,11 @@ jest.mock('react-native-nitro-modules', () => ({
   NitroModules: { createHybridObject: () => ({ availableLanguages: () => [] }) },
 }));
 
+// The mocked callback() wraps every function prop as { f }, so the host props follow the Nitro spec in that shape.
+type Wrapped<T> = T extends (...args: infer A) => infer R ? { f: (...args: A) => R } : T;
 type HostProps = {
-  initialValue: string;
-  theme: { tokens: Record<string, { color: string; bold: boolean; italic: boolean }> };
-  fontSize: number;
-  lineHeight: number;
-  lineNumbers: boolean;
-  softWrap: boolean;
-  readOnly: boolean;
-  highlightActiveLine: boolean;
-  matchBrackets: boolean;
-  avoidKeyboard: boolean;
-  placeholder?: string;
-  contentInsets?: { top?: number; bottom?: number; left?: number; right?: number };
-  scrollEnabled: boolean;
-  onScroll: { f: (e: unknown) => void };
-  onSelectionChange: { f: (s: unknown) => void };
-  onReady: { f: () => void };
-  hybridRef: { f: (ref: unknown) => void };
-  suggestions: 'off' | 'forceOff' | 'on';
-  autoFocus: boolean;
-  tabSize: number;
-  insertSpaces: boolean;
-  autoIndent: boolean;
-  autoCloseBrackets: boolean;
-  onChange: { f: (e: unknown) => void };
-  onChangeText?: { f: (text: string) => void };
-  onEditorFocus: { f: () => void };
-  onEditorBlur: { f: () => void };
-  onContentSizeChange: { f: (e: unknown) => void };
-};
+  [K in keyof CodeEditorViewProps]-?: Wrapped<NonNullable<CodeEditorViewProps[K]>>;
+} & { hybridRef: { f: (ref: unknown) => void } };
 
 type Rendered = Awaited<ReturnType<typeof render>>;
 
@@ -51,27 +27,39 @@ const host = (api: Rendered) => {
 };
 
 describe('CodeEditor', () => {
-  it('fills defaults and wraps callbacks for Nitro', async () => {
-    const onReady = jest.fn();
-    const props = host(await render(<CodeEditor onReady={onReady} />));
-    expect(props.initialValue).toBe('');
-    props.onReady.f();
-    expect(onReady).toHaveBeenCalledTimes(1);
-    expect(typeof props.hybridRef.f).toBe('function');
-  });
-
-  it('keeps the wrapped callbacks stable across renders and calls the latest handler', async () => {
-    const first = jest.fn();
-    const second = jest.fn();
-    const api = await render(<CodeEditor onReady={first} />);
-    const before = host(api);
-    await api.rerender(<CodeEditor onReady={second} />);
-    const after = host(api);
-    expect(after.onReady).toBe(before.onReady);
-    expect(after.hybridRef).toBe(before.hybridRef);
-    after.onReady.f();
-    expect(first).not.toHaveBeenCalled();
-    expect(second).toHaveBeenCalledTimes(1);
+  it('wraps every callback once and reads the latest handler', async () => {
+    const rows: [keyof HostProps, (h: jest.Mock) => CodeEditorProps, unknown][] = [
+      ['onReady', (h) => ({ onReady: h }), undefined],
+      [
+        'onScroll',
+        (h) => ({ onScroll: h }),
+        { x: 0, y: 12, contentWidth: 100, contentHeight: 2000 },
+      ],
+      ['onSelectionChange', (h) => ({ onSelectionChange: h }), { anchor: 1, head: 4, revision: 2 }],
+      [
+        'onChange',
+        (h) => ({ onChange: h }),
+        { start: 0, end: 0, text: 'a', origin: 'input', revision: 1 },
+      ],
+      ['onChangeText', (h) => ({ onChangeText: h }), 'a'],
+      ['onEditorFocus', (h) => ({ onFocus: h }), undefined],
+      ['onEditorBlur', (h) => ({ onBlur: h }), undefined],
+      ['onContentSizeChange', (h) => ({ onContentSizeChange: h }), { width: 360, height: 1200 }],
+    ];
+    for (const [hostProp, props, payload] of rows) {
+      const first = jest.fn();
+      const second = jest.fn();
+      const api = await render(<CodeEditor {...props(first)} />);
+      const before = host(api);
+      await api.rerender(<CodeEditor {...props(second)} />);
+      const after = host(api);
+      expect(after[hostProp]).toBe(before[hostProp]);
+      expect(after.hybridRef).toBe(before.hybridRef);
+      (after[hostProp] as { f: (p?: unknown) => void }).f(payload);
+      expect(first).not.toHaveBeenCalled();
+      if (payload === undefined) expect(second).toHaveBeenCalledTimes(1);
+      else expect(second).toHaveBeenCalledWith(payload);
+    }
   });
 
   it('answers reads before the native object exists and forwards afterwards', async () => {
@@ -95,7 +83,7 @@ describe('CodeEditor', () => {
     expect(setText).toHaveBeenCalledWith('y', true);
   });
 
-  it('normalizes theme tokens into structs and keeps font defaults', async () => {
+  it('normalizes theme tokens into structs', async () => {
     const theme = {
       ...githubLight,
       tokens: { keyword: '#f00', comment: { color: '#0f0', italic: true } },
@@ -105,45 +93,49 @@ describe('CodeEditor', () => {
       keyword: { color: '#f00', bold: false, italic: false },
       comment: { color: '#0f0', bold: false, italic: true },
     });
-    expect(props.fontSize).toBe(14);
-    expect(props.lineHeight).toBe(1.4);
   });
 
-  it('fills the view prop defaults and passes insets through', async () => {
+  it('fills the prop defaults and passes explicit values through', async () => {
     const props = host(await render(<CodeEditor />));
-    expect(props.lineNumbers).toBe(true);
-    expect(props.softWrap).toBe(false);
-    expect(props.readOnly).toBe(false);
-    expect(props.highlightActiveLine).toBe(true);
+    expect(props).toMatchObject({
+      initialValue: '',
+      fontSize: 14,
+      lineHeight: 1.4,
+      lineNumbers: true,
+      softWrap: false,
+      readOnly: false,
+      highlightActiveLine: true,
+      matchBrackets: true,
+      scrollEnabled: true,
+      avoidKeyboard: false,
+      tabSize: 4,
+      insertSpaces: true,
+      autoIndent: true,
+      autoCloseBrackets: true,
+      suggestions: 'off',
+      autoFocus: false,
+    });
     expect(props.placeholder).toBeUndefined();
     expect(props.contentInsets).toBeUndefined();
+    expect(props.onChangeText).toBeUndefined();
     const custom = host(
-      await render(<CodeEditor softWrap placeholder="Type here" contentInsets={{ bottom: 40 }} />),
+      await render(
+        <CodeEditor
+          softWrap
+          matchBrackets={false}
+          avoidKeyboard
+          placeholder="Type here"
+          contentInsets={{ bottom: 40 }}
+        />,
+      ),
     );
-    expect(custom.softWrap).toBe(true);
-    expect(custom.placeholder).toBe('Type here');
-    expect(custom.contentInsets).toEqual({ bottom: 40 });
-  });
-
-  it('wraps the scroll and selection events once and reads the latest handlers', async () => {
-    const onScroll = jest.fn();
-    const onSelectionChange = jest.fn();
-    const api = await render(
-      <CodeEditor onScroll={onScroll} onSelectionChange={onSelectionChange} />,
-    );
-    const before = host(api);
-    expect(before.scrollEnabled).toBe(true);
-    const later = jest.fn();
-    await api.rerender(<CodeEditor onScroll={later} onSelectionChange={onSelectionChange} />);
-    const after = host(api);
-    expect(after.onScroll).toBe(before.onScroll);
-    expect(after.onSelectionChange).toBe(before.onSelectionChange);
-    const event = { x: 0, y: 12, contentWidth: 100, contentHeight: 2000 };
-    after.onScroll.f(event);
-    expect(onScroll).not.toHaveBeenCalled();
-    expect(later).toHaveBeenCalledWith(event);
-    after.onSelectionChange.f({ anchor: 1, head: 4, revision: 2 });
-    expect(onSelectionChange).toHaveBeenCalledWith({ anchor: 1, head: 4, revision: 2 });
+    expect(custom).toMatchObject({
+      softWrap: true,
+      matchBrackets: false,
+      avoidKeyboard: true,
+      placeholder: 'Type here',
+      contentInsets: { bottom: 40 },
+    });
   });
 
   it('maps the selection and scroll methods onto the native object', async () => {
@@ -189,37 +181,6 @@ describe('CodeEditor', () => {
     await ref.current?.revealSelection();
     expect(native.selectAll).toHaveBeenCalledTimes(1);
     expect(native.revealSelection).toHaveBeenCalledTimes(1);
-  });
-
-  it('wraps the change and focus events once and reads the latest handlers', async () => {
-    const onChange = jest.fn();
-    const onFocus = jest.fn();
-    const api = await render(<CodeEditor onChange={onChange} onFocus={onFocus} />);
-    const before = host(api);
-    expect(before.suggestions).toBe('off');
-    expect(before.autoFocus).toBe(false);
-    expect(before.tabSize).toBe(4);
-    expect(before.insertSpaces).toBe(true);
-    expect(before.autoIndent).toBe(true);
-    expect(before.autoCloseBrackets).toBe(true);
-    expect(before.onChangeText).toBeUndefined();
-    const later = jest.fn();
-    const onChangeText = jest.fn();
-    await api.rerender(
-      <CodeEditor onChange={later} onFocus={onFocus} onChangeText={onChangeText} />,
-    );
-    const after = host(api);
-    expect(after.onChange).toBe(before.onChange);
-    expect(after.onEditorFocus).toBe(before.onEditorFocus);
-    expect(after.onEditorBlur).toBe(before.onEditorBlur);
-    const event = { start: 0, end: 0, text: 'a', origin: 'input', revision: 1 };
-    after.onChange.f(event);
-    expect(onChange).not.toHaveBeenCalled();
-    expect(later).toHaveBeenCalledWith(event);
-    after.onChangeText?.f('a');
-    expect(onChangeText).toHaveBeenCalledWith('a');
-    after.onEditorFocus.f();
-    expect(onFocus).toHaveBeenCalledTimes(1);
   });
 
   it('maps the editing methods onto the native object', async () => {
@@ -276,23 +237,23 @@ describe('CodeEditor', () => {
     }
   });
 
-  it('defaults matchBrackets to true', async () => {
-    const props = host(await render(<CodeEditor />));
-    expect(props.matchBrackets).toBe(true);
-    expect(host(await render(<CodeEditor matchBrackets={false} />)).matchBrackets).toBe(false);
-  });
-
-  it('defaults avoidKeyboard to false', async () => {
-    const props = host(await render(<CodeEditor />));
-    expect(props.avoidKeyboard).toBe(false);
-    expect(host(await render(<CodeEditor avoidKeyboard />)).avoidKeyboard).toBe(true);
-  });
-
-  it('fills the search query defaults and returns the count', async () => {
+  it('maps the search methods onto the native object', async () => {
     const ref = createRef<CodeEditorRef>();
     const props = host(await render(<CodeEditor ref={ref} />));
     expect(await ref.current?.setSearch({ text: 'ab' })).toEqual({ count: 0 });
-    const native = { setSearch: jest.fn(() => Promise.resolve(3)) };
+    expect(await ref.current?.findNext()).toBeNull();
+    expect(await ref.current?.findPrevious()).toBeNull();
+    expect(await ref.current?.replaceCurrent('x')).toBe(false);
+    expect(await ref.current?.replaceAll('x')).toBe(0);
+    await ref.current?.clearSearch();
+    const native = {
+      setSearch: jest.fn(() => Promise.resolve(3)),
+      findNext: jest.fn(() => Promise.resolve({ index: -1, total: 0 })),
+      findPrevious: jest.fn(() => Promise.resolve({ index: 1, total: 3 })),
+      replaceCurrent: jest.fn(() => Promise.resolve(true)),
+      replaceAll: jest.fn(() => Promise.resolve(2)),
+      clearSearch: jest.fn(() => Promise.resolve()),
+    };
     props.hybridRef.f(native);
     expect(await ref.current?.setSearch({ text: 'ab' })).toEqual({ count: 3 });
     expect(native.setSearch).toHaveBeenCalledWith({
@@ -308,34 +269,9 @@ describe('CodeEditor', () => {
       caseSensitive: true,
       wholeWord: true,
     });
-  });
-
-  it('maps an empty hit to null and passes a hit through', async () => {
-    const ref = createRef<CodeEditorRef>();
-    const props = host(await render(<CodeEditor ref={ref} />));
-    expect(await ref.current?.findNext()).toBeNull();
-    expect(await ref.current?.findPrevious()).toBeNull();
-    const native = {
-      findNext: jest.fn(() => Promise.resolve({ index: -1, total: 0 })),
-      findPrevious: jest.fn(() => Promise.resolve({ index: 1, total: 3 })),
-    };
-    props.hybridRef.f(native);
+    // Nitro cannot cross null inside a struct, so a total of 0 is the no-match sentinel.
     expect(await ref.current?.findNext()).toBeNull();
     expect(await ref.current?.findPrevious()).toEqual({ index: 1, total: 3 });
-  });
-
-  it('forwards replaceCurrent, replaceAll and clearSearch', async () => {
-    const ref = createRef<CodeEditorRef>();
-    const props = host(await render(<CodeEditor ref={ref} />));
-    expect(await ref.current?.replaceCurrent('x')).toBe(false);
-    expect(await ref.current?.replaceAll('x')).toBe(0);
-    await ref.current?.clearSearch();
-    const native = {
-      replaceCurrent: jest.fn(() => Promise.resolve(true)),
-      replaceAll: jest.fn(() => Promise.resolve(2)),
-      clearSearch: jest.fn(() => Promise.resolve()),
-    };
-    props.hybridRef.f(native);
     expect(await ref.current?.replaceCurrent('x')).toBe(true);
     expect(native.replaceCurrent).toHaveBeenCalledWith('x');
     expect(await ref.current?.replaceAll('y')).toBe(2);
@@ -368,18 +304,5 @@ describe('CodeEditor', () => {
     await ref.current?.deleteForward();
     expect(native.deleteBackward).toHaveBeenCalledTimes(1);
     expect(native.deleteForward).toHaveBeenCalledTimes(1);
-  });
-
-  it('wraps onContentSizeChange once and reads the latest handler', async () => {
-    const first = jest.fn();
-    const api = await render(<CodeEditor onContentSizeChange={first} />);
-    const before = host(api);
-    const later = jest.fn();
-    await api.rerender(<CodeEditor onContentSizeChange={later} />);
-    const after = host(api);
-    expect(after.onContentSizeChange).toBe(before.onContentSizeChange);
-    after.onContentSizeChange.f({ width: 360, height: 1200 });
-    expect(first).not.toHaveBeenCalled();
-    expect(later).toHaveBeenCalledWith({ width: 360, height: 1200 });
   });
 });

@@ -16,7 +16,7 @@ test('jniName escapes underscores in package segments', () => {
   );
 });
 
-test('kotlinStringLiteral escapes dollars and triple quotes and chunks long text', () => {
+test('the string literal emitters escape their delimiters and chunk long text', () => {
   assert.equal(kotlinStringLiteral('a$b'), '"""a${\'$\'}b"""');
   assert.equal(kotlinStringLiteral('x"""y'), '"""x""${\'"\'}y"""');
   const long = 'q'.repeat(70_000);
@@ -24,10 +24,8 @@ test('kotlinStringLiteral escapes dollars and triple quotes and chunks long text
     kotlinStringLiteral(long),
     /^listOf\(\n\s+"""q+""",\n\s+"""q+""",\n\)\.joinToString\(""\)$/,
   );
-});
-
-test('swiftRawString wraps in a raw multiline literal', () => {
   assert.equal(swiftRawString('a\\b"c'), '#"""\na\\b"c\n"""#');
+  assert.throws(() => swiftRawString('x"""#y'), /terminator/);
 });
 
 test('cmake puts each grammar source dir on the include path', () => {

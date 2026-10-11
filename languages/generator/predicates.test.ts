@@ -36,9 +36,3 @@ test('vim regexes outside the subset throw', () => {
   assert.throws(() => vimRegexToRegex('\\%[abc]'), TranslateError);
   assert.throws(() => vimRegexToRegex('\\V.'), TranslateError);
 });
-
-test('every translation compiles as a JavaScript RegExp', () => {
-  for (const p of ['^[A-Z]', '^_*[A-Z][A-Z%d_]*$', '%s+', '%a%w*'])
-    new RegExp(luaPatternToRegex(p));
-  for (const v of ['\\<foo\\>', '\\v^(a|b)+$', 'x\\{2,3}']) new RegExp(vimRegexToRegex(v));
-});

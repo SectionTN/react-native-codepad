@@ -4,17 +4,16 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { hostGrammarNames, hostHeader, writeHostHeader } from './host.ts';
-import { languagesDir } from './manifest.ts';
+import { languagesDir, loadManifest } from './manifest.ts';
 
-test('hostHeader declares every grammar under languages once, sorted', () => {
+test('hostHeader declares every grammar of the manifest once, sorted', () => {
   const names = hostGrammarNames(languagesDir);
-  assert.equal(names.length, 16);
-  assert.ok(names.includes('markdown_inline'));
-  assert.deepEqual(names, [...names].sort());
+  const manifest = loadManifest().languages.flatMap((l) => l.grammars.map((g) => g.name));
+  assert.deepEqual(names, manifest.sort());
   const text = hostHeader(names);
   assert.ok(text.startsWith('#ifndef CODEPAD_HOST_GRAMMARS_H\n#define CODEPAD_HOST_GRAMMARS_H\n'));
   assert.ok(text.includes('const void *tree_sitter_javascript(void);\n'));
-  assert.equal(text.match(/tree_sitter_/g)?.length, 16);
+  assert.equal(text.match(/tree_sitter_/g)?.length, names.length);
   assert.equal(hostHeader([...names].reverse()), text);
 });
 
