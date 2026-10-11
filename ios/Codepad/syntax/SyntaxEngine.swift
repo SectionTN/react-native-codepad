@@ -252,7 +252,7 @@ final class SyntaxEngine: @unchecked Sendable {
 
   // The whole document before the first completed pass, else tree-sitter's diff plus the edits' own spans.
   private func regions(_ host: Tree, _ length: Int) -> [Int] {
-    guard let ref = reconciled, !kept.contains(where: { $0.combined }) else { return [0, length] }
+    guard let ref = reconciled else { return [0, length] }
     var out = host.changedRanges(since: ref)
     out.append(contentsOf: dirty)
     for i in out.indices { out[i] = min(max(out[i], 0), length) }
@@ -343,6 +343,14 @@ final class SyntaxEngine: @unchecked Sendable {
       collectMatches(lang, cursor, root, max(0, regions[i] - 1), min(length, regions[i + 1] + 1), &seen, &matches)
       i += 2
     }
+    // A combined group is re-derived every pass: each member hull is queried so unchanged members are found again.
+    for k in touched where k.combined {
+      var j = 0
+      while j + 1 < k.hulls.count {
+        collectMatches(lang, cursor, root, max(0, k.hulls[j] - 1), min(length, k.hulls[j + 1] + 1), &seen, &matches)
+        j += 2
+      }
+    }
     // A match found again at a carried tree's language and extent keeps the carried tree.
     var carriedKeys = Set<ExtentKey>()
     for k in carried { carriedKeys.insert(ExtentKey(id: k.language.id, start: k.start, end: k.end)) }
@@ -412,6 +420,12 @@ final class SyntaxEngine: @unchecked Sendable {
       }
       let old = touched.first { $0.combined && !$0.consumed && $0.language.id == id }
       let same = old.map { $0.tree.includedRanges() == flat } ?? false
+      if let old, same, !old.hit {
+        // No member met a region and the ranges are unchanged: the group is carried like a plain tree.
+        touched.removeAll { $0 === old }
+        carried.append(old)
+        continue
+      }
       let sub = Parser()
       if !sub.setLanguage(target.pointer) { continue }
       sub.setIncludedRanges(flat)

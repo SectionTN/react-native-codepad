@@ -185,6 +185,31 @@ final class InjectionReuseTests: XCTestCase {
     engine.close()
   }
 
+  func testEditingOneHtmlBlockReparsesTheCombinedTree() throws {
+    let text = "<div>\na\n</div>\n\npara\n\n<div>\nb\n</div>\n"
+    let (core, engine) = start("markdown", text)
+    let first = try XCTUnwrap(snapshots.takeParsed())
+    XCTAssertEqual(first.injected.count, 2)
+    XCTAssertEqual(first.injected.first { $0.language.id == "html" }?.tree.includedRanges().count, 12)
+    let b = offset(text, "b\n")
+    core.replace(b, b + 1, "bb")
+    let second = try XCTUnwrap(snapshots.takeParsed())
+    XCTAssertEqual(second.injected.filter { $0.language.id == "html" }.count, 1)
+    XCTAssertEqual(second.injected.first { $0.language.id == "html" }?.tree.includedRanges().count, 12)
+    XCTAssertEqual(second.stats.freshInjections + second.stats.reusedInjections, 1)
+    XCTAssertEqual(second.stats.carriedInjections, 1)
+    let length = core.document.length
+    core.replace(length, length, "\n<div>\nc\n</div>\n")
+    let third = try XCTUnwrap(snapshots.takeParsed())
+    XCTAssertEqual(third.injected.first { $0.language.id == "html" }?.tree.includedRanges().count, 18)
+    XCTAssertEqual(third.stats.carriedInjections, 1)
+    core.replace(0, offset(text, "para"), "")
+    let fourth = try XCTUnwrap(snapshots.takeParsed())
+    XCTAssertEqual(fourth.injected.first { $0.language.id == "html" }?.tree.includedRanges().count, 12)
+    XCTAssertEqual(fourth.injected.count, 2)
+    engine.close()
+  }
+
   // The slow fence is inserted after the first pass, so pass two is the first to resolve it and blocks there.
   func testACancelledPassDoesNotAdvanceTheReferenceTree() throws {
     let slow = SlowProvider()
