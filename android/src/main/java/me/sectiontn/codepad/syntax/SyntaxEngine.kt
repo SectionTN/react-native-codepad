@@ -94,7 +94,7 @@ class SyntaxEngine(
         shift(k.extent, change.start, change.end, change.newEnd)
       }
       shift(dirty, change.start, change.end, change.newEnd)
-      dirty += intArrayOf(change.start, change.newEnd)
+      dirty = coalesce(dirty + intArrayOf(change.start, change.newEnd))
       if (pending.decrementAndGet() == 0) {
         cancel.set(false)
         reparse()
@@ -206,7 +206,7 @@ class SyntaxEngine(
     System.arraycopy(changed, 0, out, 0, changed.size)
     System.arraycopy(dirty, 0, out, changed.size, dirty.size)
     for (i in out.indices) out[i] = out[i].coerceIn(0, length)
-    return out
+    return coalesce(out)
   }
 
   /** One cursor run over [from, to); matches are deduped across runs by pattern and content extent. */

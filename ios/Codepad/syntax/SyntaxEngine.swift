@@ -140,7 +140,7 @@ final class SyntaxEngine: @unchecked Sendable {
         shift(&k.extent, change.start, change.end, change.newEnd)
       }
       shift(&dirty, change.start, change.end, change.newEnd)
-      dirty.append(contentsOf: [change.start, change.newEnd])
+      dirty = coalesce(dirty + [change.start, change.newEnd])
       if settlePending() { reparse() }
     }
   }
@@ -261,7 +261,7 @@ final class SyntaxEngine: @unchecked Sendable {
     var out = host.changedRanges(since: ref)
     out.append(contentsOf: dirty)
     for i in out.indices { out[i] = min(max(out[i], 0), length) }
-    return out
+    return coalesce(out)
   }
 
   /// One cursor run over [from, to); matches are deduped across runs by pattern and content extent.
