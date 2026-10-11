@@ -1,5 +1,6 @@
 package me.sectiontn.codepad.syntax
 
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
@@ -13,6 +14,8 @@ import me.sectiontn.codepad.core.Document
 class SyntaxEngine(
   private val postToMain: (Runnable) -> Unit,
   private val onSnapshot: (Snapshot) -> Unit,
+  private val budgetMicros: Long = 50_000L,
+  private val executor: ExecutorService = Executors.newSingleThreadExecutor { r -> Thread(r, "codepad-syntax").apply { isDaemon = true } },
 ) : AutoCloseable {
   class EditPoints(val start: Point, val oldEnd: Point, val newEnd: Point)
 
@@ -23,10 +26,8 @@ class SyntaxEngine(
   }
   private class Counts(var fresh: Int = 0, var reused: Int = 0)
 
-  private val executor = Executors.newSingleThreadExecutor { r -> Thread(r, "codepad-syntax").apply { isDaemon = true } }
   private val pending = AtomicInteger(0)
   private val cancel = CancelFlag()
-  private var budgetMicros = 50_000L
   // Set by the first call after a snapshot, cleared when the next one posts: the difference is the parse latency.
   private val pendingSince = AtomicLong(0)
 
@@ -67,6 +68,8 @@ class SyntaxEngine(
     executor.execute {
       if (closed) return@execute
       mirror.replace(change.start, change.end, change.inserted)
+      // A parse cut by the budget would resume over the edited mirror and ignore the old tree.
+      parser.reset()
       revision = change.revision
       val edit = InputEdit(change.start, change.end, change.newEnd, points.start, points.oldEnd, points.newEnd)
       tree?.edit(edit)

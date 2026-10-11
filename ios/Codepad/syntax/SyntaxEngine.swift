@@ -30,7 +30,7 @@ final class SyntaxEngine: @unchecked Sendable {
   let queue = DispatchQueue(label: "codepad-syntax", qos: .userInitiated)
   private let pending = OSAllocatedUnfairLock(initialState: 0)
   private let cancel = CancelFlag()
-  private let budgetMicros: Int64 = 50_000
+  private let budgetMicros: Int64
   // Set by the first call after a snapshot, cleared when the next one posts: the difference is the parse latency.
   private let pendingSince = OSAllocatedUnfairLock<UInt64>(initialState: 0)
 
@@ -46,10 +46,12 @@ final class SyntaxEngine: @unchecked Sendable {
 
   init(
     postToMain: @escaping @Sendable (@escaping @Sendable () -> Void) -> Void,
-    onSnapshot: @escaping @Sendable (Snapshot) -> Void
+    onSnapshot: @escaping @Sendable (Snapshot) -> Void,
+    budgetMicros: Int64 = 50_000
   ) {
     self.postToMain = postToMain
     self.onSnapshot = onSnapshot
+    self.budgetMicros = budgetMicros
   }
 
   func setLanguage(_ id: String?) {
@@ -79,6 +81,8 @@ final class SyntaxEngine: @unchecked Sendable {
     queue.async { [self] in
       if closed { return }
       mirror.replace(change.start, change.end, change.inserted)
+      // A parse cut by the budget would resume over the edited mirror and ignore the old tree.
+      parser.reset()
       revision = change.revision
       let edit = InputEdit(
         start: change.start, oldEnd: change.end, newEnd: change.newEnd, startPoint: points.start, oldEndPoint: points.oldEnd,

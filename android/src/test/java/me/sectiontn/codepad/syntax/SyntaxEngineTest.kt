@@ -1,5 +1,7 @@
 package me.sectiontn.codepad.syntax
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import me.sectiontn.codepad.core.EditorCore
@@ -74,6 +76,52 @@ class SyntaxEngineTest {
     assertEquals(200, checkNotNull(last).revision)
     last!!.close()
     engine.close()
+  }
+
+  // The blocker runs between two budget slices of the first parse, so the edit lands while a parse is outstanding.
+  @Test
+  fun anEditBetweenBudgetSlicesRestartsTheParse() {
+    val base = "let a = 1;\n".repeat(2000)
+    val core = EditorCore(base)
+    val executor = Executors.newSingleThreadExecutor()
+    val engine = SyntaxEngine({ it.run() }, { snapshots.add(it) }, budgetMicros = 1, executor = executor)
+    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
+    engine.setLanguage("javascript")
+    engine.setText(base, core.document.revision)
+    val started = CountDownLatch(1)
+    val release = CountDownLatch(1)
+    executor.execute {
+      started.countDown()
+      release.await()
+    }
+    started.await()
+    core.replace(0, 0, " ")
+    release.countDown()
+    val snapshot = awaitRevision(1)
+    assertEquals(shape(freshTree(" $base")), shape(snapshot.tree))
+    snapshot.close()
+    engine.close()
+  }
+
+  private fun freshTree(text: String): Tree {
+    val lang = checkNotNull(LanguageRegistry.resolve("javascript"))
+    Mirror().use { mirror ->
+      mirror.setText(text)
+      Parser().use { parser ->
+        parser.setLanguage(lang.pointer)
+        return checkNotNull(parser.parse(null, mirror, null, 0))
+      }
+    }
+  }
+
+  private fun shape(tree: Tree): List<String> {
+    val out = ArrayList<String>()
+    fun walk(n: TSNodeRef) {
+      out.add("${n.type} ${n.startUnit} ${n.endUnit}")
+      for (i in 0 until n.childCount) walk(n.child(i))
+    }
+    walk(tree.rootNode())
+    return out
   }
 
   @Test

@@ -55,6 +55,48 @@ final class SyntaxEngineTests: XCTestCase {
     engine.close()
   }
 
+  // The blocker runs between two budget slices of the first parse, so the edit lands while a parse is outstanding.
+  func testAnEditBetweenBudgetSlicesRestartsTheParse() throws {
+    let base = String(repeating: "let a = 1;\n", count: 2000)
+    let core = EditorCore(base)
+    let q = snapshots
+    let engine = SyntaxEngine(postToMain: { $0() }, onSnapshot: { q.add($0) }, budgetMicros: 1)
+    wire(core, engine)
+    engine.setLanguage("javascript")
+    engine.setText(base, revision: core.document.revision)
+    let started = DispatchSemaphore(value: 0)
+    let release = DispatchSemaphore(value: 0)
+    engine.queue.async {
+      started.signal()
+      release.wait()
+    }
+    started.wait()
+    core.replace(0, 0, " ")
+    release.signal()
+    let snapshot = try XCTUnwrap(snapshots.takeRevision(1))
+    XCTAssertEqual(shape(try freshTree(" " + base)), shape(snapshot.tree))
+    engine.close()
+  }
+
+  private func freshTree(_ text: String) throws -> Tree {
+    let lang = try XCTUnwrap(LanguageRegistry.resolve("javascript"))
+    let mirror = Mirror()
+    mirror.setText(text)
+    let parser = Parser()
+    parser.setLanguage(lang.pointer)
+    return try XCTUnwrap(parser.parse(nil, mirror, nil, budgetMicros: 0))
+  }
+
+  private func shape(_ tree: Tree) -> [String] {
+    var out: [String] = []
+    func walk(_ n: Node) {
+      out.append("\(n.type) \(n.startUnit) \(n.endUnit)")
+      for i in 0..<n.childCount { walk(n.child(i)) }
+    }
+    walk(tree.rootNode)
+    return out
+  }
+
   func testOffsetDirectiveTrimsTheTemplateStringDelimiters() throws {
     HostLanguages.load("html", "html")
     // The regex literal targets a never-injected language and must leave the pass and the html injection intact.
