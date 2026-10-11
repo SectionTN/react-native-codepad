@@ -602,7 +602,7 @@ class CodeEditorView(context: Context) : View(context) {
     snapshot = next
     if (debugSwitch()) {
       val s = next.stats
-      Log.i(DebugSwitch.TAG, "{\"call\":\"parse\",\"ms\":${s.latencyMillis},\"fresh\":${s.freshInjections},\"reused\":${s.reusedInjections}}")
+      Log.i(DebugSwitch.TAG, "{\"call\":\"parse\",\"ms\":${s.latencyMillis},\"fresh\":${s.freshInjections},\"reused\":${s.reusedInjections},\"carried\":${s.carriedInjections}}")
     }
     invalidate()
   }

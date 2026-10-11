@@ -770,7 +770,7 @@ final class CodeEditorView: UIScrollView {
     if debugSwitch() {
       let s = next.stats
       DebugSwitch.log.info(
-        "{\"call\":\"parse\",\"ms\":\(s.latencyMillis, privacy: .public),\"fresh\":\(s.freshInjections, privacy: .public),\"reused\":\(s.reusedInjections, privacy: .public)}"
+        "{\"call\":\"parse\",\"ms\":\(s.latencyMillis, privacy: .public),\"fresh\":\(s.freshInjections, privacy: .public),\"reused\":\(s.reusedInjections, privacy: .public),\"carried\":\(s.carriedInjections, privacy: .public)}"
       )
     }
     setNeedsLayout()
