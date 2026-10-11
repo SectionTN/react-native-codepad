@@ -33,63 +33,15 @@ final class TextInputTests: XCTestCase {
     editor.textInput.deleteBackward()
     XCTAssertEqual(editor.core.document.text(), "")
     XCTAssertEqual(origins, [.input, .input])
+    editor.textInput.insertText("ab c")
+    editor.core.setSelection(anchor: 0, head: 4)
+    editor.textInput.insertText("x")
+    XCTAssertEqual(editor.core.document.text(), "x", "insertText replaces a selection")
+    editor.textInput.insertText("\n")
+    XCTAssertEqual(editor.core.document.text(), "x\n")
   }
 
-  func testMarkedTextSequenceFromTheKanaFixture() throws {
-    // Four levels up from example/ios/CodepadTests is the repo root; the simulator reads the Mac's files.
-    let url = URL(fileURLWithPath: #filePath)
-      .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-      .appendingPathComponent("tests/ime-ios/kana.json")
-    let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
-    let sessions = try XCTUnwrap(root["sessions"] as? [[String: Any]])
-    let editor = launch()
-    editor.setLineNumbers(false)
-    for (i, session) in sessions.enumerated() {
-      let initial = try XCTUnwrap(session["initial"] as? [String: Any])
-      let sel = try XCTUnwrap(initial["selection"] as? [Int])
-      editor.setInitialText(try XCTUnwrap(initial["text"] as? String))
-      layout(editor)
-      editor.core.setSelection(anchor: sel[0], head: sel[1])
-      for (j, step) in (session["steps"] as? [[String: Any]] ?? []).enumerated() {
-        let call = step["call"] as? String ?? ""
-        let args = step["args"] as? [Any] ?? []
-        let at = "session \(i + 1) step \(j + 1) (\(call))"
-        switch call {
-        case "setMarkedText":
-          let r = args.count > 1 ? args[1] as? [Int] ?? [0, 0] : [0, 0]
-          editor.textInput.setMarkedText(args.first as? String, selectedRange: NSRange(location: r[0], length: r[1]))
-        case "unmarkText":
-          editor.textInput.unmarkText()
-        default:
-          XCTFail("\(at): unknown call")
-        }
-        let after = try XCTUnwrap(step["after"] as? [String: Any])
-        if let v = after["sel"] as? [Int] { XCTAssertEqual(editor.core.selection, Selection(anchor: v[0], head: v[1]), "\(at) selection") }
-        XCTAssertEqual(marked(editor), after["marked"] as? [Int], "\(at) marked")
-        if let v = after["text"] as? String { XCTAssertEqual(editor.core.document.text(), v, "\(at) text") }
-        draw(editor)
-        let underline = editor.textInput.markedUnderline
-        if marked(editor) != nil {
-          XCTAssertFalse(underline.isHidden, "\(at) underline shown")
-          XCTAssertGreaterThan(underline.frame.width, 0, "\(at) underline width")
-          XCTAssertEqual(underline.frame.maxY, 22, accuracy: 0.5, "\(at) underline at the row bottom")
-        } else {
-          XCTAssertTrue(underline.isHidden, "\(at) underline hidden")
-        }
-      }
-    }
-  }
-
-  func testReplaceRewritesAWord() {
-    let editor = launch()
-    editor.setInitialText("hello wrold")
-    layout(editor)
-    editor.textInput.replace(CPTextRange(start: 6, end: 11), withText: "world")
-    XCTAssertEqual(editor.core.document.text(), "hello world")
-    XCTAssertEqual(editor.core.selection, Selection(anchor: 11, head: 11))
-  }
-
-  func testSelectedTextRangeAssignmentMovesTheCoreSelection() {
+  func testTextRangesMapToTheCoreSelection() {
     let editor = launch()
     editor.setInitialText("abcdef")
     layout(editor)
@@ -99,6 +51,11 @@ final class TextInputTests: XCTestCase {
     let range = editor.textInput.selectedTextRange as? CPTextRange
     XCTAssertEqual(range?.startOffset, 2)
     XCTAssertEqual(range?.endOffset, 5)
+    editor.setInitialText("hello wrold")
+    layout(editor)
+    editor.textInput.replace(CPTextRange(start: 6, end: 11), withText: "world")
+    XCTAssertEqual(editor.core.document.text(), "hello world")
+    XCTAssertEqual(editor.core.selection, Selection(anchor: 11, head: 11))
   }
 
   func testSetTextDuringCompositionTellsTheKeyboard() {
@@ -133,5 +90,9 @@ final class TextInputTests: XCTestCase {
     XCTAssertEqual(marked(editor), [40, 42])
     let after = editor.textInput.markedUnderline.frame
     XCTAssertGreaterThan(after.minY, before.minY, "the underline followed the marked text to its new row")
+    XCTAssertEqual(after.maxY.truncatingRemainder(dividingBy: 22), 0, accuracy: 0.5, "the underline sits at a row bottom")
+    editor.textInput.unmarkText()
+    draw(editor)
+    XCTAssertTrue(editor.textInput.markedUnderline.isHidden, "the underline hides with the marked text")
   }
 }

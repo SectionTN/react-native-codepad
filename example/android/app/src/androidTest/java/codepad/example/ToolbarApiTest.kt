@@ -31,6 +31,9 @@ class ToolbarApiTest {
         editor.perform(KeyCommand.Vertical(-1, true, true))
         assertEquals("page up extends from the document end", 16, editor.core.selection.anchor)
         assertEquals(0, editor.core.document.lineAt(editor.core.selection.head))
+        editor.core.setSelection(14, 14)
+        editor.perform(KeyCommand.Vertical(-1, false, true))
+        assertEquals("an upward extend keeps the anchor", Selection(14, 9), editor.core.selection)
       }
     }
   }

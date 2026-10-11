@@ -187,7 +187,6 @@ class CodeEditorView(context: Context) : View(context) {
 
   var ime = ImeSession(core)
     private set
-  val composing: Range? get() = ime.composing
 
   var lastInputType = 0
     private set

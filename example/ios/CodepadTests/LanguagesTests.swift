@@ -1,4 +1,3 @@
-import ObjectiveC
 import XCTest
 
 @testable import Codepad
@@ -17,30 +16,15 @@ final class LanguagesTests: XCTestCase {
     "go": "package main\nfunc main() { x := 1 }", "yaml": "a: 1\nb: [x, y]",
   ]
 
-  /// The id behind every CPLang<Pascal> class the host app links, read off the class names alone. The class
-  /// pointers are loaded raw: a Swift load through the autoreleasing pointer retains and casts each class,
-  /// which traps on the runtime classes that answer no messages.
-  private func linkedIds() -> [String] {
-    var count: UInt32 = 0
-    guard let list = objc_copyClassList(&count) else { return [] }
-    let classes = UnsafeRawPointer(list).assumingMemoryBound(to: AnyClass.self)
-    var ids: [String] = []
-    for i in 0..<Int(count) {
-      let name = String(cString: class_getName(classes[i]))
-      guard name.hasPrefix("CPLang") else { continue }
-      var id = ""
-      for ch in name.dropFirst("CPLang".count) {
-        if ch.isUppercase && !id.isEmpty { id.append("_") }
-        id.append(ch.lowercased())
-      }
-      ids.append(id)
-    }
-    return ids.sorted()
-  }
-
   func testLinkedLanguagesLoadAndParse() {
-    let ids = linkedIds()
-    XCTAssertEqual(ids.count, 16, "\(ids)")
+    // The production class scan behind getAvailableLanguages finds every linked package.
+    let ids = LanguageScan.providerIds()
+    XCTAssertEqual(
+      ids,
+      [
+        "c", "css", "go", "html", "java", "javascript", "json", "kotlin", "markdown", "markdown_inline", "python", "rust",
+        "swift", "tsx", "typescript", "yaml",
+      ])
     for id in ids {
       guard let language = LanguageRegistry.resolve(id) else {
         XCTFail("\(id) did not load")

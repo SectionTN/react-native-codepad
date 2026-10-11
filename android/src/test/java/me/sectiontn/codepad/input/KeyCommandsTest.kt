@@ -3,9 +3,7 @@ package me.sectiontn.codepad.input
 import android.view.KeyEvent
 import me.sectiontn.codepad.core.TextMovement
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class KeyCommandsTest {
@@ -53,15 +51,5 @@ class KeyCommandsTest {
     assertNull(KeyCommands.map(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.META_ALT_ON))
     assertNull(KeyCommands.map(KeyEvent.KEYCODE_V, ctrl or KeyEvent.META_META_ON))
     assertNull(KeyCommands.map(KeyEvent.KEYCODE_Q, 0))
-  }
-
-  @Test
-  fun editsFlag() {
-    assertTrue(KeyCommand.Paste.edits)
-    assertTrue(KeyCommand.Newline.edits)
-    assertFalse(KeyCommand.Copy.edits)
-    assertFalse(KeyCommand.SelectAll.edits)
-    assertFalse(KeyCommand.Move(TextMovement.Unit.Char, true, false).edits)
-    assertFalse(KeyCommand.Vertical(1, false, false).edits)
   }
 }

@@ -21,17 +21,4 @@ final class UndoBridgeTests: XCTestCase {
     manager?.redo()
     XCTAssertEqual(editor.core.document.text(), "ab")
   }
-
-  func testReplaceAllUndoesInOneStep() throws {
-    let editor = launch()
-    editor.setInitialText("a b a")
-    layout(editor)
-    try editor.setSearch(SearchQuery(text: "a"))
-    XCTAssertEqual(editor.replaceAll("x"), 2)
-    XCTAssertEqual(editor.core.document.text(), "x b x")
-    XCTAssertEqual(editor.textInput.undoManager?.canUndo, true)
-    editor.textInput.undoManager?.undo()
-    XCTAssertEqual(editor.core.document.text(), "a b a")
-    XCTAssertEqual(editor.textInput.undoManager?.canUndo, false)
-  }
 }

@@ -8,15 +8,15 @@ final class KeyboardInsetTests: XCTestCase {
   func testTrackerFollowsThePropAndTheAttachment() {
     let editor = launch()
     guard let window = editor.window else { return XCTFail("no window") }
-    XCTAssertFalse(editor.isAvoidingKeyboard)
+    XCTAssertNil(editor.keyboardTracker)
     editor.setAvoidKeyboard(true)
-    XCTAssertTrue(editor.isAvoidingKeyboard)
+    XCTAssertNotNil(editor.keyboardTracker)
     editor.removeFromSuperview()
-    XCTAssertFalse(editor.isAvoidingKeyboard)
+    XCTAssertNil(editor.keyboardTracker)
     window.addSubview(editor)
-    XCTAssertTrue(editor.isAvoidingKeyboard)
+    XCTAssertNotNil(editor.keyboardTracker)
     editor.setAvoidKeyboard(false)
-    XCTAssertFalse(editor.isAvoidingKeyboard)
+    XCTAssertNil(editor.keyboardTracker)
   }
 
   func testKeyboardInsetExtendsTheScrollRangeAndLeavesTheContentSizeAlone() {

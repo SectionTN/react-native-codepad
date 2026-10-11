@@ -289,8 +289,6 @@ final class CodeEditorView: UIScrollView {
     if on && window != nil { startKeyboardTracker() } else { stopKeyboardTracker() }
   }
 
-  var isAvoidingKeyboard: Bool { keyboardTracker != nil }
-
   private func startKeyboardTracker() {
     if keyboardTracker != nil { return }
     let tracker = KeyboardInsetTracker(view: self) { [weak self] points in self?.applyKeyboardInset(points) }

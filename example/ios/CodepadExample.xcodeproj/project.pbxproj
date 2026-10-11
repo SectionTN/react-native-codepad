@@ -23,7 +23,6 @@
 		789D6BA1A8D384C14452E7C6 /* LanguageSwitchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B813E2B1BCDEE1AE37F47D2 /* LanguageSwitchTests.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		83260D5CF89F1C93CB5B7A0A /* SearchPaintTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F036F77C4601D08E5875C5 /* SearchPaintTests.swift */; };
-		8EF53FD05D50E4E8259CB60F /* AvailableLanguagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABA5766E2852DF0C0C63C536 /* AvailableLanguagesTests.swift */; };
 		93D4D0C2FF409C8089204288 /* HitTestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 543C222D1D27E3B97AD6F979 /* HitTestTests.swift */; };
 		9D43A8272A96B15F2D66A37C /* ShowcaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0105AC546A1B5F575E400FF /* ShowcaseTests.swift */; };
 		A8F1B3CCDFF02A1C4D50A3AF /* LanguagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6FE5BF6F2CE3729B6C7778C /* LanguagesTests.swift */; };
@@ -72,7 +71,6 @@
 		8BEC0764E1AD0075FA52E873 /* FocusTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FocusTests.swift; sourceTree = "<group>"; };
 		90EF449DDEB258D79CEA3F22 /* ToolbarApiTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ToolbarApiTests.swift; sourceTree = "<group>"; };
 		99BE42E14E67927D090B6E7E /* ScrollTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScrollTests.swift; sourceTree = "<group>"; };
-		ABA5766E2852DF0C0C63C536 /* AvailableLanguagesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvailableLanguagesTests.swift; sourceTree = "<group>"; };
 		ADB564FFC53EAD71BE35C574 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		B2F036F77C4601D08E5875C5 /* SearchPaintTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchPaintTests.swift; sourceTree = "<group>"; };
 		C6FE5BF6F2CE3729B6C7778C /* LanguagesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LanguagesTests.swift; sourceTree = "<group>"; };
@@ -190,7 +188,6 @@
 				90EF449DDEB258D79CEA3F22 /* ToolbarApiTests.swift */,
 				D8C50157F7EEE5B90548A381 /* UndoBridgeTests.swift */,
 				2FC5A2DC7199A9C215380CB2 /* KeyboardInsetTests.swift */,
-				ABA5766E2852DF0C0C63C536 /* AvailableLanguagesTests.swift */,
 				7133C4873626B3B59917468F /* RecordingTests.swift */,
 			);
 			name = CodepadTests;
@@ -433,7 +430,6 @@
 				77E4DC2FD1B23B76EB060A44 /* ToolbarApiTests.swift in Sources */,
 				1DECFFDCE384662B9BBE2BF7 /* UndoBridgeTests.swift in Sources */,
 				140C2EFB0059C4E49233BA8C /* KeyboardInsetTests.swift in Sources */,
-				8EF53FD05D50E4E8259CB60F /* AvailableLanguagesTests.swift in Sources */,
 				52B28AF3AAEE86E988E04DDF /* RecordingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

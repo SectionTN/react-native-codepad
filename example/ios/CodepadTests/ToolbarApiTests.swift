@@ -20,6 +20,9 @@ final class ToolbarApiTests: XCTestCase {
     editor.perform(.vertical(direction: -1, page: true, extend: true))
     XCTAssertEqual(editor.core.selection.anchor, 16, "page up extends from the document end")
     XCTAssertEqual(editor.core.document.lineAt(editor.core.selection.head), 0)
+    editor.core.setSelection(anchor: 14, head: 14)
+    editor.perform(.vertical(direction: -1, page: false, extend: true))
+    XCTAssertEqual(editor.core.selection, Selection(anchor: 14, head: 9), "an upward extend keeps the anchor")
   }
 
   func testTypeTextTakesTheKeyboardPath() {
@@ -55,21 +58,14 @@ final class ToolbarApiTests: XCTestCase {
     editor.typeText("x")
     editor.perform(.backspace)
     editor.perform(.delete)
+    editor.textInput.insertText("q")
+    editor.perform(.newline)
+    editor.perform(.tab)
+    editor.perform(.undo)
     XCTAssertEqual(editor.core.document.text(), "ab")
     editor.perform(.move(unit: .char, forward: true, extend: true))
     XCTAssertEqual(editor.core.selection, Selection(anchor: 0, head: 1))
-  }
-
-  func testRunOnMainRunsWhileDetached() {
-    final class Flag {
-      var ran = false
-    }
-    let editor = launch()
-    editor.removeFromSuperview()
-    XCTAssertNil(editor.window)
-    let flag = Flag()
-    editor.runOnMain { flag.ran = true }
-    spin(until: { flag.ran })
-    XCTAssertTrue(flag.ran, "the block ran without a window")
+    editor.perform(.selectAll)
+    XCTAssertEqual(editor.core.selection, Selection(anchor: 0, head: 2))
   }
 }

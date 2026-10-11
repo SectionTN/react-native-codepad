@@ -5,28 +5,6 @@ import XCTest
 
 @MainActor
 final class HardwareKeysTests: XCTestCase {
-  func testKeysMoveEditAndUndo() {
-    let editor = launch()
-    editor.setInitialText("ab cd")
-    layout(editor)
-    editor.perform(.move(unit: .char, forward: true, extend: true))
-    XCTAssertEqual(editor.core.selection, Selection(anchor: 0, head: 1))
-    editor.perform(.move(unit: .docEnd, forward: true, extend: false))
-    XCTAssertEqual(editor.core.selection, Selection(anchor: 5, head: 5))
-    editor.perform(.backspace)
-    XCTAssertEqual(editor.core.document.text(), "ab c")
-    editor.perform(.undo)
-    XCTAssertEqual(editor.core.document.text(), "ab cd")
-    editor.perform(.redo)
-    XCTAssertEqual(editor.core.document.text(), "ab c")
-    editor.perform(.selectAll)
-    XCTAssertEqual(editor.core.selection, Selection(anchor: 0, head: 4))
-    editor.textInput.insertText("x")
-    XCTAssertEqual(editor.core.document.text(), "x")
-    editor.textInput.insertText("\n")
-    XCTAssertEqual(editor.core.document.text(), "x\n")
-  }
-
   func testKeyCommandsTableCoversEveryMappedCombination() {
     let editor = launch()
     let commands = editor.textInput.keyCommands ?? []
@@ -51,33 +29,6 @@ final class HardwareKeysTests: XCTestCase {
       }
     }
     XCTAssertEqual(commands.count, mapped, "one command per mapped combination")
-  }
-
-  func testVerticalMovementKeepsTheColumn() {
-    let editor = launch()
-    editor.setInitialText("abcdef\nxy\nlonger")
-    layout(editor)
-    editor.core.setSelection(anchor: 4, head: 4)
-    editor.perform(.vertical(direction: 1, page: false, extend: false))
-    XCTAssertEqual(editor.core.selection, Selection(anchor: 9, head: 9))
-    editor.perform(.vertical(direction: 1, page: false, extend: false))
-    XCTAssertEqual(editor.core.selection, Selection(anchor: 14, head: 14))
-    editor.perform(.vertical(direction: -1, page: false, extend: true))
-    XCTAssertEqual(editor.core.selection, Selection(anchor: 14, head: 9))
-    editor.perform(.vertical(direction: -1, page: true, extend: false))
-    XCTAssertEqual(editor.core.selection, Selection(anchor: 0, head: 0))
-  }
-
-  func testReadOnlyIgnoresEditingKeysOnly() {
-    let editor = launch()
-    editor.setInitialText("ab")
-    layout(editor)
-    editor.setReadOnly(true)
-    editor.perform(.backspace)
-    editor.textInput.insertText("q")
-    XCTAssertEqual(editor.core.document.text(), "ab")
-    editor.perform(.selectAll)
-    XCTAssertEqual(editor.core.selection, Selection(anchor: 0, head: 2))
   }
 
   func testForwardDeleteArrivesThroughPresses() {

@@ -3,10 +3,12 @@ package codepad.example
 import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import me.sectiontn.codepad.core.Selection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,6 +46,12 @@ class HardwareKeysTest {
         assertEquals("x", editor.core.document.text())
         key(editor, KeyEvent.KEYCODE_ENTER)
         assertEquals("x\n", editor.core.document.text())
+        // An editing key ends an open composition before it runs.
+        val ic = editor.onCreateInputConnection(EditorInfo()) ?: error("no connection")
+        ic.setComposingText("zz", 1)
+        key(editor, KeyEvent.KEYCODE_DEL)
+        assertNull(editor.ime.composing)
+        assertEquals("x\nz", editor.core.document.text())
       }
     }
   }
@@ -65,26 +73,6 @@ class HardwareKeysTest {
   }
 
   @Test
-  fun verticalMovementKeepsTheColumn() {
-    launch().use { s ->
-      val editor = s.editor()
-      onMain {
-        editor.setInitialText("abcdef\nxy\nlonger")
-        layout(editor)
-        editor.core.setSelection(4, 4)
-        key(editor, KeyEvent.KEYCODE_DPAD_DOWN)
-        assertEquals(Selection(9, 9), editor.core.selection)
-        key(editor, KeyEvent.KEYCODE_DPAD_DOWN)
-        assertEquals(Selection(14, 14), editor.core.selection)
-        key(editor, KeyEvent.KEYCODE_DPAD_UP, shift)
-        assertEquals(Selection(14, 9), editor.core.selection)
-        key(editor, KeyEvent.KEYCODE_PAGE_UP)
-        assertEquals(Selection(0, 0), editor.core.selection)
-      }
-    }
-  }
-
-  @Test
   fun readOnlyIgnoresEditingKeysOnly() {
     launch().use { s ->
       val editor = s.editor()
@@ -93,7 +81,11 @@ class HardwareKeysTest {
         editor.setReadOnly(true)
         key(editor, KeyEvent.KEYCODE_DEL)
         key(editor, KeyEvent.KEYCODE_Q)
+        key(editor, KeyEvent.KEYCODE_ENTER)
+        key(editor, KeyEvent.KEYCODE_TAB)
         assertEquals("ab", editor.core.document.text())
+        key(editor, KeyEvent.KEYCODE_DPAD_RIGHT)
+        assertEquals(Selection(1, 1), editor.core.selection)
         key(editor, KeyEvent.KEYCODE_A, ctrl)
         assertEquals(Selection(0, 2), editor.core.selection)
       }

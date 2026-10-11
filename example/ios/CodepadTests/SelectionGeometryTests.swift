@@ -94,11 +94,11 @@ extension SelectionGeometryTests {
     editor.core.setSelection(anchor: 0, head: 5)
     draw(editor)
     let input = editor.textInput
-    let ours: [UIView] = [input.selectionContainer, input.cursorView] + (input.handleViews as [UIView])
-    let strangers = input.subviews.filter { view in !ours.contains { $0 === view } }
-    // The display interaction unhides its range views from a delayed perform once the selection is a range.
-    spin(until: { strangers.contains { !$0.isHidden } }, timeout: 3)
-    XCTAssertTrue(strangers.contains { !$0.isHidden }, "the display interaction never showed its range views")
+    // The display interaction adds its range adjustment view once the selection is a range; the view masks it.
+    let adjustment = { input.subviews.first { NSStringFromClass(type(of: $0)).contains("RangeAdjustment") } }
+    spin(until: { adjustment() != nil }, timeout: 3)
+    XCTAssertNotNil(adjustment(), "the display interaction never added its range adjustment view")
+    XCTAssertNotNil(adjustment()?.layer.mask, "the range adjustment view carries the empty mask")
     // Its lollipops never get a frame, so their 16.5 pt knobs would sit at the content origin, inside the inset here.
     let pixels = Pixels(draw(editor))
     var blue = 0
