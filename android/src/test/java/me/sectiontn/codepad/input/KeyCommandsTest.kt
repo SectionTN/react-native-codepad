@@ -20,10 +20,6 @@ class KeyCommandsTest {
     assertEquals(KeyCommand.Vertical(1, false, false), KeyCommands.map(KeyEvent.KEYCODE_DPAD_DOWN, ctrl))
     assertEquals(KeyCommand.Vertical(1, true, false), KeyCommands.map(KeyEvent.KEYCODE_PAGE_DOWN, 0))
     assertEquals(KeyCommand.Vertical(-1, true, true), KeyCommands.map(KeyEvent.KEYCODE_PAGE_UP, shift))
-  }
-
-  @Test
-  fun homeAndEndReachLineOrDocument() {
     assertEquals(KeyCommand.Move(TextMovement.Unit.LineStart, false, false), KeyCommands.map(KeyEvent.KEYCODE_MOVE_HOME, 0))
     assertEquals(KeyCommand.Move(TextMovement.Unit.LineEnd, true, true), KeyCommands.map(KeyEvent.KEYCODE_MOVE_END, shift))
     assertEquals(KeyCommand.Move(TextMovement.Unit.DocStart, false, false), KeyCommands.map(KeyEvent.KEYCODE_MOVE_HOME, ctrl))

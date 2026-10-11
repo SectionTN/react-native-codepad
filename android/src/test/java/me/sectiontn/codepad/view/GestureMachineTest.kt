@@ -42,6 +42,12 @@ class GestureMachineTest {
     m.move(103f, 12f, 20)
     m.up(103f, 12f, 50, 0f, 0f)
     assertEquals(listOf("timer 400", "cancel", "caret 103"), h.calls)
+    val selected = FakeHost()
+    selected.selected = 90..120
+    val inside = machine(selected)
+    inside.down(100f, 10f, 0)
+    inside.up(100f, 10f, 50, 0f, 0f)
+    assertEquals(listOf("timer 400", "cancel", "menu"), selected.calls)
   }
 
   @Test
@@ -59,17 +65,6 @@ class GestureMachineTest {
     m.down(105f, 12f, 1000)
     m.up(105f, 12f, 1050, 0f, 0f)
     assertEquals("caret 105", h.calls.last())
-  }
-
-  @Test
-  fun tapInsideTheSelectionOpensTheMenu() {
-    val h = FakeHost()
-    h.selected = 90..120
-    val m = machine(h)
-    m.down(100f, 10f, 0)
-    m.up(100f, 10f, 50, 0f, 0f)
-    assertTrue(h.calls.contains("menu"))
-    assertFalse(h.calls.any { it.startsWith("caret") })
   }
 
   @Test

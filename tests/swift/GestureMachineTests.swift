@@ -64,21 +64,16 @@ final class GestureMachineTests: XCTestCase {
     XCTAssertEqual(h.calls.last, "caret 104")
   }
 
-  func testTapInsideTheSelectionOpensTheMenu() {
-    let h = RecordingHost()
-    h.selected = 90...120
-    let m = GestureMachine(host: h, config: config)
-    tap(m, 100, 10, at: 0)
-    XCTAssertTrue(h.calls.contains("menu"))
-    XCTAssertFalse(h.calls.contains { $0.hasPrefix("caret") })
-  }
-
-  func testTapOnTheCaretOpensTheMenu() {
+  func testTapOnTheCaretOrInsideTheSelectionOpensTheMenu() {
     let h = RecordingHost()
     h.caret = true
     let m = GestureMachine(host: h, config: config)
     tap(m, 100, 10, at: 0)
     XCTAssertEqual(h.calls, ["timer 0.4", "cancel", "menu"])
+    let selected = RecordingHost()
+    selected.selected = 90...120
+    tap(GestureMachine(host: selected, config: config), 100, 10, at: 0)
+    XCTAssertEqual(selected.calls, ["timer 0.4", "cancel", "menu"])
   }
 
   func testDragLeavesTheGestureToTheScrollView() {

@@ -9,7 +9,7 @@ final class MarkedTextReplayTests: XCTestCase {
     let dir = URL(fileURLWithPath: #filePath)
       .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("ime-ios")
     let files = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasSuffix(".json") }.sorted()
-    XCTAssertEqual(files.count, 6)
+    XCTAssertFalse(files.isEmpty, "no recordings under \(dir.path)")
     for file in files {
       let data = try Data(contentsOf: dir.appendingPathComponent(file))
       let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])

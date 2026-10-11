@@ -18,9 +18,6 @@ final class KeyCommandsTests: XCTestCase {
     XCTAssertEqual(KeyCommands.map(.down, [.command, .shift]), .move(unit: .docEnd, forward: true, extend: true))
     XCTAssertEqual(KeyCommands.map(.pageDown, []), .vertical(direction: 1, page: true, extend: false))
     XCTAssertEqual(KeyCommands.map(.pageUp, shift), .vertical(direction: -1, page: true, extend: true))
-  }
-
-  func testHomeAndEndReachLineOrDocument() {
     XCTAssertEqual(KeyCommands.map(.home, []), .move(unit: .lineStart, forward: false, extend: false))
     XCTAssertEqual(KeyCommands.map(.end, shift), .move(unit: .lineEnd, forward: true, extend: true))
     XCTAssertEqual(KeyCommands.map(.home, command), .move(unit: .docStart, forward: false, extend: false))

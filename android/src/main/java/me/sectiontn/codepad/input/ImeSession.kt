@@ -119,8 +119,6 @@ class ImeSession(private val core: EditorCore) {
     return if (sel.isEmpty) null else doc.text(sel.min, sel.max)
   }
 
-  fun composingText(): String? = composing?.let { doc.text(it.start, it.end) }
-
   /** The text around the selection with selection offsets relative to it, as SurroundingText wants them. */
   fun window(before: Int, after: Int): Window {
     val sel = core.selection
@@ -140,17 +138,6 @@ class ImeSession(private val core: EditorCore) {
   fun endBatchEdit(): Boolean {
     if (batchDepth > 0) batchDepth--
     return batchDepth > 0
-  }
-
-  /** A key event the keyboard sent instead of text. Editing keys end the composition first, like a tap would. */
-  fun sendKey(keyCode: Int, metaState: Int): Boolean {
-    val command = KeyCommands.map(keyCode, metaState) ?: return false
-    var handled = false
-    mutate {
-      if (command.edits) endComposition()
-      handled = CoreCommands.run(core, command)
-    }
-    return handled
   }
 
   /** A change the session did not make. Returns true when it hit the composing text, which the view answers with restartInput. */

@@ -75,7 +75,7 @@ class ImeReplayTest(private val session: JSONObject, private val label: String) 
     "beginBatchEdit" -> ime.beginBatchEdit()
     "endBatchEdit" -> ime.endBatchEdit()
     // Only key downs do anything, as in the view, and a key without a command (Shift) returns false there too.
-    "sendKeyEvent" -> a.getInt(0) == KeyEvent.ACTION_DOWN && ime.sendKey(a.getInt(1), a.getInt(2))
+    "sendKeyEvent" -> a.getInt(0) == KeyEvent.ACTION_DOWN && sendKey(core, ime, a.getInt(1), a.getInt(2))
     "performEditorAction" -> {
       ime.finishComposingText()
       core.insertNewline()
@@ -102,6 +102,13 @@ class ImeReplayTest(private val session: JSONObject, private val label: String) 
       SKIP
     }
     else -> fail("$where unknown call")
+  }
+
+  // The view dispatches key events itself in production: an editing key ends the composition, then the command runs.
+  private fun sendKey(core: EditorCore, ime: ImeSession, keyCode: Int, metaState: Int): Boolean {
+    val command = KeyCommands.map(keyCode, metaState) ?: return false
+    if (command.edits) ime.finishComposingText()
+    return CoreCommands.run(core, command)
   }
 
   // Field by field, since key order differs between the phone's org.json and the one on the JVM.

@@ -34,6 +34,14 @@ final class MarkedTextSessionTests: XCTestCase {
     XCTAssertEqual(changes[0].inserted, "L")
     mark(s, "heL")
     XCTAssertEqual(changes.count, 1)
+    let (core2, s2) = session("helo.", caret: 4)
+    var replaced: [(Change, ChangeOrigin)] = []
+    core2.onChange = { c, o in replaced.append((c, o)) }
+    s2.replace(TextRange(start: 0, end: 4), with: "hello ")
+    XCTAssertEqual(core2.document.text(), "hello .")
+    XCTAssertEqual(core2.selection, Selection(anchor: 6, head: 6))
+    XCTAssertEqual(replaced.map { $0.0.inserted }, ["lo "])
+    XCTAssertEqual(replaced.map { $0.1 }, [.input])
   }
 
   func testComposingNeverSplitsASurrogatePair() {
@@ -69,29 +77,16 @@ final class MarkedTextSessionTests: XCTestCase {
     XCTAssertEqual(core.document.text(), "x ")
     XCTAssertEqual(core.selection, Selection(anchor: 2, head: 2))
     XCTAssertFalse(core.canUndo)
-  }
-
-  func testInsertTextDuringCompositionCommits() {
-    let (core, s) = session()
-    mark(s, "ni")
-    s.insertText("你")
-    XCTAssertEqual(core.document.text(), "你")
-    XCTAssertNil(s.marked)
-    XCTAssertEqual(core.selection, Selection(anchor: 1, head: 1))
-    XCTAssertTrue(core.undo())
-    XCTAssertEqual(core.document.text(), "")
-    XCTAssertFalse(core.canUndo)
-  }
-
-  func testReplaceMapsToAnInputEdit() {
-    let (core, s) = session("helo.", caret: 4)
-    var changes: [(Change, ChangeOrigin)] = []
-    core.onChange = { c, o in changes.append((c, o)) }
-    s.replace(TextRange(start: 0, end: 4), with: "hello ")
-    XCTAssertEqual(core.document.text(), "hello .")
-    XCTAssertEqual(core.selection, Selection(anchor: 6, head: 6))
-    XCTAssertEqual(changes.map { $0.0.inserted }, ["lo "])
-    XCTAssertEqual(changes.map { $0.1 }, [.input])
+    // A commit through insertText during a composition is one step as well.
+    let (core2, s2) = session()
+    mark(s2, "ni")
+    s2.insertText("\u{4F60}")
+    XCTAssertEqual(core2.document.text(), "\u{4F60}")
+    XCTAssertNil(s2.marked)
+    XCTAssertEqual(core2.selection, Selection(anchor: 1, head: 1))
+    XCTAssertTrue(core2.undo())
+    XCTAssertEqual(core2.document.text(), "")
+    XCTAssertFalse(core2.canUndo)
   }
 
   func testExternalChangeEndsTheComposition() {

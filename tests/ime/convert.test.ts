@@ -33,12 +33,8 @@ test('iOS entries convert without inputType and keep the marked range', () => {
   );
   assert.deepEqual(session.steps[0].after, { sel: [5, 5], marked: [4, 5], len: 5, text: 'x = k' });
   assert.equal('ret' in session.steps[0], false);
-});
-
-test('an output directory argument writes the fixture there', () => {
   const dir = mkdtempSync(join(tmpdir(), 'codepad-ime-'));
-  const out = convert(['kana', 'iPhone 18 Pro', dir]);
-  assert.match(out, /wrote .*kana\.json \(2 steps\)/);
+  assert.match(convert(['kana', 'iPhone 18 Pro', dir]), /wrote .*kana\.json \(2 steps\)/);
   const written = JSON.parse(readFileSync(join(dir, 'kana.json'), 'utf8'));
   assert.equal(written.sessions[0].steps.length, 2);
 });

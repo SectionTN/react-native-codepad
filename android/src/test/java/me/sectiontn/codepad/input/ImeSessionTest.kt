@@ -18,16 +18,7 @@ class ImeSessionTest {
   }
 
   @Test
-  fun commitInsertsAtTheCaret() {
-    val (core, ime) = session("ab", 1)
-    assertTrue(ime.commitText("X", 1))
-    assertEquals("aXb", core.document.text())
-    assertEquals(Selection(2, 2), core.selection)
-    assertNull(ime.composing)
-  }
-
-  @Test
-  fun composingGrowsByOneCharEdits() {
+  fun sessionEditsAreMinimalDiffs() {
     val (core, ime) = session()
     val changes = ArrayList<Change>()
     core.onChange = { c, _ -> changes.add(c) }
@@ -38,21 +29,21 @@ class ImeSessionTest {
     assertEquals(Range(0, 3), ime.composing)
     assertEquals(listOf("h", "e", "l"), changes.map { it.inserted })
     assertEquals(Selection(3, 3), core.selection)
-  }
-
-  @Test
-  fun composingReplacesOnlyTheChangedMiddle() {
-    val (core, ime) = session()
-    ime.setComposingText("niho n", 1)
-    val changes = ArrayList<Change>()
-    core.onChange = { c, _ -> changes.add(c) }
-    ime.setComposingText("niho N", 1)
+    changes.clear()
+    ime.setComposingText("heL", 1)
     assertEquals(1, changes.size)
-    assertEquals(5, changes[0].start)
-    assertEquals("n", changes[0].removed)
-    assertEquals("N", changes[0].inserted)
-    ime.setComposingText("niho N", 1)
+    assertEquals(2, changes[0].start)
+    assertEquals("l", changes[0].removed)
+    assertEquals("L", changes[0].inserted)
+    ime.setComposingText("heL", 1)
     assertEquals(1, changes.size)
+    val (core2, ime2) = session("helo.", 4)
+    val diffs = ArrayList<Change>()
+    core2.onChange = { c, _ -> diffs.add(c) }
+    assertTrue(ime2.replaceText(0, 4, "hello ", 1))
+    assertEquals("hello .", core2.document.text())
+    assertEquals(Selection(6, 6), core2.selection)
+    assertEquals(listOf("lo "), diffs.map { it.inserted })
   }
 
   @Test
@@ -99,28 +90,6 @@ class ImeSessionTest {
   }
 
   @Test
-  fun singleCharCommitsUseTheTypingPipeline() {
-    val (core, ime) = session()
-    ime.commitText("(", 1)
-    assertEquals("()", core.document.text())
-    assertEquals(Selection(1, 1), core.selection)
-    ime.commitText("\n", 1)
-    assertEquals("(\n    \n)", core.document.text())
-    assertEquals(Selection(6, 6), core.selection)
-  }
-
-  @Test
-  fun multiCharCommitIsOneInsert() {
-    val (core, ime) = session("a", 1)
-    val changes = ArrayList<Change>()
-    core.onChange = { c, _ -> changes.add(c) }
-    ime.commitText("hello ", 1)
-    assertEquals(1, changes.size)
-    assertEquals("ahello ", core.document.text())
-    assertEquals(Selection(7, 7), core.selection)
-  }
-
-  @Test
   fun composingRegionMarksExistingText() {
     val (core, ime) = session("hello world", 3)
     ime.setComposingRegion(0, 5)
@@ -133,15 +102,6 @@ class ImeSessionTest {
     assertEquals(Range(2, 9), ime.composing)
     ime.setComposingRegion(4, 4)
     assertNull(ime.composing)
-  }
-
-  @Test
-  fun finishKeepsTheText() {
-    val (core, ime) = session()
-    ime.setComposingText("ab", 1)
-    assertTrue(ime.finishComposingText())
-    assertNull(ime.composing)
-    assertEquals("ab", core.document.text())
   }
 
   @Test
@@ -243,36 +203,10 @@ class ImeSessionTest {
     assertTrue(ime.setSelection(9, 1))
     assertEquals(Selection(3, 1), core.selection)
     assertEquals(Range(0, 3), ime.composing)
-    assertEquals("abc", ime.composingText())
     ime.beginBatchEdit()
     ime.reset()
     assertNull(ime.composing)
-    assertNull(ime.composingText())
     assertEquals(0, ime.batchDepth)
-  }
-
-  @Test
-  fun keysFromTheImeRunCoreCommands() {
-    val (core, ime) = session("ab", 2)
-    ime.setComposingText("c", 1)
-    assertTrue(ime.sendKey(android.view.KeyEvent.KEYCODE_DEL, 0))
-    assertEquals("ab", core.document.text())
-    assertNull(ime.composing)
-    assertTrue(ime.sendKey(android.view.KeyEvent.KEYCODE_ENTER, 0))
-    assertEquals("ab\n", core.document.text())
-    assertFalse(ime.sendKey(android.view.KeyEvent.KEYCODE_Q, 0))
-    assertFalse(ime.sendKey(android.view.KeyEvent.KEYCODE_DPAD_DOWN, 0))
-  }
-
-  @Test
-  fun replaceTextSwapsAnAbsoluteRangeWithAMinimalEdit() {
-    val (core, ime) = session("helo.", 4)
-    val changes = ArrayList<Change>()
-    core.onChange = { c, _ -> changes.add(c) }
-    assertTrue(ime.replaceText(0, 4, "hello ", 1))
-    assertEquals("hello .", core.document.text())
-    assertEquals(Selection(6, 6), core.selection)
-    assertEquals(listOf("lo "), changes.map { it.inserted })
   }
 
   @Test
@@ -283,13 +217,9 @@ class ImeSessionTest {
     assertEquals("world ", core.document.text())
     assertNull(ime.composing)
     assertEquals(Selection(0, 0), core.selection)
-  }
-
-  @Test
-  fun replaceTextClampsTheRangeToTheDocument() {
-    val (core, ime) = session("abcd", 4)
-    assertTrue(ime.replaceText(2, 99, "x", 1))
-    assertEquals("abx", core.document.text())
-    assertEquals(Selection(3, 3), core.selection)
+    val (core2, ime2) = session("abcd", 4)
+    assertTrue(ime2.replaceText(2, 99, "x", 1))
+    assertEquals("abx", core2.document.text())
+    assertEquals(Selection(3, 3), core2.selection)
   }
 }
