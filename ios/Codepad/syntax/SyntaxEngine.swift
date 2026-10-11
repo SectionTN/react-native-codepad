@@ -145,6 +145,11 @@ final class SyntaxEngine: @unchecked Sendable {
     }
   }
 
+  /// Drops the view's last reference to a replaced snapshot on the queue, so the main thread never frees the trees.
+  func release(_ snapshot: Snapshot) {
+    queue.async { _ = snapshot }
+  }
+
   func close() {
     queue.async { [self] in
       closed = true

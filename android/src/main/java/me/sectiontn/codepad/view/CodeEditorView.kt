@@ -595,10 +595,10 @@ class CodeEditorView(context: Context) : View(context) {
   private fun onSnapshot(next: Snapshot) {
     // A parse that started before a language switch still reports the old grammar; it must not paint.
     if (next.languageId != languageId) {
-      next.close()
+      engine?.release(next) ?: next.close()
       return
     }
-    snapshot?.close()
+    snapshot?.let { engine?.release(it) ?: it.close() }
     snapshot = next
     if (debugSwitch()) {
       val s = next.stats

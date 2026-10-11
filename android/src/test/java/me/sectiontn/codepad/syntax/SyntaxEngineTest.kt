@@ -161,4 +161,18 @@ class SyntaxEngineTest {
     switched.close()
     engine.close()
   }
+
+  // A snapshot can land after the view detached and closed the engine; handing it back must not throw.
+  @Test
+  fun releaseDoesNotThrowAfterClose() {
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+    engine.setLanguage("javascript")
+    engine.setText("let a = 1;", 1)
+    val first = awaitRevision(1)
+    engine.setText("let b = 2;", 2)
+    val second = awaitRevision(2)
+    engine.release(first)
+    engine.close()
+    engine.release(second)
+  }
 }

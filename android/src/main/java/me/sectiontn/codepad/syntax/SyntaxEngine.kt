@@ -102,6 +102,11 @@ class SyntaxEngine(
     }
   }
 
+  /** Closes a snapshot the view replaced after the queued work, so the main thread never frees the trees. */
+  fun release(snapshot: Snapshot) {
+    if (executor.isShutdown) snapshot.close() else executor.execute { snapshot.close() }
+  }
+
   override fun close() {
     executor.execute {
       closed = true

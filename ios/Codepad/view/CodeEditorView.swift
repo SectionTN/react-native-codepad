@@ -760,8 +760,13 @@ final class CodeEditorView: UIScrollView {
 
   private func onSnapshot(_ next: Snapshot) {
     // A parse that started before a language switch still reports the old grammar; it must not paint.
-    if next.languageId != languageId { return }
+    if next.languageId != languageId {
+      engine?.release(next)
+      return
+    }
+    let previous = snapshot
     snapshot = next
+    if let previous { engine?.release(previous) }
     if debugSwitch() {
       let s = next.stats
       DebugSwitch.log.info(
