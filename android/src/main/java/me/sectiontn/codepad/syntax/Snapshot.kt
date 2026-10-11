@@ -1,17 +1,18 @@
 package me.sectiontn.codepad.syntax
 
-class Injected(val language: LoadedLanguage, val tree: Tree, val ranges: IntArray)
+/** One injected tree with the unit extent of its content; the tree itself keeps the included ranges. */
+class Injected(val language: LoadedLanguage, val tree: Tree, val start: Int, val end: Int)
 
-/** Edit to snapshot time plus how many injected trees were parsed fresh or reused incrementally. */
-class ParseStats(val latencyMillis: Int, val freshInjections: Int, val reusedInjections: Int)
+/** Edit to snapshot time plus how many injected trees were parsed fresh, reused incrementally or carried without a parse. */
+class ParseStats(val latencyMillis: Int, val freshInjections: Int, val reusedInjections: Int, val carriedInjections: Int)
 
-/** An immutable parse result for one document revision. Owns its trees. Close it on the main thread when replaced. */
+/** An immutable parse result for one document revision. Owns its trees; `injected` is sorted by start. */
 class Snapshot(
   val revision: Int,
   val tree: Tree,
   val injected: List<Injected>,
   val languageId: String,
-  val stats: ParseStats = ParseStats(0, 0, 0),
+  val stats: ParseStats = ParseStats(0, 0, 0, 0),
 ) : AutoCloseable {
   override fun close() {
     tree.close()

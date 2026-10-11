@@ -19,12 +19,22 @@ class SyntaxEngine(
 ) : AutoCloseable {
   class EditPoints(val start: Point, val oldEnd: Point, val newEnd: Point)
 
-  private class Kept(val language: LoadedLanguage, val tree: Tree)
+  /** A kept injected tree: `hulls` are unit pairs over its match's captures, `extent` the content span after offsets. */
+  private class Kept(val language: LoadedLanguage, val tree: Tree, val combined: Boolean, val hulls: IntArray, val extent: IntArray) {
+    val start: Int get() = extent[0]
+    val end: Int get() = extent[1]
+    // Pass-local marks: a region met one of the hulls; the tree was replaced by a reparse and closed.
+    var hit = false
+    var consumed = false
+  }
+  private class Match(val target: LoadedLanguage, val combined: Boolean, val hullStart: Int, val hullEnd: Int, val ranges6: IntArray, val start: Int, val end: Int)
+  private data class MatchKey(val pattern: Int, val start: Int, val end: Int)
+  private data class ExtentKey(val id: String, val start: Int, val end: Int)
   private class RangeKey(val id: String, val ranges: IntArray) {
     override fun equals(other: Any?): Boolean = other is RangeKey && other.id == id && other.ranges.contentEquals(ranges)
     override fun hashCode(): Int = 31 * id.hashCode() + ranges.contentHashCode()
   }
-  private class Counts(var fresh: Int = 0, var reused: Int = 0)
+  private class Counts(var fresh: Int = 0, var reused: Int = 0, var carried: Int = 0)
 
   private val pending = AtomicInteger(0)
   private val cancel = CancelFlag()
@@ -36,8 +46,12 @@ class SyntaxEngine(
   private val parser = Parser()
   private var language: LoadedLanguage? = null
   private var tree: Tree? = null
-  // Injected trees of the last snapshot, edited along with the document so unchanged ranges reparse for free.
+  // Injected trees of the last pass, edited along with the document so unchanged ranges reparse for free.
   private val kept = ArrayList<Kept>()
+  // The host tree of the last completed pass, edited like the live one; its diff against the new tree bounds the pass.
+  private var reconciled: Tree? = null
+  // New spans of the edits since the last completed pass, shifted like hulls: the diff misses a retyped leaf.
+  private var dirty = IntArray(0)
   private var revision = 0
   private var closed = false
 
@@ -73,7 +87,14 @@ class SyntaxEngine(
       revision = change.revision
       val edit = InputEdit(change.start, change.end, change.newEnd, points.start, points.oldEnd, points.newEnd)
       tree?.edit(edit)
-      for (k in kept) k.tree.edit(edit)
+      reconciled?.edit(edit)
+      for (k in kept) {
+        k.tree.edit(edit)
+        shift(k.hulls, change.start, change.end, change.newEnd)
+        shift(k.extent, change.start, change.end, change.newEnd)
+      }
+      shift(dirty, change.start, change.end, change.newEnd)
+      dirty += intArrayOf(change.start, change.newEnd)
       if (pending.decrementAndGet() == 0) {
         cancel.set(false)
         reparse()
@@ -126,109 +147,239 @@ class SyntaxEngine(
     }
     val since = pendingSince.getAndSet(0L)
     val latency = if (since == 0L) 0 else ((System.nanoTime() - since) / 1_000_000L).toInt()
-    val snapshot = Snapshot(revision, result.copy(), injected, lang.id, ParseStats(latency, counts.fresh, counts.reused))
+    val snapshot = Snapshot(revision, result.copy(), injected, lang.id, ParseStats(latency, counts.fresh, counts.reused, counts.carried))
     postToMain(Runnable { onSnapshot(snapshot) })
   }
 
   private fun dropKept() {
     for (k in kept) k.tree.close()
     kept.clear()
+    reconciled?.close()
+    reconciled = null
+    dirty = IntArray(0)
   }
 
+  /** Pairs after the edit move with it, pairs before it stay, pairs meeting it grow over its new span. */
+  private fun shift(pairs: IntArray, start: Int, oldEnd: Int, newEnd: Int) {
+    val delta = newEnd - oldEnd
+    var i = 0
+    while (i < pairs.size) {
+      val s = pairs[i]
+      val e = pairs[i + 1]
+      if (s >= oldEnd) {
+        pairs[i] = s + delta
+        pairs[i + 1] = e + delta
+      } else if (e > start) {
+        pairs[i] = minOf(s, start)
+        pairs[i + 1] = maxOf(e + delta, newEnd)
+      }
+      i += 2
+    }
+  }
+
+  /** Region [a, b) meets hull [c, d) when they intersect or touch, so an edit at a hull end counts. */
+  private fun meets(a: Int, b: Int, c: Int, d: Int): Boolean = a <= d && b >= c
+
+  private fun metBy(hulls: IntArray, regions: IntArray): Boolean {
+    var i = 0
+    while (i < hulls.size) {
+      var j = 0
+      while (j < regions.size) {
+        if (meets(regions[j], regions[j + 1], hulls[i], hulls[i + 1])) return true
+        j += 2
+      }
+      i += 2
+    }
+    return false
+  }
+
+  // The whole document before the first completed pass, else tree-sitter's diff plus the edits' own spans.
+  private fun regions(host: Tree, length: Int): IntArray {
+    val ref = reconciled
+    if (ref == null || kept.any { it.combined }) return intArrayOf(0, length)
+    val changed = host.changedRanges(since = ref)
+    val out = IntArray(changed.size + dirty.size)
+    System.arraycopy(changed, 0, out, 0, changed.size)
+    System.arraycopy(dirty, 0, out, changed.size, dirty.size)
+    for (i in out.indices) out[i] = out[i].coerceIn(0, length)
+    return out
+  }
+
+  /** One cursor run over [from, to); matches are deduped across runs by pattern and content extent. */
+  private fun collectMatches(lang: LoadedLanguage, cursor: QueryCursor, root: TSNodeRef, from: Int, to: Int, seen: MutableSet<MatchKey>, out: MutableList<Match>) {
+    val compiled = lang.injections ?: return
+    val contentIndex = compiled.captureIndex["injection.content"] ?: return
+    val languageIndex = compiled.captureIndex["injection.language"]
+    val read: (TSNodeRef) -> String = { n -> mirror.text(n.startUnit, n.endUnit) }
+    cursor.exec(compiled.query, root)
+    cursor.setUnitRange(from, to)
+    val capture = Capture()
+    val handled = HashSet<Int>()
+    while (cursor.nextCapture(capture)) {
+      if (!handled.add(capture.matchId)) continue
+      val all = ArrayList<CaptureNode>(cursor.matchCaptureCount)
+      for (i in 0 until cursor.matchCaptureCount) {
+        val c = Capture()
+        cursor.matchCapture(i, c)
+        all.add(CaptureNode(c.captureIndex, c.node))
+      }
+      if (!compiled.evaluator.matches(capture.patternIndex, all, read)) {
+        cursor.removeMatch(capture.matchId)
+        continue
+      }
+      val settings = compiled.evaluator.settings(capture.patternIndex)
+      val name = settings["injection.language"]
+        ?: all.firstOrNull { it.captureIndex == languageIndex }?.let { read(it.node) }
+        ?: continue
+      val target = LanguageRegistry.resolveInjection(name) ?: continue
+      val combined = settings.containsKey("injection.combined")
+      val offset = compiled.evaluator.offset(capture.patternIndex)
+      // The hull spans every captured node, so an edit to a language marker touches the tree.
+      var hullStart = Int.MAX_VALUE
+      var hullEnd = 0
+      for (c in all) {
+        hullStart = minOf(hullStart, c.node.startUnit)
+        hullEnd = maxOf(hullEnd, c.node.endUnit)
+      }
+      for (c in all) {
+        if (c.captureIndex != contentIndex) continue
+        val n = c.node
+        val sp = n.startPoint
+        val ep = n.endPoint
+        var start = n.startUnit
+        var end = n.endUnit
+        var startColumn = sp.column
+        var endColumn = ep.column
+        // Column shifts trim delimiters on their own row, which is all nvim uses; row shifts are ignored.
+        if (offset != null && offset.captureIndex == c.captureIndex && offset.startRow == 0 && offset.endRow == 0) {
+          start += offset.startColumn
+          end += offset.endColumn
+          startColumn += offset.startColumn
+          endColumn += offset.endColumn
+        }
+        if (start >= end) continue
+        if (!seen.add(MatchKey(capture.patternIndex, start, end))) continue
+        out.add(Match(target, combined, hullStart, hullEnd, intArrayOf(start, end, sp.row, startColumn, ep.row, endColumn), start, end))
+      }
+    }
+  }
+
+  /**
+   * Reconciles the kept trees against what changed since the last completed pass: the query runs over the changed
+   * regions only, trees they meet are reparsed, the rest are carried over. Null when a new edit cancelled the pass.
+   */
   private fun injections(lang: LoadedLanguage, host: Tree, counts: Counts): List<Injected>? {
     val compiled = lang.injections
-    if (compiled == null) {
+    if (compiled == null || !compiled.captureIndex.containsKey("injection.content")) {
       dropKept()
       return emptyList()
     }
-    val read: (TSNodeRef) -> String = { n -> mirror.text(n.startUnit, n.endUnit) }
-    val contentIndex = compiled.captureIndex["injection.content"]
-    if (contentIndex == null) {
-      dropKept()
-      return emptyList()
+    val length = mirror.length
+    val regions = regions(host, length)
+    val touched = ArrayList<Kept>()
+    val carried = ArrayList<Kept>()
+    for (k in kept) {
+      k.hit = metBy(k.hulls, regions)
+      k.consumed = false
+      if (k.hit || k.combined) touched.add(k) else carried.add(k)
     }
-    val languageIndex = compiled.captureIndex["injection.language"]
-    val groups = LinkedHashMap<String, MutableList<IntArray>>()
-    val combined = HashSet<String>()
-    QueryCursor().use { cursor ->
-      cursor.exec(compiled.query, host.rootNode())
-      val capture = Capture()
-      val handled = HashSet<Int>()
-      while (cursor.nextCapture(capture)) {
-        if (!handled.add(capture.matchId)) continue
-        val all = ArrayList<CaptureNode>(cursor.matchCaptureCount)
-        for (i in 0 until cursor.matchCaptureCount) {
-          val c = Capture()
-          cursor.matchCapture(i, c)
-          all.add(CaptureNode(c.captureIndex, c.node))
-        }
-        if (!compiled.evaluator.matches(capture.patternIndex, all, read)) {
-          cursor.removeMatch(capture.matchId)
-          continue
-        }
-        val settings = compiled.evaluator.settings(capture.patternIndex)
-        val name = settings["injection.language"]
-          ?: all.firstOrNull { it.captureIndex == languageIndex }?.let { read(it.node) }
-          ?: continue
-        val target = LanguageRegistry.resolveInjection(name) ?: continue
-        if (settings.containsKey("injection.combined")) combined.add(target.id)
-        val offset = compiled.evaluator.offset(capture.patternIndex)
-        for (c in all) {
-          if (c.captureIndex != contentIndex) continue
-          val n = c.node
-          val sp = n.startPoint
-          val ep = n.endPoint
-          var start = n.startUnit
-          var end = n.endUnit
-          var startColumn = sp.column
-          var endColumn = ep.column
-          // Column shifts trim delimiters on their own row, which is all nvim uses; row shifts are ignored.
-          if (offset != null && offset.captureIndex == c.captureIndex && offset.startRow == 0 && offset.endRow == 0) {
-            start += offset.startColumn
-            end += offset.endColumn
-            startColumn += offset.startColumn
-            endColumn += offset.endColumn
-          }
-          if (start >= end) continue
-          groups.getOrPut(target.id) { ArrayList() }.add(intArrayOf(start, end, sp.row, startColumn, ep.row, endColumn))
+    val matches = ArrayList<Match>()
+    if (regions.isNotEmpty()) {
+      val root = host.rootNode()
+      val seen = HashSet<MatchKey>()
+      QueryCursor().use { cursor ->
+        var i = 0
+        while (i < regions.size) {
+          // Widened by one unit so a touched hull, however the edit sits against it, intersects the run.
+          collectMatches(lang, cursor, root, maxOf(0, regions[i] - 1), minOf(length, regions[i + 1] + 1), seen, matches)
+          i += 2
         }
       }
     }
-    // Kept trees are indexed once by their edited ranges; a hit reparses against the old tree.
+    // A match found again at a carried tree's language and extent keeps the carried tree.
+    val carriedKeys = HashSet<ExtentKey>()
+    for (k in carried) carriedKeys.add(ExtentKey(k.language.id, k.start, k.end))
+    val plain = LinkedHashMap<String, MutableList<Match>>()
+    val grouped = LinkedHashMap<String, MutableList<Match>>()
+    for (m in matches) {
+      if (m.combined) grouped.getOrPut(m.target.id) { ArrayList() }.add(m)
+      else if (!carriedKeys.contains(ExtentKey(m.target.id, m.start, m.end))) plain.getOrPut(m.target.id) { ArrayList() }.add(m)
+    }
+    // Touched trees are indexed by their edited ranges; a plain match with equal ranges reparses against one.
     val index = HashMap<RangeKey, ArrayDeque<Kept>>()
-    for (k in kept) index.getOrPut(RangeKey(k.language.id, k.tree.includedRanges())) { ArrayDeque() }.addLast(k)
+    for (k in touched) if (!k.combined) index.getOrPut(RangeKey(k.language.id, k.tree.includedRanges())) { ArrayDeque() }.addLast(k)
     val out = ArrayList<Injected>()
     val next = ArrayList<Kept>()
-    for ((id, ranges) in groups) {
-      val target = LanguageRegistry.resolve(id) ?: continue
+    fun cancelled(): List<Injected>? {
+      // A new edit cancelled a parse: every tree still valid stays kept for the next pass, nothing is published.
+      for (i in out) i.tree.close()
+      kept.clear()
+      kept.addAll(carried)
+      kept.addAll(next)
+      for (k in touched) if (!k.consumed) kept.add(k)
+      return null
+    }
+    for ((id, group) in plain) {
+      val target = group[0].target
       Parser().use { sub ->
         if (!sub.setLanguage(target.pointer)) return@use
-        val batches = if (id in combined) listOf(ranges) else ranges.map { listOf(it) }
-        for (batch in batches) {
-          val flat = IntArray(batch.size * 6)
-          for ((i, r) in batch.withIndex()) System.arraycopy(r, 0, flat, i * 6, 6)
-          sub.setIncludedRanges(flat)
-          val old = index[RangeKey(id, flat)]?.removeFirstOrNull()
-          val t = sub.parse(old?.tree, mirror, cancel, 0)
-          if (t == null) {
-            // Cancelled by a new edit: the trees parsed so far stay kept for the next pass, nothing is published.
-            for (i in out) i.tree.close()
-            kept.addAll(next)
-            return null
-          }
+        for (m in group) {
+          sub.setIncludedRanges(m.ranges6)
+          val old = index[RangeKey(id, m.ranges6)]?.removeFirstOrNull()
+          val t = sub.parse(old?.tree, mirror, cancel, 0) ?: return cancelled()
           if (old != null) {
             old.tree.close()
-            kept.remove(old)
+            old.consumed = true
+            counts.reused++
+          } else {
+            counts.fresh++
           }
-          if (old != null) counts.reused++ else counts.fresh++
-          out.add(Injected(target, t, flat))
-          next.add(Kept(target, t.copy()))
+          out.add(Injected(target, t, m.start, m.end))
+          next.add(Kept(target, t.copy(), false, intArrayOf(m.hullStart, m.hullEnd), intArrayOf(m.start, m.end)))
         }
       }
     }
-    dropKept()
+    // A combined group is one tree over every member range; it reparses against its old tree only when the ranges match.
+    for ((id, group) in grouped) {
+      val target = group[0].target
+      group.sortBy { it.start }
+      val flat = IntArray(group.size * 6)
+      val hulls = IntArray(group.size * 2)
+      for ((i, m) in group.withIndex()) {
+        System.arraycopy(m.ranges6, 0, flat, i * 6, 6)
+        hulls[i * 2] = m.hullStart
+        hulls[i * 2 + 1] = m.hullEnd
+      }
+      Parser().use { sub ->
+        if (!sub.setLanguage(target.pointer)) return@use
+        sub.setIncludedRanges(flat)
+        val old = touched.firstOrNull { it.combined && !it.consumed && it.language.id == id }
+        val same = old != null && old.tree.includedRanges().contentEquals(flat)
+        val t = sub.parse(if (same) old?.tree else null, mirror, cancel, 0) ?: return cancelled()
+        if (old != null) {
+          old.tree.close()
+          old.consumed = true
+        }
+        if (same) counts.reused++ else counts.fresh++
+        val extent = intArrayOf(group[0].start, group[group.size - 1].end)
+        out.add(Injected(target, t, extent[0], extent[1]))
+        next.add(Kept(target, t.copy(), true, hulls, extent))
+      }
+    }
+    for (k in touched) if (!k.consumed) k.tree.close()
+    kept.clear()
+    kept.addAll(carried)
     kept.addAll(next)
-    return out
+    kept.sortBy { it.start }
+    reconciled?.close()
+    reconciled = host.copy()
+    dirty = IntArray(0)
+    counts.carried = carried.size
+    val result = ArrayList<Injected>(carried.size + out.size)
+    for (k in carried) result.add(Injected(k.language, k.tree.copy(), k.start, k.end))
+    result.addAll(out)
+    result.sortBy { it.start }
+    return result
   }
 
   companion object {
