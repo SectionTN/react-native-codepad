@@ -56,7 +56,7 @@ function gen(ids: string[]): void {
         const resolved = resolveQuery(g.name, kind, read);
         if (resolved == null) continue;
         if (kind === 'highlights' || kind === 'injections') {
-          const { text, dropped } = rewriteQuery(resolved);
+          const { text, dropped } = rewriteQuery(resolved, { injections: kind === 'injections' });
           droppedTotal += dropped.length;
           for (const d of dropped) {
             process.stderr.write(`warning: ${entry.id}/${g.name} ${kind}: ${d.reason}\n`);

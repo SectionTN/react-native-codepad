@@ -20,6 +20,20 @@ test('rewriteQuery translates lua and vim predicates into match? with escaped re
   );
 });
 
+test('rewriteQuery refuses ancestor predicates in an injections query', () => {
+  const src =
+    '((code) @injection.content (#has-ancestor? @injection.content document) (#set! injection.language "x"))';
+  assert.throws(
+    () => rewriteQuery(src, { injections: true }),
+    /has-ancestor\? is not allowed in injections\.scm/,
+  );
+  assert.throws(
+    () => rewriteQuery(src.replace('has-ancestor?', 'not-has-parent?'), { injections: true }),
+    /not-has-parent\?/,
+  );
+  assert.equal(rewriteQuery(src).dropped.length, 0);
+});
+
 test('rewriteQuery replaces dropped patterns with a comment and keeps the rest verbatim', () => {
   const src = '(a) @a\n((b) @b (#is? @b "x"))\n((c) @c (#set! priority 90))';
   const { text, dropped } = rewriteQuery(src);

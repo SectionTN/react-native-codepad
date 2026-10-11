@@ -36,13 +36,41 @@ function rewritePattern(pattern: Pattern): string {
   return out;
 }
 
-export function rewriteQuery(src: string): { text: string; dropped: Dropped[] } {
+const ANCESTOR_PREDICATES = new Set([
+  'has-parent?',
+  'has-ancestor?',
+  'not-has-parent?',
+  'not-has-ancestor?',
+]);
+
+/** The engine re-queries an injection only where its captures changed, so a match may not depend on nodes outside them. */
+function ancestorPredicate(pattern: Pattern): string | null {
+  for (const t of tokenize(pattern.text)) {
+    if (t.t !== 'pred') continue;
+    const name = t.v.slice(1);
+    if (ANCESTOR_PREDICATES.has(name)) return name;
+  }
+  return null;
+}
+
+export function rewriteQuery(
+  src: string,
+  options: { injections?: boolean } = {},
+): { text: string; dropped: Dropped[] } {
   const patterns = splitPatterns(src);
   const dropped: Dropped[] = [];
   let out = '';
   let cursor = 0;
   for (const pattern of patterns) {
     out += src.slice(cursor, pattern.start);
+    if (options.injections) {
+      const name = ancestorPredicate(pattern);
+      if (name) {
+        throw new Error(
+          `${name} is not allowed in injections.scm: a match could change outside its captures (injection reconciliation design, 2026-10-11)`,
+        );
+      }
+    }
     const reason = dropReason(pattern);
     if (reason) {
       dropped.push({ pattern, reason });
