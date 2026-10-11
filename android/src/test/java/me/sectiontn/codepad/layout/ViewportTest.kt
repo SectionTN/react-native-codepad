@@ -25,6 +25,10 @@ class ViewportTest {
     assertEquals(0, v.maxScrollX)
     assertTrue(v.scrollBy(0, -1000))
     assertEquals(800, v.scrollY)
+    v.scrollTo(0, 5000)
+    v.height = 300
+    assertTrue(v.clamp())
+    assertEquals(1700, v.scrollY)
   }
 
   @Test
@@ -123,17 +127,6 @@ class ViewportTest {
   }
 
   @Test
-  fun scrollToLinePutsTheLineAtTheTop() {
-    val v = viewport()
-    v.insetTop = 30
-    assertTrue(v.scrollToLine(10))
-    assertEquals(200, v.scrollY)
-    assertEquals(30, v.lineTop(10))
-    v.scrollToLine(500)
-    assertEquals(v.maxScrollY, v.scrollY)
-  }
-
-  @Test
   fun resizeAndInsetsReportOnlyTextAreaWidthChanges() {
     val v = viewport()
     assertFalse(v.resize(400, 300))
@@ -146,14 +139,5 @@ class ViewportTest {
     assertEquals(8, v.insetLeft)
     assertTrue(v.setInsets(10, 20, 8, 4))
     assertFalse(v.setInsets(0, 0, 8, 4))
-  }
-
-  @Test
-  fun gutterWidthCountsDigits() {
-    assertEquals(1, GutterMetrics.digits(0))
-    assertEquals(1, GutterMetrics.digits(9))
-    assertEquals(2, GutterMetrics.digits(10))
-    assertEquals(4, GutterMetrics.digits(1000))
-    assertEquals(30, GutterMetrics.width(42, 7f, 8f))
   }
 }

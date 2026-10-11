@@ -18,6 +18,11 @@ class KeyboardInsetTest {
   @Test
   fun adjustPanIsLeftToTheWindow() {
     assertFalse(KeyboardInset.applies(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN))
+    assertFalse(
+      KeyboardInset.applies(
+        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE,
+      ),
+    )
     assertTrue(KeyboardInset.applies(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE))
     assertTrue(
       KeyboardInset.applies(

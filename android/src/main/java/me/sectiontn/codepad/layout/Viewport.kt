@@ -90,9 +90,6 @@ class Viewport(var heights: HeightMap) {
 
   fun lastVisibleLine(): Int = heights.lineAtRow(maxOf(firstVisibleRow(), rowAt(height - insetBottom - 1)))
 
-  fun scrollToLine(line: Int): Boolean =
-    scrollTo(scrollX, heights.rowStart(line.coerceIn(0, heights.lineCount - 1)) * rowHeight)
-
   /** Smallest scroll that shows a rect in layout coordinates (x from the text start, y from row 0) with the text padding around it. */
   fun reveal(left: Int, top: Int, right: Int, bottom: Int): Boolean {
     var x = scrollX

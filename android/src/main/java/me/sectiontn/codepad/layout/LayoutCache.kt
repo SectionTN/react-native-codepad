@@ -19,8 +19,6 @@ class LayoutCache<T : Any>(capacity: Int) {
     trim()
   }
 
-  fun remove(line: Int): T? = map.remove(line)
-
   fun clear() = map.clear()
 
   /** Lines [first, first + oldCount) changed. Their entries drop and later entries move with their text. */
@@ -37,14 +35,6 @@ class LayoutCache<T : Any>(capacity: Int) {
     }
     map.clear()
     for ((line, value) in kept) map[line] = value
-  }
-
-  fun removeIf(predicate: (Int, T) -> Boolean) {
-    val it = map.entries.iterator()
-    while (it.hasNext()) {
-      val e = it.next()
-      if (predicate(e.key, e.value)) it.remove()
-    }
   }
 
   private fun trim() {

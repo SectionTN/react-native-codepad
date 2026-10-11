@@ -75,6 +75,8 @@ final class RangeRectsTests: XCTestCase {
 
   func testLinesAboveFirstLineAreSkipped() {
     XCTAssertEqual(rects(Fake(["ab", "cd"]), 0, 4, firstLine: 1), [rect(0, 20, 10, 40)])
+    // A selection entirely above the first visible line must not form an empty closed range.
+    XCTAssertEqual(rects(Fake(["ab", "cd", "ef"]), 0, 2, firstLine: 2), [])
   }
 
   func testStopsAtTheViewBottom() {

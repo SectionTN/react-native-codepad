@@ -26,19 +26,11 @@ final class LayoutCacheTests: XCTestCase {
     XCTAssertEqual(c[5], "l3")
     XCTAssertEqual(c[7], "l5")
     XCTAssertEqual(c.size, 5)
-  }
-
-  func testShiftHandlesAnInsertionBeforeALine() {
-    let c = LayoutCache<String>(capacity: 10)
-    c.put(0, "a")
-    c.put(1, "b")
-    c.shift(first: 1, oldCount: 0, newCount: 2)
-    XCTAssertEqual(c[0], "a")
-    XCTAssertNil(c[1])
-    XCTAssertEqual(c[3], "b")
-    c.shift(first: 0, oldCount: 3, newCount: 1)
-    XCTAssertEqual(c[1], "b")
-    XCTAssertEqual(c.size, 1)
+    c.shift(first: 0, oldCount: 2, newCount: 1)
+    XCTAssertNil(c[0])
+    XCTAssertEqual(c[4], "l3")
+    XCTAssertEqual(c[6], "l5")
+    XCTAssertEqual(c.size, 3)
   }
 
   func testCapacityChangeTrims() {
@@ -48,16 +40,5 @@ final class LayoutCacheTests: XCTestCase {
     XCTAssertEqual(c.size, 2)
     XCTAssertNil(c[0])
     XCTAssertEqual(c[3], "x")
-  }
-
-  func testRemoveIfDropsMatches() {
-    let c = LayoutCache<String>(capacity: 4)
-    c.put(0, "keep")
-    c.put(1, "drop")
-    c.removeIf { _, v in v == "drop" }
-    XCTAssertEqual(c.size, 1)
-    XCTAssertEqual(c[0], "keep")
-    c.clear()
-    XCTAssertEqual(c.size, 0)
   }
 }

@@ -52,11 +52,6 @@ final class Viewport {
   }
 
   @discardableResult
-  func scrollBy(_ dx: Int, _ dy: Int) -> Bool {
-    scrollTo(scrollX + dx, scrollY + dy)
-  }
-
-  @discardableResult
   func clamp() -> Bool {
     scrollTo(scrollX, scrollY)
   }
@@ -77,11 +72,6 @@ final class Viewport {
     insetLeft = left
     insetRight = right
     return textAreaWidth != before
-  }
-
-  /// Content deltas: positive dy means the content moves up, so the finger moved up.
-  func canScroll(dx: CGFloat, dy: CGFloat) -> Bool {
-    (dx < 0 && scrollX > 0) || (dx > 0 && scrollX < maxScrollX) || (dy < 0 && scrollY > 0) || (dy > 0 && scrollY < maxScrollY)
   }
 
   /// View y of the top of `row`.
@@ -118,11 +108,6 @@ final class Viewport {
 
   func lastVisibleLine() -> Int {
     heights.lineAtRow(max(firstVisibleRow(), rowAt(height - insetBottom - 1)))
-  }
-
-  @discardableResult
-  func scrollToLine(_ line: Int) -> Bool {
-    scrollTo(scrollX, heights.rowStart(max(0, min(line, heights.lineCount - 1))) * rowHeight)
   }
 
   /// Smallest scroll that shows a rect in layout coordinates (x from the text start, y from row 0) with the text padding around it.

@@ -27,13 +27,6 @@ final class LayoutCache<T> {
     trim()
   }
 
-  @discardableResult
-  func remove(_ line: Int) -> T? {
-    guard let value = map.removeValue(forKey: line) else { return nil }
-    order.removeAll { $0 == line }
-    return value
-  }
-
   func clear() {
     map.removeAll()
     order.removeAll()
@@ -57,13 +50,6 @@ final class LayoutCache<T> {
       map[line] = value
       order.append(line)
     }
-  }
-
-  func removeIf(_ predicate: (Int, T) -> Bool) {
-    for line in order {
-      if let value = map[line], predicate(line, value) { map[line] = nil }
-    }
-    order.removeAll { map[$0] == nil }
   }
 
   private func touch(_ line: Int) {

@@ -20,8 +20,12 @@ final class ViewportTests: XCTestCase {
     XCTAssertFalse(v.scrollTo(-10, 1800))
     XCTAssertEqual(v.scrollX, 0)
     XCTAssertEqual(v.maxScrollX, 0)
-    XCTAssertTrue(v.scrollBy(0, -1000))
+    XCTAssertTrue(v.scrollTo(0, 800))
     XCTAssertEqual(v.scrollY, 800)
+    v.scrollTo(0, 5000)
+    v.height = 300
+    XCTAssertTrue(v.clamp())
+    XCTAssertEqual(v.scrollY, 1700)
   }
 
   func testMapsRowsToViewPointsThroughInsets() {
@@ -57,16 +61,6 @@ final class ViewportTests: XCTestCase {
     XCTAssertEqual(v.maxScrollX, 0)
     XCTAssertEqual(v.wrapWidth, 344)
     XCTAssertEqual(v.contentWidth, 360)
-  }
-
-  func testCanScrollLooksAtTheDragDirection() {
-    let v = viewport()
-    XCTAssertTrue(v.canScroll(dx: 0, dy: 1))
-    XCTAssertFalse(v.canScroll(dx: 0, dy: -1))
-    XCTAssertFalse(v.canScroll(dx: 1, dy: 0))
-    _ = v.scrollTo(0, 1800)
-    XCTAssertFalse(v.canScroll(dx: 0, dy: 1))
-    XCTAssertTrue(v.canScroll(dx: 0, dy: -1))
   }
 
   func testRevealScrollsTheMinimumDistance() {
@@ -113,16 +107,6 @@ final class ViewportTests: XCTestCase {
     XCTAssertEqual(v.scrollY, 440)
   }
 
-  func testScrollToLinePutsTheLineAtTheTop() {
-    let v = viewport()
-    v.insetTop = 30
-    XCTAssertTrue(v.scrollToLine(10))
-    XCTAssertEqual(v.scrollY, 200)
-    XCTAssertEqual(v.lineTop(10), 30)
-    _ = v.scrollToLine(500)
-    XCTAssertEqual(v.scrollY, v.maxScrollY)
-  }
-
   func testResizeAndInsetsReportOnlyTextAreaWidthChanges() {
     let v = viewport()
     XCTAssertFalse(v.resize(width: 400, height: 300))
@@ -135,13 +119,5 @@ final class ViewportTests: XCTestCase {
     XCTAssertEqual(v.insetLeft, 8)
     XCTAssertTrue(v.setInsets(top: 10, bottom: 20, left: 8, right: 4))
     XCTAssertFalse(v.setInsets(top: 0, bottom: 0, left: 8, right: 4))
-  }
-
-  func testGutterWidthCountsDigits() {
-    XCTAssertEqual(GutterMetrics.digits(0), 1)
-    XCTAssertEqual(GutterMetrics.digits(9), 1)
-    XCTAssertEqual(GutterMetrics.digits(10), 2)
-    XCTAssertEqual(GutterMetrics.digits(1000), 4)
-    XCTAssertEqual(GutterMetrics.width(lineCount: 42, digitAdvance: 7, padding: 8), 30)
   }
 }

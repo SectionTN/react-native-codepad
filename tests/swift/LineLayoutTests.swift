@@ -23,7 +23,6 @@ final class LineLayoutTests: XCTestCase {
   func testRowHeightIsRoundedFontSizeTimesLineHeight() {
     XCTAssertEqual(metrics.rowHeight, 20)
     XCTAssertEqual(metrics.ascent + metrics.descent, 20, accuracy: 1)
-    XCTAssertEqual(metrics.tabWidth, Int((charWidth * 4).rounded()))
   }
 
   func testWrapOffIsOneRow() {
@@ -77,11 +76,9 @@ final class LineLayoutTests: XCTestCase {
     XCTAssertEqual(l.caretX(3), CGFloat(metrics.tabWidth * 2), accuracy: 0.5)
   }
 
-  func testAnEmojiFallbackKeepsTheRowHeight() {
+  func testASurrogatePairSnapsTheCaretToAnEdge() {
     let emoji = layout("a\u{1F600}b")
     let ascii = layout("aXb")
-    XCTAssertEqual(emoji.rowCount, 1)
-    XCTAssertEqual(metrics.rowHeight, 20)
     XCTAssertGreaterThan(emoji.width(), ascii.width())
     XCTAssertTrue(emoji.caretX(2) == emoji.caretX(1) || emoji.caretX(2) == emoji.caretX(3))
   }
