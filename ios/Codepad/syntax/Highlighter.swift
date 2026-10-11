@@ -26,7 +26,10 @@ class Highlighter {
     var hits: [Hit] = []
     let read: (Node) -> String = { n in doc.text(n.startUnit, n.endUnit) }
     collect(language.highlights, snapshot.tree, rangeStart, rangeEnd, read, 0, &hits)
+    // The list is sorted by start: skip trees ending before the range, stop at the first one starting past it.
     for (i, inj) in snapshot.injected.enumerated() {
+      if inj.end <= rangeStart { continue }
+      if inj.start >= rangeEnd { break }
       collect(inj.language.highlights, inj.tree, rangeStart, rangeEnd, read, i + 1, &hits)
     }
     // Same precedence as nvim: injections paint over the host, then later starts win, then later patterns.

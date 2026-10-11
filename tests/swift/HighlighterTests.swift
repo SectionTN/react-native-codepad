@@ -1,8 +1,35 @@
+import Foundation
 import XCTest
 
 @testable import Codepad
 
 final class HighlighterTests: XCTestCase {
+  // The injection is built by hand so its extent is exact: the javascript tree covers "\nlet x = 1;\n" on lines 2 to 4.
+  func testInjectionsOnThePaintedEdgeAreStyled() throws {
+    let html = HostLanguages.load("html", "html")
+    let js = HostLanguages.javascript()
+    let text = "<p>a</p>\n<p>b</p>\n<script>\nlet x = 1;\n</script>\n<p>c</p>"
+    let doc = Document(text)
+    let start = (text as NSString).range(of: "\nlet").location
+    let end = (text as NSString).range(of: "</script>").location
+    let mirror = Mirror()
+    mirror.setText(text)
+    let hostParser = Parser()
+    hostParser.setLanguage(html.pointer)
+    let host = try XCTUnwrap(hostParser.parse(nil, mirror, nil, budgetMicros: 0))
+    let subParser = Parser()
+    subParser.setLanguage(js.pointer)
+    subParser.setIncludedRanges([start, end, 2, 8, 4, 0])
+    let sub = try XCTUnwrap(subParser.parse(nil, mirror, nil, budgetMicros: 0))
+    let injected = Injected(language: js, tree: sub, start: start, end: end)
+    let snapshot = Snapshot(revision: 0, tree: host, injected: [injected], languageId: "html")
+    let hl = Highlighter(language: html)
+    XCTAssertEqual(styleAt(hl.spans(snapshot: snapshot, doc: doc, firstLine: 3, lastLine: 3)[0], 0), "keyword")
+    XCTAssertEqual(styleAt(hl.spans(snapshot: snapshot, doc: doc, firstLine: 2, lastLine: 3)[1], 0), "keyword")
+    XCTAssertEqual(styleAt(hl.spans(snapshot: snapshot, doc: doc, firstLine: 3, lastLine: 4)[0], 0), "keyword")
+    XCTAssertEqual(hl.spans(snapshot: snapshot, doc: doc, firstLine: 0, lastLine: 1).count, 2)
+  }
+
   func testCapturesMapToStylesPerLine() {
     let lang = HostLanguages.javascript()
     let (snapshot, doc) = parseSnapshot(lang, "const x = 1; // hi\nreturn \"s\";")

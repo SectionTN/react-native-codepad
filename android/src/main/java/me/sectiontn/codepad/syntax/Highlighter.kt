@@ -12,7 +12,10 @@ class Highlighter(private val language: LoadedLanguage) {
     val hits = ArrayList<Hit>()
     val read: (TSNodeRef) -> String = { n -> doc.text(n.startUnit, n.endUnit) }
     collect(language.highlights, snapshot.tree, rangeStart, rangeEnd, read, 0, hits)
+    // The list is sorted by start: skip trees ending before the range, stop at the first one starting past it.
     for ((i, inj) in snapshot.injected.withIndex()) {
+      if (inj.end <= rangeStart) continue
+      if (inj.start >= rangeEnd) break
       collect(inj.language.highlights, inj.tree, rangeStart, rangeEnd, read, i + 1, hits)
     }
     // Same precedence as nvim: injections paint over the host, then later starts win, then later patterns.
