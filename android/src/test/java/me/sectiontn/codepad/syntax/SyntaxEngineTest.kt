@@ -4,6 +4,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import me.sectiontn.codepad.core.EditorCore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -174,5 +175,20 @@ class SyntaxEngineTest {
     engine.release(first)
     engine.close()
     engine.release(second)
+  }
+
+  // A first parse split by the budget re-queues itself; after close() shut the executor down that used to kill the process.
+  @Test
+  fun closeDuringABudgetSplitParseDoesNotThrow() {
+    val thrown = AtomicReference<Throwable?>(null)
+    val executor = Executors.newSingleThreadExecutor { r ->
+      Thread(r, "codepad-syntax-test").apply { setUncaughtExceptionHandler { _, e -> thrown.set(e) } }
+    }
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) }, budgetMicros = 1L, executor = executor)
+    engine.setLanguage("javascript")
+    engine.setText((0 until 20000).joinToString("\n") { "const v$it = f($it) + g(\"$it\");" }, 1)
+    engine.close()
+    assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS))
+    assertEquals(null, thrown.get())
   }
 }

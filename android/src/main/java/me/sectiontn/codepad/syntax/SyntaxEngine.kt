@@ -2,6 +2,7 @@ package me.sectiontn.codepad.syntax
 
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import me.sectiontn.codepad.core.Change
@@ -185,20 +186,28 @@ class SyntaxEngine(
         parser.reset()
         return
       }
-      executor.execute { if (!closed) reparse() }
+      resume()
       return
     }
     tree?.close()
     tree = result
     val counts = Counts()
     val injected = injections(lang, result, counts) ?: run {
-      if (!cancel.isSet) executor.execute { if (!closed) reparse() }
+      if (!cancel.isSet) resume()
       return
     }
     val since = pendingSince.getAndSet(0L)
     val latency = if (since == 0L) 0 else ((System.nanoTime() - since) / 1_000_000L).toInt()
     val snapshot = Snapshot(revision, result.copy(), injected, lang.id, ParseStats(latency, counts.fresh, counts.reused, counts.carried))
     postToMain(Runnable { onSnapshot(snapshot) })
+  }
+
+  /** Queues the next slice of a parse; a close() that already shut the executor down just ends the parse. */
+  private fun resume() {
+    try {
+      executor.execute { if (!closed) reparse() }
+    } catch (_: RejectedExecutionException) {
+    }
   }
 
   private fun dropKept() {
