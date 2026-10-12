@@ -1,11 +1,21 @@
 import Foundation
 
 /// One injected tree with the unit extent of its content; the tree itself keeps the included ranges.
+/// A carried tree's own positions lag the edits made before it: `shift` is what to add to reach the document.
 struct Injected: Sendable {
   let language: LoadedLanguage
   let tree: Tree
   let start: Int
   let end: Int
+  let shift: Int
+
+  init(language: LoadedLanguage, tree: Tree, start: Int, end: Int, shift: Int = 0) {
+    self.language = language
+    self.tree = tree
+    self.start = start
+    self.end = end
+    self.shift = shift
+  }
 }
 
 /// Edit to snapshot time plus how many injected trees were parsed fresh, reused incrementally or carried without a parse.

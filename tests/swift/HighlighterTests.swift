@@ -30,6 +30,30 @@ final class HighlighterTests: XCTestCase {
     XCTAssertEqual(hl.spans(snapshot: snapshot, doc: doc, firstLine: 0, lastLine: 1).count, 2)
   }
 
+  // A carried tree keeps the positions of its last parse; painted without its shift, `let` lands four units early.
+  func testCarriedTreesPaintAtTheirShiftedPosition() throws {
+    let html = HostLanguages.load("html", "html")
+    let js = HostLanguages.javascript()
+    let before = "<p>a</p>\n<script>\nlet x = 1;\n</script>\n"
+    let after = "<p>a</p>\n\n\n\n\n<script>\nlet x = 1;\n</script>\n"
+    let start = (before as NSString).range(of: "\nlet").location
+    let end = (before as NSString).range(of: "</script>").location
+    let mirror = Mirror()
+    mirror.setText(before)
+    let subParser = Parser()
+    subParser.setLanguage(js.pointer)
+    subParser.setIncludedRanges([start, end, 1, 8, 3, 0])
+    let sub = try XCTUnwrap(subParser.parse(nil, mirror, nil, budgetMicros: 0))
+    mirror.setText(after)
+    let hostParser = Parser()
+    hostParser.setLanguage(html.pointer)
+    let host = try XCTUnwrap(hostParser.parse(nil, mirror, nil, budgetMicros: 0))
+    let injected = Injected(language: js, tree: sub, start: start + 4, end: end + 4, shift: 4)
+    let snapshot = Snapshot(revision: 0, tree: host, injected: [injected], languageId: "html")
+    let spans = Highlighter(language: html).spans(snapshot: snapshot, doc: Document(after), firstLine: 6, lastLine: 6)
+    XCTAssertEqual(styleAt(spans[0], 0), "keyword")
+  }
+
   func testCapturesMapToStylesPerLine() {
     let lang = HostLanguages.javascript()
     let (snapshot, doc) = parseSnapshot(lang, "const x = 1; // hi\nreturn \"s\";")

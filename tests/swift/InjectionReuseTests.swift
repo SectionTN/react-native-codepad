@@ -251,4 +251,44 @@ final class InjectionReuseTests: XCTestCase {
     XCTAssertEqual(snapshot.injected.count, 4)
     engine.close()
   }
+
+  private func fenceKeyword(_ snapshot: Snapshot, _ core: EditorCore) throws -> String? {
+    let markdown = try XCTUnwrap(LanguageRegistry.resolve("markdown"))
+    return styleAt(Highlighter(language: markdown).spans(snapshot: snapshot, doc: core.document, firstLine: 3, lastLine: 3)[0], 0)
+  }
+
+  // The fence is carried with its edits deferred; a stale shift paints `let` off its line, a bad catch up parses it fresh.
+  func testTextInsertedBeforeAFenceShiftsItsCarriedTree() throws {
+    let text = "first para\n\n```js\nlet a = 1;\n```\n"
+    let (core, engine) = start("markdown", text)
+    _ = try XCTUnwrap(snapshots.takeParsed())
+    core.replace(0, 0, "xxxx")
+    let second = try XCTUnwrap(snapshots.takeParsed())
+    XCTAssertEqual(second.stats.carriedInjections, 1)
+    XCTAssertEqual(try fenceKeyword(second, core), "keyword")
+    let one = offset(core.document.text(), "1;")
+    core.replace(one, one + 1, "2")
+    let third = try XCTUnwrap(snapshots.takeParsed())
+    XCTAssertEqual(third.stats.reusedInjections, 1)
+    XCTAssertEqual(third.stats.carriedInjections, 1)
+    XCTAssertEqual(try fenceKeyword(third, core), "keyword")
+    engine.close()
+  }
+
+  // Same as above with the text before the fence shrinking, which the catch up applies as a deletion.
+  func testTextDeletedBeforeAFenceShiftsItsCarriedTree() throws {
+    let text = "first para\n\n```js\nlet a = 1;\n```\n"
+    let (core, engine) = start("markdown", text)
+    _ = try XCTUnwrap(snapshots.takeParsed())
+    core.replace(0, 6, "")
+    let second = try XCTUnwrap(snapshots.takeParsed())
+    XCTAssertEqual(second.stats.carriedInjections, 1)
+    XCTAssertEqual(try fenceKeyword(second, core), "keyword")
+    let one = offset(core.document.text(), "1;")
+    core.replace(one, one + 1, "2")
+    let third = try XCTUnwrap(snapshots.takeParsed())
+    XCTAssertEqual(third.stats.reusedInjections, 1)
+    XCTAssertEqual(try fenceKeyword(third, core), "keyword")
+    engine.close()
+  }
 }

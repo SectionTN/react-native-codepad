@@ -116,4 +116,31 @@ class HighlighterTest {
       snapshot.close()
     }
   }
+
+  // A carried tree keeps the positions of its last parse; painted without its shift, `let` lands four units early.
+  @Test
+  fun carriedTreesPaintAtTheirShiftedPosition() {
+    val html = HostLanguages.load("html", "html")
+    val js = HostLanguages.javascript()
+    val before = "<p>a</p>\n<script>\nlet x = 1;\n</script>\n"
+    val after = "<p>a</p>\n\n\n\n\n<script>\nlet x = 1;\n</script>\n"
+    val start = before.indexOf("\nlet")
+    val end = before.indexOf("</script>")
+    Mirror().use { mirror ->
+      mirror.setText(before)
+      val sub = Parser().use { p ->
+        p.setLanguage(js.pointer)
+        p.setIncludedRanges(intArrayOf(start, end, 1, 8, 3, 0))
+        checkNotNull(p.parse(null, mirror, null, 0))
+      }
+      mirror.setText(after)
+      val host = Parser().use { p ->
+        p.setLanguage(html.pointer)
+        checkNotNull(p.parse(null, mirror, null, 0))
+      }
+      val snapshot = Snapshot(0, host, listOf(Injected(js, sub, start + 4, end + 4, 4)), "html")
+      assertEquals("keyword", styleAt(Highlighter(html).spans(snapshot, Document(after), 6, 6)[0], 0))
+      snapshot.close()
+    }
+  }
 }

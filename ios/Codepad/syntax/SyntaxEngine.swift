@@ -17,20 +17,49 @@ final class SyntaxEngine: @unchecked Sendable {
     let combined: Bool
     var hulls: [Int]
     var extent: [Int]
+    // The start point, shifted like the extent; the tree's own positions stay where its last applied edit left them.
+    var row: Int
+    var col: Int
+    var base: Int
+    var baseRow: Int
+    var baseCol: Int
     // Pass-local marks: a region met one of the hulls; the tree was replaced by a reparse.
     var hit = false
     var consumed = false
 
-    init(language: LoadedLanguage, tree: Tree, combined: Bool, hulls: [Int], extent: [Int]) {
+    init(language: LoadedLanguage, tree: Tree, combined: Bool, hulls: [Int], extent: [Int], row: Int, col: Int) {
       self.language = language
       self.tree = tree
       self.combined = combined
       self.hulls = hulls
       self.extent = extent
+      self.row = row
+      self.col = col
+      base = extent[0]
+      baseRow = row
+      baseCol = col
     }
 
     var start: Int { extent[0] }
     var end: Int { extent[1] }
+
+    /// Units to add to the tree's positions to reach the document.
+    var shift: Int { start - base }
+
+    /// Applies the edits deferred before the tree as one synthetic edit, so its positions match the document again.
+    func catchUp() {
+      if start == base && row == baseRow && col == baseCol { return }
+      let before = Point(row: baseRow, column: baseCol)
+      let now = Point(row: row, column: col)
+      if start >= base {
+        tree.edit(InputEdit(start: base, oldEnd: base, newEnd: start, startPoint: before, oldEndPoint: before, newEndPoint: now))
+      } else {
+        tree.edit(InputEdit(start: start, oldEnd: base, newEnd: start, startPoint: now, oldEndPoint: before, newEndPoint: now))
+      }
+      base = start
+      baseRow = row
+      baseCol = col
+    }
   }
 
   private struct Match {
@@ -135,9 +164,34 @@ final class SyntaxEngine: @unchecked Sendable {
       tree?.edit(edit)
       reconciled?.edit(edit)
       for k in kept {
-        k.tree.edit(edit)
+        let s = k.start
+        let before = change.end <= s
+        let after = change.start > k.end
+        // Only an edit reaching the tree is applied to it: one before it accumulates as a shift, one after it is a no-op.
+        let reaches = k.combined || !(before || after)
+        if reaches {
+          k.catchUp()
+          k.tree.edit(edit)
+        }
         shift(&k.hulls, change.start, change.end, change.newEnd)
         shift(&k.extent, change.start, change.end, change.newEnd)
+        if before {
+          // tree-sitter's point arithmetic: a start at or past the old end moves with the new end.
+          if k.row > points.oldEnd.row {
+            k.row += points.newEnd.row - points.oldEnd.row
+          } else {
+            k.row = points.newEnd.row
+            k.col = points.newEnd.column + (k.col - points.oldEnd.column)
+          }
+        } else if change.start < s {
+          k.row = points.start.row
+          k.col = points.start.column
+        }
+        if reaches {
+          k.base = k.start
+          k.baseRow = k.row
+          k.baseCol = k.col
+        }
       }
       shift(&dirty, change.start, change.end, change.newEnd)
       dirty = coalesce(dirty + [change.start, change.newEnd])
@@ -381,6 +435,7 @@ final class SyntaxEngine: @unchecked Sendable {
     // Touched trees are indexed by their edited ranges; a plain match with equal ranges reparses against one.
     var index: [RangeKey: [Kept]] = [:]
     for k in touched where !k.combined {
+      k.catchUp()
       index[RangeKey(id: k.language.id, ranges: k.tree.includedRanges()), default: []].append(k)
     }
     var out: [Injected] = []
@@ -410,7 +465,10 @@ final class SyntaxEngine: @unchecked Sendable {
           counts.fresh += 1
         }
         out.append(Injected(language: target, tree: t, start: m.start, end: m.end))
-        next.append(Kept(language: target, tree: t.copy(), combined: false, hulls: [m.hullStart, m.hullEnd], extent: [m.start, m.end]))
+        next.append(
+          Kept(
+            language: target, tree: t.copy(), combined: false, hulls: [m.hullStart, m.hullEnd], extent: [m.start, m.end],
+            row: m.ranges6[2], col: m.ranges6[3]))
       }
     }
     // A combined group is one tree over every member range; it reparses against its old tree only when the ranges match.
@@ -439,14 +497,17 @@ final class SyntaxEngine: @unchecked Sendable {
       if same { counts.reused += 1 } else { counts.fresh += 1 }
       let extent = [group[0].start, group[group.count - 1].end]
       out.append(Injected(language: target, tree: t, start: extent[0], end: extent[1]))
-      next.append(Kept(language: target, tree: t.copy(), combined: true, hulls: hulls, extent: extent))
+      next.append(
+        Kept(
+          language: target, tree: t.copy(), combined: true, hulls: hulls, extent: extent, row: group[0].ranges6[2],
+          col: group[0].ranges6[3]))
     }
     kept = carried + next
     kept.sort { $0.start < $1.start }
     reconciled = host.copy()
     dirty = []
     counts.carried = carried.count
-    var result = carried.map { Injected(language: $0.language, tree: $0.tree.copy(), start: $0.start, end: $0.end) }
+    var result = carried.map { Injected(language: $0.language, tree: $0.tree.copy(), start: $0.start, end: $0.end, shift: $0.shift) }
     result.append(contentsOf: out)
     result.sort { $0.start < $1.start }
     return result

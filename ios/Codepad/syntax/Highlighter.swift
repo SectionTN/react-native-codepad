@@ -24,13 +24,12 @@ class Highlighter {
     let rangeStart = doc.lineStart(firstLine)
     let rangeEnd = doc.lineEnd(lastLine)
     var hits: [Hit] = []
-    let read: (Node) -> String = { n in doc.text(n.startUnit, n.endUnit) }
-    collect(language.highlights, snapshot.tree, rangeStart, rangeEnd, read, 0, &hits)
+    collect(language.highlights, snapshot.tree, doc, rangeStart, rangeEnd, 0, 0, &hits)
     // The list is sorted by start: skip trees ending before the range, stop at the first one starting past it.
     for (i, inj) in snapshot.injected.enumerated() {
       if inj.end <= rangeStart { continue }
       if inj.start >= rangeEnd { break }
-      collect(inj.language.highlights, inj.tree, rangeStart, rangeEnd, read, i + 1, &hits)
+      collect(inj.language.highlights, inj.tree, doc, rangeStart, rangeEnd, i + 1, inj.shift, &hits)
     }
     // Same precedence as nvim: injections paint over the host, then later starts win, then later patterns.
     hits.sort { a, b in
@@ -62,13 +61,15 @@ class Highlighter {
     return paint.map { encode($0) }
   }
 
+  /// Queries [start, end) of the document; a tree whose positions lag the document by `shift` is read in its own units.
   private func collect(
-    _ compiled: CompiledQuery, _ tree: Tree, _ start: Int, _ end: Int, _ read: (Node) -> String, _ layer: Int,
+    _ compiled: CompiledQuery, _ tree: Tree, _ doc: Document, _ start: Int, _ end: Int, _ layer: Int, _ shift: Int,
     _ out: inout [Hit]
   ) {
+    let read: (Node) -> String = { n in doc.text(n.startUnit + shift, n.endUnit + shift) }
     let cursor = QueryCursor()
     cursor.exec(compiled.query, tree.rootNode)
-    cursor.setUnitRange(start, end)
+    cursor.setUnitRange(max(0, start - shift), end - shift)
     var rejected = Set<Int>()
     var accepted = Set<Int>()
     while let capture = cursor.nextCapture() {
@@ -90,7 +91,7 @@ class Highlighter {
       let style = name == "none" ? -1 : compiled.styleIds[capture.captureIndex]
       out.append(
         Hit(
-          start: capture.node.startUnit, end: capture.node.endUnit, styleId: style, layer: layer,
+          start: capture.node.startUnit + shift, end: capture.node.endUnit + shift, styleId: style, layer: layer,
           pattern: capture.patternIndex, order: out.count))
     }
   }

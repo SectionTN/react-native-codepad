@@ -20,12 +20,32 @@ class SyntaxEngine(
   class EditPoints(val start: Point, val oldEnd: Point, val newEnd: Point)
 
   /** A kept injected tree: `hulls` are unit pairs over its match's captures, `extent` the content span after offsets. */
-  private class Kept(val language: LoadedLanguage, val tree: Tree, val combined: Boolean, val hulls: IntArray, val extent: IntArray) {
+  private class Kept(val language: LoadedLanguage, val tree: Tree, val combined: Boolean, val hulls: IntArray, val extent: IntArray, startRow: Int, startCol: Int) {
     val start: Int get() = extent[0]
     val end: Int get() = extent[1]
+    // The start point, shifted like the extent; the tree's own positions stay where its last applied edit left them.
+    var row = startRow
+    var col = startCol
+    var base = extent[0]
+    var baseRow = startRow
+    var baseCol = startCol
     // Pass-local marks: a region met one of the hulls; the tree was replaced by a reparse and closed.
     var hit = false
     var consumed = false
+
+    /** Units to add to the tree's positions to reach the document. */
+    val shift: Int get() = start - base
+
+    /** Applies the edits deferred before the tree as one synthetic edit, so its positions match the document again. */
+    fun catchUp() {
+      if (start == base && row == baseRow && col == baseCol) return
+      val before = Point(baseRow, baseCol)
+      val now = Point(row, col)
+      tree.edit(if (start >= base) InputEdit(base, base, start, before, before, now) else InputEdit(start, base, start, now, before, now))
+      base = start
+      baseRow = row
+      baseCol = col
+    }
   }
   private class Match(val target: LoadedLanguage, val combined: Boolean, val hullStart: Int, val hullEnd: Int, val ranges6: IntArray, val start: Int, val end: Int)
   private data class MatchKey(val pattern: Int, val start: Int, val end: Int)
@@ -89,9 +109,34 @@ class SyntaxEngine(
       tree?.edit(edit)
       reconciled?.edit(edit)
       for (k in kept) {
-        k.tree.edit(edit)
+        val s = k.start
+        val before = change.end <= s
+        val after = change.start > k.end
+        // Only an edit reaching the tree is applied to it: one before it accumulates as a shift, one after it is a no-op.
+        val reaches = k.combined || !(before || after)
+        if (reaches) {
+          k.catchUp()
+          k.tree.edit(edit)
+        }
         shift(k.hulls, change.start, change.end, change.newEnd)
         shift(k.extent, change.start, change.end, change.newEnd)
+        if (before) {
+          // tree-sitter's point arithmetic: a start at or past the old end moves with the new end.
+          if (k.row > points.oldEnd.row) {
+            k.row += points.newEnd.row - points.oldEnd.row
+          } else {
+            k.row = points.newEnd.row
+            k.col = points.newEnd.column + (k.col - points.oldEnd.column)
+          }
+        } else if (change.start < s) {
+          k.row = points.start.row
+          k.col = points.start.column
+        }
+        if (reaches) {
+          k.base = k.start
+          k.baseRow = k.row
+          k.baseCol = k.col
+        }
       }
       shift(dirty, change.start, change.end, change.newEnd)
       dirty = coalesce(dirty + intArrayOf(change.start, change.newEnd))
@@ -318,7 +363,11 @@ class SyntaxEngine(
     }
     // Touched trees are indexed by their edited ranges; a plain match with equal ranges reparses against one.
     val index = HashMap<RangeKey, ArrayDeque<Kept>>()
-    for (k in touched) if (!k.combined) index.getOrPut(RangeKey(k.language.id, k.tree.includedRanges())) { ArrayDeque() }.addLast(k)
+    for (k in touched) {
+      if (k.combined) continue
+      k.catchUp()
+      index.getOrPut(RangeKey(k.language.id, k.tree.includedRanges())) { ArrayDeque() }.addLast(k)
+    }
     val out = ArrayList<Injected>()
     val next = ArrayList<Kept>()
     fun cancelled(): List<Injected>? {
@@ -346,7 +395,7 @@ class SyntaxEngine(
             counts.fresh++
           }
           out.add(Injected(target, t, m.start, m.end))
-          next.add(Kept(target, t.copy(), false, intArrayOf(m.hullStart, m.hullEnd), intArrayOf(m.start, m.end)))
+          next.add(Kept(target, t.copy(), false, intArrayOf(m.hullStart, m.hullEnd), intArrayOf(m.start, m.end), m.ranges6[2], m.ranges6[3]))
         }
       }
     }
@@ -380,7 +429,7 @@ class SyntaxEngine(
         if (same) counts.reused++ else counts.fresh++
         val extent = intArrayOf(group[0].start, group[group.size - 1].end)
         out.add(Injected(target, t, extent[0], extent[1]))
-        next.add(Kept(target, t.copy(), true, hulls, extent))
+        next.add(Kept(target, t.copy(), true, hulls, extent, group[0].ranges6[2], group[0].ranges6[3]))
       }
     }
     for (k in touched) if (!k.consumed) k.tree.close()
@@ -393,7 +442,7 @@ class SyntaxEngine(
     dirty = IntArray(0)
     counts.carried = carried.size
     val result = ArrayList<Injected>(carried.size + out.size)
-    for (k in carried) result.add(Injected(k.language, k.tree.copy(), k.start, k.end))
+    for (k in carried) result.add(Injected(k.language, k.tree.copy(), k.start, k.end, k.shift))
     result.addAll(out)
     result.sortBy { it.start }
     return result

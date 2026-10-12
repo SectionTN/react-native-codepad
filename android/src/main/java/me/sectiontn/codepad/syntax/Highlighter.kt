@@ -10,13 +10,12 @@ class Highlighter(private val language: LoadedLanguage) {
     val rangeStart = doc.lineStart(firstLine)
     val rangeEnd = doc.lineEnd(lastLine)
     val hits = ArrayList<Hit>()
-    val read: (TSNodeRef) -> String = { n -> doc.text(n.startUnit, n.endUnit) }
-    collect(language.highlights, snapshot.tree, rangeStart, rangeEnd, read, 0, hits)
+    collect(language.highlights, snapshot.tree, doc, rangeStart, rangeEnd, 0, 0, hits)
     // The list is sorted by start: skip trees ending before the range, stop at the first one starting past it.
     for ((i, inj) in snapshot.injected.withIndex()) {
       if (inj.end <= rangeStart) continue
       if (inj.start >= rangeEnd) break
-      collect(inj.language.highlights, inj.tree, rangeStart, rangeEnd, read, i + 1, hits)
+      collect(inj.language.highlights, inj.tree, doc, rangeStart, rangeEnd, i + 1, inj.shift, hits)
     }
     // Same precedence as nvim: injections paint over the host, then later starts win, then later patterns.
     hits.sortWith(compareBy<Hit>({ it.layer }, { it.start }, { it.pattern }))
@@ -40,18 +39,21 @@ class Highlighter(private val language: LoadedLanguage) {
     return Array(lineCount) { encode(paint[it]) }
   }
 
+  /** Queries [start, end) of the document; a tree whose positions lag the document by `shift` is read in its own units. */
   private fun collect(
     compiled: CompiledQuery,
     tree: Tree,
+    doc: Document,
     start: Int,
     end: Int,
-    read: (TSNodeRef) -> String,
     layer: Int,
+    shift: Int,
     out: MutableList<Hit>,
   ) {
+    val read: (TSNodeRef) -> String = { n -> doc.text(n.startUnit + shift, n.endUnit + shift) }
     QueryCursor().use { cursor ->
       cursor.exec(compiled.query, tree.rootNode())
-      cursor.setUnitRange(start, end)
+      cursor.setUnitRange(maxOf(0, start - shift), end - shift)
       val capture = Capture()
       val rejected = HashSet<Int>()
       val accepted = HashSet<Int>()
@@ -74,7 +76,7 @@ class Highlighter(private val language: LoadedLanguage) {
         val name = compiled.query.captureNames[capture.captureIndex]
         if (name.startsWith("_") || name in MARKERS) continue
         val style = if (name == "none") -1 else compiled.styleIds[capture.captureIndex]
-        out.add(Hit(capture.node.startUnit, capture.node.endUnit, style, layer, capture.patternIndex))
+        out.add(Hit(capture.node.startUnit + shift, capture.node.endUnit + shift, style, layer, capture.patternIndex))
       }
     }
   }

@@ -301,4 +301,47 @@ class InjectionReuseTest {
     snapshot.close()
     engine.close()
   }
+
+  // The fence is carried with its edits deferred; a stale shift paints `let` off its line, a bad catch up parses it fresh.
+  @Test
+  fun textInsertedBeforeAFenceShiftsItsCarriedTree() {
+    val text = "first para\n\n```js\nlet a = 1;\n```\n"
+    val (core, engine) = start("markdown", text)
+    awaitParsed().close()
+    val markdown = checkNotNull(LanguageRegistry.resolve("markdown"))
+    core.replace(0, 0, "xxxx")
+    val second = awaitParsed()
+    assertEquals(1, second.stats.carriedInjections)
+    assertEquals("keyword", styleAt(Highlighter(markdown).spans(second, core.document, 3, 3)[0], 0))
+    second.close()
+    val one = core.document.text().indexOf("1;")
+    core.replace(one, one + 1, "2")
+    val third = awaitParsed()
+    assertEquals(1, third.stats.reusedInjections)
+    assertEquals(1, third.stats.carriedInjections)
+    assertEquals("keyword", styleAt(Highlighter(markdown).spans(third, core.document, 3, 3)[0], 0))
+    third.close()
+    engine.close()
+  }
+
+  // Same as above with the text before the fence shrinking, which the catch up applies as a deletion.
+  @Test
+  fun textDeletedBeforeAFenceShiftsItsCarriedTree() {
+    val text = "first para\n\n```js\nlet a = 1;\n```\n"
+    val (core, engine) = start("markdown", text)
+    awaitParsed().close()
+    val markdown = checkNotNull(LanguageRegistry.resolve("markdown"))
+    core.replace(0, 6, "")
+    val second = awaitParsed()
+    assertEquals(1, second.stats.carriedInjections)
+    assertEquals("keyword", styleAt(Highlighter(markdown).spans(second, core.document, 3, 3)[0], 0))
+    second.close()
+    val one = core.document.text().indexOf("1;")
+    core.replace(one, one + 1, "2")
+    val third = awaitParsed()
+    assertEquals(1, third.stats.reusedInjections)
+    assertEquals("keyword", styleAt(Highlighter(markdown).spans(third, core.document, 3, 3)[0], 0))
+    third.close()
+    engine.close()
+  }
 }
