@@ -25,7 +25,7 @@ final class KeyboardInsetTracker {
     isTracking = true
     window.addSubview(trackingView)
     NSLayoutConstraint.activate([
-      trackingView.topAnchor.constraint(equalTo: window.keyboardLayoutGuide.topAnchor),
+      trackingView.topAnchor.constraint(equalTo: Self.keyboardHost(of: view, in: window).keyboardLayoutGuide.topAnchor),
       trackingView.leadingAnchor.constraint(equalTo: window.leadingAnchor),
       trackingView.trailingAnchor.constraint(equalTo: window.trailingAnchor),
       trackingView.heightAnchor.constraint(equalToConstant: 0),
@@ -82,5 +82,12 @@ final class KeyboardInsetTracker {
   private func stopLink() {
     link?.invalidate()
     link = nil
+  }
+
+  /// The window's own guide can sit at a zero frame for good; the guide of the top view under the window follows the keyboard.
+  private static func keyboardHost(of view: UIView, in window: UIWindow) -> UIView {
+    var host = view
+    while let parent = host.superview, parent !== window { host = parent }
+    return host
   }
 }

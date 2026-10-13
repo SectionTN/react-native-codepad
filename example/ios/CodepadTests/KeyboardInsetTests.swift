@@ -19,6 +19,14 @@ final class KeyboardInsetTests: XCTestCase {
     XCTAssertNil(editor.keyboardTracker)
   }
 
+  // The window's own keyboard layout guide can hold a zero frame, which read as a keyboard over the whole view and
+  // pinned every caret reveal to the top row.
+  func testAStartedTrackerReadsNoOverlapWithoutAKeyboard() {
+    let editor = launch(height: 300)
+    editor.setAvoidKeyboard(true)
+    XCTAssertEqual(editor.keyboardInset, 0)
+  }
+
   func testKeyboardInsetExtendsTheScrollRangeAndLeavesTheContentSizeAlone() {
     let editor = launch(height: 400)
     var sizes: [CGSize] = []

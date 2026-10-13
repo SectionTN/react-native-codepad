@@ -115,7 +115,7 @@ final class CodeEditorView: UIScrollView {
   private var contentInsetBottom: CGFloat = 0
   private var contentInsetLeft: CGFloat = 0
   private var contentInsetRight: CGFloat = 0
-  private var keyboardInset: CGFloat = 0
+  private(set) var keyboardInset: CGFloat = 0
   private var avoidsKeyboard = false
   private(set) var keyboardTracker: KeyboardInsetTracker?
   private var ready = false
