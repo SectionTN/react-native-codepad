@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import me.sectiontn.codepad.core.EditorCore
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -190,5 +191,90 @@ class SyntaxEngineTest {
     engine.close()
     assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS))
     assertEquals(null, thrown.get())
+  }
+
+  // A region list that spans the file, or one that misses the edited line, would re-query the page or paint it stale.
+  @Test
+  fun anEditInsideAFunctionLeavesTheNextStatementUntouched() {
+    val text = "function f() {\n  return 1;\n}\nlet g = 2;\n"
+    val core = EditorCore(text)
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
+    engine.setLanguage("javascript")
+    engine.setText(text, 0)
+    val first = awaitRevision(0)
+    assertEquals(-1, first.basedOn)
+    first.close()
+    core.replace(25, 25, "2")
+    val second = awaitRevision(1)
+    assertEquals(0, second.basedOn)
+    assertTrue(meetsLine(second.changed, 15, 26))
+    assertFalse(meetsLine(second.changed, 29, 39))
+    second.close()
+    engine.close()
+  }
+
+  // The declarator's name keeps the function style unless the snapshot names its line.
+  @Test
+  fun aChangedValueKindCoversTheDeclaratorName() {
+    val core = EditorCore("const f =\n  function() {};\n")
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
+    engine.setLanguage("javascript")
+    engine.setText(core.document.text(), 0)
+    awaitRevision(0).close()
+    core.replace(12, 25, "1")
+    val snapshot = awaitRevision(1)
+    assertTrue(meetsLine(snapshot.changed, 0, 9))
+    snapshot.close()
+    engine.close()
+  }
+
+  // The blocker holds the syntax thread while two edits queue, so one pass covers both.
+  @Test
+  fun editsBeforeAPassCompletesAccumulateTheirRegions() {
+    val text = "let a = 1;\nlet b = 2;\nlet c = 3;\n"
+    val core = EditorCore(text)
+    val executor = Executors.newSingleThreadExecutor()
+    val engine = SyntaxEngine({ it.run() }, { snapshots.add(it) }, executor = executor)
+    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
+    engine.setLanguage("javascript")
+    engine.setText(text, 0)
+    awaitRevision(0).close()
+    val started = CountDownLatch(1)
+    val release = CountDownLatch(1)
+    executor.execute {
+      started.countDown()
+      release.await()
+    }
+    started.await()
+    core.replace(8, 9, "9")
+    core.replace(30, 31, "9")
+    release.countDown()
+    val snapshot = awaitRevision(2)
+    assertEquals(0, snapshot.basedOn)
+    assertTrue(meetsLine(snapshot.changed, 0, 10))
+    assertTrue(meetsLine(snapshot.changed, 22, 32))
+    assertFalse(meetsLine(snapshot.changed, 11, 21))
+    snapshot.close()
+    engine.close()
+  }
+
+  // The reference tree used to live in the injection pass; a language without one published no regions at all.
+  @Test
+  fun aLanguageWithoutInjectionsStillReportsRegions() {
+    HostLanguages.load("json", "json")
+    val core = EditorCore("{\"a\": 1,\n \"b\": 2}\n")
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
+    engine.setLanguage("json")
+    engine.setText(core.document.text(), 0)
+    awaitRevision(0).close()
+    core.replace(15, 16, "3")
+    val snapshot = awaitRevision(1)
+    assertEquals(0, snapshot.basedOn)
+    assertTrue(meetsLine(snapshot.changed, 9, 17))
+    snapshot.close()
+    engine.close()
   }
 }

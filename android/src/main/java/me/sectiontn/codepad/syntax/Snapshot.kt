@@ -16,6 +16,9 @@ class Snapshot(
   val injected: List<Injected>,
   val languageId: String,
   val stats: ParseStats = ParseStats(0, 0, 0, 0),
+  // The published revision `changed` is relative to, -1 after a full parse; `changed` is sorted, coalesced unit pairs.
+  val basedOn: Int = -1,
+  val changed: IntArray = IntArray(0),
 ) : AutoCloseable {
   override fun close() {
     tree.close()

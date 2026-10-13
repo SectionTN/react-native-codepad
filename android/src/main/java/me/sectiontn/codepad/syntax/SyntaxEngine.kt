@@ -71,6 +71,7 @@ class SyntaxEngine(
   private val kept = ArrayList<Kept>()
   // The host tree of the last completed pass, edited like the live one; its diff against the new tree bounds the pass.
   private var reconciled: Tree? = null
+  private var reconciledRevision = -1
   // New spans of the edits since the last completed pass, shifted like hulls: the diff misses a retyped leaf.
   private var dirty = IntArray(0)
   private var revision = 0
@@ -192,13 +193,28 @@ class SyntaxEngine(
     tree?.close()
     tree = result
     val counts = Counts()
-    val injected = injections(lang, result, counts) ?: run {
+    val basedOn = if (reconciled == null) -1 else reconciledRevision
+    val length = mirror.length
+    val regions = regions(result, length)
+    // The regions plus the capture hulls of every highlight match they meet, old tree and new: the painter's dirty lines.
+    val changed: MutableList<Int>? = if (basedOn < 0) null else ArrayList<Int>(regions.size * 2).also {
+      for (r in regions) it.add(r)
+      collectHulls(lang.highlights, checkNotNull(reconciled), regions, length, it)
+      collectHulls(lang.highlights, result, regions, length, it)
+    }
+    val injected = injections(lang, result, regions, length, counts, changed) ?: run {
       if (!cancel.isSet) resume()
       return
     }
+    reconciled?.close()
+    reconciled = result.copy()
+    reconciledRevision = revision
+    dirty = IntArray(0)
+    val published = if (changed == null) IntArray(0) else coalesce(IntArray(changed.size) { changed[it].coerceIn(0, length) })
     val since = pendingSince.getAndSet(0L)
     val latency = if (since == 0L) 0 else ((System.nanoTime() - since) / 1_000_000L).toInt()
-    val snapshot = Snapshot(revision, result.copy(), injected, lang.id, ParseStats(latency, counts.fresh, counts.reused, counts.carried))
+    val stats = ParseStats(latency, counts.fresh, counts.reused, counts.carried)
+    val snapshot = Snapshot(revision, result.copy(), injected, lang.id, stats, basedOn, published)
     postToMain(Runnable { onSnapshot(snapshot) })
   }
 
@@ -261,6 +277,33 @@ class SyntaxEngine(
     System.arraycopy(dirty, 0, out, changed.size, dirty.size)
     for (i in out.indices) out[i] = out[i].coerceIn(0, length)
     return coalesce(out)
+  }
+
+  /** Appends the capture hull of every highlight match the regions meet: a capture whose pattern constrains a changed sibling. */
+  private fun collectHulls(compiled: CompiledQuery, tree: Tree, regions: IntArray, length: Int, out: MutableList<Int>) {
+    val root = tree.rootNode()
+    val c = Capture()
+    QueryCursor().use { cursor ->
+      var i = 0
+      while (i < regions.size) {
+        cursor.exec(compiled.query, root)
+        cursor.setUnitRange(maxOf(0, regions[i] - 1), minOf(length, regions[i + 1] + 1))
+        while (cursor.nextMatch()) {
+          var lo = Int.MAX_VALUE
+          var hi = 0
+          for (j in 0 until cursor.matchCaptureCount) {
+            cursor.matchCapture(j, c)
+            lo = minOf(lo, c.node.startUnit)
+            hi = maxOf(hi, c.node.endUnit)
+          }
+          if (lo < hi) {
+            out.add(lo)
+            out.add(hi)
+          }
+        }
+        i += 2
+      }
+    }
   }
 
   /** One cursor run over [from, to); matches are deduped across runs by pattern and content extent. */
@@ -326,14 +369,9 @@ class SyntaxEngine(
    * Reconciles the kept trees against what changed since the last completed pass: the query runs over the changed
    * regions only, trees they meet are reparsed, the rest are carried over. Null when a new edit cancelled the pass.
    */
-  private fun injections(lang: LoadedLanguage, host: Tree, counts: Counts): List<Injected>? {
+  private fun injections(lang: LoadedLanguage, host: Tree, regions: IntArray, length: Int, counts: Counts, changed: MutableList<Int>?): List<Injected>? {
     val compiled = lang.injections
-    if (compiled == null || !compiled.captureIndex.containsKey("injection.content")) {
-      dropKept()
-      return emptyList()
-    }
-    val length = mirror.length
-    val regions = regions(host, length)
+    if (compiled == null || !compiled.captureIndex.containsKey("injection.content")) return emptyList()
     val touched = ArrayList<Kept>()
     val carried = ArrayList<Kept>()
     for (k in kept) {
@@ -373,8 +411,10 @@ class SyntaxEngine(
     // Touched trees are indexed by their edited ranges; a plain match with equal ranges reparses against one.
     val index = HashMap<RangeKey, ArrayDeque<Kept>>()
     for (k in touched) {
+      if (!k.combined) k.catchUp()
+      // The old tree's matches are the ones that can vanish with this pass.
+      if (changed != null) collectHulls(k.language.highlights, k.tree, regions, length, changed)
       if (k.combined) continue
-      k.catchUp()
       index.getOrPut(RangeKey(k.language.id, k.tree.includedRanges())) { ArrayDeque() }.addLast(k)
     }
     val out = ArrayList<Injected>()
@@ -396,6 +436,7 @@ class SyntaxEngine(
           sub.setIncludedRanges(m.ranges6)
           val old = index[RangeKey(id, m.ranges6)]?.removeFirstOrNull()
           val t = sub.parse(old?.tree, mirror, cancel, 0) ?: return cancelled()
+          if (changed != null) collectHulls(target.highlights, t, regions, length, changed)
           if (old != null) {
             old.tree.close()
             old.consumed = true
@@ -431,6 +472,7 @@ class SyntaxEngine(
         if (!sub.setLanguage(target.pointer)) return@use
         sub.setIncludedRanges(flat)
         val t = sub.parse(if (same) old?.tree else null, mirror, cancel, 0) ?: return cancelled()
+        if (changed != null) collectHulls(target.highlights, t, regions, length, changed)
         if (old != null) {
           old.tree.close()
           old.consumed = true
@@ -446,9 +488,6 @@ class SyntaxEngine(
     kept.addAll(carried)
     kept.addAll(next)
     kept.sortBy { it.start }
-    reconciled?.close()
-    reconciled = host.copy()
-    dirty = IntArray(0)
     counts.carried = carried.size
     val result = ArrayList<Injected>(carried.size + out.size)
     for (k in carried) result.add(Injected(k.language, k.tree.copy(), k.start, k.end, k.shift))

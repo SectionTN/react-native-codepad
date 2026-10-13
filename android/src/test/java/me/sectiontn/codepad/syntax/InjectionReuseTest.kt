@@ -344,4 +344,16 @@ class InjectionReuseTest {
     third.close()
     engine.close()
   }
+
+  // The old fence tree supplies the vanished declarator match; without it the name keeps the function style.
+  @Test
+  fun aChangedValueKindInsideAFenceCoversTheDeclaratorName() {
+    val (core, engine) = start("markdown", "```js\nconst f =\n  function() {};\n```\n")
+    awaitParsed().close()
+    core.replace(18, 31, "1")
+    val snapshot = awaitRevision(1)
+    assertTrue(meetsLine(snapshot.changed, 6, 15))
+    snapshot.close()
+    engine.close()
+  }
 }

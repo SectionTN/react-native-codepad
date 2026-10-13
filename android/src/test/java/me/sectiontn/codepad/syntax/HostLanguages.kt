@@ -32,3 +32,13 @@ object HostLanguages {
     }
   }
 }
+
+/** True when one of the unit pairs meets the line [start, end], the painter's rule for a dirty line. */
+fun meetsLine(changed: IntArray, start: Int, end: Int): Boolean {
+  var i = 0
+  while (i + 1 < changed.size) {
+    if (changed[i] <= end && maxOf(changed[i], changed[i + 1] - 1) >= start) return true
+    i += 2
+  }
+  return false
+}
