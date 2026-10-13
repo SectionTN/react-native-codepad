@@ -37,5 +37,7 @@ class LanguageRegistryTest {
     })
     assertNull("a highlights query naming a missing node fails the load", LanguageRegistry.resolve("javascript_bad"))
     assertEquals("the provider was asked, so the null is the bad query and not an unknown id", 1, reads)
+    assertNull(LanguageRegistry.resolve("javascript_bad"))
+    assertEquals("a failed load is cached like a successful one, so the next resolve does not recompile", 1, reads)
   }
 }

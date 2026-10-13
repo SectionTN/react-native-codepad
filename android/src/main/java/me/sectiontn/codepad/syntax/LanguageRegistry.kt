@@ -32,8 +32,12 @@ object LanguageRegistry {
     cache.remove(provider.id)
   }
 
+  // getOrPut treats a cached null as a miss, so a failed load would be retried on every call.
   @Synchronized
-  fun resolve(id: String): LoadedLanguage? = cache.getOrPut(id) { load(id) }
+  fun resolve(id: String): LoadedLanguage? {
+    if (cache.containsKey(id)) return cache[id]
+    return load(id).also { cache[id] = it }
+  }
 
   /** Lowercases a fence or query name and maps it through the aliases; null means never inject, unknown names pass through. */
   fun canonicalInjectionId(name: String): String? {
