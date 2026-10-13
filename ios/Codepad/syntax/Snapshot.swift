@@ -33,15 +33,21 @@ final class Snapshot: @unchecked Sendable {
   let injected: [Injected]
   let languageId: String
   let stats: ParseStats
+  // The published revision `changed` is relative to, -1 after a full parse; `changed` is sorted, coalesced unit pairs.
+  let basedOn: Int
+  let changed: [Int]
 
   init(
     revision: Int, tree: Tree, injected: [Injected], languageId: String,
-    stats: ParseStats = ParseStats(latencyMillis: 0, freshInjections: 0, reusedInjections: 0, carriedInjections: 0)
+    stats: ParseStats = ParseStats(latencyMillis: 0, freshInjections: 0, reusedInjections: 0, carriedInjections: 0),
+    basedOn: Int = -1, changed: [Int] = []
   ) {
     self.revision = revision
     self.tree = tree
     self.injected = injected
     self.languageId = languageId
     self.stats = stats
+    self.basedOn = basedOn
+    self.changed = changed
   }
 }

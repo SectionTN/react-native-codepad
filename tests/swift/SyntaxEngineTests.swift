@@ -128,4 +128,79 @@ final class SyntaxEngineTests: XCTestCase {
     XCTAssertEqual(switched.languageId, "html")
     engine.close()
   }
+
+  // A region list that spans the file, or one that misses the edited line, would re-query the page or paint it stale.
+  func testAnEditInsideAFunctionLeavesTheNextStatementUntouched() throws {
+    let text = "function f() {\n  return 1;\n}\nlet g = 2;\n"
+    let core = EditorCore(text)
+    let engine = engine()
+    wire(core, engine)
+    engine.setLanguage("javascript")
+    engine.setText(text, revision: 0)
+    let first = try XCTUnwrap(snapshots.takeRevision(0))
+    XCTAssertEqual(first.basedOn, -1)
+    core.replace(25, 25, "2")
+    let second = try XCTUnwrap(snapshots.takeRevision(1))
+    XCTAssertEqual(second.basedOn, 0)
+    XCTAssertTrue(meetsLine(second.changed, 15, 26))
+    XCTAssertFalse(meetsLine(second.changed, 29, 39))
+    engine.close()
+  }
+
+  // The declarator's name keeps the function style unless the snapshot names its line.
+  func testAChangedValueKindCoversTheDeclaratorName() throws {
+    let core = EditorCore("const f =\n  function() {};\n")
+    let engine = engine()
+    wire(core, engine)
+    engine.setLanguage("javascript")
+    engine.setText(core.document.text(), revision: 0)
+    _ = try XCTUnwrap(snapshots.takeRevision(0))
+    core.replace(12, 25, "1")
+    let snapshot = try XCTUnwrap(snapshots.takeRevision(1))
+    XCTAssertTrue(meetsLine(snapshot.changed, 0, 9))
+    engine.close()
+  }
+
+  // The blocker holds the syntax queue while two edits queue, so one pass covers both.
+  func testEditsBeforeAPassCompletesAccumulateTheirRegions() throws {
+    let text = "let a = 1;\nlet b = 2;\nlet c = 3;\n"
+    let core = EditorCore(text)
+    let engine = engine()
+    wire(core, engine)
+    engine.setLanguage("javascript")
+    engine.setText(text, revision: 0)
+    _ = try XCTUnwrap(snapshots.takeRevision(0))
+    let started = DispatchSemaphore(value: 0)
+    let release = DispatchSemaphore(value: 0)
+    engine.queue.async {
+      started.signal()
+      release.wait()
+    }
+    started.wait()
+    core.replace(8, 9, "9")
+    core.replace(30, 31, "9")
+    release.signal()
+    let snapshot = try XCTUnwrap(snapshots.takeRevision(2))
+    XCTAssertEqual(snapshot.basedOn, 0)
+    XCTAssertTrue(meetsLine(snapshot.changed, 0, 10))
+    XCTAssertTrue(meetsLine(snapshot.changed, 22, 32))
+    XCTAssertFalse(meetsLine(snapshot.changed, 11, 21))
+    engine.close()
+  }
+
+  // The reference tree used to live in the injection pass; a language without one published no regions at all.
+  func testALanguageWithoutInjectionsStillReportsRegions() throws {
+    HostLanguages.load("json", "json")
+    let core = EditorCore("{\"a\": 1,\n \"b\": 2}\n")
+    let engine = engine()
+    wire(core, engine)
+    engine.setLanguage("json")
+    engine.setText(core.document.text(), revision: 0)
+    _ = try XCTUnwrap(snapshots.takeRevision(0))
+    core.replace(15, 16, "3")
+    let snapshot = try XCTUnwrap(snapshots.takeRevision(1))
+    XCTAssertEqual(snapshot.basedOn, 0)
+    XCTAssertTrue(meetsLine(snapshot.changed, 9, 17))
+    engine.close()
+  }
 }

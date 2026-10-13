@@ -113,6 +113,7 @@ final class SyntaxEngine: @unchecked Sendable {
   private var kept: [Kept] = []
   // The host tree of the last completed pass, edited like the live one; its diff against the new tree bounds the pass.
   private var reconciled: Tree?
+  private var reconciledRevision = -1
   // New spans of the edits since the last completed pass, shifted like hulls: the diff misses a retyped leaf.
   private var dirty: [Int] = []
   private var revision = 0
@@ -251,10 +252,24 @@ final class SyntaxEngine: @unchecked Sendable {
     }
     tree = result
     var counts = Counts()
-    guard let injected = injections(lang, result, &counts) else {
+    let basedOn = reconciled == nil ? -1 : reconciledRevision
+    let length = mirror.length
+    let regions = regions(result, length)
+    // The regions plus the capture hulls of every highlight match they meet, old tree and new: the painter's dirty lines.
+    var changed: [Int] = []
+    if let reconciled {
+      changed = regions
+      collectHulls(lang.highlights, reconciled, regions, length, &changed)
+      collectHulls(lang.highlights, result, regions, length, &changed)
+    }
+    guard let injected = injections(lang, result, regions, length, &counts, &changed, incremental: basedOn >= 0) else {
       if !cancel.isSet { queue.async { [self] in if !closed { reparse() } } }
       return
     }
+    reconciled = result.copy()
+    reconciledRevision = revision
+    dirty = []
+    let published = basedOn < 0 ? [] : coalesce(changed.map { min(max($0, 0), length) })
     let since = pendingSince.withLock { value -> UInt64 in
       let v = value
       value = 0
@@ -262,7 +277,8 @@ final class SyntaxEngine: @unchecked Sendable {
     }
     let latency = since == 0 ? 0 : Int((DispatchTime.now().uptimeNanoseconds - since) / 1_000_000)
     let stats = ParseStats(latencyMillis: latency, freshInjections: counts.fresh, reusedInjections: counts.reused, carriedInjections: counts.carried)
-    let snapshot = Snapshot(revision: revision, tree: result.copy(), injected: injected, languageId: lang.id, stats: stats)
+    let snapshot = Snapshot(
+      revision: revision, tree: result.copy(), injected: injected, languageId: lang.id, stats: stats, basedOn: basedOn, changed: published)
     let onSnapshot = self.onSnapshot
     postToMain { onSnapshot(snapshot) }
   }
@@ -316,6 +332,31 @@ final class SyntaxEngine: @unchecked Sendable {
     out.append(contentsOf: dirty)
     for i in out.indices { out[i] = min(max(out[i], 0), length) }
     return coalesce(out)
+  }
+
+  /// Appends the capture hull of every highlight match the regions meet: a capture whose pattern constrains a changed sibling.
+  private func collectHulls(_ compiled: CompiledQuery, _ tree: Tree, _ regions: [Int], _ length: Int, _ out: inout [Int]) {
+    let root = tree.rootNode
+    let cursor = QueryCursor()
+    var i = 0
+    while i + 1 < regions.count {
+      cursor.exec(compiled.query, root)
+      cursor.setUnitRange(max(0, regions[i] - 1), min(length, regions[i + 1] + 1))
+      while cursor.nextMatch() {
+        var lo = Int.max
+        var hi = 0
+        for j in 0..<cursor.matchCaptureCount {
+          let n = cursor.matchCapture(j).node
+          lo = min(lo, n.startUnit)
+          hi = max(hi, n.endUnit)
+        }
+        if lo < hi {
+          out.append(lo)
+          out.append(hi)
+        }
+      }
+      i += 2
+    }
   }
 
   /// One cursor run over [from, to); matches are deduped across runs by pattern and content extent.
@@ -378,13 +419,11 @@ final class SyntaxEngine: @unchecked Sendable {
 
   /// Reconciles the kept trees against what changed since the last completed pass: the query runs over the changed
   /// regions only, trees they meet are reparsed, the rest are carried over. Nil when a new edit cancelled the pass.
-  private func injections(_ lang: LoadedLanguage, _ host: Tree, _ counts: inout Counts) -> [Injected]? {
-    guard let compiled = lang.injections, compiled.captureIndex["injection.content"] != nil else {
-      dropKept()
-      return []
-    }
-    let length = mirror.length
-    let regions = regions(host, length)
+  private func injections(
+    _ lang: LoadedLanguage, _ host: Tree, _ regions: [Int], _ length: Int, _ counts: inout Counts, _ changed: inout [Int],
+    incremental: Bool
+  ) -> [Injected]? {
+    guard let compiled = lang.injections, compiled.captureIndex["injection.content"] != nil else { return [] }
     var touched: [Kept] = []
     var carried: [Kept] = []
     for k in kept {
@@ -434,8 +473,11 @@ final class SyntaxEngine: @unchecked Sendable {
     }
     // Touched trees are indexed by their edited ranges; a plain match with equal ranges reparses against one.
     var index: [RangeKey: [Kept]] = [:]
-    for k in touched where !k.combined {
-      k.catchUp()
+    for k in touched {
+      if !k.combined { k.catchUp() }
+      // The old tree's matches are the ones that can vanish with this pass.
+      if incremental { collectHulls(k.language.highlights, k.tree, regions, length, &changed) }
+      if k.combined { continue }
       index[RangeKey(id: k.language.id, ranges: k.tree.includedRanges()), default: []].append(k)
     }
     var out: [Injected] = []
@@ -458,6 +500,7 @@ final class SyntaxEngine: @unchecked Sendable {
           index[key] = list
         }
         guard let t = sub.parse(old?.tree, mirror, cancel, budgetMicros: 0) else { return cancelled() }
+        if incremental { collectHulls(target.highlights, t, regions, length, &changed) }
         if let old {
           old.consumed = true
           counts.reused += 1
@@ -493,6 +536,7 @@ final class SyntaxEngine: @unchecked Sendable {
       if !sub.setLanguage(target.pointer) { continue }
       sub.setIncludedRanges(flat)
       guard let t = sub.parse(same ? old?.tree : nil, mirror, cancel, budgetMicros: 0) else { return cancelled() }
+      if incremental { collectHulls(target.highlights, t, regions, length, &changed) }
       if let old { old.consumed = true }
       if same { counts.reused += 1 } else { counts.fresh += 1 }
       let extent = [group[0].start, group[group.count - 1].end]
@@ -504,8 +548,6 @@ final class SyntaxEngine: @unchecked Sendable {
     }
     kept = carried + next
     kept.sort { $0.start < $1.start }
-    reconciled = host.copy()
-    dirty = []
     counts.carried = carried.count
     var result = carried.map { Injected(language: $0.language, tree: $0.tree.copy(), start: $0.start, end: $0.end, shift: $0.shift) }
     result.append(contentsOf: out)

@@ -291,4 +291,14 @@ final class InjectionReuseTests: XCTestCase {
     XCTAssertEqual(try fenceKeyword(third, core), "keyword")
     engine.close()
   }
+
+  // The old fence tree supplies the vanished declarator match; without it the name keeps the function style.
+  func testAChangedValueKindInsideAFenceCoversTheDeclaratorName() throws {
+    let (core, engine) = start("markdown", "```js\nconst f =\n  function() {};\n```\n")
+    _ = try XCTUnwrap(snapshots.takeParsed())
+    core.replace(18, 31, "1")
+    let snapshot = try XCTUnwrap(snapshots.takeRevision(1))
+    XCTAssertTrue(meetsLine(snapshot.changed, 6, 15))
+    engine.close()
+  }
 }

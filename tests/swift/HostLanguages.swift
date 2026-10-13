@@ -106,3 +106,13 @@ func parseSnapshot(_ lang: LoadedLanguage, _ text: String) -> (Snapshot, Documen
   guard let tree = parser.parse(nil, mirror, nil, budgetMicros: 0) else { fatalError("parse failed") }
   return (Snapshot(revision: doc.revision, tree: tree, injected: [], languageId: lang.id), doc)
 }
+
+/// True when one of the unit pairs meets the line [start, end], the painter's rule for a dirty line.
+func meetsLine(_ changed: [Int], _ start: Int, _ end: Int) -> Bool {
+  var i = 0
+  while i + 1 < changed.count {
+    if changed[i] <= end && max(changed[i], changed[i + 1] - 1) >= start { return true }
+    i += 2
+  }
+  return false
+}
