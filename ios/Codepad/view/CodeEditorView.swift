@@ -95,6 +95,8 @@ final class CodeEditorView: UIScrollView {
   private var languageId: String?
   private var metrics: RowMetrics?
   private var snapshot: Snapshot?
+  // The revision of the last snapshot prepare consumed; a snapshot based on it re-queries only the lines it changed.
+  private var appliedRevision = -1
   private var highlighter: Highlighter?
   private var engine: SyntaxEngine?
   private var heights: HeightMap
@@ -866,39 +868,48 @@ final class CodeEditorView: UIScrollView {
     }
   }
 
-  /// Builds missing layouts for [first, last] with one highlight query over the lines that need it.
+  /// Builds missing layouts for [first, last] with one highlight query per run of dirty lines: when the snapshot follows
+  /// the one last applied, only the lines its regions meet; otherwise every line not at its revision.
   private func prepare(_ first: Int, _ last: Int, _ m: RowMetrics) {
     let doc = core.document
     let consistent = snapshot.flatMap { $0.revision == doc.revision ? $0 : nil }
     let revision = consistent != nil && highlighter != nil ? doc.revision : -1
-    var lo = -1
-    var hi = -1
-    if revision >= 0 {
-      for line in first...last where cache[line]?.revision != revision {
-        if lo < 0 { lo = line }
-        hi = line
-      }
+    var runs: [Int] = []
+    if let consistent, highlighter != nil {
+      let incremental = consistent.basedOn >= 0 && consistent.basedOn == appliedRevision
+      runs = dirtyRuns(
+        first: first, last: last, revision: revision, applied: appliedRevision, changed: incremental ? consistent.changed : nil,
+        doc: doc
+      ) { cache[$0]?.revision }
     }
+    var r = 0
     var batch: [[Int]]? = nil
-    if lo >= 0, let consistent, let highlighter {
-      batch = highlighter.spans(snapshot: consistent, doc: doc, firstLine: lo, lastLine: hi)
-    }
     for line in first...last {
+      while r + 1 < runs.count && runs[r + 1] < line {
+        r += 2
+        batch = nil
+      }
+      let inRun = r + 1 < runs.count && line >= runs[r]
       let entry = cache[line]
-      let inBatch = batch != nil && line >= lo && line <= hi
+      if !inRun, let entry {
+        // A clean line keeps its layout and takes the revision without a query.
+        if revision >= 0 { entry.revision = revision }
+        continue
+      }
       var fresh: [Int]? = nil
-      if let batch, inBatch, !batch[line - lo].isEmpty { fresh = batch[line - lo] }
-      if let entry {
-        if !inBatch { continue }
-        if entry.spans == fresh {
+      if inRun, let consistent, let highlighter {
+        if batch == nil { batch = highlighter.spans(snapshot: consistent, doc: doc, firstLine: runs[r], lastLine: runs[r + 1]) }
+        if let batch, !batch[line - runs[r]].isEmpty { fresh = batch[line - runs[r]] }
+        if let entry, entry.spans == fresh {
           entry.revision = revision
           continue
         }
       }
       let layout = makeLayout(line, spans: fresh, m)
-      cache.put(line, Entry(id: takeEntryId(), layout: layout, spans: fresh, revision: inBatch ? revision : -1))
+      cache.put(line, Entry(id: takeEntryId(), layout: layout, spans: fresh, revision: inRun ? revision : -1))
       measured(line, layout)
     }
+    if revision >= 0 { appliedRevision = revision }
   }
 
   /// The visible rect grown by half a screen each way, in content view coordinates: a line layer never

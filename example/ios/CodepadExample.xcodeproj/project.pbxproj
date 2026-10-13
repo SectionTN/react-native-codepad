@@ -23,6 +23,7 @@
 		789D6BA1A8D384C14452E7C6 /* LanguageSwitchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B813E2B1BCDEE1AE37F47D2 /* LanguageSwitchTests.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		83260D5CF89F1C93CB5B7A0A /* SearchPaintTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F036F77C4601D08E5875C5 /* SearchPaintTests.swift */; };
+		886FE20130DB50D29808051C /* KeyFrameHighlightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9F1DCEAA80D2FE89C5BB26 /* KeyFrameHighlightTests.swift */; };
 		8CEE448DF1D2EBEE2DB4BB33 /* InitialTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A958039B4E3547886C83EB7 /* InitialTextTests.swift */; };
 		93D4D0C2FF409C8089204288 /* HitTestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 543C222D1D27E3B97AD6F979 /* HitTestTests.swift */; };
 		9D43A8272A96B15F2D66A37C /* ShowcaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0105AC546A1B5F575E400FF /* ShowcaseTests.swift */; };
@@ -47,6 +48,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0A9F1DCEAA80D2FE89C5BB26 /* KeyFrameHighlightTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyFrameHighlightTests.swift; sourceTree = "<group>"; };
 		0B813E2B1BCDEE1AE37F47D2 /* LanguageSwitchTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LanguageSwitchTests.swift; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* CodepadExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodepadExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = CodepadExample/Images.xcassets; sourceTree = "<group>"; };
@@ -192,6 +194,7 @@
 				2FC5A2DC7199A9C215380CB2 /* KeyboardInsetTests.swift */,
 				7133C4873626B3B59917468F /* RecordingTests.swift */,
 				4A958039B4E3547886C83EB7 /* InitialTextTests.swift */,
+				0A9F1DCEAA80D2FE89C5BB26 /* KeyFrameHighlightTests.swift */,
 			);
 			name = CodepadTests;
 			path = CodepadTests;
@@ -435,6 +438,7 @@
 				140C2EFB0059C4E49233BA8C /* KeyboardInsetTests.swift in Sources */,
 				52B28AF3AAEE86E988E04DDF /* RecordingTests.swift in Sources */,
 				8CEE448DF1D2EBEE2DB4BB33 /* InitialTextTests.swift in Sources */,
+				886FE20130DB50D29808051C /* KeyFrameHighlightTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
