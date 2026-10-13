@@ -44,4 +44,23 @@ final class KeyFrameHighlightTests: XCTestCase {
     XCTAssertTrue(third.layout === kept)
     XCTAssertFalse(first.layout === replaced)
   }
+
+  // Without the fallback a key paints its whole line plain until the snapshot lands; Markdown 2k misses 41 keys in 60.
+  func testAFrameBeforeTheSnapshotKeepsTheEditedLinesColors() {
+    let editor = launch()
+    let number = TokenStyle(color: ThemeColors.color(255, 0, 0), bold: false, italic: false)
+    editor.setTheme(ThemeColors.default.withTokens(["number": number]))
+    editor.setLanguage("javascript")
+    editor.setInitialText("const f = 1;\n")
+    layout(editor)
+    draw(editor)
+    waitForSnapshot(editor)
+    XCTAssertGreaterThan(redPixels(draw(editor), rows: 22), 0, "the number painted")
+    editor.core.replace(12, 12, " ")
+    XCTAssertNotEqual(editor.snapshotRevision, editor.core.document.revision, "the parse is still in flight")
+    let before = redPixels(draw(editor), rows: 22)
+    waitForSnapshot(editor)
+    XCTAssertGreaterThan(redPixels(draw(editor), rows: 22), 0, "the number painted after the snapshot")
+    XCTAssertGreaterThan(before, 0, "the number kept its color in the frame before the snapshot")
+  }
 }

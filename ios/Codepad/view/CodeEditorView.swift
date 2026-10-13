@@ -97,6 +97,10 @@ final class CodeEditorView: UIScrollView {
   private var snapshot: Snapshot?
   // The revision of the last snapshot prepare consumed; a snapshot based on it re-queries only the lines it changed.
   private var appliedRevision = -1
+  // The dropped entry's spans moved along a one line change, painted until the snapshot lands.
+  private var pendingSpans: [Int]?
+  private var pendingLine = -1
+  private var pendingRevision = -1
   private var highlighter: Highlighter?
   private var engine: SyntaxEngine?
   private var heights: HeightMap
@@ -676,6 +680,7 @@ final class CodeEditorView: UIScrollView {
     let oldCount = lineSpan(change.removed)
     let newCount = lineSpan(change.inserted)
     heights.replaceLines(first: first, oldCount: oldCount, newCount: newCount)
+    keepSpans(first, oldCount, newCount, change)
     cache.shift(first: first, oldCount: oldCount, newCount: newCount)
     ensureEngine().edit(change, points: SyntaxEngine.pointsFor(doc: doc, change: change))
     search?.onChange(change)
@@ -904,12 +909,35 @@ final class CodeEditorView: UIScrollView {
           entry.revision = revision
           continue
         }
+      } else if line == pendingLine, pendingRevision == doc.revision {
+        fresh = pendingSpans
       }
       let layout = makeLayout(line, spans: fresh, m)
       cache.put(line, Entry(id: takeEntryId(), layout: layout, spans: fresh, revision: inRun ? revision : -1))
       measured(line, layout)
     }
-    if revision >= 0 { appliedRevision = revision }
+    if revision >= 0 {
+      appliedRevision = revision
+      pendingSpans = nil
+    }
+  }
+
+  /// The edited line's previous spans moved along a change that stays inside it, or a newline typed at its end.
+  private func keepSpans(_ first: Int, _ oldCount: Int, _ newCount: Int, _ change: Change) {
+    pendingSpans = nil
+    guard oldCount == 1, let spans = cache[first]?.spans else { return }
+    let doc = core.document
+    let column = change.start - doc.lineStart(first)
+    let removed = change.removed.utf16.count
+    if newCount == 1 {
+      pendingSpans = shiftSpans(spans, start: column, removed: removed, inserted: change.inserted.utf16.count)
+    } else if newCount == 2, removed == 0, change.inserted.hasPrefix("\n"), doc.lineLength(first) == column {
+      pendingSpans = spans
+    } else {
+      return
+    }
+    pendingLine = first
+    pendingRevision = doc.revision
   }
 
   /// The visible rect grown by half a screen each way, in content view coordinates: a line layer never
