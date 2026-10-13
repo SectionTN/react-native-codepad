@@ -35,3 +35,15 @@ internal fun draw(view: View): Bitmap {
   view.draw(Canvas(bitmap))
   return bitmap
 }
+
+/** Pixels painted in a theme's pure red over the first [rows] pixel rows of the bitmap. */
+internal fun redPixels(bitmap: Bitmap, rows: Int): Int {
+  var n = 0
+  for (y in 0 until minOf(rows, bitmap.height)) {
+    for (x in 0 until bitmap.width) {
+      val p = bitmap.getPixel(x, y)
+      if ((p shr 16 and 0xff) > 200 && (p shr 8 and 0xff) < 80 && (p and 0xff) < 80) n++
+    }
+  }
+  return n
+}

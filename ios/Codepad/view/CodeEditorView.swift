@@ -175,6 +175,8 @@ final class CodeEditorView: UIScrollView {
     coreLock.withLock { $0 = next }
     wire(next)
     ensureEngine().setText(value, revision: next.document.revision)
+    // The new document starts at revision 0 like the old one, so a kept snapshot would pass the revision check.
+    snapshot = nil
     resetDocument()
   }
 

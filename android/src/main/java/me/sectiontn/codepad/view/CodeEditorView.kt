@@ -232,6 +232,9 @@ class CodeEditorView(context: Context) : View(context) {
     core = EditorCore(value).also { it.settings = settings }
     wire(core)
     engine().setText(value, core.document.revision)
+    // The new document starts at revision 0 like the old one, so a kept snapshot would pass the revision check.
+    snapshot?.let { engine?.release(it) ?: it.close() }
+    snapshot = null
     resetDocument()
     if (isFocused) restartInput()
   }

@@ -100,6 +100,19 @@ func pixel(_ image: UIImage, x: Int, y: Int) -> (r: Int, g: Int, b: Int, a: Int)
   Pixels(image)[x, y]
 }
 
+/// Pixels painted in a theme's pure red over the first `rows` points of the image.
+func redPixels(_ image: UIImage, rows: Int) -> Int {
+  let p = Pixels(image)
+  var n = 0
+  for y in 0..<min(Int(CGFloat(rows) * p.scale), p.height) {
+    for x in 0..<p.width {
+      let c = p[x, y]
+      if c.r > 200 && c.g < 80 && c.b < 80 { n += 1 }
+    }
+  }
+  return n
+}
+
 /// Spins the run loop until the editor holds a snapshot of the current document revision.
 @MainActor
 func waitForSnapshot(
