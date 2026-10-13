@@ -319,9 +319,14 @@ final class QueryCursor {
     return capture(at: Int(index))
   }
 
+  /// Advances to the next finished match, every capture included whether or not it lies inside the unit range.
+  func nextMatch() -> Bool {
+    ts_query_cursor_next_match(raw, &match)
+  }
+
   var matchCaptureCount: Int { Int(match.capture_count) }
 
-  /// The i-th capture of the match returned by the last nextCapture call.
+  /// The i-th capture of the match returned by the last nextCapture or nextMatch call.
   func matchCapture(_ index: Int) -> Capture {
     capture(at: index)
   }

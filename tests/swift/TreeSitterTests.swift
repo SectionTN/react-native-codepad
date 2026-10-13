@@ -109,4 +109,25 @@ final class TreeSitterTests: XCTestCase {
     XCTAssertGreaterThanOrEqual(r.count > 1 ? r[1] : 0, 12)
     XCTAssertLessThanOrEqual(r.last ?? 99, 14, "units, not bytes")
   }
+
+  // The sibling rule needs the match whose root meets the range even when its captures lie outside it, which nextCapture drops.
+  func testNextMatchReturnsTheCapturesOfAMatchRootedOverTheRange() throws {
+    let lang = HostLanguages.javascript()
+    let parser = Parser()
+    parser.setLanguage(lang.pointer)
+    let mirror = Mirror()
+    mirror.setText("const f =\n  function() {};\n")
+    let tree = try XCTUnwrap(parser.parse(nil, mirror, nil, budgetMicros: 0))
+    let cursor = QueryCursor()
+    cursor.exec(lang.highlights.query, tree.rootNode)
+    cursor.setUnitRange(12, 25)
+    var hulls: [[Int]] = []
+    while cursor.nextMatch() {
+      for i in 0..<cursor.matchCaptureCount {
+        let n = cursor.matchCapture(i).node
+        hulls.append([n.startUnit, n.endUnit])
+      }
+    }
+    XCTAssertTrue(hulls.contains([6, 7]), "the declarator's name capture at [6, 7)")
+  }
 }

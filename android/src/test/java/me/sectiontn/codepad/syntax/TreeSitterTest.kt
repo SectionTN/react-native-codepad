@@ -122,4 +122,31 @@ class TreeSitterTest {
       }
     }
   }
+
+  // The sibling rule needs the match whose root meets the range even when its captures lie outside it, which nextCapture drops.
+  @Test
+  fun nextMatchReturnsTheCapturesOfAMatchRootedOverTheRange() {
+    val lang = HostLanguages.javascript()
+    Parser().use { parser ->
+      parser.setLanguage(lang.pointer)
+      Mirror().use { mirror ->
+        mirror.setText("const f =\n  function() {};\n")
+        checkNotNull(parser.parse(null, mirror, null, 0)).use { tree ->
+          val hulls = ArrayList<Pair<Int, Int>>()
+          QueryCursor().use { cursor ->
+            cursor.exec(lang.highlights.query, tree.rootNode())
+            cursor.setUnitRange(12, 25)
+            val c = Capture()
+            while (cursor.nextMatch()) {
+              for (i in 0 until cursor.matchCaptureCount) {
+                cursor.matchCapture(i, c)
+                hulls.add(c.node.startUnit to c.node.endUnit)
+              }
+            }
+          }
+          assertTrue("the declarator's name capture at [6, 7)", hulls.contains(6 to 7))
+        }
+      }
+    }
+  }
 }

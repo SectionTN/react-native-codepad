@@ -410,6 +410,13 @@ jboolean FN(cursorNextCapture)(JNIEnv *env, jclass cls, jlong cursor, jlongArray
   return JNI_TRUE;
 }
 
+// The whole next match, captures inside or outside the cursor's range; read it through cursorMatchCapture.
+jboolean FN(cursorNextMatch)(JNIEnv *env, jclass cls, jlong cursor) {
+  (void) env; (void) cls;
+  Cursor *c = (Cursor *) (intptr_t) cursor;
+  return ts_query_cursor_next_match(c->cursor, &c->match) ? JNI_TRUE : JNI_FALSE;
+}
+
 jint FN(cursorMatchCaptureCount)(JNIEnv *env, jclass cls, jlong cursor) {
   (void) env; (void) cls;
   return (jint) ((Cursor *) (intptr_t) cursor)->match.capture_count;
