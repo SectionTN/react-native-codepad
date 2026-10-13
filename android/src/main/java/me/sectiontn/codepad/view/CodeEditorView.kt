@@ -47,6 +47,7 @@ import me.sectiontn.codepad.syntax.Highlighter
 import me.sectiontn.codepad.syntax.LanguageRegistry
 import me.sectiontn.codepad.syntax.Snapshot
 import me.sectiontn.codepad.syntax.SyntaxEngine
+import me.sectiontn.codepad.syntax.dirtyRuns
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.abs
@@ -90,6 +91,8 @@ class CodeEditorView(context: Context) : View(context) {
   private var languageId: String? = null
   private var metrics: RowMetrics? = null
   private var snapshot: Snapshot? = null
+  // The revision of the last snapshot prepare consumed; a snapshot based on it re-queries only the lines it changed.
+  private var appliedRevision = -1
   private var highlighter: Highlighter? = null
   private var engine: SyntaxEngine? = null
 
@@ -1191,38 +1194,48 @@ class CodeEditorView(context: Context) : View(context) {
     }
   }
 
-  /** Builds missing layouts for [first, last] with one highlight query over the lines that need it. */
+  /**
+   * Builds missing layouts for [first, last] with one highlight query per run of dirty lines: when the snapshot follows
+   * the one last applied, only the lines its regions meet; otherwise every line not at its revision.
+   */
   private fun prepare(first: Int, last: Int, m: RowMetrics) {
     val doc = core.document
     val consistent = snapshot?.takeIf { it.revision == doc.revision }
     val hl = highlighter
     val revision = if (consistent != null && hl != null) consistent.revision else -1
-    var lo = -1
-    var hi = -1
-    if (revision >= 0) {
-      for (line in first..last) {
-        if (cache[line]?.revision == revision) continue
-        if (lo < 0) lo = line
-        hi = line
-      }
-    }
-    val batch = if (lo >= 0 && consistent != null && hl != null) hl.spans(consistent, doc, lo, hi) else null
+    val runs = if (consistent != null && hl != null) {
+      val changed = consistent.changed.takeIf { consistent.basedOn >= 0 && consistent.basedOn == appliedRevision }
+      dirtyRuns(first, last, revision, appliedRevision, changed, doc) { cache[it]?.revision }
+    } else IntArray(0)
+    var r = 0
+    var batch: Array<IntArray>? = null
     for (line in first..last) {
+      while (r + 1 < runs.size && runs[r + 1] < line) {
+        r += 2
+        batch = null
+      }
+      val inRun = r + 1 < runs.size && line >= runs[r]
       val entry = cache[line]
-      val inBatch = batch != null && line >= lo && line <= hi
-      val fresh = if (batch != null && inBatch) batch[line - lo].takeIf { it.isNotEmpty() } else null
-      if (entry != null) {
-        if (!inBatch) continue
-        if (entry.spans.contentEquals(fresh)) {
+      if (!inRun && entry != null) {
+        // A clean line keeps its layout and takes the revision without a query.
+        if (revision >= 0) entry.revision = revision
+        continue
+      }
+      var fresh: IntArray? = null
+      if (inRun) {
+        if (batch == null) batch = checkNotNull(hl).spans(checkNotNull(consistent), doc, runs[r], runs[r + 1])
+        fresh = batch[line - runs[r]].takeIf { it.isNotEmpty() }
+        if (entry != null && entry.spans.contentEquals(fresh)) {
           entry.revision = revision
           continue
         }
       }
       val layout = LineLayout(doc.line(line), fresh, paint, theme, viewport.wrapWidth, core.settings.tabSize, m)
-      cache.put(line, Entry(layout, fresh, if (inBatch) revision else -1))
+      cache.put(line, Entry(layout, fresh, if (inRun) revision else -1))
       viewport.measured(line, layout.rowCount)
       if (!viewport.wrap) viewport.widestLine = maxOf(viewport.widestLine, Math.round(layout.width()))
     }
+    if (revision >= 0) appliedRevision = revision
   }
 
   /** Fills under the text in this order: search matches, bracket pair, selection. */
