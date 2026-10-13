@@ -2,8 +2,7 @@ package me.sectiontn.codepad.core
 
 class Document(initialText: String = "") {
   private val lines = ArrayList<StringBuilder>()
-  private var lineStarts = IntArray(64)
-  private var cleanLines = 0
+  private var lineStarts = IntArray(0)
 
   var length: Int = 0
     private set
@@ -24,6 +23,7 @@ class Document(initialText: String = "") {
       from = nl + 1
     }
     length = text.length
+    rebuildStarts(0)
   }
 
   val lineCount: Int get() = lines.size
@@ -33,17 +33,12 @@ class Document(initialText: String = "") {
   fun lineLength(index: Int): Int = if (index in 0 until lines.size) lines[index].length else 0
 
   /** Start offset of line [index]. index == lineCount yields length + 1 so the prefix sums stay uniform. */
-  fun lineStart(index: Int): Int {
-    val i = index.coerceIn(0, lines.size)
-    ensureStarts(i)
-    return lineStarts[i]
-  }
+  fun lineStart(index: Int): Int = lineStarts[index.coerceIn(0, lines.size)]
 
   fun lineEnd(index: Int): Int = lineStart(index) + lineLength(index)
 
   fun lineAt(offset: Int): Int {
     val o = offset.coerceIn(0, length)
-    ensureStarts(lines.size - 1)
     var lo = 0
     var hi = lines.size - 1
     while (lo < hi) {
@@ -113,8 +108,8 @@ class Document(initialText: String = "") {
     lines.subList(sl, el + 1).clear()
     lines.addAll(sl, fresh)
     length += inserted.length - removed.length
-    // The start of the first touched line did not move, so its cached start stays valid.
-    cleanLines = minOf(cleanLines, sl + 1)
+    // Line sl keeps its start; the rest is rebuilt here, under the writer's lock, so no reader ever mutates the table.
+    rebuildStarts(sl + 1)
     revision++
     return Change(s, removed, inserted, revision)
   }
@@ -125,18 +120,18 @@ class Document(initialText: String = "") {
     return if (s <= e) s to e else e to s
   }
 
-  private fun ensureStarts(upTo: Int) {
-    if (lineStarts.size < lines.size + 1) {
-      lineStarts = lineStarts.copyOf(maxOf(lines.size + 1, lineStarts.size * 2))
-    }
-    if (cleanLines == 0) {
+  /** Prefix sums of the line lengths plus their newlines, one entry per line and the sentinel at [lineCount]. */
+  private fun rebuildStarts(from: Int) {
+    val count = lines.size + 1
+    if (lineStarts.size < count) lineStarts = lineStarts.copyOf(maxOf(count, lineStarts.size * 2))
+    var i = from
+    if (i == 0) {
       lineStarts[0] = 0
-      cleanLines = 1
+      i = 1
     }
-    while (cleanLines <= upTo) {
-      val i = cleanLines
+    while (i < count) {
       lineStarts[i] = lineStarts[i - 1] + lines[i - 1].length + 1
-      cleanLines++
+      i++
     }
   }
 

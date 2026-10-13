@@ -3,8 +3,7 @@ import Foundation
 /// Lines of UTF-16 units without terminators, so every offset is the index JavaScript strings use.
 final class Document {
   private var lines: [[UInt16]] = []
-  private var lineStarts = [Int](repeating: 0, count: 64)
-  private var cleanLines = 0
+  private var lineStarts: [Int] = []
 
   private(set) var length = 0
   private(set) var revision = 0
@@ -21,6 +20,7 @@ final class Document {
       from = nl + 1
     }
     length = text.count
+    rebuildStarts(from: 0)
   }
 
   var lineCount: Int { lines.count }
@@ -39,9 +39,7 @@ final class Document {
 
   /// Start offset of line `index`. `index == lineCount` yields `length + 1` so the prefix sums stay uniform.
   func lineStart(_ index: Int) -> Int {
-    let i = max(0, min(index, lines.count))
-    ensureStarts(i)
-    return lineStarts[i]
+    lineStarts[max(0, min(index, lines.count))]
   }
 
   func lineEnd(_ index: Int) -> Int {
@@ -50,7 +48,6 @@ final class Document {
 
   func lineAt(_ offset: Int) -> Int {
     let o = max(0, min(offset, length))
-    ensureStarts(lines.count - 1)
     var lo = 0
     var hi = lines.count - 1
     while lo < hi {
@@ -131,8 +128,8 @@ final class Document {
     }
     lines.replaceSubrange(sl...el, with: fresh)
     length += inserted.utf16.count - (e - s)
-    // The start of the first touched line did not move, so its cached start stays valid.
-    cleanLines = min(cleanLines, sl + 1)
+    // Line sl keeps its start; the rest is rebuilt here, under the writer's lock, so no reader ever mutates the table.
+    rebuildStarts(from: sl + 1)
     revision += 1
     return Change(start: s, removed: removed, inserted: inserted, revision: revision)
   }
@@ -143,19 +140,21 @@ final class Document {
     return s <= e ? (s, e) : (e, s)
   }
 
-  private func ensureStarts(_ upTo: Int) {
-    if lineStarts.count < lines.count + 1 {
-      let grown = max(lines.count + 1, lineStarts.count * 2)
-      lineStarts.append(contentsOf: repeatElement(0, count: grown - lineStarts.count))
+  /// Prefix sums of the line lengths plus their newlines, one entry per line and the sentinel at `lineCount`.
+  private func rebuildStarts(from: Int) {
+    let count = lines.count + 1
+    if lineStarts.count < count {
+      lineStarts.reserveCapacity(max(count, lineStarts.count * 2))
+      lineStarts.append(contentsOf: repeatElement(0, count: count - lineStarts.count))
     }
-    if cleanLines == 0 {
+    var i = from
+    if i == 0 {
       lineStarts[0] = 0
-      cleanLines = 1
+      i = 1
     }
-    while cleanLines <= upTo {
-      let i = cleanLines
+    while i < count {
       lineStarts[i] = lineStarts[i - 1] + lines[i - 1].count + 1
-      cleanLines += 1
+      i += 1
     }
   }
 
