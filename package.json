@@ -24,6 +24,7 @@
     "react-native.config.js",
     "!ios/build",
     "!android/build",
+    "!android/src/test",
     "!android/gradle",
     "!android/gradlew",
     "!android/gradlew.bat",
@@ -141,6 +142,9 @@
     ]
   },
   "release-it": {
+    "hooks": {
+      "after:bump": "node scripts/set-version.mjs ${version}"
+    },
     "git": {
       "commitMessage": "chore: release ${version}",
       "tagName": "v${version}",
