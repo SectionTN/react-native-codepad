@@ -123,6 +123,10 @@ class QueryCursor : AutoCloseable {
   /** Advances to the next finished match, every capture included whether or not it lies inside the unit range. */
   fun nextMatch(): Boolean = TreeSitterNative.cursorNextMatch(handle)
 
+  /** The capture hull of every match of [query] under [node] over [start, end) as unit pairs, one JNI call per run. */
+  fun matchHulls(query: Query, node: TSNodeRef, start: Int, end: Int): IntArray =
+    TreeSitterNative.cursorMatchHulls(handle, query.handle, node.raw, start, end)
+
   val matchCaptureCount: Int get() = TreeSitterNative.cursorMatchCaptureCount(handle)
 
   /** The i-th capture of the match returned by the last nextCapture or nextMatch call. */

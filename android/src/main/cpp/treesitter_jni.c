@@ -417,6 +417,39 @@ jboolean FN(cursorNextMatch)(JNIEnv *env, jclass cls, jlong cursor) {
   return ts_query_cursor_next_match(c->cursor, &c->match) ? JNI_TRUE : JNI_FALSE;
 }
 
+// The capture hull of every match over [start, end) units as unit pairs: one call per run instead of one per capture.
+jintArray FN(cursorMatchHulls)(JNIEnv *env, jclass cls, jlong cursor, jlong query, jlongArray node, jint start, jint end) {
+  (void) cls;
+  Cursor *c = (Cursor *) (intptr_t) cursor;
+  ts_query_cursor_exec(c->cursor, (TSQuery *) (intptr_t) query, node_in(env, node));
+  ts_query_cursor_set_byte_range(c->cursor, B(start), B(end));
+  uint32_t cap = 64;
+  uint32_t n = 0;
+  jint *buf = malloc(cap * sizeof(jint));
+  while (ts_query_cursor_next_match(c->cursor, &c->match)) {
+    uint32_t lo = UINT32_MAX;
+    uint32_t hi = 0;
+    for (uint16_t i = 0; i < c->match.capture_count; i++) {
+      TSNode cn = c->match.captures[i].node;
+      uint32_t s = ts_node_start_byte(cn);
+      uint32_t e = ts_node_end_byte(cn);
+      if (s < lo) lo = s;
+      if (e > hi) hi = e;
+    }
+    if (lo >= hi) continue;
+    if (n + 2 > cap) {
+      cap *= 2;
+      buf = realloc(buf, cap * sizeof(jint));
+    }
+    buf[n++] = (jint) (lo / 2);
+    buf[n++] = (jint) (hi / 2);
+  }
+  jintArray out = (*env)->NewIntArray(env, (jsize) n);
+  (*env)->SetIntArrayRegion(env, out, 0, (jsize) n, buf);
+  free(buf);
+  return out;
+}
+
 jint FN(cursorMatchCaptureCount)(JNIEnv *env, jclass cls, jlong cursor) {
   (void) env; (void) cls;
   return (jint) ((Cursor *) (intptr_t) cursor)->match.capture_count;

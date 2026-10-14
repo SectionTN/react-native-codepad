@@ -282,25 +282,11 @@ class SyntaxEngine(
   /** Appends the capture hull of every highlight match the regions meet: a capture whose pattern constrains a changed sibling. */
   private fun collectHulls(compiled: CompiledQuery, tree: Tree, regions: IntArray, length: Int, out: MutableList<Int>) {
     val root = tree.rootNode()
-    val c = Capture()
     QueryCursor().use { cursor ->
       var i = 0
       while (i < regions.size) {
-        cursor.exec(compiled.query, root)
-        cursor.setUnitRange(maxOf(0, regions[i] - 1), minOf(length, regions[i + 1] + 1))
-        while (cursor.nextMatch()) {
-          var lo = Int.MAX_VALUE
-          var hi = 0
-          for (j in 0 until cursor.matchCaptureCount) {
-            cursor.matchCapture(j, c)
-            lo = minOf(lo, c.node.startUnit)
-            hi = maxOf(hi, c.node.endUnit)
-          }
-          if (lo < hi) {
-            out.add(lo)
-            out.add(hi)
-          }
-        }
+        // Markdown yields hundreds of matches per run; a JNI call per capture cost 40 ms a key on the Pixel_9a.
+        for (v in cursor.matchHulls(compiled.query, root, maxOf(0, regions[i] - 1), minOf(length, regions[i + 1] + 1))) out.add(v)
         i += 2
       }
     }

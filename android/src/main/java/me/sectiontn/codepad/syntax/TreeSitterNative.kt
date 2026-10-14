@@ -47,6 +47,7 @@ internal object TreeSitterNative {
   @JvmStatic external fun cursorSetUnitRange(cursor: Long, start: Int, end: Int)
   @JvmStatic external fun cursorNextCapture(cursor: Long, out: LongArray): Boolean
   @JvmStatic external fun cursorNextMatch(cursor: Long): Boolean
+  @JvmStatic external fun cursorMatchHulls(cursor: Long, query: Long, node: LongArray, start: Int, end: Int): IntArray
   @JvmStatic external fun cursorMatchCaptureCount(cursor: Long): Int
   @JvmStatic external fun cursorMatchCapture(cursor: Long, index: Int, out: LongArray)
   @JvmStatic external fun cursorRemoveMatch(cursor: Long, matchId: Int)
