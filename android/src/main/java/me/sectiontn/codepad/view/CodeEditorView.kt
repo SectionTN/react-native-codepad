@@ -48,6 +48,7 @@ import me.sectiontn.codepad.syntax.LanguageRegistry
 import me.sectiontn.codepad.syntax.Snapshot
 import me.sectiontn.codepad.syntax.SyntaxEngine
 import me.sectiontn.codepad.syntax.dirtyRuns
+import me.sectiontn.codepad.syntax.shiftSpans
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.abs
@@ -93,6 +94,10 @@ class CodeEditorView(context: Context) : View(context) {
   private var snapshot: Snapshot? = null
   // The revision of the last snapshot prepare consumed; a snapshot based on it re-queries only the lines it changed.
   private var appliedRevision = -1
+  // The dropped entry's spans moved along a one line change, painted until the snapshot lands.
+  private var pendingSpans: IntArray? = null
+  private var pendingLine = -1
+  private var pendingRevision = -1
   private var highlighter: Highlighter? = null
   private var engine: SyntaxEngine? = null
 
@@ -521,6 +526,7 @@ class CodeEditorView(context: Context) : View(context) {
     val oldCount = lineSpan(change.removed)
     val newCount = lineSpan(change.inserted)
     heights.replaceLines(first, oldCount, newCount)
+    keepSpans(first, oldCount, newCount, change)
     cache.shift(first, oldCount, newCount)
     engine().edit(change, SyntaxEngine.pointsFor(doc, change))
     search?.onChange(change)
@@ -1229,13 +1235,34 @@ class CodeEditorView(context: Context) : View(context) {
           entry.revision = revision
           continue
         }
+      } else if (line == pendingLine && pendingRevision == doc.revision) {
+        fresh = pendingSpans
       }
       val layout = LineLayout(doc.line(line), fresh, paint, theme, viewport.wrapWidth, core.settings.tabSize, m)
       cache.put(line, Entry(layout, fresh, if (inRun) revision else -1))
       viewport.measured(line, layout.rowCount)
       if (!viewport.wrap) viewport.widestLine = maxOf(viewport.widestLine, Math.round(layout.width()))
     }
-    if (revision >= 0) appliedRevision = revision
+    if (revision >= 0) {
+      appliedRevision = revision
+      pendingSpans = null
+    }
+  }
+
+  /** The edited line's previous spans moved along a change that stays inside it, or a newline typed at its end. */
+  private fun keepSpans(first: Int, oldCount: Int, newCount: Int, change: Change) {
+    pendingSpans = null
+    if (oldCount != 1) return
+    val spans = cache[first]?.spans ?: return
+    val doc = core.document
+    val column = change.start - doc.lineStart(first)
+    pendingSpans = when {
+      newCount == 1 -> shiftSpans(spans, column, change.removed.length, change.inserted.length)
+      newCount == 2 && change.removed.isEmpty() && change.inserted.startsWith("\n") && doc.lineLength(first) == column -> spans
+      else -> return
+    }
+    pendingLine = first
+    pendingRevision = doc.revision
   }
 
   /** Fills under the text in this order: search matches, bracket pair, selection. */

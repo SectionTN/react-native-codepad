@@ -35,4 +35,29 @@ class KeyFrameHighlightTest {
       assertEquals("the name painted in the variable style", 0, redPixels(after, 80))
     }
   }
+
+  // Without the fallback a key paints its whole line plain until the snapshot lands; Markdown 2k misses 41 keys in 60.
+  @Test
+  fun aFrameBeforeTheSnapshotKeepsTheEditedLinesColors() {
+    launch().use { s ->
+      val editor = s.editor()
+      val number = TokenStyleColors(0xFFFF0000.toInt(), false, false)
+      onMain {
+        editor.setTheme(ThemeColors.default.withTokens(mapOf("number" to number)))
+        editor.setLanguage("javascript")
+        editor.setInitialText("const f = 1;\n")
+        layout(editor)
+        draw(editor)
+      }
+      Thread.sleep(300)
+      assertTrue("the number painted", redPixels(onMain { draw(editor) }, 80) > 0)
+      val before = onMain {
+        editor.core.replace(12, 12, " ")
+        draw(editor)
+      }
+      Thread.sleep(300)
+      assertTrue("the number painted after the snapshot", redPixels(onMain { draw(editor) }, 80) > 0)
+      assertTrue("the number kept its color in the frame before the snapshot", redPixels(before, 80) > 0)
+    }
+  }
 }
