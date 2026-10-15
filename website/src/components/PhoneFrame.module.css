@@ -1,0 +1,48 @@
+.frame {
+  position: relative;
+  width: min(260px, 40vw);
+  padding: 10px;
+  border-radius: 44px;
+  background: #0b0d10;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 40px 80px -30px rgba(0, 0, 0, 0.7);
+}
+
+.screen {
+  display: block;
+  width: 100%;
+  border-radius: 34px;
+  aspect-ratio: 1206 / 2622;
+  object-fit: cover;
+  background: #0d1117;
+}
+
+.android .screen {
+  aspect-ratio: 1080 / 2424;
+  border-radius: 30px;
+}
+
+/* The island and the punch hole sit over the status bar. */
+.ios::after,
+.android::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0b0d10;
+}
+
+.ios::after {
+  top: 22px;
+  width: 30%;
+  height: 26px;
+  border-radius: 13px;
+}
+
+.android::after {
+  top: 20px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}

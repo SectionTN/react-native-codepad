@@ -1,0 +1,246 @@
+.page {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Hero */
+
+.hero {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+  align-items: center;
+  padding: clamp(3rem, 8vw, 6rem) 0 clamp(2rem, 6vw, 4rem);
+}
+
+.headline {
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.25rem;
+}
+
+.tagline {
+  font-size: clamp(1.125rem, 2vw, 1.375rem);
+  color: var(--cp-muted);
+  max-width: 32rem;
+  margin-bottom: 1.75rem;
+}
+
+.install {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 100%;
+  margin-bottom: 1.5rem;
+  padding: 0.6rem 0.6rem 0.6rem 1rem;
+  border: 1px solid var(--cp-border);
+  border-radius: 10px;
+  background: var(--cp-surface);
+}
+
+.install code {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-family: var(--cp-mono);
+  font-size: 0.9rem;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.install button {
+  flex: none;
+  border: 1px solid var(--cp-border);
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  background: var(--cp-bg);
+  color: var(--cp-text);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.install button:hover {
+  border-color: var(--cp-accent);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.primary,
+.secondary {
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.primary {
+  background: var(--cp-accent);
+  border-color: var(--cp-accent);
+  color: var(--cp-accent-contrast);
+}
+
+.primary:hover {
+  background: var(--ifm-color-primary-dark);
+  border-color: var(--ifm-color-primary-dark);
+  color: var(--cp-accent-contrast);
+}
+
+.secondary {
+  background: transparent;
+  border-color: var(--cp-border);
+  color: var(--cp-text);
+}
+
+.secondary:hover {
+  border-color: var(--cp-accent);
+  color: var(--cp-text);
+}
+
+.phones {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.secondPhone {
+  margin-top: 48px;
+  margin-left: -24px;
+}
+
+/* Cards */
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 1rem 0 clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.card {
+  padding: 1.5rem;
+  border: 1px solid var(--cp-border);
+  border-radius: 14px;
+  background: var(--cp-surface);
+}
+
+.card h3 {
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  margin: 0;
+  color: var(--cp-muted);
+  font-size: 0.9875rem;
+}
+
+/* Figures */
+
+.figures {
+  padding: clamp(2.5rem, 6vw, 4.5rem) 0;
+  border-top: 1px solid var(--cp-border);
+}
+
+.figureGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.figure strong {
+  font-family: var(--cp-mono);
+  font-weight: 500;
+  font-size: clamp(2rem, 5vw, 3rem);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--cp-accent);
+}
+
+.figure span {
+  color: var(--cp-muted);
+  max-width: 20rem;
+}
+
+.caption {
+  margin: 2rem 0 0;
+  max-width: 44rem;
+  font-size: 0.875rem;
+  color: var(--cp-muted);
+}
+
+/* Chip strips */
+
+.strip {
+  padding: clamp(2rem, 5vw, 3.5rem) 0;
+  border-top: 1px solid var(--cp-border);
+}
+
+.strip h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chips li > * {
+  display: inline-block;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--cp-border);
+  border-radius: 999px;
+  font-family: var(--cp-mono);
+  font-size: 0.85rem;
+  color: var(--cp-text);
+  text-decoration: none;
+}
+
+.chips li > a:hover {
+  border-color: var(--cp-accent);
+  color: var(--cp-accent);
+}
+
+@media (min-width: 997px) {
+  .hero {
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+  }
+
+  .phones {
+    justify-content: flex-end;
+  }
+
+  .cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .figureGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.heroCopy {
+  min-width: 0;
+}

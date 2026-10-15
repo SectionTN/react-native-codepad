@@ -97,6 +97,37 @@ const config: Config = {
         },
       ],
     },
+    footer: {
+      links: [
+        {
+          title: 'Docs',
+          items: [
+            { label: 'Getting started', to: '/start/introduction/' },
+            { label: 'Guides', to: '/guides/languages/' },
+            { label: 'Reference', to: '/reference/props/' },
+          ],
+        },
+        {
+          title: 'Community',
+          items: [
+            { label: 'GitHub', href: 'https://github.com/SectionTN/react-native-codepad' },
+            { label: 'Issues', href: 'https://github.com/SectionTN/react-native-codepad/issues' },
+            { label: 'Contributing', to: '/internals/contributing/' },
+          ],
+        },
+        {
+          title: 'More',
+          items: [
+            { label: 'Roadmap', to: '/internals/roadmap/' },
+            {
+              label: 'Releases',
+              href: 'https://github.com/SectionTN/react-native-codepad/releases',
+            },
+          ],
+        },
+      ],
+      copyright: 'Made by <a href="https://github.com/SectionTN">SectionTN</a>',
+    },
   } satisfies Preset.ThemeConfig,
 };
 

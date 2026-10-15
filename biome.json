@@ -80,6 +80,12 @@
       "formatter": {
         "enabled": false
       }
+    },
+    {
+      "includes": ["website/src/snippets/**"],
+      "formatter": {
+        "lineWidth": 80
+      }
     }
   ]
 }

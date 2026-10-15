@@ -1,0 +1,47 @@
+.feature {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: center;
+  padding: clamp(2.5rem, 6vw, 4.5rem) 0;
+  border-top: 1px solid var(--cp-border);
+}
+
+.copy h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+}
+
+.copy p {
+  font-size: 1.0625rem;
+  color: var(--cp-muted);
+  max-width: 34rem;
+}
+
+.copy a {
+  font-weight: 500;
+}
+
+.code {
+  min-width: 0;
+}
+
+.code :global(.theme-code-block) {
+  margin: 0;
+}
+
+@media (min-width: 997px) {
+  .feature {
+    grid-template-columns: 5fr 7fr;
+    gap: 4rem;
+  }
+
+  .flip .copy {
+    order: 2;
+  }
+
+  .flip .code {
+    order: 1;
+  }
+}

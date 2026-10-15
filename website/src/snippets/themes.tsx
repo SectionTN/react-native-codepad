@@ -6,5 +6,12 @@ const theme: Theme = {
 };
 
 export function ThemedEditor() {
-  return <CodeEditor theme={theme} fontSize={14} lineHeight={22} style={{ flex: 1 }} />;
+  return (
+    <CodeEditor
+      theme={theme}
+      fontSize={14}
+      lineHeight={22}
+      style={{ flex: 1 }}
+    />
+  );
 }
