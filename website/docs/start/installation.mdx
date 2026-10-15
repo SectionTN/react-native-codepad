@@ -4,6 +4,9 @@ description: Requirements, packages and the Expo story.
 sidebar_position: 2
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 ## Requirements
 
 | Requirement | Minimum |
@@ -24,23 +27,90 @@ The packages below publish with `0.1.0`, after a hardening pass over both platfo
 
 Install the core, Nitro Modules and one package per language you want highlighted:
 
-```sh
-yarn add react-native-codepad react-native-nitro-modules react-native-codepad-lang-javascript
-```
-
-Or with npm:
+<Tabs groupId="package-manager">
+<TabItem value="npm" label="npm">
 
 ```sh
 npm install react-native-codepad react-native-nitro-modules react-native-codepad-lang-javascript
 ```
 
+</TabItem>
+<TabItem value="pnpm" label="pnpm">
+
+```sh
+pnpm add react-native-codepad react-native-nitro-modules react-native-codepad-lang-javascript
+```
+
+</TabItem>
+<TabItem value="yarn" label="yarn">
+
+```sh
+yarn add react-native-codepad react-native-nitro-modules react-native-codepad-lang-javascript
+```
+
+</TabItem>
+<TabItem value="bun" label="bun">
+
+```sh
+bun add react-native-codepad react-native-nitro-modules react-native-codepad-lang-javascript
+```
+
+</TabItem>
+</Tabs>
+
 Every language package is `react-native-codepad-lang-<id>` and pins the core version it was generated with. The [language packages](/reference/languages/) page lists all fifteen and the [languages guide](/guides/languages/) explains injections and aliases. Install only what you need: each package carries its grammar's parser, a native library per ABI on Android and a pod compiled from the same C on iOS, from under 100 KB for json to a few megabytes for kotlin and swift.
+
+## Rebuild
+
+The packages carry native code, so the app is rebuilt after adding or removing one. Metro cannot load native code.
+
+<Tabs groupId="framework">
+<TabItem value="expo" label="Expo">
+
+Set the iOS deployment target to 17.0 through `expo-build-properties`, then prebuild and run:
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      // diff-add-start
+      ["expo-build-properties", { "ios": { "deploymentTarget": "17.0" } }]
+      // diff-add-end
+    ]
+  }
+}
+```
+
+```sh
+npx expo prebuild
+npx expo run:ios
+npx expo run:android
+```
+
+</TabItem>
+<TabItem value="react-native" label="React Native">
+
+Raise the deployment target in the Podfile, install the pods and run:
+
+```ruby title="ios/Podfile"
+# diff-remove
+platform :ios, min_ios_version_supported
+# diff-add
+platform :ios, '17.0'
+```
+
+```sh
+cd ios && pod install && cd ..
+npm run ios
+npm run android
+```
+
+</TabItem>
+</Tabs>
 
 ## Android
 
 Autolinking picks up the core and every language package. Nothing to add to Gradle and no ProGuard rule to write: each package ships its own consumer rule for the class the registry loads by reflection. The first build after adding a package compiles its parser from C, about a minute for all fifteen on a recent laptop.
-
-Rebuild the app after adding or removing a language package. Metro cannot load native code.
 
 ## Expo
 
