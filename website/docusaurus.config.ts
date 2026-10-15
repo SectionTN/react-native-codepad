@@ -1,5 +1,8 @@
 import type * as Preset from '@docusaurus/preset-classic';
 import type { Config } from '@docusaurus/types';
+import { githubDark } from '../src/themes/githubDark';
+import { githubLight } from '../src/themes/githubLight';
+import { prismThemeFrom } from './src/prism/fromEditorTheme';
 
 const config: Config = {
   title: 'react-native-codepad',
@@ -39,10 +42,43 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
+  themes: [
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        indexBlog: false,
+        docsRouteBasePath: '/',
+        highlightSearchTermsOnTargetPage: false,
+      },
+    ],
+  ],
   themeConfig: {
     colorMode: {
       defaultMode: 'dark',
       respectPrefersColorScheme: true,
+    },
+    prism: {
+      theme: prismThemeFrom(githubLight),
+      darkTheme: prismThemeFrom(githubDark),
+      additionalLanguages: ['bash', 'json', 'kotlin', 'swift', 'groovy', 'ruby', 'diff'],
+      magicComments: [
+        {
+          className: 'theme-code-block-highlighted-line',
+          line: 'highlight-next-line',
+          block: { start: 'highlight-start', end: 'highlight-end' },
+        },
+        {
+          className: 'code-block-diff-add',
+          line: 'diff-add',
+          block: { start: 'diff-add-start', end: 'diff-add-end' },
+        },
+        {
+          className: 'code-block-diff-remove',
+          line: 'diff-remove',
+          block: { start: 'diff-remove-start', end: 'diff-remove-end' },
+        },
+      ],
     },
     navbar: {
       title: 'react-native-codepad',
