@@ -34,6 +34,6 @@ The [contributing page](https://sectiontn.github.io/react-native-codepad/interna
 
 - One change per pull request, with the reason in the description.
 - `yarn lint`, `yarn typecheck`, `yarn test`, `yarn test:android` and `yarn test:swift` pass locally; CI runs them plus the Android and iOS example builds and the docs build.
-- A change to the public API updates `src/types.ts`, the reference pages under `website/src/content/docs/reference/` (a test fails otherwise) and the README when the quick start is affected.
+- A change to the public API updates `src/types.ts`, the reference pages under `website/docs/reference/` (a test fails otherwise) and the README when the quick start is affected.
 - A keyboard or layout change was tried on a device, an emulator or the simulator; say which, with the keyboard for input changes.
 - Open an issue first for a change to the API or to the engine's behavior, so the design is agreed before the code.

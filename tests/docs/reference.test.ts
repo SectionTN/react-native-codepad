@@ -6,7 +6,7 @@ import ts from 'typescript';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const page = (name: string) =>
-  readFileSync(path.join(ROOT, `website/src/content/docs/reference/${name}.md`), 'utf8');
+  readFileSync(path.join(ROOT, `website/docs/reference/${name}.md`), 'utf8');
 
 test('every prop, method and type in src/types.ts is documented', () => {
   const source = ts.createSourceFile(

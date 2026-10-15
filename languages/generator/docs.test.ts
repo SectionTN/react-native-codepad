@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { languagesPage } from './docs.ts';
+import { languagesPage, writeLanguagesPage } from './docs.ts';
 
 test('languagesPage lists every generated package with its grammar, scanner, injections and captures', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'codepad-docs-'));
@@ -30,6 +30,7 @@ test('languagesPage lists every generated package with its grammar, scanner, inj
   mkdirSync(path.join(dir, 'generator'));
   const text = languagesPage(dir);
   assert.ok(text.startsWith('---\ntitle: Language packages'), text.slice(0, 60));
+  assert.ok(text.includes('\nsidebar_position: 6\n---\n'), text.slice(0, 200));
   assert.ok(
     text.includes(
       '| react-native-codepad-lang-foo | `foo` | [org/tree-sitter-foo](https://github.com/org/tree-sitter-foo/tree/abc) | yes | bar, from the source |',
@@ -37,4 +38,12 @@ test('languagesPage lists every generated package with its grammar, scanner, inj
     text,
   );
   assert.ok(text.includes('### foo\n\n`keyword`, `string.special`'), text);
+});
+
+test('writeLanguagesPage lands the page in the Docusaurus docs tree', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'codepad-docs-'));
+  mkdirSync(path.join(dir, 'languages/generator'), { recursive: true });
+  const repoRoot = path.join(dir, 'repo');
+  writeLanguagesPage(path.join(dir, 'languages'), repoRoot);
+  assert.ok(existsSync(path.join(repoRoot, 'website/docs/reference/languages.md')));
 });

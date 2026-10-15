@@ -20,8 +20,8 @@
       "!languages/*/ios",
       "!languages/*/queries",
       "!src/specs/CodeEditorViewConfig.ts",
-      "!website/.astro",
-      "!website/dist"
+      "!website/.docusaurus",
+      "!website/build"
     ]
   },
   "formatter": {
