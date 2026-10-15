@@ -5,7 +5,7 @@ import { githubLight } from '../src/themes/githubLight';
 import { prismThemeFrom } from './src/prism/fromEditorTheme';
 
 const config: Config = {
-  title: 'React Native Codepad',
+  title: 'React Native CodePad',
   tagline:
     'A native code editor for React Native, with its own Kotlin and Swift engines, tree-sitter highlighting and a Nitro binding. No WebView.',
   favicon: 'img/favicon.svg',
@@ -48,7 +48,7 @@ const config: Config = {
       {
         generateLLMsFullTxt: true,
         docsDir: 'docs',
-        title: 'react-native-codepad',
+        title: 'React Native CodePad',
         description:
           'A native code editor for React Native, with its own Kotlin and Swift engines, tree-sitter highlighting and a Nitro binding. No WebView.',
       },
@@ -94,9 +94,9 @@ const config: Config = {
       ],
     },
     navbar: {
-      title: 'react-native-codepad',
+      title: 'React Native CodePad',
       logo: {
-        alt: 'react-native-codepad',
+        alt: 'React Native CodePad',
         src: 'img/logo.svg',
       },
       items: [
