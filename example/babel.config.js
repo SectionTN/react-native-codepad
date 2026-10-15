@@ -4,10 +4,10 @@ const pkg = require('../package.json');
 
 const root = path.resolve(__dirname, '..');
 
+// babel-preset-expo wraps the React Native preset, adds the worklets plugin and inlines EXPO_OS for @expo/ui.
 module.exports = getConfig(
   {
-    presets: ['module:@react-native/babel-preset'],
-    plugins: ['react-native-worklets/plugin'],
+    presets: ['babel-preset-expo'],
   },
   { root, pkg },
 );

@@ -5,6 +5,8 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
+require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
+
 platform :ios, '17.0'
 prepare_react_native_project!
 
@@ -15,6 +17,7 @@ if linkage != nil
 end
 
 target 'CodepadExample' do
+  use_expo_modules!
   config = use_native_modules!
 
   use_react_native!(
@@ -28,6 +31,13 @@ target 'CodepadExample' do
   end
 
   post_install do |installer|
+    # ExpoModulesCore imports the prebuilt React framework, whose headers include non-modular ones.
+    installer.pods_project.targets.each do |target|
+      next unless target.name.start_with?('Expo')
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      end
+    end
     react_native_post_install(
       installer,
       config[:reactNativePath],

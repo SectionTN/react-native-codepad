@@ -28,11 +28,13 @@
 		93D4D0C2FF409C8089204288 /* HitTestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 543C222D1D27E3B97AD6F979 /* HitTestTests.swift */; };
 		9D43A8272A96B15F2D66A37C /* ShowcaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0105AC546A1B5F575E400FF /* ShowcaseTests.swift */; };
 		A8F1B3CCDFF02A1C4D50A3AF /* LanguagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6FE5BF6F2CE3729B6C7778C /* LanguagesTests.swift */; };
+		B1CBA895ED37E76E91B1A6F0 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACAEFFC09C8902CE1DC5428 /* ExpoModulesProvider.swift */; };
 		B90328885B7971F53B3C51BB /* Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = 881722B6817A11959BEA4DF1 /* Support.swift */; };
 		BAC63BF9B1F2ADDE90B8CB39 /* FocusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BEC0764E1AD0075FA52E873 /* FocusTests.swift */; };
 		CA6CE7E53F293CB16F1C3B93 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF2F66191F5D9509929167C5 /* SceneDelegate.swift */; };
 		D99E8CB7DE7612811E723D72 /* ClipboardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35EB143AE7C31CA759A36879 /* ClipboardTests.swift */; };
 		D9EEDC5E837AA119672C1781 /* libPods-CodepadTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D29196F85A6B707DC6AE41B /* libPods-CodepadTests.a */; };
+		E093D4813D06D04D2C24D1ED /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DBB89C709979FAAE1972B1E /* ExpoModulesProvider.swift */; };
 		E7B13EE74F27F2F206131D74 /* HardwareKeysTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40B5E1E920D5E53821367195 /* HardwareKeysTests.swift */; };
 		F8275B5B069646F56B7211C3 /* SelectionGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71F6DAC572A91572DDFA303C /* SelectionGeometryTests.swift */; };
 /* End PBXBuildFile section */
@@ -49,6 +51,7 @@
 
 /* Begin PBXFileReference section */
 		0A9F1DCEAA80D2FE89C5BB26 /* KeyFrameHighlightTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyFrameHighlightTests.swift; sourceTree = "<group>"; };
+		0ACAEFFC09C8902CE1DC5428 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-CodepadTests/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		0B813E2B1BCDEE1AE37F47D2 /* LanguageSwitchTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LanguageSwitchTests.swift; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* CodepadExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodepadExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = CodepadExample/Images.xcassets; sourceTree = "<group>"; };
@@ -63,6 +66,7 @@
 		543C222D1D27E3B97AD6F979 /* HitTestTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HitTestTests.swift; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-CodepadExample.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CodepadExample.release.xcconfig"; path = "Target Support Files/Pods-CodepadExample/Pods-CodepadExample.release.xcconfig"; sourceTree = "<group>"; };
 		5BD68E46112559997B9B140B /* Pods-CodepadTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CodepadTests.debug.xcconfig"; path = "Target Support Files/Pods-CodepadTests/Pods-CodepadTests.debug.xcconfig"; sourceTree = "<group>"; };
+		5DBB89C709979FAAE1972B1E /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-CodepadExample/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-CodepadExample.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CodepadExample.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6191685A83EE035E525D2D44 /* TextInputTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TextInputTests.swift; sourceTree = "<group>"; };
 		6F5E9991D5A1AA0A5BA57DAB /* Pods-CodepadTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CodepadTests.release.xcconfig"; path = "Target Support Files/Pods-CodepadTests/Pods-CodepadTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -109,6 +113,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0F3297C0D522820404B566EE /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				C9212B902F0DC95ACEF09FD1 /* CodepadExample */,
+				8282925E060FC0E3F53C0DA2 /* CodepadTests */,
+			);
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
 		13B07FAE1A68108700A75B9A /* CodepadExample */ = {
 			isa = PBXGroup;
 			children = (
@@ -133,6 +146,14 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		8282925E060FC0E3F53C0DA2 /* CodepadTests */ = {
+			isa = PBXGroup;
+			children = (
+				0ACAEFFC09C8902CE1DC5428 /* ExpoModulesProvider.swift */,
+			);
+			name = CodepadTests;
+			sourceTree = "<group>";
+		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
@@ -149,6 +170,7 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
 				A4B999B7D362CEE213CAFD98 /* CodepadTests */,
+				0F3297C0D522820404B566EE /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -213,6 +235,14 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+		C9212B902F0DC95ACEF09FD1 /* CodepadExample */ = {
+			isa = PBXGroup;
+			children = (
+				5DBB89C709979FAAE1972B1E /* ExpoModulesProvider.swift */,
+			);
+			name = CodepadExample;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -221,6 +251,7 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "CodepadExample" */;
 			buildPhases = (
 				C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */,
+				3024072A121481512BD40854 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
@@ -242,6 +273,7 @@
 			buildConfigurationList = 92CD1CE3AEAE57A112F9D421 /* Build configuration list for PBXNativeTarget "CodepadTests" */;
 			buildPhases = (
 				27BAE70EB13848B9F190F61B /* [CP] Check Pods Manifest.lock */,
+				4558CE7B8C1B0A953773C101 /* [Expo] Configure project */,
 				55053A29A8DA5096929BA930 /* Sources */,
 				FCF9F8115D748F2017B45B43 /* Frameworks */,
 				2BFCF17B07AEFA00696FEDA3 /* Resources */,
@@ -364,6 +396,52 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		3024072A121481512BD40854 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-CodepadExample/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Pods/Target Support Files/Pods-CodepadExample/ExpoModulesProvider.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-CodepadExample/expo-configure-project.sh\"\n";
+		};
+		4558CE7B8C1B0A953773C101 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-CodepadTests/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Pods/Target Support Files/Pods-CodepadTests/ExpoModulesProvider.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-CodepadTests/expo-configure-project.sh\"\n";
+		};
 		C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -412,6 +490,7 @@
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
 				CA6CE7E53F293CB16F1C3B93 /* SceneDelegate.swift in Sources */,
+				E093D4813D06D04D2C24D1ED /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -439,6 +518,7 @@
 				52B28AF3AAEE86E988E04DDF /* RecordingTests.swift in Sources */,
 				8CEE448DF1D2EBEE2DB4BB33 /* InitialTextTests.swift in Sources */,
 				886FE20130DB50D29808051C /* KeyFrameHighlightTests.swift in Sources */,
+				B1CBA895ED37E76E91B1A6F0 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -474,6 +554,7 @@
 					"-ObjC",
 					"-lc++",
 				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = codepad.example;
 				PRODUCT_NAME = CodepadExample;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -503,6 +584,7 @@
 					"-ObjC",
 					"-lc++",
 				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = codepad.example;
 				PRODUCT_NAME = CodepadExample;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -527,6 +609,7 @@
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = codepad.example.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -616,6 +699,7 @@
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				USE_HERMES = true;
 			};
 			name = Debug;
@@ -689,6 +773,7 @@
 				PODFILE_DIR = "$(SRCROOT)";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -709,6 +794,7 @@
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = codepad.example.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
