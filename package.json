@@ -58,7 +58,8 @@
     "bench:ios": "scripts/bench-ios.sh",
     "release": "release-it --only-version",
     "docs": "yarn workspace react-native-codepad-website dev",
-    "docs:build": "yarn workspace react-native-codepad-website build"
+    "docs:build": "yarn workspace react-native-codepad-website build",
+    "docs:deploy": "yarn docs:build && cd website && wrangler pages deploy --branch main"
   },
   "keywords": [
     "react-native",

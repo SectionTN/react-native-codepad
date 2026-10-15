@@ -36,7 +36,7 @@ yarn react-native run-ios
 yarn react-native run-android
 ```
 
-The iOS floor is 17.0, so the Podfile's `platform :ios` has to say `'17.0'` rather than React Native's `min_ios_version_supported`. Expo works through `npx expo prebuild` or a development build, with no config plugin; Expo Go cannot load native code. Autolinking covers the core and every language package. See [installation](https://sectiontn.github.io/react-native-codepad/start/installation/) for the details, the Expo story and the iOS floor.
+The iOS floor is 17.0, so the Podfile's `platform :ios` has to say `'17.0'` rather than React Native's `min_ios_version_supported`. Expo works through `npx expo prebuild` or a development build, with no config plugin; Expo Go cannot load native code. Autolinking covers the core and every language package. See [installation](https://reactnativecodepad.pages.dev/start/installation/) for the details, the Expo story and the iOS floor.
 
 ## Quick start
 
@@ -66,13 +66,13 @@ The ref has sync readers (`getText()`, `getSelection()`, `getCursorRect()`) and 
 
 ## Documentation
 
-https://sectiontn.github.io/react-native-codepad/ has the guides (languages, themes, keyboard, nested scroll, search, hardware keyboard, performance), the full API reference and the internals.
+https://reactnativecodepad.pages.dev/ has the guides (languages, themes, keyboard, nested scroll, search, hardware keyboard, performance), the full API reference and the internals.
 
 ## Platforms
 
 | Platform | State |
 | --- | --- |
-| Android | API 24 and up, measured in the [performance guide](https://sectiontn.github.io/react-native-codepad/guides/performance/) |
+| Android | API 24 and up, measured in the [performance guide](https://reactnativecodepad.pages.dev/guides/performance/) |
 | iOS | iOS 17 and up, verified on the simulator. Numbers from a physical iPhone are still missing |
 
 ## Contributing

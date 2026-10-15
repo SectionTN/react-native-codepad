@@ -82,7 +82,7 @@ yarn example ios --udid <udid>
 
 ## This site
 
-`yarn docs` serves the site with live reload and `yarn docs:build` builds it. The pages live under `website/docs`. The reference pages are written by hand, and a test under `tests/docs` fails when a prop, method or type of `src/types.ts` is missing from them. A push to `main` that touches `website/` deploys the site.
+`yarn docs` serves the site with live reload and `yarn docs:build` builds it. The pages live under `website/docs`. The reference pages are written by hand, and a test under `tests/docs` fails when a prop, method or type of `src/types.ts` is missing from them. A push to `main` that touches `website/` deploys the site to Cloudflare Pages.
 
 ## Conventions
 

@@ -1,10 +1,4 @@
 {
-  "name": "react-native-codepad-docs",
-  "compatibility_date": "2026-10-01",
-  "assets": {
-    "directory": "./build",
-    "not_found_handling": "404-page"
-  }
-  // Once reactnativecodepad.dev is in the Cloudflare account, add:
-  // "routes": [{ "pattern": "reactnativecodepad.dev", "custom_domain": true }]
+  "name": "reactnativecodepad",
+  "pages_build_output_dir": "./build"
 }
