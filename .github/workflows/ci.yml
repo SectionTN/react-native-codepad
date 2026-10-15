@@ -40,7 +40,7 @@ jobs:
       - name: Check generated language packages
         run: |
           yarn gen:languages
-          git diff --exit-code -- languages website/src/content/docs/reference/languages.md
+          git diff --exit-code -- languages website/docs/reference/languages.md
 
   test:
     runs-on: ubuntu-latest
@@ -77,6 +77,9 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup
+
+      - name: Typecheck the site
+        run: yarn workspace react-native-codepad-website typecheck
 
       - name: Build the docs site
         run: yarn docs:build

@@ -42,6 +42,18 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
+  plugins: [
+    [
+      'docusaurus-plugin-llms',
+      {
+        generateLLMsFullTxt: true,
+        docsDir: 'docs',
+        title: 'react-native-codepad',
+        description:
+          'A native code editor for React Native: Kotlin and Swift engines, tree-sitter highlighting, a Nitro binding and no WebView.',
+      },
+    ],
+  ],
   themes: [
     [
       '@easyops-cn/docusaurus-search-local',
@@ -54,6 +66,7 @@ const config: Config = {
     ],
   ],
   themeConfig: {
+    image: 'img/og.png',
     colorMode: {
       defaultMode: 'dark',
       respectPrefersColorScheme: true,
