@@ -13,5 +13,5 @@
     },
     "skipLibCheck": true
   },
-  "exclude": ["build", ".docusaurus"]
+  "exclude": ["build", ".docusaurus", "src/snippets"]
 }
