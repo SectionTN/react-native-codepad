@@ -6,7 +6,6 @@ import CodeBlock from '@theme/CodeBlock';
 import Layout from '@theme/Layout';
 import clsx from 'clsx';
 import { type ReactNode, useState } from 'react';
-import { EditorMock } from '../components/EditorMock';
 import { FIGURES } from '../data/figures';
 import styles from './index.module.css';
 
@@ -128,23 +127,18 @@ function Buttons() {
 function Hero() {
   return (
     <header className={styles.hero}>
-      <div className={styles.heroCopy}>
-        <Link className={styles.eyebrow} to="/internals/roadmap/">
-          Pre-release
-        </Link>
-        <h1 className={styles.headline}>A native code editor for React Native.</h1>
-        <p className={styles.lead}>
-          Kotlin and Swift engines, tree-sitter highlighting, a Nitro binding. No WebView.
-        </p>
-        <div className={styles.install}>
-          <code>{INSTALL}</code>
-          <CopyButton text={INSTALL} />
-        </div>
-        <Buttons />
+      <Link className={styles.eyebrow} to="/internals/roadmap/">
+        Pre-release
+      </Link>
+      <h1 className={styles.headline}>A native code editor for React Native.</h1>
+      <p className={styles.lead}>
+        Kotlin and Swift engines, tree-sitter highlighting, a Nitro binding. No WebView.
+      </p>
+      <div className={styles.install}>
+        <code>{INSTALL}</code>
+        <CopyButton text={INSTALL} />
       </div>
-      <div className={styles.heroVisual}>
-        <EditorMock />
-      </div>
+      <Buttons />
     </header>
   );
 }
