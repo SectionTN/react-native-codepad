@@ -2,10 +2,6 @@
 
 A native code editor component for React Native. The document, layout, selection, undo and keyboard input live in Kotlin and Swift on top of the platform text APIs, syntax highlighting is tree-sitter on a background thread with one language per package, and the component is bound through Nitro Views. No WebView, no `TextInput` underneath.
 
-## Status
-
-Pre-release. Both editors are complete: Android is measured on an emulator against the performance targets, iOS is verified on the simulator and waits for a device for its numbers. The packages are not on npm yet; `0.1.0`, the first release, follows a hardening pass over both platforms. The [roadmap](https://sectiontn.github.io/react-native-codepad/internals/roadmap/) lists what comes next and what is deliberately out of the first version.
-
 ## Features
 
 - Editing with selection handles, the edit menu, soft keyboard composition, undo and redo with typing coalescing, auto indent, auto closing brackets and quotes, bracket matching, a read only mode and a placeholder.
@@ -76,8 +72,8 @@ https://sectiontn.github.io/react-native-codepad/ has the guides (languages, the
 
 | Platform | State |
 | --- | --- |
-| Android | Complete: API 24 and up, measured against the targets in the [performance guide](https://sectiontn.github.io/react-native-codepad/guides/performance/) |
-| iOS | Complete: iOS 17 and up, verified on the simulator; the device numbers come with the first iPhone in the loop |
+| Android | API 24 and up, measured in the [performance guide](https://sectiontn.github.io/react-native-codepad/guides/performance/) |
+| iOS | iOS 17 and up, verified on the simulator. Numbers from a physical iPhone are still missing |
 
 ## Contributing
 
