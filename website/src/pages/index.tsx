@@ -1,34 +1,29 @@
-import editing from '!!raw-loader!../snippets/editing.tsx';
 import highlight from '!!raw-loader!../snippets/highlight.tsx';
 import keyboard from '!!raw-loader!../snippets/keyboard.tsx';
-import search from '!!raw-loader!../snippets/search.tsx';
-import themes from '!!raw-loader!../snippets/themes.tsx';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import CodeBlock from '@theme/CodeBlock';
 import Layout from '@theme/Layout';
 import clsx from 'clsx';
-import { useState } from 'react';
-import { Feature } from '../components/Feature';
-import { PhoneFrame } from '../components/PhoneFrame';
+import { type ReactNode, useState } from 'react';
+import { EditorMock } from '../components/EditorMock';
 import { FIGURES } from '../data/figures';
 import styles from './index.module.css';
 
 const INSTALL = 'npm install react-native-codepad react-native-nitro-modules';
+const REPO = 'https://github.com/SectionTN/react-native-codepad';
+const FRAME_MS = 16.7;
 
-const CARDS = [
-  {
-    title: 'Native engine',
-    body: 'The document, layout, selection, undo and input live in Kotlin and Swift on the platform text APIs. The view draws its own caret, handles and edit menu.',
-  },
-  {
-    title: 'Tree-sitter highlighting',
-    body: 'Incremental parsing on a background thread, one language per npm package, fifteen at launch. Fenced blocks, embedded script and tagged templates highlight through injections.',
-  },
-  {
-    title: 'Keyboard first',
-    body: 'Soft keyboards with composition, hardware keys with the full key table, and a toolbar API that drives the same paths from JavaScript.',
-  },
-];
+const EDITING = [
+  ['Selection', 'with handles, the loupe and the edit menu'],
+  ['Undo and redo', 'with typing coalescing'],
+  ['Auto indent', 'and auto closing brackets and quotes'],
+  ['Tab and Shift+Tab', 'indentation, bracket matching, an active line'],
+  ['Search', 'literal or regex, replace one or all, painted matches'],
+  ['Hardware keys', 'with the full key table'],
+  ['A toolbar API', 'that drives the same paths from JavaScript'],
+  ['Three themes', 'and a token model from nvim-treesitter captures'],
+] as const;
 
 const WORKS_WITH = [
   'React Native 0.81+',
@@ -37,8 +32,6 @@ const WORKS_WITH = [
   'react-native-nitro-modules',
   'react-native-keyboard-controller',
   'react-native-safe-area-context',
-  'tree-sitter',
-  'nvim-treesitter queries',
 ];
 
 const LANGUAGES = [
@@ -59,10 +52,26 @@ const LANGUAGES = [
   'yaml',
 ];
 
-function InstallLine() {
+function Check() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      <path
+        d="M13.5 4.5 6.5 11.5 3 8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   function copy() {
-    navigator.clipboard.writeText(INSTALL).then(
+    if (!navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(
       () => {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
@@ -71,11 +80,47 @@ function InstallLine() {
     );
   }
   return (
-    <div className={styles.install}>
-      <code>{INSTALL}</code>
-      <button type="button" onClick={copy} aria-label="Copy the install command">
-        {copied ? 'Copied' : 'Copy'}
-      </button>
+    <button
+      type="button"
+      className={styles.copy}
+      onClick={copy}
+      aria-label={copied ? 'Copied' : 'Copy the install command'}
+    >
+      {copied ? (
+        <Check />
+      ) : (
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <rect
+            x="5.5"
+            y="5.5"
+            width="8"
+            height="8"
+            rx="1.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+function Buttons() {
+  return (
+    <div className={styles.buttons}>
+      <Link className={styles.primary} to="/start/installation/">
+        Read the docs
+      </Link>
+      <Link className={styles.quiet} href={REPO}>
+        GitHub
+      </Link>
     </div>
   );
 }
@@ -84,28 +129,43 @@ function Hero() {
   return (
     <header className={styles.hero}>
       <div className={styles.heroCopy}>
+        <Link className={styles.eyebrow} to="/internals/roadmap/">
+          Pre-release
+        </Link>
         <h1 className={styles.headline}>A native code editor for React Native.</h1>
-        <p className={styles.tagline}>
-          Kotlin and Swift engines, tree-sitter highlighting, a Nitro binding and no WebView.
+        <p className={styles.lead}>
+          Kotlin and Swift engines, tree-sitter highlighting, a Nitro binding. No WebView.
         </p>
-        <InstallLine />
-        <div className={styles.buttons}>
-          <Link className={clsx('button button--lg', styles.primary)} to="/start/installation/">
-            Get started
-          </Link>
-          <Link
-            className={clsx('button button--lg', styles.secondary)}
-            href="https://github.com/SectionTN/react-native-codepad"
-          >
-            GitHub
-          </Link>
+        <div className={styles.install}>
+          <code>{INSTALL}</code>
+          <CopyButton text={INSTALL} />
         </div>
+        <Buttons />
       </div>
-      <div className={styles.phones}>
-        <PhoneFrame platform="ios" />
-        <PhoneFrame platform="android" className={styles.secondPhone} />
+      <div className={styles.heroVisual}>
+        <EditorMock />
       </div>
     </header>
+  );
+}
+
+function Section({
+  title,
+  lead,
+  children,
+}: {
+  title: string;
+  lead?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className={styles.section}>
+      <div className={styles.sectionHead}>
+        <h2>{title}</h2>
+        {lead && <p>{lead}</p>}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -119,68 +179,97 @@ function Chips({ items, to }: { items: string[]; to?: string }) {
   );
 }
 
+function Speed() {
+  const [typing, parse, paint] = FIGURES;
+  const work = Number.parseFloat(typing.value);
+  return (
+    <Section
+      title="Keystrokes stay inside the frame."
+      lead="The key handler and the draw together, against one frame at 60 Hz."
+    >
+      <div className={styles.bars}>
+        <div className={styles.barRow}>
+          <span className={styles.barLabel}>codepad</span>
+          <span className={styles.bar} style={{ width: `${(work / FRAME_MS) * 100}%` }} />
+          <span className={styles.barValue}>{typing.value}</span>
+        </div>
+        <div className={styles.barRow}>
+          <span className={styles.barLabel}>one frame</span>
+          <span className={clsx(styles.bar, styles.barFrame)} />
+          <span className={styles.barValue}>{FRAME_MS} ms</span>
+        </div>
+      </div>
+      <p className={styles.method}>
+        Work {typing.label}, p50 over 60 keystrokes at 150 ms per key, {typing.where}.
+      </p>
+      <dl className={styles.figures}>
+        {[parse, paint].map((figure) => (
+          <div key={figure.value} className={styles.figure}>
+            <dt>{figure.value}</dt>
+            <dd>
+              {figure.label}
+              <small>{figure.where}</small>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className={styles.method}>
+        Simulator and emulator numbers track regressions. Device numbers come with 0.1.0.
+      </p>
+    </Section>
+  );
+}
+
 export default function Home() {
   const { siteConfig } = useDocusaurusContext();
   return (
     <Layout title={siteConfig.title} description={siteConfig.tagline}>
       <main className={styles.page}>
         <Hero />
+        <Speed />
 
-        <section className={styles.cards}>
-          {CARDS.map((card) => (
-            <div key={card.title} className={styles.card}>
-              <h3>{card.title}</h3>
-              <p>{card.body}</p>
-            </div>
-          ))}
-        </section>
-
-        <Feature title="Highlighting" href="/guides/languages/" code={highlight}>
-          Install a language package and pass its id. The grammar's parser and the nvim-treesitter
-          queries ship in the package, so an app carries only the languages it uses.
-        </Feature>
-        <Feature title="Editing from JavaScript" href="/reference/methods/" code={editing} flip>
-          The ref drives the same paths the keyboard does: type, move the caret, delete, undo. A
-          toolbar is a row of buttons calling them.
-        </Feature>
-        <Feature title="Search" href="/guides/search/" code={search}>
-          Literal or regex, case and whole word, next and previous with wrap around, replace one or
-          all. Matches are painted while you type.
-        </Feature>
-        <Feature title="Keyboard" href="/guides/keyboard/" code={keyboard} flip>
-          The editor insets itself by the keyboard's overlap and follows the keyboard animation
-          frame by frame. Suggestions and autocorrect are a prop.
-        </Feature>
-        <Feature title="Themes" href="/guides/themes/" code={themes}>
-          Three bundled themes and a token model that ports from nvim-treesitter captures. Spread
-          one and override the tokens you want.
-        </Feature>
-
-        <section className={styles.figures}>
-          <div className={styles.figureGrid}>
-            {FIGURES.map((figure) => (
-              <div key={figure.value} className={styles.figure}>
-                <strong>{figure.value}</strong>
-                <span>{figure.label}</span>
-                <small>{figure.where}</small>
-              </div>
-            ))}
-          </div>
-          <p className={styles.caption}>
-            Typing figures are the p50 over 60 keystrokes at 150 ms per key on the example app's
-            files; the first paint is the median of three warm opens. Simulator and emulator numbers
-            track regressions; device numbers come with 0.1.0.
-          </p>
-        </section>
-
-        <section className={styles.strip}>
-          <h2>Works with</h2>
-          <Chips items={WORKS_WITH} />
-        </section>
-
-        <section className={styles.strip}>
-          <h2>Fifteen languages at launch</h2>
+        <Section
+          title="Tree-sitter, one package per language."
+          lead="Install a language package and pass its id. An app carries only the languages it uses."
+        >
           <Chips items={LANGUAGES} to="/reference/languages/" />
+          <div className={styles.codeCard}>
+            <CodeBlock language="tsx">{highlight}</CodeBlock>
+          </div>
+        </Section>
+
+        <Section
+          title="Everything the keyboard does, from JavaScript."
+          lead="The same engine paths under the soft keyboard, hardware keys and the ref."
+        >
+          <ul className={styles.checklist}>
+            {EDITING.map(([strong, rest]) => (
+              <li key={strong}>
+                <Check />
+                <span>
+                  <strong>{strong}</strong> {rest}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        <Section
+          title="Follows the keyboard, frame by frame."
+          lead="The editor insets itself by the keyboard's overlap and tracks the keyboard animation."
+        >
+          <div className={styles.codeCard}>
+            <CodeBlock language="tsx">{keyboard}</CodeBlock>
+          </div>
+        </Section>
+
+        <Section title="And it works with what you use.">
+          <Chips items={WORKS_WITH} />
+        </Section>
+
+        <section className={clsx(styles.section, styles.cta)}>
+          <h2>Start with the installation.</h2>
+          <Buttons />
         </section>
       </main>
     </Layout>

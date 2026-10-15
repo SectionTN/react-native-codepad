@@ -2,18 +2,38 @@ import type * as Preset from '@docusaurus/preset-classic';
 import type { Config } from '@docusaurus/types';
 import { githubDark } from '../src/themes/githubDark';
 import { githubLight } from '../src/themes/githubLight';
+import type { Theme } from '../src/types';
 import { prismThemeFrom } from './src/prism/fromEditorTheme';
+
+// The colors the hero's editor mock paints with, straight from the editor themes.
+function editorColors(theme: Theme) {
+  return {
+    activeLine: theme.activeLine,
+    gutterForeground: theme.gutterForeground,
+    gutterActiveForeground: theme.gutterActiveForeground,
+    selection: theme.selection,
+    cursor: theme.cursor,
+    searchMatch: theme.searchMatch,
+    searchMatchActive: theme.searchMatchActive,
+  };
+}
 
 const config: Config = {
   title: 'react-native-codepad',
   tagline:
-    'A native code editor for React Native with its own engine on each platform and tree-sitter highlighting.',
+    'A native code editor for React Native: Kotlin and Swift engines, tree-sitter highlighting, a Nitro binding and no WebView.',
   favicon: 'img/favicon.svg',
   url: 'https://sectiontn.github.io',
   baseUrl: '/react-native-codepad/',
   trailingSlash: true,
   organizationName: 'SectionTN',
   projectName: 'react-native-codepad',
+  customFields: {
+    editorTheme: {
+      light: editorColors(githubLight),
+      dark: editorColors(githubDark),
+    },
+  },
   onBrokenLinks: 'throw',
   markdown: {
     hooks: {
@@ -105,8 +125,9 @@ const config: Config = {
         { type: 'doc', docId: 'reference/props', label: 'Reference', position: 'left' },
         {
           href: 'https://github.com/SectionTN/react-native-codepad',
-          label: 'GitHub',
           position: 'right',
+          className: 'header-github-link',
+          'aria-label': 'GitHub repository',
         },
       ],
     },
