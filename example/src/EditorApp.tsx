@@ -1,0 +1,259 @@
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { StatusBar, StyleSheet, View } from 'react-native';
+import {
+  CodeEditor,
+  type CodeEditorRef,
+  githubDark,
+  githubLight,
+  oneDark,
+  type Theme,
+} from 'react-native-codepad';
+import { useKeyboardState } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { chromeFor } from './chrome';
+import { BottomBar } from './components/BottomBar';
+import { FindBar } from './components/FindBar';
+import { GoToLineSheet } from './components/GoToLineSheet';
+import { SettingsSheet } from './components/SettingsSheet';
+import { TopBar } from './components/TopBar';
+import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
+import { ICONS } from './icons';
+import type { FileGroup, MenuChoice, MenuItem } from './native/types';
+import { DEFAULT_SETTINGS, type Settings } from './settings';
+
+type ThemeChoice = MenuChoice & { theme: Theme };
+
+const THEMES: ThemeChoice[] = [
+  { id: 'githubDark', label: 'GitHub Dark', theme: githubDark },
+  { id: 'githubLight', label: 'GitHub Light', theme: githubLight },
+  { id: 'oneDark', label: 'One Dark', theme: oneDark },
+];
+
+const GROUPS: FileGroup[] = [
+  { title: 'Samples', files: SAMPLE_FILES.map((f) => ({ id: f.id, label: f.name })) },
+  { title: 'Generated', files: GENERATED_FILES.map((f) => ({ id: f.id, label: f.name })) },
+  { title: 'New', files: [{ id: UNTITLED.id, label: UNTITLED.name }] },
+];
+
+type Sheet = 'settings' | 'goToLine' | null;
+
+export function EditorApp({ onNested }: { onNested: () => void }) {
+  const editor = useRef<CodeEditorRef>(null);
+  const opened = useRef(0);
+  const safe = useSafeAreaInsets();
+  const keyboardVisible = useKeyboardState((s) => s.isVisible);
+
+  const [fileId, setFileId] = useState(SAMPLE_FILES[0]?.id ?? UNTITLED.id);
+  const [openCount, setOpenCount] = useState(0);
+  const [themeId, setThemeId] = useState(THEMES[0]?.id ?? 'githubDark');
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [findOpen, setFindOpen] = useState(false);
+  const [sheet, setSheet] = useState<Sheet>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const [position, setPosition] = useState('Ln 1, Col 1');
+  const [timing, setTiming] = useState('');
+  const [barHeight, setBarHeight] = useState(0);
+  const [lineCount, setLineCount] = useState(1);
+
+  const file = fileById(fileId);
+  const theme = THEMES.find((t) => t.id === themeId)?.theme ?? githubDark;
+  const chrome = useMemo(() => chromeFor(theme), [theme]);
+  // Loaded once per open; the generated files are built here, so the open time covers them.
+  const text = useMemo(() => file.load(), [file]);
+  const insets = useMemo(() => ({ bottom: barHeight }), [barHeight]);
+
+  const open = (id: string) => {
+    opened.current = performance.now();
+    setTiming(`opening ${fileById(id).name}`);
+    setCanUndo(false);
+    setCanRedo(false);
+    setPosition('Ln 1, Col 1');
+    setFileId(id);
+    setOpenCount((n) => n + 1);
+  };
+
+  const onReady = () => {
+    const ms = Math.round(performance.now() - opened.current);
+    const lines = editor.current?.getLineCount() ?? 1;
+    setLineCount(lines);
+    setTiming(opened.current ? `opened in ${ms} ms` : `${lines.toLocaleString()} lines`);
+  };
+
+  const positionOf = (offset: number) => {
+    const p = editor.current?.offsetToPosition(offset);
+    return { line: (p?.line ?? 0) + 1, column: (p?.column ?? 0) + 1 };
+  };
+
+  // A caret reads Ln 8, Col 18; a selection on one line Ln 8, Col 18 to 25; across lines Ln 8:18 to 10:3.
+  const describeSelection = (anchor: number, head: number) => {
+    const a = positionOf(anchor);
+    if (anchor === head) return `Ln , Col `;
+    const h = positionOf(head);
+    if (a.line === h.line) return `Ln , Col  to `;
+    return `Ln : to :`;
+  };
+
+  // Worker time for a literal and a regex query over the open document, from the JS side.
+  const timeSearch = async () => {
+    const api = editor.current;
+    if (!api) return;
+    const t0 = performance.now();
+    const literal = await api.setSearch({ text: 'e' });
+    const t1 = performance.now();
+    const regex = await api.setSearch({ text: 'e.*e', regex: true });
+    const t2 = performance.now();
+    await api.clearSearch();
+    setTiming(
+      `literal ${literal.count.toLocaleString()} in ${Math.round(t1 - t0)} ms, regex ${regex.count.toLocaleString()} in ${Math.round(t2 - t1)} ms`,
+    );
+  };
+
+  const goToLine = async (line: number) => {
+    const api = editor.current;
+    if (!api) return;
+    const offset = api.positionToOffset({ line: line - 1, column: 0 });
+    await api.setSelection({ anchor: offset, head: offset });
+    await api.scrollToLine(line - 1, { animated: true });
+  };
+
+  const onStatus = useCallback((message: string) => setTiming(message), []);
+  const patchSettings = (patch: Partial<Settings>) => setSettings((s) => ({ ...s, ...patch }));
+
+  const items: MenuItem[] = [
+    {
+      id: 'undo',
+      label: 'Undo',
+      icon: ICONS.undo,
+      disabled: !canUndo,
+      onPress: () => void editor.current?.undo(),
+    },
+    {
+      id: 'redo',
+      label: 'Redo',
+      icon: ICONS.redo,
+      disabled: !canRedo,
+      onPress: () => void editor.current?.redo(),
+    },
+    {
+      id: 'selectAll',
+      label: 'Select all',
+      icon: ICONS.selectAll,
+      onPress: () => void editor.current?.selectAll(),
+    },
+    {
+      id: 'goToLine',
+      label: 'Go to line',
+      icon: ICONS.goToLine,
+      onPress: () => setSheet('goToLine'),
+    },
+    {
+      id: 'timeSearch',
+      label: 'Time a search',
+      icon: ICONS.timer,
+      onPress: () => void timeSearch(),
+    },
+    { id: 'nested', label: 'Nested scroll demo', icon: ICONS.nested, onPress: onNested },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: ICONS.settings,
+      onPress: () => setSheet('settings'),
+    },
+  ];
+
+  return (
+    <View style={[styles.screen, { backgroundColor: chrome.background }]}>
+      <StatusBar
+        barStyle={chrome.scheme === 'dark' ? 'light-content' : 'dark-content'}
+        translucent
+        backgroundColor="transparent"
+      />
+      <TopBar
+        chrome={chrome}
+        topInset={safe.top}
+        groups={GROUPS}
+        fileId={fileId}
+        onFile={open}
+        onFind={() => setFindOpen((v) => !v)}
+        items={items}
+        themes={THEMES}
+        theme={themeId}
+        onTheme={setThemeId}
+      />
+      {findOpen ? (
+        <FindBar
+          chrome={chrome}
+          editor={editor}
+          onStatus={onStatus}
+          onClose={() => setFindOpen(false)}
+        />
+      ) : null}
+      <View style={styles.body}>
+        <CodeEditor
+          key={`${fileId}:${openCount}`}
+          ref={editor}
+          style={styles.editor}
+          initialValue={text}
+          language={settings.highlight ? file.language : undefined}
+          theme={theme}
+          fontSize={settings.fontSize}
+          softWrap={settings.softWrap}
+          lineNumbers={settings.lineNumbers}
+          highlightActiveLine={settings.activeLine}
+          matchBrackets={settings.matchBrackets}
+          autoCloseBrackets={settings.autoClose}
+          suggestions={settings.suggestions}
+          readOnly={settings.readOnly}
+          placeholder="Start typing"
+          avoidKeyboard
+          contentInsets={insets}
+          onReady={onReady}
+          onChange={() => {
+            setCanUndo(editor.current?.canUndo() ?? false);
+            setCanRedo(editor.current?.canRedo() ?? false);
+            setLineCount(editor.current?.getLineCount() ?? 1);
+          }}
+          onSelectionChange={(s) => setPosition(describeSelection(s.anchor, s.head))}
+        />
+        <BottomBar
+          chrome={chrome}
+          editor={editor}
+          keyboardVisible={keyboardVisible}
+          bottomInset={safe.bottom}
+          readOnly={settings.readOnly}
+          selectMode={selectMode}
+          onToggleSelect={() => setSelectMode((v) => !v)}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          position={position}
+          language={file.language ? (LANGUAGE_NAMES[file.language] ?? file.language) : 'Plain text'}
+          timing={timing}
+          onPosition={() => setSheet('goToLine')}
+          onHeight={setBarHeight}
+        />
+      </View>
+      <SettingsSheet
+        chrome={chrome}
+        open={sheet === 'settings'}
+        onClose={() => setSheet(null)}
+        settings={settings}
+        onChange={patchSettings}
+      />
+      <GoToLineSheet
+        chrome={chrome}
+        open={sheet === 'goToLine'}
+        lineCount={lineCount}
+        onClose={() => setSheet(null)}
+        onGo={(line) => void goToLine(line)}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  body: { flex: 1 },
+  editor: { flex: 1 },
+});
