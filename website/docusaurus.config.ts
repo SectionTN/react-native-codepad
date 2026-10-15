@@ -4,13 +4,17 @@ import { githubDark } from '../src/themes/githubDark';
 import { githubLight } from '../src/themes/githubLight';
 import { prismThemeFrom } from './src/prism/fromEditorTheme';
 
+// GitHub Pages until reactnativecodepad.dev is live; the Cloudflare build sets both.
+const url = process.env.DOCS_URL ?? 'https://sectiontn.github.io';
+const baseUrl = process.env.DOCS_BASE_URL ?? '/react-native-codepad/';
+
 const config: Config = {
   title: 'React Native CodePad',
   tagline:
     'A native code editor for React Native, with its own Kotlin and Swift engines, tree-sitter highlighting and a Nitro binding. No WebView.',
   favicon: 'img/favicon.svg',
-  url: 'https://sectiontn.github.io',
-  baseUrl: '/react-native-codepad/',
+  url,
+  baseUrl,
   trailingSlash: true,
   organizationName: 'SectionTN',
   projectName: 'react-native-codepad',
