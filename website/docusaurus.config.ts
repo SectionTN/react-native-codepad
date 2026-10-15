@@ -5,7 +5,7 @@ import { githubLight } from '../src/themes/githubLight';
 import { prismThemeFrom } from './src/prism/fromEditorTheme';
 
 const config: Config = {
-  title: 'react-native-codepad',
+  title: 'React Native Codepad',
   tagline:
     'A native code editor for React Native: Kotlin and Swift engines, tree-sitter highlighting, a Nitro binding and no WebView.',
   favicon: 'img/favicon.svg',
