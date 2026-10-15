@@ -244,3 +244,9 @@
 .heroCopy {
   min-width: 0;
 }
+
+.figure small {
+  font-family: var(--cp-mono);
+  font-size: 0.8rem;
+  color: var(--cp-muted);
+}

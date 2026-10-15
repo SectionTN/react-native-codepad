@@ -10,6 +10,7 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import { Feature } from '../components/Feature';
 import { PhoneFrame } from '../components/PhoneFrame';
+import { FIGURES } from '../data/figures';
 import styles from './index.module.css';
 
 const INSTALL = 'npm install react-native-codepad react-native-nitro-modules';
@@ -27,12 +28,6 @@ const CARDS = [
     title: 'Keyboard first',
     body: 'Soft keyboards with composition, hardware keys with the full key table, and a toolbar API that drives the same paths from JavaScript.',
   },
-];
-
-const FIGURES = [
-  { value: '3 ms', label: 'of work per keystroke on a 10,000 line file' },
-  { value: '7 ms', label: 'to reparse a 2,000 line Markdown file with 2,238 fenced blocks' },
-  { value: '100k lines', label: 'scrolled with 3 janky frames out of 2,760' },
 ];
 
 const WORKS_WITH = [
@@ -167,13 +162,14 @@ export default function Home() {
               <div key={figure.value} className={styles.figure}>
                 <strong>{figure.value}</strong>
                 <span>{figure.label}</span>
+                <small>{figure.where}</small>
               </div>
             ))}
           </div>
           <p className={styles.caption}>
-            p50 over 60 keystrokes at 150 ms, the first two on the iPhone 18 Pro simulator and the
-            Pixel 9a emulator, the scroll on the Pixel 9a emulator, debugOptimized build. Simulator
-            and emulator numbers track regressions; device numbers come with 0.1.0.
+            Typing figures are the p50 over 60 keystrokes at 150 ms per key on the example app's
+            files; the first paint is the median of three warm opens. Simulator and emulator numbers
+            track regressions; device numbers come with 0.1.0.
           </p>
         </section>
 
