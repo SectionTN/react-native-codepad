@@ -1,27 +1,23 @@
 ---
 title: Introduction
-description: What react-native-codepad is, where it stands and what comes next.
+description: What react-native-codepad is and what it ships.
 sidebar_position: 1
 ---
 
-react-native-codepad is a code editor component for React Native with its own text engine on each platform. The document, layout, selection, undo and keyboard input live in Kotlin on Android and in Swift on iOS, on top of the platform text APIs. Syntax highlighting comes from tree-sitter, parsing incrementally on a background thread, one language per npm package. The component is bound through Nitro Views, so props, events and ref methods cross to native without a bridge round trip, and sync readers such as `getText()` return on the JS thread.
+react-native-codepad is a code editor for React Native with its own engine on each platform: Kotlin on Android, Swift on iOS. Highlighting is tree-sitter, one language per npm package. The view is bound through Nitro, so props, events and ref methods cross without a bridge round trip.
 
-There is no WebView and no `TextInput` underneath. Scrolling, selection handles, the edit menu and the caret are drawn and handled by the view itself, which is what keeps a 100k line file scrolling at the frame rate.
+No WebView, no `TextInput`. The view draws its own caret, selection handles and edit menu.
 
-:::note[Status]
-Pre-release. Both editors are complete and tested on every feature below: Android on the JVM and on an emulator, measured against the performance targets; iOS under `swift test` and XCTest on the simulator, with device numbers pending. The packages are not on npm; `0.1.0`, the first release, follows a hardening pass over both platforms.
+:::note[Pre-release]
+The packages are not on npm yet. `0.1.0` is the first release; the [roadmap](/internals/roadmap/) says what is in it.
 :::
 
 ## What you get
 
-- Editing: tap, double tap and long press selection with handles, the magnifier or loupe and the edit menu (a triple tap selects the line on iOS), soft keyboards with composition, undo and redo with typing coalescing, auto indent, auto closing brackets and quotes, Tab and Shift+Tab indentation, bracket matching, an active line highlight, a read only mode and a placeholder.
-- Hardware keyboards: the full [key table](/guides/hardware-keyboard/), and a [toolbar API](/reference/methods/#toolbar-input) that drives the same paths from JavaScript.
-- View: a line number gutter, soft wrap or horizontal scrolling, scroll to line, reveal selection, caret rect and visible lines for toolbars, content insets, and an editor that [follows the keyboard](/guides/keyboard/) frame by frame.
-- Search: literal or regex, case and whole word options, find next and previous with wrap around, replace one or all, painted matches.
-- Highlighting: fifteen [language packages](/reference/languages/), injections for fenced blocks, embedded script and style and tagged templates, three themes and a token model that ports from nvim-treesitter.
+- Editing: tap, double tap and long press selection with handles, the loupe and the edit menu, undo and redo, auto indent, auto closing pairs, Tab and Shift+Tab, bracket matching, an active line, read only, a placeholder.
+- Keyboards: soft keyboards with composition, the full [hardware key table](/guides/hardware-keyboard/), a [toolbar API](/reference/methods/#toolbar-input) that drives the same paths from JavaScript.
+- View: a line number gutter, soft wrap or horizontal scroll, scroll to line, caret rect and visible lines for toolbars, content insets, an editor that [follows the keyboard](/guides/keyboard/).
+- Search: literal or regex, case and whole word, next and previous, replace one or all, painted matches.
+- Highlighting: fifteen [language packages](/reference/languages/), injections for fenced blocks, embedded script and style and tagged templates, three themes.
 
-## What comes next
-
-A hardening pass over both platforms: bug hunting on the walk the two editors share, a fresh review of the engines, the findings fixed under test. Then the release pipeline and `0.1.0`. The [roadmap](/internals/roadmap/) has the details and lists what is deliberately out of the first version.
-
-Start with the [installation](/start/installation/) page, then the [quick start](/start/quick-start/).
+Next: [installation](/start/installation/), then the [quick start](/start/quick-start/).

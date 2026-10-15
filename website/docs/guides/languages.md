@@ -1,10 +1,10 @@
 ---
 title: Languages
-description: Language packages, the language prop, aliases, injections and how a grammar gets added.
+description: Language packages, the language prop, aliases and injections.
 sidebar_position: 1
 ---
 
-Highlighting is tree-sitter: each language is a compiled grammar plus the highlight and injection queries from nvim-treesitter, shipped as its own npm package so an app only carries the parsers it uses. The core has no language built in; without a package every document is plain text.
+Each language is a compiled tree-sitter grammar plus the nvim-treesitter queries, shipped as its own npm package. The core has no language built in; without a package every document is plain text.
 
 ## Packages and ids
 
@@ -26,11 +26,11 @@ Highlighting is tree-sitter: each language is a compiled grammar plus the highli
 | `typescript` | react-native-codepad-lang-typescript |
 | `yaml` | react-native-codepad-lang-yaml |
 
-Pass the id as the `language` prop. The [language packages reference](/reference/languages/) lists each grammar's repository, revision, scanner and capture names; it is generated from the packages, so it is always current.
+Pass the id as `language`. The [reference](/reference/languages/) lists each grammar's revision and capture names.
 
-The markdown package carries two grammars, `markdown` for blocks and `markdown_inline` for emphasis, links and inline code. Use `markdown`: the inline grammar is reached through injection and is not meant as a `language` value on its own.
+Use `markdown`, not `markdown_inline`: the inline grammar is reached through injection.
 
-`Codepad.availableLanguages()` returns the grammar names of the installed packages, read from a marker each package ships in the app's assets. Third party packages that follow the naming convention appear there too, and `markdown_inline` is in the list whenever markdown is installed.
+`Codepad.availableLanguages()` lists the installed packages:
 
 ```ts
 import { Codepad } from 'react-native-codepad';
@@ -41,13 +41,11 @@ const installed = Codepad.availableLanguages();
 
 ## Plain text fallback
 
-A `language` with no installed package, a package whose parser was built for another tree-sitter ABI, or a query that fails to compile all end the same way: the document renders in `foreground`, one warning goes to the log, nothing throws and no event fires. Switching `language` on a live editor reparses the document with the new grammar.
+A `language` with no installed package renders in `foreground` with one warning in the log. Nothing throws. Switching `language` on a live editor reparses the document.
 
 ## Injections
 
-A grammar's injection query marks ranges that belong to another language: fenced blocks in markdown, `<script>` and `<style>` in html, a `css` or `html` tagged template in javascript, the front matter of a markdown file. The engine parses each range set with the named language and paints its spans in place.
-
-The name comes from the query or from the document (a fence info string, a template tag). It is lowercased and resolved through an alias table before the registry looks for a package:
+A grammar's injection query hands ranges to another language: fenced blocks in markdown, `<script>` and `<style>` in html, `css` and `html` tagged templates in javascript, markdown front matter. The name comes from the document or the query, lowercased, then resolved through this table before the registry looks for a package:
 
 | Name in the source | Resolves to |
 | --- | --- |
@@ -63,19 +61,15 @@ The name comes from the query or from the document (a fence info string, a templ
 | `md` | `markdown` |
 | `h` | `c` |
 
-These names are never injected, so their ranges keep the host language's colors without a warning: `cpp`, `c++`, `cc`, `hpp`, `objc`, `bash`, `sh`, `shell`, `zsh`, `console`, `text`, `txt`, `plain`, `regex`, `jsdoc`, `comment`, `luap`, `printf`, `styled`, `angular`, `groq`, `graphql`, `glimmer`, `sql`, `c_sharp`. Any other name is tried as a package id; a fence tagged `ruby` without a ruby package is plain text, like the fallback above.
+Names with no package keep the host language's colors: `cpp`, `bash`, `sh`, `sql`, `graphql`, `text` and the rest of nvim-treesitter's list stay silent, any other name logs the fallback warning once.
 
-What the engine does and does not do:
-
-- One level. The injected language's own injection query does not run, so a javascript block inside markdown highlights, but an html template inside that block does not.
-- `injection.include-children` is always on: an injected range includes its child nodes, so `${...}` substitutions inside a tagged template are parsed by the injected language. nvim-treesitter excludes them unless the query asks; this is a deliberate difference.
-- `#offset!` directives apply when their row deltas are zero, which trims the backticks off a template string or the markers off front matter. Row offsets are ignored.
-- `injection.combined` ranges parse as one tree, which is how a markdown document's html blocks form one document.
-- Injected trees survive edits. Each one is edited along with the host document and reparsed incrementally when its range still matches, so typing in one fenced block of a long markdown file reparses that block and nothing else. The [performance](/guides/performance/) page has the numbers.
+- One level deep: a javascript block inside markdown highlights, an html template inside that block does not.
+- `${...}` substitutions inside a tagged template are parsed by the injected language.
+- Injected trees survive edits and reparse only when their own range changed. [Performance](/guides/performance/) has the numbers.
 
 ## Size
 
-Each package ships one native library per ABI, loaded on first use. Sizes for `arm64-v8a` in a release build:
+One native library per ABI, loaded on first use. `arm64-v8a`, release build:
 
 | Package | Library |
 | --- | --- |
@@ -90,17 +84,17 @@ Each package ships one native library per ABI, loaded on first use. Sizes for `a
 | css | 0.1 MB |
 | html, json | under 0.1 MB |
 
-An app bundle splits native libraries per ABI, so a device downloads one set.
+An app bundle splits libraries per ABI, so a device downloads one set.
 
 ## Adding a language
 
-Packages are generated, never written by hand, from `languages/grammars.json` in the repository:
+Packages are generated from `languages/grammars.json` in the repository, never written by hand:
 
-1. Add an entry: the id, the grammar repository and the commit to pin, the grammar directories (`src` for most, two for markdown) and any extra source paths such as a shared scanner header. The id must match the nvim-treesitter query directory, because the queries come from there at the commit the manifest pins.
-2. Run `yarn gen:languages <id>`. The generator fetches the grammar and the queries, resolves `; inherits:` headers, translates the predicates it supports (`eq?`, `match?`, `any-of?`, `contains?`, `has-parent?` and `has-ancestor?` with their `not-` and `any-` forms, plus `lua-match?` for the common subset), drops the patterns it cannot translate with a warning for each, then writes the package with its Android and iOS build files, the Kotlin and Swift providers, the embedded queries and a README. `yarn gen:report` prints every predicate each language uses with counts.
-3. Run `yarn host:treesitter && yarn test:android`. The JVM smoke test compiles every grammar's queries against its parser and highlights a snippet; a query that names a node type the pinned grammar lacks fails here with tree-sitter's message.
-4. Link the package in the example app and run `yarn test:device -e class codepad.example.LanguagesTest` on an emulator, which loads every installed language through the real view.
+1. Add an entry: the id (it must match the nvim-treesitter query directory), the grammar repository and commit, the grammar directories.
+2. `yarn gen:languages <id>` fetches the grammar and the queries, translates the predicates and writes the package. Patterns it cannot translate are dropped with a warning each; `yarn gen:report` lists every predicate per language.
+3. `yarn host:treesitter && yarn test:android` compiles the queries against the parser on the JVM.
+4. `yarn test:device -e class codepad.example.LanguagesTest` loads the package through the real view on an emulator.
 
-CI regenerates every package and fails on any diff, so a hand edit never survives. A grammar bump is a `rev` change in the manifest followed by the same steps.
+CI regenerates every package and fails on any diff. A grammar bump is a `rev` change followed by the same steps.
 
-A package that does not come from the generator can still work if it follows the convention the registry uses: the npm name `react-native-codepad-lang-<id>`, a Kotlin class `me.sectiontn.codepad.lang.<id>.<Pascal>Language` implementing `LanguageProvider` with a keep rule, an asset marker at `codepad-languages/<id>`, and a parser built against tree-sitter 0.26 (ABI 13 to 15).
+A third party package works when it follows the convention: the npm name `react-native-codepad-lang-<id>`, a Kotlin `LanguageProvider` at `me.sectiontn.codepad.lang.<id>` with a keep rule, an asset marker at `codepad-languages/<id>`, a parser built against tree-sitter 0.26 (ABI 13 to 15).

@@ -4,7 +4,7 @@ description: An auto height editor inside a page that scrolls.
 sidebar_position: 4
 ---
 
-A form, a note, a snippet in a list: the editor sits in a page that scrolls and should not scroll on its own. Two props and one event do it.
+A form, a note, a snippet in a list: the editor sits in a page that scrolls and must not scroll on its own. Two props and one event do it.
 
 ```tsx
 import { useState } from 'react';
@@ -29,14 +29,14 @@ export function NotePage() {
 }
 ```
 
-- `scrollEnabled={false}` makes the view never claim touch scrolling, so a drag over the editor scrolls the page. Taps, double taps, long presses and handle drags still work.
-- `softWrap` keeps the content within the page width, since the editor no longer scrolls in either direction.
-- `onContentSizeChange` reports the size at which nothing scrolls, `contentInsets` included, in dp. Feed its height back into `style` and the editor grows and shrinks with its text. The event fires after a draw whose content size changed, at most once per frame, the first time before `onReady`; with soft wrap an unmeasured line counts as one row, so a tall document converges over a few frames as lines measure. `Math.ceil` avoids a one pixel scroll from rounding.
-- `keyboardShouldPersistTaps="handled"` on the page lets a tap on the editor place the caret without the page dismissing the keyboard first.
+- `scrollEnabled={false}`: the view never claims touch scrolling, so a drag over it scrolls the page. Taps, long presses and handle drags still work.
+- `softWrap` keeps the content within the page width.
+- `onContentSizeChange` reports the size at which nothing scrolls, insets included. Feed its height back into `style`. With soft wrap a tall document converges over a few frames as lines measure; `Math.ceil` avoids a one pixel scroll.
+- `keyboardShouldPersistTaps="handled"` lets a tap place the caret without the page dismissing the keyboard first.
 
 ## Caret reveal is yours
 
-The editor cannot scroll the page. When the caret moves below the fold, read `getCursorRect()` (view coordinates, dp) in `onSelectionChange`, add the editor's offset within the page from its `onLayout`, and `scrollTo` the page when the result is outside the visible band. The example app leaves this out on purpose: the right scroll target depends on your page.
+The editor cannot scroll the page. In `onSelectionChange`, read `getCursorRect()` (view coordinates, dp), add the editor's offset in the page from its `onLayout`, and scroll the page when the caret leaves the visible band:
 
 ```tsx
 onSelectionChange={() => {
@@ -49,8 +49,8 @@ onSelectionChange={() => {
 }}
 ```
 
-Leave `avoidKeyboard` off for an editor that does not scroll: an inset has nothing to move. Let the page handle the keyboard instead, with a `KeyboardAvoidingView` or keyboard-controller's `KeyboardAwareScrollView`.
+Leave `avoidKeyboard` off here: an editor that does not scroll has nothing to inset. Let the page handle the keyboard with a `KeyboardAvoidingView` or keyboard-controller's `KeyboardAwareScrollView`.
 
 ## Keep nested documents small
 
-A scrolling editor lays out the visible lines plus a margin and keeps the rest as row counts. An auto height editor shows everything, so every line is laid out and drawn. A few hundred lines is fine; a 10k line file belongs in a scrolling editor with a fixed height.
+An auto height editor lays out and draws every line. A few hundred lines is fine; a 10k line file belongs in a scrolling editor with a fixed height.

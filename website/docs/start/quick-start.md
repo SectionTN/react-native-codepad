@@ -1,10 +1,10 @@
 ---
 title: Quick start
-description: A screen with the editor, a ref, onChange, a language and a theme.
+description: One screen with the editor, a ref, onChange, a language and a theme.
 sidebar_position: 3
 ---
 
-One screen, one editor, the pieces you will use most. The editor takes its size from `style` like any view and needs a bounded height: `flex: 1` inside a flex column, or an explicit `height`.
+One screen, one editor. The editor sizes like any view and needs a bounded height: `flex: 1` in a column, or an explicit `height`.
 
 ```tsx
 import { useRef, useState } from 'react';
@@ -13,7 +13,7 @@ import { CodeEditor, type CodeEditorRef, githubDark } from 'react-native-codepad
 
 const INITIAL = ['export function greet(name) {', '  return `Hello, ${name}`;', '}'].join('\n');
 
-// Object props are compared by identity; a literal in JSX would cross to native on every render.
+// Object props are compared by identity; hoist them out of the render.
 const INSETS = { bottom: 24 };
 
 export function EditorScreen() {
@@ -48,12 +48,12 @@ const styles = StyleSheet.create({
 });
 ```
 
-What each piece does:
+- `initialValue` is read once. Replace the document with `setText()`.
+- `language` is an installed package's id. Without the package the editor shows plain text.
+- `theme` defaults to `githubLight`. [Themes](/guides/themes/) has the other two and your own.
+- `onChange` is one delta per change. `onChangeText` sends the whole text; keep it for small documents.
+- The ref reads synchronously (`getText()`, `getSelection()`, `getCursorRect()`) and writes asynchronously (`setText()`, `replaceRange()`, `undo()`). Everything is valid from `onReady`.
 
-- `initialValue` is read once at mount. Later changes to the prop are ignored; replace the document with `setText()`.
-- `language` is the grammar name of an installed package. Without the package the editor shows plain text and logs one warning.
-- `theme` defaults to `githubLight`. Three themes ship; the [themes guide](/guides/themes/) shows how to build your own.
-- `onChange` gives you a delta per committed change, composition updates included. `onChangeText` sends the full text instead, at the cost of a copy per edit; keep it for small documents.
-- The ref exposes sync readers (`getText()`, `getSelection()`, `getCursorRect()`) that return on the JS thread, and async writers (`setText()`, `replaceRange()`, `undo()`) that resolve once the change is applied. Everything is valid from `onReady`; earlier calls work on an empty document and never throw.
+Offsets are UTF-16 code units, lines and columns are 0 based, ranges are half open: JavaScript string conventions.
 
-Offsets are UTF-16 code units, lines and columns are 0 based and ranges are half open, the same conventions as JavaScript strings. The [reference](/reference/props/) has every prop, event and method; the guides cover the [keyboard](/guides/keyboard/), [search](/guides/search/) and [nesting the editor in a page](/guides/nested-scroll/).
+Next: the [props](/reference/props/), the [keyboard](/guides/keyboard/), [search](/guides/search/), or [nesting the editor in a page](/guides/nested-scroll/).

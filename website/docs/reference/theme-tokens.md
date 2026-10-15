@@ -1,10 +1,10 @@
 ---
 title: Theme tokens
-description: The Theme shape, the shipped themes and how token keys resolve.
+description: Every value of the three shipped themes.
 sidebar_position: 5
 ---
 
-A `Theme` is a plain object: eleven editor colors plus `tokens`, a map from tree-sitter capture names to a `TokenStyle`. Three themes ship: `githubLight` (the default), `githubDark` and `oneDark`.
+A `Theme` is eleven editor colors plus `tokens`, a map from tree-sitter capture names to a `TokenStyle`. Three ship: `githubLight` (the default), `githubDark` and `oneDark`. The [themes guide](/guides/themes/) has the lookup rules and a custom theme.
 
 ## Editor colors
 
@@ -22,11 +22,11 @@ A `Theme` is a plain object: eleven editor colors plus `tokens`, a map from tree
 | `searchMatch` | #ffd33d66 | #9e6a0366 | #e5c07b55 |
 | `searchMatchActive` | #ffb70099 | #d2992299 | #e5c07b99 |
 
-`selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are fills drawn under the text, so they carry alpha. `cursor` colors the caret and the selection handles on both platforms: Android tints the platform handles with it, iOS draws its own knob and bar in it and hands it to the system loupe as the tint. Every other color applies the same on both platforms.
+`selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are drawn under the text, so they carry alpha. `cursor` colors the caret and the selection handles on both platforms.
 
 ## Token keys
 
-Keys are the capture names the highlight queries produce, such as `keyword.return` or `punctuation.bracket`. Lookup takes the longest dotted prefix the theme defines: `keyword.return` falls back to `keyword`, and a name with no prefix in the theme paints in `foreground`. The [language packages page](/reference/languages/) lists the names each grammar produces; the shipped themes cover all of them, and a test in the repository keeps it that way.
+Keys are the capture names the highlight queries produce. Lookup takes the longest dotted prefix the theme defines, then `foreground`. The shipped themes cover every name the [language packages](/reference/languages/) produce.
 
 | Key | githubLight | githubDark | oneDark |
 | --- | --- | --- | --- |
@@ -73,23 +73,3 @@ Keys are the capture names the highlight queries produce, such as `keyword.retur
 | `variable.builtin` | #cf222e | #ffa657 | #e5c07b |
 | `variable.member` | #0550ae | #79c0ff | #e06c75 |
 | `variable.parameter` | #1f2328 | #e6edf3 | #e06c75 |
-
-## A custom theme
-
-Start from a shipped theme and override what you need. A `TokenStyle` is a color string or `{ color, bold?, italic? }`.
-
-```ts
-import { githubDark, type Theme } from "react-native-codepad";
-
-export const midnight: Theme = {
-  ...githubDark,
-  background: "#000000",
-  tokens: {
-    ...githubDark.tokens,
-    keyword: { color: "#ff9bce", bold: true },
-    "string.regexp": "#ffd27f",
-  },
-};
-```
-
-Hoist the object outside the component: the prop is compared by identity before it crosses to native.

@@ -1,10 +1,10 @@
 ---
 title: Themes
-description: The three shipped themes, the Theme shape and how to write your own.
+description: The three shipped themes, the Theme shape and your own.
 sidebar_position: 2
 ---
 
-A theme is a plain object passed as the `theme` prop. Three ship with the library: `githubLight` (the default) and `githubDark` from Primer's syntax palette, and `oneDark` from Atom. Pick one per color scheme:
+A theme is a plain object passed as `theme`. Three ship: `githubLight` (the default), `githubDark` and `oneDark`.
 
 ```tsx
 import { useColorScheme } from 'react-native';
@@ -37,19 +37,17 @@ interface Theme {
 type TokenStyle = string | { color: string; bold?: boolean; italic?: boolean };
 ```
 
-Colors are hex strings, `#rrggbb` or `#rrggbbaa`. `selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are fills drawn under the text, so give them alpha. The [theme tokens reference](/reference/theme-tokens/) lists every value of the three themes side by side.
+Colors are `#rrggbb` or `#rrggbbaa`. `selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are drawn under the text: give them alpha. The [theme tokens reference](/reference/theme-tokens/) lists every value of the three themes.
 
 ## Token lookup
 
-`tokens` is keyed by tree-sitter capture names, the dotted names the highlight queries produce: `keyword`, `keyword.return`, `punctuation.bracket`, `markup.heading.1`. Lookup walks the dotted prefixes from the longest: `keyword.return` paints with `keyword.return` when the theme defines it, else `keyword`, else `foreground`. A theme therefore needs only the roots to color everything, and adds leaves where it wants a distinction.
+`tokens` is keyed by tree-sitter capture names: `keyword`, `keyword.return`, `punctuation.bracket`, `markup.heading.1`. Lookup walks the dotted prefixes from the longest, then falls back to `foreground`, so a theme needs only the roots and adds leaves where it wants a distinction.
 
-The shipped themes define a few dozen keys and cover every capture name the fifteen packages produce; a test in the repository keeps them complete and in step with each other. The [language packages reference](/reference/languages/) lists the names per grammar, which is the list to look at when a token does not get the color you expect.
-
-Themes from the nvim-treesitter ecosystem port by renaming: their `@keyword.return` is our `keyword.return`.
+The shipped themes cover every capture the fifteen packages produce. A theme from the nvim-treesitter ecosystem ports by renaming: `@keyword.return` becomes `keyword.return`.
 
 ## A custom theme
 
-Start from a shipped theme and override:
+Spread a shipped theme and override:
 
 ```ts
 import { githubDark, type Theme } from 'react-native-codepad';
@@ -67,9 +65,7 @@ export const midnight: Theme = {
 };
 ```
 
-Two rules:
+- Hoist the object. The prop is compared by identity, so a literal in JSX crosses to native on every render.
+- A theme built from scratch needs the roots: `comment`, `keyword`, `string`, `number`, `function`, `variable`, `type`, `operator`, `punctuation`, `tag`, `attribute`, `constant`, `boolean`, `property`, `module`, `label`, `constructor`, `character` and the `markup.*` keys. Missing roots paint in `foreground`.
 
-- Hoist the object. The prop is compared by identity before it crosses to native, so a literal in JSX would send the whole token map on every render.
-- Keep the roots. A theme built from scratch rather than spread from a shipped one should define at least `comment`, `keyword`, `string`, `number`, `function`, `variable`, `type`, `operator`, `punctuation`, `tag`, `attribute`, `constant`, `boolean`, `property`, `module`, `label`, `constructor`, `character` and the `markup.*` keys, or the tokens under them paint in `foreground`.
-
-Bold and italic need a font with those faces; the defaults, `monospace` on Android and `Menlo` on iOS, have them.
+Bold and italic need a font with those faces. The defaults, `monospace` on Android and `Menlo` on iOS, have them.
