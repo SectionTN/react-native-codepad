@@ -1,10 +1,10 @@
 ---
 title: Quick start
-description: One screen with the editor, a ref, onChange, a language and a theme.
+description: A simple screen with the editor, a ref, onChange, a language and a theme.
 sidebar_position: 3
 ---
 
-One screen, one editor. The editor sizes like any view and needs a bounded height: `flex: 1` in a column, or an explicit `height`.
+This is a simple CodePad usage: one screen with the editor, an undo button on the ref and a status line fed by `onChange`.
 
 ```tsx
 import { useRef, useState } from 'react';
@@ -48,12 +48,11 @@ const styles = StyleSheet.create({
 });
 ```
 
-- `initialValue` is read once. Replace the document with `setText()`.
-- `language` is an installed package's id. Without the package the editor shows plain text.
-- `theme` defaults to `githubLight`. [Themes](/guides/themes/) has the other two and your own.
-- `onChange` is one delta per change. `onChangeText` sends the whole text; keep it for small documents.
+- The editor needs a height: `flex: 1` in a column, or an explicit `height`.
+- `initialValue` sets the initial text of the editor. It is read once, so use `setText()` to replace the document later.
+- `language` is the id of an installed language package. Without the package the editor shows plain text.
+- `theme` defaults to `githubLight`. The [themes guide](/guides/themes/) has the other two and shows how to write your own.
+- `onChange` gives you one delta per change. `onChangeText` gives you the whole text after every change, so keep it for small documents.
 - The ref reads synchronously (`getText()`, `getSelection()`, `getCursorRect()`) and writes asynchronously (`setText()`, `replaceRange()`, `undo()`). Everything is valid from `onReady`.
 
-Offsets are UTF-16 code units, lines and columns are 0 based, ranges are half open: JavaScript string conventions.
-
-Next: the [props](/reference/props/), the [keyboard](/guides/keyboard/), [search](/guides/search/), or [nesting the editor in a page](/guides/nested-scroll/).
+Offsets count UTF-16 code units. Lines and columns start at `0`, and ranges include the start but exclude the end, just like JavaScript strings.

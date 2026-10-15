@@ -1,10 +1,10 @@
 ---
 title: Hardware keyboard
-description: The keys the editor handles on each platform.
+description: The keys CodePad handles on each platform, and how to drive the same table from JavaScript.
 sidebar_position: 6
 ---
 
-A Bluetooth or USB keyboard, a Chromebook, an iPad keyboard, the Mac keyboard on the simulator: the editor handles the keys below. Everything else goes to the platform, and printable keys type through the normal path (auto close, typing coalescing).
+CodePad handles the keys below from any hardware keyboard: Bluetooth or USB, a Chromebook, an iPad keyboard, or the Mac keyboard on the simulator. Every other key goes to the platform, and printable keys type through the normal path, with auto close and typing coalescing.
 
 | Action | Android | iOS |
 | --- | --- | --- |
@@ -26,17 +26,17 @@ A Bluetooth or USB keyboard, a Chromebook, an iPad keyboard, the Mac keyboard on
 | Copy, cut, paste | Ctrl+C, Ctrl+X, Ctrl+V, the dedicated keys | Cmd+C, Cmd+X, Cmd+V |
 | Collapse the selection to the caret | Escape | Escape |
 
-Under `readOnly` movement, selection, select all, copy and Escape work; the editing keys do nothing. Word movement uses runs of `[A-Za-z0-9_]`, otherwise the platform's word breaks. A paste reports origin `input` in `onChange`; undo and redo report `undo` and `redo`.
+Under `readOnly`, movement, selection, select all, copy and Escape still work, and the editing keys do nothing. Word movement uses runs of `[A-Za-z0-9_]` and falls back to the platform's word breaks. A paste reports origin `input` in `onChange`, and undo and redo report `undo` and `redo`.
 
 Android leaves Alt and Meta combinations and Ctrl+Tab to the platform. iOS leaves Control combinations, and Option with any key other than Left and Right, to UIKit. The editor's commands win over UIKit's own text navigation.
 
 ## The undo stack on iOS
 
-The editor's history is the responder chain's `undoManager`: Cmd+Z, shake to undo and the three finger gestures run the same groups as `undo()` and `redo()`. On Android the history is reached through the key table and the ref.
+The editor's history is the responder chain's `undoManager`, so Cmd+Z, shake to undo and the three finger gestures run the same undo groups as `undo()` and `redo()`. On Android the history is reached through the key table and the ref.
 
 ## The same table from JavaScript
 
-`moveCaret(direction, { select })` drives the movement rows, so a toolbar matches the keyboard:
+`moveCaret(direction, { select })` drives the movement rows, so a toolbar can match the keyboard:
 
 | Direction | Android | iOS |
 | --- | --- | --- |
@@ -51,4 +51,4 @@ The editor's history is the responder chain's `undoManager`: Cmd+Z, shake to und
 
 ## Testing without a keyboard
 
-On an Android emulator with `hw.keyboard=yes` the host keyboard types into the editor, and `adb shell input keyevent` sends keys from a script. On the iOS simulator the Mac keyboard types into the editor; with Connect Hardware Keyboard on, Cmd and Option chords reach the table.
+On an Android emulator with `hw.keyboard=yes` the host keyboard types into the editor, and `adb shell input keyevent` sends keys from a script. On the iOS simulator the Mac keyboard types into the editor, and with Connect Hardware Keyboard on, Cmd and Option chords reach the table.

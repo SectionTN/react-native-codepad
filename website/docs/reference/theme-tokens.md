@@ -4,7 +4,7 @@ description: Every value of the three shipped themes.
 sidebar_position: 5
 ---
 
-A `Theme` is eleven editor colors plus `tokens`, a map from tree-sitter capture names to a `TokenStyle`. Three ship: `githubLight` (the default), `githubDark` and `oneDark`. The [themes guide](/guides/themes/) has the lookup rules and a custom theme.
+A `Theme` is eleven editor colors plus `tokens`, a map from tree-sitter capture names to a `TokenStyle`. CodePad ships with three: `githubLight` (the default), `githubDark` and `oneDark`. The [themes guide](/guides/themes/) explains the lookup and shows a custom theme.
 
 ## Editor colors
 
@@ -22,11 +22,11 @@ A `Theme` is eleven editor colors plus `tokens`, a map from tree-sitter capture 
 | `searchMatch` | #ffd33d66 | #9e6a0366 | #e5c07b55 |
 | `searchMatchActive` | #ffb70099 | #d2992299 | #e5c07b99 |
 
-`selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are drawn under the text, so they carry alpha. `cursor` colors the caret and the selection handles on both platforms.
+`selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are drawn under the text, so they carry some alpha. `cursor` colors the caret and the selection handles on both platforms.
 
 ## Token keys
 
-Keys are the capture names the highlight queries produce. Lookup takes the longest dotted prefix the theme defines, then `foreground`. The shipped themes cover every name the [language packages](/reference/languages/) produce.
+The keys are the capture names the highlight queries produce. The lookup takes the longest dotted prefix the theme defines, then falls back to `foreground`. The built-in themes cover every name the [language packages](/reference/languages/) produce.
 
 | Key | githubLight | githubDark | oneDark |
 | --- | --- | --- | --- |

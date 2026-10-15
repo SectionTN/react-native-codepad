@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Requirements, packages and the rebuild.
+description: What CodePad needs, which packages to install and how to rebuild the app.
 sidebar_position: 2
 ---
 
@@ -9,21 +9,13 @@ import TabItem from '@theme/TabItem';
 
 ## Requirements
 
-| | Minimum |
-| --- | --- |
-| React Native | 0.81, New Architecture only |
-| React | 19 |
-| react-native-nitro-modules | 0.37 |
-| Android | API 24, `compileSdk` 36 |
-| iOS | 17.0, Xcode 16 |
-
-:::caution[Not on npm yet]
-The packages publish with `0.1.0`. Until then, clone the [repository](https://github.com/SectionTN/react-native-codepad) and run the example app.
-:::
+- React Native 0.81+ with the New Architecture
+- Android 7+ (API 24)
+- iOS 17+
 
 ## Packages
 
-The core, Nitro Modules and one package per language you highlight:
+Install the core, Nitro Modules and one package per language you want to highlight:
 
 <Tabs groupId="package-manager">
 <TabItem value="npm" label="npm">
@@ -56,16 +48,16 @@ bun add react-native-codepad react-native-nitro-modules react-native-codepad-lan
 </TabItem>
 </Tabs>
 
-Language packages are `react-native-codepad-lang-<id>`. The [list](/reference/languages/) has all fifteen.
+Language packages are named `react-native-codepad-lang-<id>`. The [language list](/reference/languages/) has all fifteen.
 
 ## Rebuild
 
-The packages carry native code. Rebuild after adding or removing one.
+The packages carry native code, so rebuild the app after adding or removing one.
 
 <Tabs groupId="framework">
 <TabItem value="expo" label="Expo">
 
-Expo development builds only, not Expo Go. Set the iOS deployment target to 17.0, then prebuild:
+Expo development builds only, not Expo Go. Set the iOS deployment target to 17.0, then prebuild and run:
 
 ```json title="app.json"
 {
@@ -88,7 +80,7 @@ npx expo run:android
 </TabItem>
 <TabItem value="react-native" label="React Native">
 
-Autolinking does the rest. Set the deployment target, install the pods and run:
+Autolinking does the rest. Set the iOS deployment target in the Podfile, install the pods and run:
 
 ```ruby title="ios/Podfile"
 # diff-remove
@@ -105,5 +97,3 @@ npm run android
 
 </TabItem>
 </Tabs>
-
-Next: the [quick start](/start/quick-start/).

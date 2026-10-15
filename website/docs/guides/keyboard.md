@@ -1,10 +1,10 @@
 ---
 title: Keyboard
-description: avoidKeyboard, content insets and a toolbar on the keyboard.
+description: How to keep the caret visible when the keyboard opens, and how to put a toolbar above the keyboard.
 sidebar_position: 3
 ---
 
-Three things keep the caret visible with the soft keyboard up: `avoidKeyboard`, `contentInsets` for anything you draw over the editor, and a toolbar pinned to the keyboard. The example app's keyboard accessory bar combines all three.
+Three things keep the caret visible while the soft keyboard is up: `avoidKeyboard`, `contentInsets` for anything you draw over the editor, and a toolbar pinned to the keyboard. The example app's key row uses all three.
 
 ## avoidKeyboard
 
@@ -12,18 +12,18 @@ Three things keep the caret visible with the soft keyboard up: `avoidKeyboard`, 
 <CodeEditor style={{ flex: 1 }} avoidKeyboard />
 ```
 
-The view measures its overlap with the keyboard on every frame of the keyboard animation and adds it to the bottom inset, so the content slides with the keyboard. Closing it removes the inset the same way. A keyboard opened for another field insets the editor too.
+The editor measures how much the keyboard overlaps it on every frame of the keyboard animation and adds that to its bottom inset, so the content slides up with the keyboard and back down when it closes. A keyboard opened for another field insets the editor too.
 
-Two Android windows where it does nothing on purpose:
+On Android the prop does nothing in two window modes, on purpose:
 
 - `adjustPan`: the framework pans the window, and an inset would move the content twice.
 - `adjustResize` without edge to edge: the window already shrank. React Native is edge to edge since 0.81.
 
-`onContentSizeChange` never includes the overlap. Default off on both platforms.
+`onContentSizeChange` never includes the keyboard overlap. The prop is off by default on both platforms.
 
 ## contentInsets
 
-Style padding on the view is ignored. `contentInsets` is the padding, inside the scrollable area, in dp on Android and points on iOS. The bottom inset keeps the caret above a toolbar or a floating button.
+Style padding on the view is ignored. `contentInsets` is the padding instead: inside the scrollable area, in dp on Android and points on iOS. A bottom inset keeps the caret above a toolbar or a floating button.
 
 ```tsx
 // Hoisted: object props are compared by identity.
@@ -32,11 +32,11 @@ const INSETS = { bottom: 56 };
 <CodeEditor style={{ flex: 1 }} contentInsets={INSETS} avoidKeyboard />;
 ```
 
-With `avoidKeyboard` the overlap adds to `contentInsets.bottom`: the toolbar height in the prop, the keyboard from the view.
+With `avoidKeyboard` on, the keyboard overlap is added on top of `contentInsets.bottom`. You pass the toolbar height, the editor adds the keyboard.
 
 ## A toolbar on the keyboard
 
-The example app pins a key row and its status bar to the keyboard with react-native-keyboard-controller. The editor takes the bar's height as its bottom inset; with the keyboard closed the bar sits above the home indicator, so the inset covers that band too.
+For a toolbar that rides the keyboard, use [react-native-keyboard-controller](https://kirillzyusko.github.io/react-native-keyboard-controller/). Its `KeyboardStickyView` keeps the bar on top of the keyboard through the whole animation. The example app pins its key row and status bar that way: the editor takes the bar's height as its bottom inset, and while the keyboard is closed the bar sits above the home indicator, so the inset covers that band too.
 
 ```tsx
 import { useMemo, useRef, useState } from 'react';
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-The toolbar is a horizontal `ScrollView` with `keyboardShouldPersistTaps="always"`, so a key does not dismiss the keyboard. Its keys call the ref:
+If you build the key row with a React Native `ScrollView`, set `keyboardShouldPersistTaps="always"` so a tap on a key does not dismiss the keyboard. Each key calls the ref:
 
 | Key | Call |
 | --- | --- |
@@ -93,10 +93,10 @@ The toolbar is a horizontal `ScrollView` with `keyboardShouldPersistTaps="always
 | Undo, Redo | `undo()`, `redo()`, enabled from `canUndo()` and `canRedo()` read in `onChange` |
 | Hide | `blur()` |
 
-`typeText()` and `deleteBackward()` are the keyboard path: auto close, the indenter, typing coalescing in the undo history, origin `input`, no-ops under `readOnly`. `insertText()` is the raw path. The key row's source is in the repository under `example/src/components/EditorToolbar.tsx`.
+`typeText()` and `deleteBackward()` take the keyboard path: auto close, the indenter, typing coalesced in the undo history, origin `input`, and no-ops under `readOnly`. `insertText()` is the raw path. The example's key row is in the repository under `example/src/components/AccessoryBar.tsx`, and `BottomBar.tsx` next to it pins it to the keyboard.
 
 ## Suggestions and focus
 
-`suggestions`: `off` (the default) asks the keyboard for none, `forceOff` also kills composition on most Android keyboards, `on` allows autocorrect. Code wants `off`; a markdown editor may want `on`. On iOS `forceOff` equals `off`. Composing keyboards (Japanese, Chinese) work in every mode.
+`suggestions` controls what the keyboard offers: `off` (the default) asks for no suggestions, `forceOff` also kills composition on most Android keyboards, and `on` allows autocorrect. Code wants `off`, a markdown editor may want `on`. On iOS `forceOff` is the same as `off`. Composing keyboards (Japanese, Chinese) work in every mode.
 
-`autoFocus` focuses once the view is attached. `focus()` and `blur()` do it on demand; `focus()` shows no keyboard under `readOnly`.
+`autoFocus` focuses the editor once the view is attached. `focus()` and `blur()` do it on demand, and `focus()` shows no keyboard under `readOnly`.

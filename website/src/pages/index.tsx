@@ -15,13 +15,13 @@ const FRAME_MS = 16.7;
 
 const EDITING = [
   ['Selection', 'with handles, the loupe and the edit menu'],
-  ['Undo and redo', 'with typing coalescing'],
+  ['Undo and redo', 'with keystrokes grouped into one undo step'],
   ['Auto indent', 'and auto closing brackets and quotes'],
-  ['Tab and Shift+Tab', 'indentation, bracket matching, an active line'],
-  ['Search', 'literal or regex, replace one or all, painted matches'],
+  ['Tab and Shift+Tab', 'to indent and outdent, plus bracket matching and an active line'],
+  ['Search', 'literal or regex, replace one or all, every match painted'],
   ['Hardware keys', 'with the full key table'],
   ['A toolbar API', 'that drives the same paths from JavaScript'],
-  ['Three themes', 'and a token model from nvim-treesitter captures'],
+  ['Three themes', 'keyed by nvim-treesitter capture names'],
 ] as const;
 
 const WORKS_WITH = [
@@ -127,12 +127,10 @@ function Buttons() {
 function Hero() {
   return (
     <header className={styles.hero}>
-      <Link className={styles.eyebrow} to="/internals/roadmap/">
-        Pre-release
-      </Link>
       <h1 className={styles.headline}>A native code editor for React Native.</h1>
       <p className={styles.lead}>
-        Kotlin and Swift engines, tree-sitter highlighting, a Nitro binding. No WebView.
+        Its own engine on each platform, Kotlin on Android and Swift on iOS, with tree-sitter
+        highlighting and a Nitro binding. No WebView.
       </p>
       <div className={styles.install}>
         <code>{INSTALL}</code>
@@ -179,7 +177,7 @@ function Speed() {
   return (
     <Section
       title="Keystrokes stay inside the frame."
-      lead="The key handler and the draw together, against one frame at 60 Hz."
+      lead="The time to handle a key and draw the result, next to one frame at 60 Hz."
     >
       <div className={styles.bars}>
         <div className={styles.barRow}>
@@ -194,7 +192,7 @@ function Speed() {
         </div>
       </div>
       <p className={styles.method}>
-        Work {typing.label}, p50 over 60 keystrokes at 150 ms per key, {typing.where}.
+        {typing.value} {typing.label}, median over 60 keystrokes at 150 ms per key, {typing.where}.
       </p>
       <dl className={styles.figures}>
         {[parse, paint].map((figure) => (
@@ -208,7 +206,8 @@ function Speed() {
         ))}
       </dl>
       <p className={styles.method}>
-        Simulator and emulator numbers track regressions. Device numbers come with 0.1.0.
+        Simulator and emulator numbers, kept to catch regressions. Numbers from a real device are
+        welcome in an issue.
       </p>
     </Section>
   );
@@ -223,8 +222,8 @@ export default function Home() {
         <Speed />
 
         <Section
-          title="Tree-sitter, one package per language."
-          lead="Install a language package and pass its id. An app carries only the languages it uses."
+          title="Tree-sitter highlighting, one package per language."
+          lead="Install a language package and pass its id. Your app carries only the languages it uses."
         >
           <Chips items={LANGUAGES} to="/reference/languages/" />
           <div className={styles.codeCard}>
@@ -234,7 +233,7 @@ export default function Home() {
 
         <Section
           title="Everything the keyboard does, from JavaScript."
-          lead="The same engine paths under the soft keyboard, hardware keys and the ref."
+          lead="The soft keyboard, hardware keys and the ref all drive the same engine paths."
         >
           <ul className={styles.checklist}>
             {EDITING.map(([strong, rest]) => (
@@ -250,7 +249,7 @@ export default function Home() {
 
         <Section
           title="Follows the keyboard, frame by frame."
-          lead="The editor insets itself by the keyboard's overlap and tracks the keyboard animation."
+          lead="The editor insets itself by the keyboard's overlap and follows the keyboard animation frame by frame."
         >
           <div className={styles.codeCard}>
             <CodeBlock language="tsx">{keyboard}</CodeBlock>

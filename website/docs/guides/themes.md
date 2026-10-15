@@ -1,10 +1,10 @@
 ---
 title: Themes
-description: The three shipped themes, the Theme shape and your own.
+description: The three built-in themes, the Theme shape and how to write your own.
 sidebar_position: 2
 ---
 
-A theme is a plain object passed as `theme`. Three ship: `githubLight` (the default), `githubDark` and `oneDark`.
+CodePad ships with 3 themes: `githubLight` (the default), `githubDark` and `oneDark`. Each one is a plain object passed as `theme`.
 
 ```tsx
 import { useColorScheme } from 'react-native';
@@ -37,17 +37,17 @@ interface Theme {
 type TokenStyle = string | { color: string; bold?: boolean; italic?: boolean };
 ```
 
-Colors are `#rrggbb` or `#rrggbbaa`. `selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are drawn under the text: give them alpha. The [theme tokens reference](/reference/theme-tokens/) lists every value of the three themes.
+Colors are `#rrggbb` or `#rrggbbaa`. `selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are drawn under the text, so give them some alpha. The [theme tokens reference](/reference/theme-tokens/) lists every value of the three themes.
 
 ## Token lookup
 
-`tokens` is keyed by tree-sitter capture names: `keyword`, `keyword.return`, `punctuation.bracket`, `markup.heading.1`. Lookup walks the dotted prefixes from the longest, then falls back to `foreground`, so a theme needs only the roots and adds leaves where it wants a distinction.
+`tokens` is keyed by tree-sitter capture names such as `keyword`, `keyword.return`, `punctuation.bracket` or `markup.heading.1`. The lookup walks the dotted prefixes from the longest one down and ends at `foreground`, so a theme only needs the root names and can add a leaf wherever it wants a distinction.
 
-The shipped themes cover every capture the fifteen packages produce. A theme from the nvim-treesitter ecosystem ports by renaming: `@keyword.return` becomes `keyword.return`.
+The built-in themes cover every capture the fifteen packages produce. A theme from the nvim-treesitter ecosystem ports by renaming its keys: `@keyword.return` becomes `keyword.return`.
 
 ## A custom theme
 
-Spread a shipped theme and override:
+Spread a built-in theme and override what you want:
 
 ```ts
 import { githubDark, type Theme } from 'react-native-codepad';
@@ -65,7 +65,8 @@ export const midnight: Theme = {
 };
 ```
 
-- Hoist the object. The prop is compared by identity, so a literal in JSX crosses to native on every render.
-- A theme built from scratch needs the roots: `comment`, `keyword`, `string`, `number`, `function`, `variable`, `type`, `operator`, `punctuation`, `tag`, `attribute`, `constant`, `boolean`, `property`, `module`, `label`, `constructor`, `character` and the `markup.*` keys. Missing roots paint in `foreground`.
+Hoist the object out of the render. The prop is compared by identity, so a literal written in JSX crosses to native on every render.
 
-Bold and italic need a font with those faces. The defaults, `monospace` on Android and `Menlo` on iOS, have them.
+A theme built from scratch needs the root names: `comment`, `keyword`, `string`, `number`, `function`, `variable`, `type`, `operator`, `punctuation`, `tag`, `attribute`, `constant`, `boolean`, `property`, `module`, `label`, `constructor`, `character` and the `markup.*` keys. A missing root paints in `foreground`.
+
+Bold and italic need a font that has those faces. The defaults, `monospace` on Android and `Menlo` on iOS, do.

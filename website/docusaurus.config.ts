@@ -7,7 +7,7 @@ import { prismThemeFrom } from './src/prism/fromEditorTheme';
 const config: Config = {
   title: 'React Native Codepad',
   tagline:
-    'A native code editor for React Native: Kotlin and Swift engines, tree-sitter highlighting, a Nitro binding and no WebView.',
+    'A native code editor for React Native, with its own Kotlin and Swift engines, tree-sitter highlighting and a Nitro binding. No WebView.',
   favicon: 'img/favicon.svg',
   url: 'https://sectiontn.github.io',
   baseUrl: '/react-native-codepad/',
@@ -50,7 +50,7 @@ const config: Config = {
         docsDir: 'docs',
         title: 'react-native-codepad',
         description:
-          'A native code editor for React Native: Kotlin and Swift engines, tree-sitter highlighting, a Nitro binding and no WebView.',
+          'A native code editor for React Native, with its own Kotlin and Swift engines, tree-sitter highlighting and a Nitro binding. No WebView.',
       },
     ],
   ],

@@ -1,60 +1,141 @@
 ---
 title: Performance
-description: Targets, measured numbers and what costs what.
+description: How CodePad handles large documents, what to watch out for in its API, and how to run the benchmarks yourself.
 sidebar_position: 7
 ---
 
-The targets, measured in the example app on its generated JavaScript files:
+CodePad is built to handle large files without making every keystroke or scroll more expensive as the document grows.
 
-| Scenario | Target |
-| --- | --- |
-| Open a 10k line file | First paint within 300 ms |
-| Open a 100k line file | First paint within 1 s, scrolling never waits for highlighting |
-| Typing in a 10k line file | Key handler plus draw under 16 ms at p95 |
-| Fling scroll in a 10k line file | Under 1 percent dropped frames |
-| Memory | Document, parser mirror and layout caches under 3x the text size |
+This guide covers how the editor handles large documents, what to watch out for when using its API, and how to run the benchmarks yourself.
 
-## Measured
+## Large files
 
-Pixel 9a emulator (API 36, host GPU) on an M1 Pro, `debugOptimized` build with Metro attached, a fresh process per run. `yarn bench:scroll`, `yarn bench:memory` and `yarn bench:typing` read the numbers from the device log and `dumpsys`.
+Opening a large file takes time. CodePad has to parse the document, calculate syntax highlighting and lay out the text before it can display everything correctly.
 
-| Measure | Result |
-| --- | --- |
-| First paint, 10k lines | 39, 47, 42 ms |
-| First paint, 100k lines | 150, 181, 143 ms warm, 175 ms cold |
-| Fling scroll, 10k lines, 8 flings | 832 frames, 2 janky (0.24 percent), p50 23 ms, p95 27, p99 28 |
-| Fling scroll, 100k lines during the first parse | 829 frames, 4 janky (0.48 percent), p50 24 ms, p95 27, p99 31 |
-| Typing, 60 keys on 10k lines, key handler plus draw | p50 4 to 7 ms, p95 5 to 11 ms, max 6 to 15 ms over three runs |
-| Typing, key event to end of draw | p50 14 to 15 ms, p95 18 to 19 ms, including the wait for the next vsync |
-| Typing with 120 search matches painted | p50 3 ms, p95 8 ms |
-| Java heap growth for a 100k line file (6.6 MB of UTF-16) | 14.3 MB, 2.2x the text |
-| Search on 100k lines | 274316 literal matches in 165 ms, 54864 regex matches in 103 ms |
+CodePad runs parsing separately from rendering and can display text before syntax highlighting is ready. It also updates syntax incrementally, so editing a line doesn't require parsing the entire document again.
 
-Highlighting never blocks these: the parser runs on its own thread with a time budget on the first parse, and lines paint plain until the first snapshot lands.
+Here are some results from the Android benchmark suite on the `debugOptimized` variant:
 
-## Markdown and injections
+- Opening a 10,000-line file took 27-35 ms.
+- Opening a 100,000-line file took 143-181 ms.
+- Scrolling through a 10,000-line file produced 2 janky frames out of 832.
+- Scrolling through a 100,000-line file while its initial parse was running produced 4 janky frames out of 829.
+- Typing in a 10,000-line file took 5-11 ms for key handling and drawing.
 
-A markdown document is the heaviest case: every paragraph is an injection into the inline grammar and every fenced block one into its language. The engine reparses only the injected trees an edit touched and carries the rest over without a parser call. The bench is the example app's `2k-paragraphs.md`: 2000 paragraphs, a fenced javascript block every tenth, 5880 lines, 2239 injections. Same device and build as above.
+These measurements were taken on an Android emulator running API 36, using `-gpu host` on an M1 Pro chip for GPU acceleration through MoltenVK. The app used the `debugOptimized` build with Metro attached. Results will vary by device and build configuration.
 
-| Measure | Every injection reparsed | Shipped engine |
-| --- | --- | --- |
-| First paint | 43 to 50 ms, 246 ms the first time in a process | same |
-| Typing, a key every 210 ms, edit to snapshot | p50 146 ms, p95 165 ms | p50 3 ms, p95 4 ms warm; p50 7 ms over the first 60 keys of a fresh process |
-| A burst of 60 keys in a quarter second | one snapshot 359 ms after the first key | 17 snapshots during the burst, p50 5 ms each |
-| Key handler plus draw during that typing | p50 3 ms | p50 2 ms, p95 4 ms |
+### Markdown and injected grammars
 
-A burst faster than the pass is cancelled by each key and resolves once at the end; a cancelled pass is never published, so the inline spans never flicker.
+Markdown is more expensive to parse than it might look. A document can contain inline grammar rules, fenced code blocks and language-specific syntax inside those blocks.
+
+We tested a Markdown document containing 2,000 paragraphs, 5,880 lines and 2,239 grammar injections.
+
+When every edit reparsed all injected grammars, updating syntax after a keystroke took 146-165 ms in the measured runs. With CodePad's incremental parsing, warm updates took around 3-4 ms.
+
+The initial parse still has a cost. The difference shows up when editing: CodePad can reuse unaffected syntax information instead of recalculating everything.
+
+## API usage
+
+### Avoid copying the entire document on every change
+
+`onChangeText` gives you the updated document as a string. For large files, retrieving that string on every edit means repeatedly copying the entire document.
+
+Use `onChange` when you only need to know what changed. It provides the edit delta, so you can react to a modification without reading the whole file.
+
+```tsx
+<CodeEditor
+  onChange={(change) => {
+    // Handle the edit without copying the full document.
+  }}
+/>
+```
+
+Use `getText()` when you actually need the complete document, such as when saving or exporting it.
+
+### Read only the text you need
+
+Calling `getText()` creates a copy of the document. This can become expensive when the file contains hundreds of thousands of lines.
+
+For smaller reads, use `getLine()` or `getTextInRange()` instead.
+
+For example, a feature that needs the current line doesn't need to retrieve the entire document just to extract it.
+
+### Keep object props stable
+
+Passing a newly created object on every React render can cause unnecessary updates to the native editor.
+
+This applies to props such as `theme` and `contentInsets`. Keep their references stable when their values haven't changed.
+
+```tsx
+const theme = {
+  // Your theme configuration
+};
+
+const contentInsets = {
+  // Your inset configuration
+};
+```
+
+For configuration that depends on component state, use `useMemo` where appropriate.
+
+### Be careful with automatic height
+
+An editor with automatic height needs to lay out all its lines. A fixed-height editor can focus its layout work on the visible viewport.
+
+For large documents, prefer a constrained editor. Automatic height is better suited to smaller amounts of text.
+
+Soft wrapping also requires measuring visible lines against the available width. When the width changes, such as after rotating a device, those lines need to be laid out again.
+
+### Avoid expensive work in frequent callbacks
+
+`onScroll` and `onSelectionChange` are coalesced to at most one event per frame.
+
+Keep these callbacks lightweight. Updating React state is fine when needed, but avoid running expensive document operations or unrelated computations on every event.
+
+### Account for language initialization
+
+The first editor opened for a language needs to load its language library and compile its queries. Later editors using the same language in that process can reuse the initialized resources.
+
+Keep this in mind when measuring startup performance. A first run and a subsequent run don't necessarily have the same cost.
+
+## Searching large documents
+
+Search performance depends on the document and the number of matches.
+
+In the 100,000-line benchmark, literal search found 274,316 matches in 165 ms. Regex search found 54,864 matches in 103 ms.
+
+Memory usage is another consideration. Loading the 100,000-line document increased Java heap usage by 14.3 MB for 6.6 MB of text.
+
+These are benchmark results, not fixed limits. Use your own documents when evaluating search and memory performance in your application.
 
 ## iOS
 
-The iOS editor is built to the same design: recycled line layers, a layout cache around the viewport, the parser on its own queue with the same first parse budget. `yarn bench:ios scroll`, `memory` and `typing` collect the same measures on the simulator. Simulator numbers say nothing about a phone, so they are kept for regressions; the device numbers come with the first iPhone in the loop. On the simulator the 10k line file types at 3 ms of key handler plus layout and 11 ms from key event to end of draw, p50.
+The iOS editor uses the same general approach: recycled line layers, cached layout around the viewport, and parsing on a separate queue.
 
-## What costs what
+In the iOS simulator, typing in a 10,000-line document took around 3 ms for key handling and layout. Measuring through the end of drawing increased that to around 11 ms in the typical case.
 
-- `onChangeText` copies the whole document after every change. Use `onChange` deltas and `getText()` when you need the text.
-- `getText()` on a multi megabyte document costs the same copy. `getTextInRange()` and `getLine()` are cheap.
-- Soft wrap measures every visible line against the width. A width change (rotation, a resize) relayouts the visible lines once; a height change does not.
-- Nested auto height editors lay out every line. Keep them to a few hundred lines.
-- Object props (`theme`, `contentInsets`) are compared by identity. Hoist them, or they cross to native on every render.
-- `onScroll` and `onSelectionChange` are coalesced to one event per frame; setting React state from them is fine.
-- The first editor with a language pays its library load and query compile once per process.
+Simulator results are useful for checking regressions, but they don't guarantee the same performance on a physical iPhone. If you have one, numbers from it are welcome in an issue.
+
+## Running the benchmarks
+
+With the example app running on an Android emulator, run from the repository root:
+
+```sh
+yarn bench:scroll
+yarn bench:memory
+yarn bench:typing
+```
+
+For iOS:
+
+```sh
+yarn bench:ios scroll
+yarn bench:ios memory
+yarn bench:ios typing
+```
+
+When comparing results, keep the device, build configuration and test conditions consistent. Run each test more than once, and distinguish first-run costs from subsequent runs.
+
+A change that improves one benchmark may affect another. Check typing, scrolling, memory and first paint together before deciding whether an optimization is worth keeping.
+
+Also, make sure you test on AC power, for full performance. On battery, macOS throttles the emulator.

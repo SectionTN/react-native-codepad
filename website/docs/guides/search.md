@@ -1,10 +1,10 @@
 ---
 title: Search
-description: setSearch, find, replace and how matches are painted.
+description: How to set a query, walk the matches and replace them, and how matches are painted.
 sidebar_position: 5
 ---
 
-Search lives in native: set a query, the editor paints every match and keeps them current through edits, and the ref walks and replaces them. A search bar in JavaScript is a few async calls.
+Search lives in native. You set a query, the editor paints every match and keeps them current through edits, and the ref walks and replaces them. A search bar in JavaScript is a few async calls.
 
 ## Query
 
@@ -19,15 +19,15 @@ const { count } = await editor.current.setSearch({
 
 `setSearch` resolves with the match count once the matches are painted.
 
-- `regex`: ICU on both platforms (`java.util.regex` on Android, `NSRegularExpression` on iOS), so Unicode `\w` and `\b`, lookahead, bounded lookbehind and named groups behave the same. A pattern that does not compile rejects the promise and clears the search, so the bar can show the error and keep typing.
-- `caseSensitive`: off by default.
-- `wholeWord`: identifier boundaries (`[A-Za-z0-9_]`) on both ends.
+- `regex` uses ICU on both platforms (`java.util.regex` on Android, `NSRegularExpression` on iOS), so Unicode `\w` and `\b`, lookahead, bounded lookbehind and named groups behave the same. A pattern that does not compile rejects the promise and clears the search, so your bar can show the error while the user keeps typing.
+- `caseSensitive` is off by default.
+- `wholeWord` wants identifier boundaries (`[A-Za-z0-9_]`) on both ends.
 
-Matches never overlap and empty matches are skipped: `a*` on `aaa` is one match. The replacement text is literal, no `$1`.
+Matches never overlap and empty matches are skipped, so `a*` on `aaa` is one match. The replacement text is literal: no `$1`.
 
 ## Walking the matches
 
-`findNext()` and `findPrevious()` select the next or previous match from the caret with wrap around, reveal it, and resolve with `{ index, total }` (`index` 0 based), or `null` without a query or matches. Right after `setSearch`, `findNext()` lands on the match nearest the caret.
+`findNext()` and `findPrevious()` select the next or previous match from the caret, wrapping around, reveal it, and resolve with `{ index, total }` (`index` is 0 based). Without a query or without matches they resolve with `null`. Right after `setSearch`, `findNext()` lands on the match nearest the caret.
 
 ```ts
 const hit = await editor.current.findNext();
@@ -36,9 +36,9 @@ setLabel(hit ? `${hit.index + 1}/${hit.total}` : '0/0');
 
 ## Replacing
 
-`replaceCurrent(text)` replaces the selected match, selects the next one and resolves `true`; when the selection is not a match it resolves `false` and touches nothing, so call `findNext()` first. `replaceAll(text)` replaces every match in one undo group and resolves with the count.
+`replaceCurrent(text)` replaces the selected match, selects the next one and resolves with `true`. When the selection is not a match it resolves with `false` and touches nothing, so call `findNext()` first. `replaceAll(text)` replaces every match in one undo group and resolves with the count.
 
-`clearSearch()` drops the query and the highlights. Search and replace work under `readOnly`, which gates user input only.
+`clearSearch()` drops the query and the highlights. Search and replace work under `readOnly`, which only blocks user input.
 
 ## Painting
 
@@ -46,7 +46,7 @@ Matches are filled with the theme's `searchMatch`, the selected one with `search
 
 ## A find bar
 
-The example app's find bar is one effect per query change and a few buttons. The `live` flag drops a stale resolution when the query changed while a search ran.
+The example app's find bar is one effect per query change and a few buttons. The `live` flag drops a stale result when the query changed while a search was running.
 
 ```tsx
 useEffect(() => {
@@ -72,4 +72,4 @@ useEffect(() => {
 }, [text, regex, caseSensitive, wholeWord]);
 ```
 
-The full component is in the repository under `example/src/components/SearchBar.tsx`. A literal query with a quarter million matches on a 100k line file resolves in under 200 ms; [performance](/guides/performance/) has the numbers.
+The full component is in the repository under `example/src/components/FindBar.tsx`. A literal query with a quarter million matches on a 100k line file resolves in under 200 ms; the [performance guide](/guides/performance/) has the numbers.
