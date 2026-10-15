@@ -4,7 +4,7 @@ description: avoidKeyboard, content insets and a toolbar on the keyboard.
 sidebar_position: 3
 ---
 
-Three things keep the caret visible with the soft keyboard up: `avoidKeyboard`, `contentInsets` for anything you draw over the editor, and a toolbar pinned to the keyboard. The example app's Toolbar tab combines all three.
+Three things keep the caret visible with the soft keyboard up: `avoidKeyboard`, `contentInsets` for anything you draw over the editor, and a toolbar pinned to the keyboard. The example app's keyboard accessory bar combines all three.
 
 ## avoidKeyboard
 
@@ -36,7 +36,7 @@ With `avoidKeyboard` the overlap adds to `contentInsets.bottom`: the toolbar hei
 
 ## A toolbar on the keyboard
 
-The example app pins a key row to the keyboard with react-native-keyboard-controller. The editor takes the toolbar height as its bottom inset; with the keyboard closed the toolbar sits above the home indicator, so the inset covers that band too.
+The example app pins a key row and its status bar to the keyboard with react-native-keyboard-controller. The editor takes the bar's height as its bottom inset; with the keyboard closed the bar sits above the home indicator, so the inset covers that band too.
 
 ```tsx
 import { useMemo, useRef, useState } from 'react';

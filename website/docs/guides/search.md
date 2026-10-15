@@ -44,9 +44,9 @@ setLabel(hit ? `${hit.index + 1}/${hit.total}` : '0/0');
 
 Matches are filled with the theme's `searchMatch`, the selected one with `searchMatchActive`. After an edit the previous matches stay painted, shifted through the change, until the fresh ones arrive on the next frame.
 
-## A search bar
+## A find bar
 
-The example app's search bar is one effect per query change and three buttons. The `live` flag drops a stale resolution when the query changed while a search ran.
+The example app's find bar is one effect per query change and a few buttons. The `live` flag drops a stale resolution when the query changed while a search ran.
 
 ```tsx
 useEffect(() => {

@@ -4,7 +4,7 @@ description: Targets, measured numbers and what costs what.
 sidebar_position: 7
 ---
 
-The targets, measured by the example app's Benchmark tab on generated JavaScript files:
+The targets, measured in the example app on its generated JavaScript files:
 
 | Scenario | Target |
 | --- | --- |
@@ -34,7 +34,7 @@ Highlighting never blocks these: the parser runs on its own thread with a time b
 
 ## Markdown and injections
 
-A markdown document is the heaviest case: every paragraph is an injection into the inline grammar and every fenced block one into its language. The engine reparses only the injected trees an edit touched and carries the rest over without a parser call. The bench is the Benchmark tab's "Markdown 2k" document: 2000 paragraphs, a fenced javascript block every tenth, 5880 lines, 2239 injections. Same device and build as above.
+A markdown document is the heaviest case: every paragraph is an injection into the inline grammar and every fenced block one into its language. The engine reparses only the injected trees an edit touched and carries the rest over without a parser call. The bench is the example app's `2k-paragraphs.md`: 2000 paragraphs, a fenced javascript block every tenth, 5880 lines, 2239 injections. Same device and build as above.
 
 | Measure | Every injection reparsed | Shipped engine |
 | --- | --- | --- |
