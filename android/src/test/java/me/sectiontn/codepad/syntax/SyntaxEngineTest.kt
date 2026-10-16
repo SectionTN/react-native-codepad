@@ -32,6 +32,15 @@ class SyntaxEngineTest {
     }
   }
 
+  // setLanguage can parse the still empty mirror and publish revision 0 before setText runs; skip that snapshot.
+  private fun awaitText(): Snapshot {
+    while (true) {
+      val s = await()
+      if (s.tree.rootNode().endUnit > 0) return s
+      s.close()
+    }
+  }
+
   @Test
   fun publishesSnapshotsForTextAndEdits() {
     val core = EditorCore("let a = 1;")
@@ -39,12 +48,7 @@ class SyntaxEngineTest {
     core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
     engine.setText(core.document.text(), core.document.revision)
-    // setLanguage can publish an empty document snapshot before setText does; skip it.
-    var first = await()
-    while (first.tree.rootNode().endUnit == 0) {
-      first.close()
-      first = await()
-    }
+    val first = awaitText()
     assertEquals(0, first.revision)
     val lang = checkNotNull(LanguageRegistry.resolve("javascript"))
     val spans = Highlighter(lang).spans(first, core.document, 0, 0)
@@ -202,7 +206,7 @@ class SyntaxEngineTest {
     core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
     engine.setText(text, 0)
-    val first = awaitRevision(0)
+    val first = awaitText()
     assertEquals(-1, first.basedOn)
     first.close()
     core.replace(25, 25, "2")
@@ -222,7 +226,7 @@ class SyntaxEngineTest {
     core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
     engine.setText(core.document.text(), 0)
-    awaitRevision(0).close()
+    awaitText().close()
     core.replace(12, 25, "1")
     val snapshot = awaitRevision(1)
     assertTrue(meetsLine(snapshot.changed, 0, 9))
@@ -240,7 +244,7 @@ class SyntaxEngineTest {
     core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
     engine.setText(text, 0)
-    awaitRevision(0).close()
+    awaitText().close()
     val started = CountDownLatch(1)
     val release = CountDownLatch(1)
     executor.execute {
@@ -269,7 +273,7 @@ class SyntaxEngineTest {
     core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("json")
     engine.setText(core.document.text(), 0)
-    awaitRevision(0).close()
+    awaitText().close()
     core.replace(15, 16, "3")
     val snapshot = awaitRevision(1)
     assertEquals(0, snapshot.basedOn)
