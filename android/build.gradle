@@ -121,6 +121,11 @@ android {
   testOptions {
     unitTests.returnDefaultValues = true
     unitTests.all {
+      // test:android runs with -q, which logs no test event by default.
+      testLogging.quiet {
+        events "failed"
+        exceptionFormat "full"
+      }
       inputs.dir("${projectDir}/../tests/vectors")
       systemProperty "codepad.vectorsDir", "${projectDir}/../tests/vectors"
       inputs.dir("${projectDir}/../tests/ime")
