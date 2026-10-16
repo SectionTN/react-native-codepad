@@ -6,7 +6,7 @@ sidebar_position: 3
 
 Three things keep the caret visible while the soft keyboard is up: `avoidKeyboard`, `contentInsets` for anything you draw over the editor, and a toolbar pinned to the keyboard. The example app's key row uses all three.
 
-## avoidKeyboard
+## `avoidKeyboard`
 
 ```tsx
 <CodeEditor style={{ flex: 1 }} avoidKeyboard />
@@ -21,7 +21,7 @@ On Android the prop does nothing in two window modes, on purpose:
 
 `onContentSizeChange` never includes the keyboard overlap. The prop is off by default on both platforms.
 
-## contentInsets
+## `contentInsets`
 
 Style padding on the view is ignored. `contentInsets` is the padding instead: inside the scrollable area, in dp on Android and points on iOS. A bottom inset keeps the caret above a toolbar or a floating button.
 
@@ -36,7 +36,7 @@ With `avoidKeyboard` on, the keyboard overlap is added on top of `contentInsets.
 
 ## A toolbar on the keyboard
 
-For a toolbar that rides the keyboard, use [react-native-keyboard-controller](https://kirillzyusko.github.io/react-native-keyboard-controller/). Its `KeyboardStickyView` keeps the bar on top of the keyboard through the whole animation. The example app pins its key row and status bar that way: the editor takes the bar's height as its bottom inset, and while the keyboard is closed the bar sits above the home indicator, so the inset covers that band too.
+For a toolbar that rides the keyboard, use [react-native-keyboard-controller](https://kirillzyusko.github.io/react-native-keyboard-controller/). Its `KeyboardStickyView` keeps the bar on top of the keyboard through the whole animation. The example app pins its key row and status bar that way: the editor takes the bar's height as its bottom inset, and while the keyboard is closed the bar is above the home indicator, so the inset covers that band too.
 
 ```tsx
 import { useMemo, useRef, useState } from 'react';
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
 });
 ```
 
-If you build the key row with a React Native `ScrollView`, set `keyboardShouldPersistTaps="always"` so a tap on a key does not dismiss the keyboard. Each key calls the ref:
+If you build the key row with a React Native `ScrollView`, set `keyboardShouldPersistTaps="always"` so tapping a key does not dismiss the keyboard. Each key calls the ref:
 
 | Key | Call |
 | --- | --- |
@@ -97,6 +97,6 @@ If you build the key row with a React Native `ScrollView`, set `keyboardShouldPe
 
 ## Suggestions and focus
 
-`suggestions` controls what the keyboard offers: `off` (the default) asks for no suggestions, `forceOff` also kills composition on most Android keyboards, and `on` allows autocorrect. Code wants `off`, a markdown editor may want `on`. On iOS `forceOff` is the same as `off`. Composing keyboards (Japanese, Chinese) work in every mode.
+`suggestions` controls what the keyboard offers: `off` (the default) asks for no suggestions, `forceOff` also kills composition on most Android keyboards, and `on` allows autocorrect. Code wants `off`. A Markdown editor might want `on`. On iOS `forceOff` is the same as `off`. Composing keyboards (Japanese, Chinese) work in every mode.
 
-`autoFocus` focuses the editor once the view is attached. `focus()` and `blur()` do it on demand, and `focus()` shows no keyboard under `readOnly`.
+`autoFocus` focuses the editor once the view is attached. `focus()` and `blur()` do it on demand, and `focus()` doesn't open the keyboard under `readOnly`.

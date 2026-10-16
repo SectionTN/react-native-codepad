@@ -4,7 +4,7 @@ description: How to set a query, walk the matches and replace them, and how matc
 sidebar_position: 5
 ---
 
-Search lives in native. You set a query, the editor paints every match and keeps them current through edits, and the ref walks and replaces them. A search bar in JavaScript is a few async calls.
+Search runs in the native engine. You set a query, the editor paints every match and keeps them current through edits, and the ref walks and replaces them. A search bar in JavaScript is a few async calls.
 
 ## Query
 
@@ -36,13 +36,13 @@ setLabel(hit ? `${hit.index + 1}/${hit.total}` : '0/0');
 
 ## Replacing
 
-`replaceCurrent(text)` replaces the selected match, selects the next one and resolves with `true`. When the selection is not a match it resolves with `false` and touches nothing, so call `findNext()` first. `replaceAll(text)` replaces every match in one undo group and resolves with the count.
+`replaceCurrent(text)` replaces the selected match, selects the next one and resolves with `true`. When the selection is not a match it resolves with `false` and doesn't change the document, so call `findNext()` first. `replaceAll(text)` replaces every match in one undo group and resolves with the count.
 
 `clearSearch()` drops the query and the highlights. Search and replace work under `readOnly`, which only blocks user input.
 
 ## Painting
 
-Matches are filled with the theme's `searchMatch`, the selected one with `searchMatchActive`. After an edit the previous matches stay painted, shifted through the change, until the fresh ones arrive on the next frame.
+Matches are filled with the theme's `searchMatch`, the selected one with `searchMatchActive`. After an edit the previous matches remain painted, shifted through the change, until the fresh ones arrive on the next frame.
 
 ## A find bar
 
@@ -72,4 +72,4 @@ useEffect(() => {
 }, [text, regex, caseSensitive, wholeWord]);
 ```
 
-The full component is in the repository under `example/src/components/FindBar.tsx`. A literal query with a quarter million matches on a 100k line file resolves in under 200 ms; the [performance guide](/guides/performance/) has the numbers.
+The full component is in the repository under `example/src/components/FindBar.tsx`. A literal query with a quarter million matches on a 100,000-line file resolves in under 200 ms. The [performance guide](/guides/performance/) has the numbers.

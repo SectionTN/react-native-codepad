@@ -10,23 +10,23 @@ Each language is a compiled tree-sitter grammar plus the nvim-treesitter queries
 
 | `language` | Package |
 | --- | --- |
-| `c` | react-native-codepad-lang-c |
-| `css` | react-native-codepad-lang-css |
-| `go` | react-native-codepad-lang-go |
-| `html` | react-native-codepad-lang-html |
-| `java` | react-native-codepad-lang-java |
-| `javascript` | react-native-codepad-lang-javascript |
-| `json` | react-native-codepad-lang-json |
-| `kotlin` | react-native-codepad-lang-kotlin |
-| `markdown` | react-native-codepad-lang-markdown |
-| `python` | react-native-codepad-lang-python |
-| `rust` | react-native-codepad-lang-rust |
-| `swift` | react-native-codepad-lang-swift |
-| `tsx` | react-native-codepad-lang-tsx |
-| `typescript` | react-native-codepad-lang-typescript |
-| `yaml` | react-native-codepad-lang-yaml |
+| `c` | `react-native-codepad-lang-c` |
+| `css` | `react-native-codepad-lang-css` |
+| `go` | `react-native-codepad-lang-go` |
+| `html` | `react-native-codepad-lang-html` |
+| `java` | `react-native-codepad-lang-java` |
+| `javascript` | `react-native-codepad-lang-javascript` |
+| `json` | `react-native-codepad-lang-json` |
+| `kotlin` | `react-native-codepad-lang-kotlin` |
+| `markdown` | `react-native-codepad-lang-markdown` |
+| `python` | `react-native-codepad-lang-python` |
+| `rust` | `react-native-codepad-lang-rust` |
+| `swift` | `react-native-codepad-lang-swift` |
+| `tsx` | `react-native-codepad-lang-tsx` |
+| `typescript` | `react-native-codepad-lang-typescript` |
+| `yaml` | `react-native-codepad-lang-yaml` |
 
-Pass the id as `language`. The [reference](/reference/languages/) lists each grammar's revision and capture names.
+Pass the id as `language`. The [language packages reference](/reference/languages/) lists each grammar's revision and capture names.
 
 Use `markdown`, not `markdown_inline`: the inline grammar is reached through injection.
 
@@ -41,11 +41,11 @@ const installed = Codepad.availableLanguages();
 
 ## Plain text fallback
 
-A `language` with no installed package renders as plain text in `foreground` and logs one warning. Nothing throws. Switching `language` on a live editor reparses the document.
+A `language` with no installed package renders as plain text in `foreground` and logs one warning. It doesn't throw. Switching `language` on a live editor reparses the document.
 
 ## Injections
 
-A grammar's injection query hands ranges to another language: fenced blocks in markdown, `<script>` and `<style>` in html, `css` and `html` tagged templates in javascript, markdown front matter. The name comes from the document or from the query, is lowercased, and goes through this table before the registry looks for a package:
+A grammar's injection query hands ranges to another language: fenced blocks in Markdown, `<script>` and `<style>` in HTML, `css` and `html` tagged templates in JavaScript, Markdown front matter. The name comes from the document or from the query, is converted to lowercase, and goes through this table before the registry looks for a package:
 
 | Name in the source | Resolves to |
 | --- | --- |
@@ -61,9 +61,9 @@ A grammar's injection query hands ranges to another language: fenced blocks in m
 | `md` | `markdown` |
 | `h` | `c` |
 
-A name with no package keeps the host language's colors. `cpp`, `bash`, `sh`, `sql`, `graphql`, `text` and the rest of nvim-treesitter's list stay silent, and any other name logs the fallback warning once.
+A name with no package keeps the host language's colors. A name from nvim-treesitter's list (`cpp`, `bash`, `sh`, `sql`, `graphql`, `text` and the rest) doesn't log a warning. Any other name logs the fallback warning once.
 
-- Injections go one level deep: a javascript block inside markdown highlights, an html template inside that block does not.
+- Injections go one level deep: a JavaScript block inside Markdown highlights, an HTML template inside that block does not.
 - `${...}` substitutions inside a tagged template are parsed by the injected language.
 - Injected trees survive edits and reparse only when their own range changed. The [performance guide](/guides/performance/) has the numbers.
 
@@ -73,16 +73,16 @@ One native library per ABI, loaded on first use. On `arm64-v8a` in a release bui
 
 | Package | Library |
 | --- | --- |
-| kotlin | 5.5 MB |
-| swift | 4.0 MB |
-| tsx, typescript | 1.4 MB each |
-| rust | 1.1 MB |
-| markdown | 0.7 MB |
-| c | 0.6 MB |
-| java, javascript, python | 0.4 MB each |
-| go, yaml | 0.2 MB each |
-| css | 0.1 MB |
-| html, json | under 0.1 MB |
+| `kotlin` | 5.5 MB |
+| `swift` | 4.0 MB |
+| `tsx`, `typescript` | 1.4 MB each |
+| `rust` | 1.1 MB |
+| `markdown` | 0.7 MB |
+| `c` | 0.6 MB |
+| `java`, `javascript`, `python` | 0.4 MB each |
+| `go`, `yaml` | 0.2 MB each |
+| `css` | 0.1 MB |
+| `html`, `json` | under 0.1 MB |
 
 An app bundle splits libraries per ABI, so a device downloads one set.
 

@@ -4,7 +4,7 @@ description: Every prop of CodeEditor with its type, its default and what it doe
 sidebar_position: 1
 ---
 
-`CodeEditor` takes every React Native `ViewProps` plus the props below. `style` sizes the editor like any other view. Style padding is ignored, `contentInsets` is the padding instead. The callbacks are on the [events page](/reference/events/).
+`CodeEditor` takes every React Native `ViewProps` plus the props below. `style` sizes the editor like any other view. Style padding is ignored. `contentInsets` is the padding instead. The callbacks are on the [events page](/reference/events/).
 
 ## Document
 
@@ -19,7 +19,7 @@ sidebar_position: 1
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `theme` | `Theme` | `githubLight` | The colors. Hoist the object, it is compared by identity. See [theme tokens](/reference/theme-tokens/). |
-| `fontFamily` | `string` | `monospace` on Android, `Menlo` on iOS | The font, by name. Fonts linked with react-native-asset or expo-font resolve by name. |
+| `fontFamily` | `string` | `monospace` on Android, `Menlo` on iOS | The font, by name. Fonts linked with `react-native-asset` or `expo-font` resolve by name. |
 | `fontSize` | `number` | `14` | In dp on Android and points on iOS. |
 | `lineHeight` | `number` | `1.4` | A multiplier of the font size. The row height is `round(fontSize * lineHeight)`. |
 | `lineNumbers` | `boolean` | `true` | Shows the line number gutter. |
@@ -34,9 +34,9 @@ sidebar_position: 1
 | --- | --- | --- | --- |
 | `tabSize` | `number` | `4` | The width of one indentation level. |
 | `insertSpaces` | `boolean` | `true` | Indents with spaces. Off indents with tabs. |
-| `autoIndent` | `boolean` | `true` | A newline keeps the indentation of the line above and adds a level inside an open bracket. |
+| `autoIndent` | `boolean` | `true` | A newline keeps the indentation of the line before it and adds a level inside an open bracket. |
 | `autoCloseBrackets` | `boolean` | `true` | Closes pairs as you type, skips over a closer you type yourself, wraps a selection, and removes an empty pair on Backspace. |
-| `suggestions` | `Suggestions` | `'off'` | What the keyboard offers: `off` asks for none, `forceOff` also kills composition on most Android keyboards, `on` allows autocorrect. On iOS `forceOff` is the same as `off`. |
+| `suggestions` | `Suggestions` | `'off'` | Controls what the keyboard offers. `off` asks for none, `forceOff` also kills composition on most Android keyboards and `on` allows autocorrect. On iOS `forceOff` is the same as `off`. |
 | `autoFocus` | `boolean` | `false` | Focuses the editor and shows the keyboard once the view is attached. |
 
 ## Scrolling and keyboard
