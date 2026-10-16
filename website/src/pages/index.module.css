@@ -318,6 +318,14 @@
   text-decoration: none;
 }
 
+@media (pointer: coarse) {
+  .chips li > * {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
 /* Final call */
 
 .cta {

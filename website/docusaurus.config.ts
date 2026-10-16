@@ -98,6 +98,7 @@ const config: Config = {
       logo: {
         alt: 'React Native CodePad',
         src: 'img/logo.svg',
+        srcDark: 'img/logo-dark.svg',
       },
       items: [
         { type: 'docSidebar', sidebarId: 'docs', label: 'Docs', position: 'left' },
