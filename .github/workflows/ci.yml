@@ -107,6 +107,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/.ghcup /opt/ghc /opt/hostedtoolcache/CodeQL /usr/share/swift /usr/local/share/boost
+          NDK=$(sed -n 's/.*ndkVersion = "\(.*\)"/\1/p' example/android/build.gradle)
+          echo "NDK_VERSION=$NDK" >> "$GITHUB_ENV"
+          find "$ANDROID_HOME/ndk" -mindepth 1 -maxdepth 1 ! -name "$NDK" ! -name "$(basename "$ANDROID_NDK_HOME")" -exec sudo rm -rf {} +
+          sudo docker image prune --all --force > /dev/null
+          df -h /
+
       - name: Setup
         uses: ./.github/actions/setup
 
@@ -137,10 +147,12 @@ jobs:
           java-version: '17'
 
       - name: Finalize Android SDK
-        if: env.turbo_cache_hit != 1
         run: |
           /bin/bash -c "yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null"
-
+          # The NDK download sometimes arrives truncated; the JVM tests need it too.
+          for attempt in 1 2 3; do
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" > /dev/null && break
+          done
 
       - name: Cache Gradle
         if: env.turbo_cache_hit != 1
