@@ -32,6 +32,7 @@
   --cp-text: #1f2328;
   --cp-muted: #656d76;
   --cp-accent: #bc4c00;
+  --cp-accent-text: #9a3d00;
   --cp-accent-hover: #953800;
   --cp-accent-soft: rgba(188, 76, 0, 0.12);
   --cp-accent-contrast: #ffffff;
@@ -92,7 +93,8 @@
   --search-local-modal-background: var(--cp-bg);
 }
 
-[data-theme="dark"] {
+/* Infima defines its dark variables on html[data-theme], so the override needs that specificity. */
+html[data-theme="dark"] {
   --cp-bg: #0d1117;
   --cp-surface: #161b22;
   --cp-surface-2: #1c222b;
@@ -101,6 +103,7 @@
   --cp-text: #e6edf3;
   --cp-muted: #8b949e;
   --cp-accent: #f0883e;
+  --cp-accent-text: #f0883e;
   --cp-accent-hover: #ffa657;
   --cp-accent-soft: rgba(240, 136, 62, 0.16);
   --cp-accent-contrast: #0d1117;
@@ -165,6 +168,12 @@ p {
   letter-spacing: -0.01em;
 }
 
+.navbar__brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 .navbar__logo {
   height: 22px;
 }
@@ -225,7 +234,7 @@ p {
 }
 
 .menu__link--active:not(.menu__link--sublist) {
-  color: var(--cp-accent);
+  color: var(--cp-accent-text);
   font-weight: 500;
 }
 
@@ -269,6 +278,13 @@ p {
   margin-top: 0.35rem;
 }
 
+/* A link inside prose is underlined, so color is not its only cue. */
+.markdown :is(p, li, td, th) > a:not(.hash-link) {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+}
+
 code {
   border: 1px solid var(--cp-border);
   padding: 0.12rem 0.35rem;
@@ -280,6 +296,13 @@ pre code {
   border: 0;
   padding: 0;
   font-weight: 400;
+}
+
+/* An identifier in the table of contents reads as mono text, like a heading. */
+.table-of-contents code {
+  border: 0;
+  padding: 0;
+  background: transparent;
 }
 
 /* An identifier as a heading reads as mono text, not as a pill. */
@@ -339,15 +362,20 @@ pre code {
 table {
   display: table;
   width: 100%;
+  margin-bottom: 0;
   font-size: 0.9375rem;
 }
 
-/* Below the sidebar breakpoint a wide table scrolls inside the column instead of widening the page. */
-@media (max-width: 996px) {
-  table {
-    display: block;
-    overflow-x: auto;
-  }
+/* The focusable scroll container around every Markdown table (src/theme/MDXComponents). */
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin-bottom: var(--ifm-spacing-vertical);
+}
+
+.table-scroll:focus-visible {
+  outline: 2px solid var(--cp-link);
+  outline-offset: 2px;
 }
 
 table th {
@@ -370,6 +398,18 @@ table th {
 
 .theme-edit-this-page {
   color: var(--cp-muted);
+}
+
+/* Secondary links reach 44 px on a coarse pointer, as layout. */
+@media (pointer: coarse) {
+  .breadcrumbs__link,
+  .theme-edit-this-page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /* Footer */
