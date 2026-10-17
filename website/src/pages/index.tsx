@@ -144,18 +144,34 @@ function Hero() {
 function Section({
   title,
   lead,
+  aside,
   children,
 }: {
   title: string;
   lead?: ReactNode;
-  children: ReactNode;
+  aside?: ReactNode;
+  children?: ReactNode;
 }) {
+  const head = (
+    <div className={styles.sectionHead}>
+      <h2>{title}</h2>
+      {lead && <p>{lead}</p>}
+      {aside && children}
+    </div>
+  );
+  if (aside) {
+    return (
+      <section className={styles.section}>
+        <div className={styles.split}>
+          {head}
+          <div>{aside}</div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className={styles.section}>
-      <div className={styles.sectionHead}>
-        <h2>{title}</h2>
-        {lead && <p>{lead}</p>}
-      </div>
+      {head}
       {children}
     </section>
   );
@@ -224,11 +240,13 @@ export default function Home() {
         <Section
           title="Tree-sitter highlighting, one package per language."
           lead="Install a language package and pass its id. Your app carries only the languages it uses."
+          aside={
+            <div className={styles.codeCard}>
+              <CodeBlock language="tsx">{highlight}</CodeBlock>
+            </div>
+          }
         >
           <Chips items={LANGUAGES} to="/reference/languages/" />
-          <div className={styles.codeCard}>
-            <CodeBlock language="tsx">{highlight}</CodeBlock>
-          </div>
         </Section>
 
         <Section
@@ -250,11 +268,12 @@ export default function Home() {
         <Section
           title="Follows the keyboard, frame by frame."
           lead="The editor insets itself by the keyboard's overlap and follows the keyboard animation frame by frame."
-        >
-          <div className={styles.codeCard}>
-            <CodeBlock language="tsx">{keyboard}</CodeBlock>
-          </div>
-        </Section>
+          aside={
+            <div className={styles.codeCard}>
+              <CodeBlock language="tsx">{keyboard}</CodeBlock>
+            </div>
+          }
+        />
 
         <Section title="And it works with what you use.">
           <Chips items={WORKS_WITH} />

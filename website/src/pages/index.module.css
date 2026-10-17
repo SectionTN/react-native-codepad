@@ -16,27 +16,6 @@
   padding: clamp(4rem, 9vw, 8rem) 0 clamp(3rem, 7vw, 5rem);
 }
 
-.eyebrow {
-  display: inline-block;
-  margin-bottom: 1.5rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 6px;
-  background: var(--cp-accent);
-  color: var(--cp-accent-contrast);
-  font-family: var(--cp-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-decoration: none;
-}
-
-.eyebrow:hover {
-  background: var(--cp-accent-hover);
-  color: var(--cp-accent-contrast);
-  text-decoration: none;
-}
-
 .headline {
   max-width: 16ch;
   font-size: clamp(2.75rem, 7vw, 5.25rem);
@@ -186,6 +165,22 @@
   margin: 0;
 }
 
+/* Copy beside its code from the sidebar breakpoint up, one column below it. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.split .sectionHead {
+  margin-bottom: 0;
+}
+
+.split .codeCard {
+  margin-top: 0;
+}
+
 /* Speed */
 
 .bars {
@@ -300,6 +295,10 @@
   padding: 0;
 }
 
+.sectionHead > .chips {
+  margin-top: 1.5rem;
+}
+
 .chips li > * {
   display: inline-block;
   padding: 0.4rem 0.85rem;
@@ -322,6 +321,8 @@
   .chips li > * {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    min-width: 44px;
     min-height: 44px;
   }
 }
@@ -349,5 +350,10 @@
   .figures,
   .checklist {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 640px);
+    gap: 3rem;
   }
 }
