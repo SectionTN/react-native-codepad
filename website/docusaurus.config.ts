@@ -67,6 +67,13 @@ const config: Config = {
   ],
   themeConfig: {
     image: 'img/og.png',
+    metadata: [
+      {
+        name: 'description',
+        content:
+          'A native code editor for React Native, with its own Kotlin and Swift engines, tree-sitter highlighting and a Nitro binding. No WebView.',
+      },
+    ],
     colorMode: {
       defaultMode: 'dark',
       respectPrefersColorScheme: true,

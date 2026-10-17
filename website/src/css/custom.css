@@ -279,7 +279,8 @@ p {
 }
 
 /* A link inside prose is underlined, so color is not its only cue. */
-.markdown :is(p, li, td, th) > a:not(.hash-link) {
+.markdown :is(p, li, td, th) > a:not(.hash-link),
+.not-found a {
   text-decoration: underline;
   text-underline-offset: 0.18em;
   text-decoration-thickness: 1px;
@@ -378,6 +379,11 @@ table {
   outline-offset: 2px;
 }
 
+/* A name in a table cell stays on one line; the container scrolls instead. */
+.markdown .table-scroll code {
+  white-space: nowrap;
+}
+
 table th {
   font-weight: 600;
   text-align: left;
@@ -402,6 +408,18 @@ table th {
 
 /* Secondary links reach 44 px on a coarse pointer, as layout. */
 @media (pointer: coarse) {
+  [class*="searchQueryInput"] {
+    min-height: 44px;
+  }
+
+  .table-scroll td > a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
   .breadcrumbs__link,
   .theme-edit-this-page {
     display: inline-flex;
