@@ -13,7 +13,7 @@ yarn host:treesitter && yarn test:android  # the Kotlin suite on the JVM, vector
 yarn test:swift                            # the Swift suites on macOS, vectors and iOS keyboard recordings included
 yarn example start --port 8081             # Metro
 yarn example android                       # the example on the running emulator, debugOptimized
-yarn example ios --udid <udid>             # the example on an iOS simulator
+yarn example ios --device <udid>           # the example on an iOS simulator
 yarn test:device                           # the instrumented tests on the emulator
 yarn test:ios                              # the XCTest suites on the simulator
 yarn gen:languages                         # regenerate the language packages

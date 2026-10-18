@@ -71,7 +71,7 @@ For the simulator loop, start Metro and run the example on an iOS 17 simulator. 
 
 ```sh
 yarn example start --port 8081
-yarn example ios --udid <udid>
+yarn example ios --device <udid>
 ```
 
 | Command | Does |
