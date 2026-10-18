@@ -41,7 +41,8 @@ const OPTIONS: { option: FindOption; label: string }[] = [
 ];
 
 // The system find panel as the model: the options live in the field's own menu, which leaves the
-// replace row its width; glass buttons around capsule fields.
+// replace row its width; glass buttons around capsule fields. The surface behind it belongs to the
+// chrome container, so the top bar sits on the same band.
 export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
   const palette = IOS[scheme];
   const safe = useSafeAreaInsets();
@@ -66,16 +67,7 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
   ];
   const optionsColor = anyOption ? palette.label : palette.secondaryLabel;
   return (
-    <View
-      style={[
-        styles.bar,
-        {
-          backgroundColor: `${palette.systemBackground}D9`,
-          paddingLeft: safe.left,
-          paddingRight: safe.right,
-        },
-      ]}
-    >
+    <View style={[styles.bar, { paddingLeft: safe.left, paddingRight: safe.right }]}>
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <VStack
           spacing={8}

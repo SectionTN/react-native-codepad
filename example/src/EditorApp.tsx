@@ -10,7 +10,7 @@ import { GoToLine } from './chrome/GoToLine';
 import { ICONS } from './chrome/icons';
 import { SettingsSheet } from './chrome/SettingsSheet';
 import { TopBar } from './chrome/TopBar';
-import { schemeFor, topInsetFor } from './chrome/theme';
+import { chromeBand, schemeFor, topInsetFor } from './chrome/theme';
 import type { FileGroup, MenuItem } from './chrome/types';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
 import { describeSelection } from './selection';
@@ -161,7 +161,10 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <View
-        style={styles.chrome}
+        style={[
+          styles.chrome,
+          findOpen && Platform.OS === 'ios' && { backgroundColor: chromeBand(scheme) },
+        ]}
         pointerEvents="box-none"
         onLayout={(e) => setTopHeight(e.nativeEvent.layout.height)}
       >

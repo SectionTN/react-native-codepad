@@ -66,3 +66,8 @@ export function schemeFor(theme: Theme): Scheme {
 export function topInsetFor(safeTop: number): number {
   return Math.max(safeTop, 8);
 }
+
+/** The translucent surface behind the whole top chrome while the find bar is open. */
+export function chromeBand(scheme: Scheme): string {
+  return `${IOS[scheme].systemBackground}D9`;
+}
