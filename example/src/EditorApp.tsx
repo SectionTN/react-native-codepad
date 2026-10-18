@@ -1,15 +1,16 @@
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { CodeEditor, type CodeEditorRef } from 'react-native-codepad';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { chromeFor } from './chrome';
 import { BottomBar } from './chrome/BottomBar';
 import { FindBar } from './chrome/FindBar';
 import { GoToLine } from './chrome/GoToLine';
 import { ICONS } from './chrome/icons';
 import { SettingsSheet } from './chrome/SettingsSheet';
 import { TopBar } from './chrome/TopBar';
+import { schemeFor } from './chrome/theme';
 import type { FileGroup, MenuItem } from './chrome/types';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
 import { describeSelection } from './selection';
@@ -48,7 +49,7 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
 
   const file = fileById(fileId);
   const theme = themeById(themeId);
-  const chrome = useMemo(() => chromeFor(theme), [theme]);
+  const scheme = schemeFor(theme);
   // Loaded once per open; the generated files are built here, so the open time covers them.
   const text = useMemo(() => file.load(), [file]);
   // iOS floats its bars over the editor, so the document starts below them and scrolls under.
@@ -148,19 +149,15 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
   ];
 
   return (
-    <View style={[styles.screen, { backgroundColor: chrome.background }]}>
-      <StatusBar
-        barStyle={chrome.scheme === 'dark' ? 'light-content' : 'dark-content'}
-        translucent
-        backgroundColor="transparent"
-      />
+    <View style={[styles.screen, { backgroundColor: theme.background }]}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <View
         style={styles.chrome}
         pointerEvents="box-none"
         onLayout={(e) => setTopHeight(e.nativeEvent.layout.height)}
       >
         <TopBar
-          scheme={chrome.scheme}
+          scheme={scheme}
           background={theme.background}
           topInset={safe.top}
           groups={GROUPS}
@@ -175,7 +172,7 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
         />
         {findOpen ? (
           <FindBar
-            scheme={chrome.scheme}
+            scheme={scheme}
             editor={editor}
             onStatus={onStatus}
             onClose={() => setFindOpen(false)}
@@ -212,7 +209,7 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
           }
         />
         <BottomBar
-          scheme={chrome.scheme}
+          scheme={scheme}
           editor={editor}
           keyboardVisible={keyboardVisible}
           bottomInset={safe.bottom}
@@ -229,14 +226,14 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
         />
       </View>
       <SettingsSheet
-        scheme={chrome.scheme}
+        scheme={scheme}
         open={sheet === 'settings'}
         onClose={() => setSheet(null)}
         settings={settings}
         onChange={patchSettings}
       />
       <GoToLine
-        scheme={chrome.scheme}
+        scheme={scheme}
         open={sheet === 'goToLine'}
         lineCount={lineCount}
         onClose={() => setSheet(null)}
