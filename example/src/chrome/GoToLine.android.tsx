@@ -1,17 +1,20 @@
 import {
   AlertDialog,
+  Column,
   Host,
   OutlinedTextField,
   Text,
   TextButton,
   useNativeState,
 } from '@expo/ui/jetpack-compose';
+import { fillMaxWidth } from '@expo/ui/jetpack-compose/modifiers';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { parseLine } from './lineInput';
 import type { GoToLineProps } from './types';
 
-// A Material dialog with one outlined field and two text buttons.
+// A Material dialog with one outlined field and two text buttons. The dialog composes only its
+// slots, so the field lives in the text slot under the range.
 export function GoToLine({ scheme, open, lineCount, onClose, onGo }: GoToLineProps) {
   const [text, setText] = useState('');
   const value = useNativeState('');
@@ -28,13 +31,20 @@ export function GoToLine({ scheme, open, lineCount, onClose, onGo }: GoToLinePro
             <Text>Go to line</Text>
           </AlertDialog.Title>
           <AlertDialog.Text>
-            <Text>{`1 to ${lineCount}`}</Text>
+            <Column verticalArrangement={{ spacedBy: 16 }}>
+              <Text>{`1 to ${lineCount}`}</Text>
+              <OutlinedTextField
+                value={value}
+                onValueChange={setText}
+                autoFocus
+                modifiers={[fillMaxWidth()]}
+              >
+                <OutlinedTextField.Label>
+                  <Text>Line</Text>
+                </OutlinedTextField.Label>
+              </OutlinedTextField>
+            </Column>
           </AlertDialog.Text>
-          <OutlinedTextField value={value} onValueChange={setText} autoFocus>
-            <OutlinedTextField.Label>
-              <Text>Line</Text>
-            </OutlinedTextField.Label>
-          </OutlinedTextField>
           <AlertDialog.ConfirmButton>
             <TextButton onClick={go}>
               <Text>Go</Text>
