@@ -2,7 +2,7 @@ import Foundation
 import os
 
 /// One user default turns on the paint and parse log lines the bench reads, debug builds only:
-/// xcrun simctl spawn <udid> defaults write codepad.example codepad_debug -bool YES
+/// xcrun simctl spawn <udid> defaults write me.sectiontn.codepad.example codepad_debug -bool YES
 enum DebugSwitch {
   static let log = Logger(subsystem: "me.sectiontn.codepad", category: "paint")
 

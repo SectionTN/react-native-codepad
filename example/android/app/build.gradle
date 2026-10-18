@@ -79,7 +79,7 @@ android {
 
     namespace "codepad.example"
     defaultConfig {
-        applicationId "codepad.example"
+        applicationId "me.sectiontn.codepad.example"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

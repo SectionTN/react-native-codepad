@@ -6,7 +6,7 @@ set -euo pipefail
 
 cmd=${1:-scroll}
 udid=${2:-${CODEPAD_IOS_UDID:-C337C80F-5873-4156-B2AC-D9E22BC6ADFD}}
-bundle=${CODEPAD_BUNDLE:-codepad.example}
+bundle=${CODEPAD_BUNDLE:-me.sectiontn.codepad.example}
 seconds=${CODEPAD_BENCH_SECONDS:-30}
 
 summary() {

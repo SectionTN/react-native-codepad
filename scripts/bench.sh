@@ -3,7 +3,7 @@
 # Usage: scripts/bench.sh scroll [swipes]   or   scripts/bench.sh memory   or   scripts/bench.sh typing [chars]
 set -euo pipefail
 
-pkg=${CODEPAD_PACKAGE:-codepad.example}
+pkg=${CODEPAD_PACKAGE:-me.sectiontn.codepad.example}
 cmd=${1:-scroll}
 
 case "$cmd" in

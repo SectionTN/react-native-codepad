@@ -23,7 +23,7 @@ tests.build_configurations.each do |config|
     "HEADER_SEARCH_PATHS" => "$(inherited) \"${PODS_ROOT}/Headers/Private/NitroModules\"",
     "IPHONEOS_DEPLOYMENT_TARGET" => "17.0",
     "MARKETING_VERSION" => "1.0",
-    "PRODUCT_BUNDLE_IDENTIFIER" => "codepad.example.tests",
+    "PRODUCT_BUNDLE_IDENTIFIER" => "me.sectiontn.codepad.example.tests",
     "PRODUCT_NAME" => "$(TARGET_NAME)",
     "SWIFT_OBJC_INTEROP_MODE" => "objcxx",
     "SWIFT_VERSION" => "5.0",

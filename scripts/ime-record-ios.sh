@@ -5,7 +5,7 @@ set -euo pipefail
 
 name=${1:?usage: $0 <name> [udid]}
 udid=${2:-${CODEPAD_IOS_UDID:-C337C80F-5873-4156-B2AC-D9E22BC6ADFD}}
-bundle=${CODEPAD_BUNDLE:-codepad.example}
+bundle=${CODEPAD_BUNDLE:-me.sectiontn.codepad.example}
 root=$(cd "$(dirname "$0")/.." && pwd)
 raw=$(mktemp)
 trap 'xcrun simctl spawn "$udid" defaults write "$bundle" codepad_debug -bool false; rm -f "$raw"' EXIT
