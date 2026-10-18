@@ -23,6 +23,10 @@ export const ICONS = {
   previous: { ios: 'chevron.up', android: require('@expo/material-symbols/keyboard_arrow_up.xml') },
   next: { ios: 'chevron.down', android: require('@expo/material-symbols/keyboard_arrow_down.xml') },
   back: { ios: 'chevron.left', android: require('@expo/material-symbols/arrow_back.xml') },
+  chevronRight: {
+    ios: 'chevron.right',
+    android: require('@expo/material-symbols/keyboard_arrow_right.xml'),
+  },
   left: { ios: 'arrow.left', android: require('@expo/material-symbols/arrow_back.xml') },
   right: { ios: 'arrow.right', android: require('@expo/material-symbols/arrow_forward.xml') },
   up: { ios: 'arrow.up', android: require('@expo/material-symbols/arrow_upward.xml') },
