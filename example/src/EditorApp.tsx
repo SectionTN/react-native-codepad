@@ -19,6 +19,7 @@ import { TopBar } from './components/TopBar';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
 import { ICONS } from './icons';
 import type { FileGroup, MenuChoice, MenuItem } from './native/types';
+import { describeSelection } from './selection';
 import { DEFAULT_SETTINGS, type Settings } from './settings';
 
 type ThemeChoice = MenuChoice & { theme: Theme };
@@ -84,15 +85,6 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
   const positionOf = (offset: number) => {
     const p = editor.current?.offsetToPosition(offset);
     return { line: (p?.line ?? 0) + 1, column: (p?.column ?? 0) + 1 };
-  };
-
-  // A caret reads Ln 8, Col 18; a selection on one line Ln 8, Col 18 to 25; across lines Ln 8:18 to 10:3.
-  const describeSelection = (anchor: number, head: number) => {
-    const a = positionOf(anchor);
-    if (anchor === head) return `Ln , Col `;
-    const h = positionOf(head);
-    if (a.line === h.line) return `Ln , Col  to `;
-    return `Ln : to :`;
   };
 
   // Worker time for a literal and a regex query over the open document, from the JS side.
@@ -215,7 +207,9 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
             setCanRedo(editor.current?.canRedo() ?? false);
             setLineCount(editor.current?.getLineCount() ?? 1);
           }}
-          onSelectionChange={(s) => setPosition(describeSelection(s.anchor, s.head))}
+          onSelectionChange={(s) =>
+            setPosition(describeSelection(positionOf(s.anchor), positionOf(s.head)))
+          }
         />
         <BottomBar
           chrome={chrome}
