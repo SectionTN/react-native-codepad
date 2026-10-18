@@ -140,7 +140,15 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
       icon: ICONS.timer,
       onPress: () => void timeSearch(),
     },
-    { id: 'nested', label: 'Nested scroll demo', icon: ICONS.nested, onPress: onNested },
+    {
+      id: 'nested',
+      label: 'Nested scroll demo',
+      icon: ICONS.nested,
+      onPress: () => {
+        void editor.current?.blur();
+        onNested();
+      },
+    },
     {
       id: 'settings',
       label: 'Settings',

@@ -8,18 +8,19 @@ import { DEFAULT_THEME_ID, themeById } from './themes';
 
 type Screen = 'editor' | 'nested';
 
-// The editor stays mounted behind the demo so its document and settings survive the visit.
+// The demo covers the editor instead of hiding it: Fabric unmounts a display none subtree, which
+// would recreate the native editor and drop the document.
 export default function App() {
   const [screen, setScreen] = useState<Screen>('editor');
   const [themeId, setThemeId] = useState(DEFAULT_THEME_ID);
   return (
     <SafeAreaProvider>
       <KeyboardProvider>
-        <View style={[styles.fill, screen !== 'editor' && styles.hidden]}>
-          <EditorApp themeId={themeId} onTheme={setThemeId} onNested={() => setScreen('nested')} />
-        </View>
+        <EditorApp themeId={themeId} onTheme={setThemeId} onNested={() => setScreen('nested')} />
         {screen === 'nested' ? (
-          <NestedScreen theme={themeById(themeId)} onBack={() => setScreen('editor')} />
+          <View style={styles.overlay}>
+            <NestedScreen theme={themeById(themeId)} onBack={() => setScreen('editor')} />
+          </View>
         ) : null}
       </KeyboardProvider>
     </SafeAreaProvider>
@@ -27,6 +28,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  hidden: { display: 'none' },
+  // Above the editor's floating chrome, which carries its own zIndex.
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 2 },
 });
