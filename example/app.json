@@ -2,6 +2,7 @@
   "expo": {
     "name": "Codepad Example",
     "slug": "react-native-codepad-example",
+    "scheme": "codepad-example",
     "version": "0.1.0",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
