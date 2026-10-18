@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { StatusBar, StyleSheet, View } from 'react-native';
+import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import {
   CodeEditor,
   type CodeEditorRef,
@@ -12,11 +12,11 @@ import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { chromeFor } from './chrome';
 import { ICONS } from './chrome/icons';
+import { TopBar } from './chrome/TopBar';
 import { BottomBar } from './components/BottomBar';
 import { FindBar } from './components/FindBar';
 import { GoToLineSheet } from './components/GoToLineSheet';
 import { SettingsSheet } from './components/SettingsSheet';
-import { TopBar } from './components/TopBar';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
 import type { FileGroup, MenuChoice, MenuItem } from './native/types';
 import { describeSelection } from './selection';
@@ -56,6 +56,7 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
   const [position, setPosition] = useState('Ln 1, Col 1');
   const [timing, setTiming] = useState('');
   const [barHeight, setBarHeight] = useState(0);
+  const [topHeight, setTopHeight] = useState(0);
   const [lineCount, setLineCount] = useState(1);
 
   const file = fileById(fileId);
@@ -63,7 +64,11 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
   const chrome = useMemo(() => chromeFor(theme), [theme]);
   // Loaded once per open; the generated files are built here, so the open time covers them.
   const text = useMemo(() => file.load(), [file]);
-  const insets = useMemo(() => ({ bottom: barHeight }), [barHeight]);
+  // iOS floats its bars over the editor, so the document starts below them and scrolls under.
+  const insets = useMemo(
+    () => ({ top: Platform.OS === 'ios' ? topHeight : 0, bottom: barHeight }),
+    [topHeight, barHeight],
+  );
 
   const open = (id: string) => {
     opened.current = performance.now();
@@ -162,18 +167,6 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
         translucent
         backgroundColor="transparent"
       />
-      <TopBar
-        chrome={chrome}
-        topInset={safe.top}
-        groups={GROUPS}
-        fileId={fileId}
-        onFile={open}
-        onFind={() => setFindOpen((v) => !v)}
-        items={items}
-        themes={THEMES}
-        theme={themeId}
-        onTheme={setThemeId}
-      />
       {findOpen ? (
         <FindBar
           chrome={chrome}
@@ -228,6 +221,21 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
           onHeight={setBarHeight}
         />
       </View>
+      <TopBar
+        scheme={chrome.scheme}
+        background={theme.background}
+        topInset={safe.top}
+        groups={GROUPS}
+        fileId={fileId}
+        onFile={open}
+        findOpen={findOpen}
+        onFind={() => setFindOpen((v) => !v)}
+        items={items}
+        themes={THEMES}
+        themeId={themeId}
+        onTheme={setThemeId}
+        onHeight={setTopHeight}
+      />
       <SettingsSheet
         chrome={chrome}
         open={sheet === 'settings'}

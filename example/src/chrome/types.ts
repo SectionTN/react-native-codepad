@@ -18,6 +18,8 @@ export type MenuItem = {
 
 export type TopBarProps = {
   scheme: Scheme;
+  /** The document background, the color the top edge fades from. */
+  background: string;
   topInset: number;
   groups: FileGroup[];
   fileId: string;
