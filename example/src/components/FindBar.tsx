@@ -3,7 +3,7 @@ import { type RefObject, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { CodeEditorRef } from 'react-native-codepad';
 import type { Chrome } from '../chrome';
-import { ICONS } from '../icons';
+import { ICONS } from '../chrome/icons';
 import { IconButton } from '../native/IconButton';
 import { fill, fullWidth } from '../native/layout';
 

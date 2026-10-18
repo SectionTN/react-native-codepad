@@ -7,7 +7,7 @@ import {
   Text,
 } from '@expo/ui/jetpack-compose';
 import { useState } from 'react';
-import { ICONS } from '../icons';
+import { ICONS } from '../chrome/icons';
 import type { OverflowMenuProps } from './types';
 
 export function OverflowMenu({ icon, label, items, themes, theme, onTheme }: OverflowMenuProps) {

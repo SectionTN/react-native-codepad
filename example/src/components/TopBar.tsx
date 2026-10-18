@@ -1,7 +1,7 @@
 import { Host, Row, Spacer } from '@expo/ui';
 import { StyleSheet, View } from 'react-native';
 import type { Chrome } from '../chrome';
-import { ICONS } from '../icons';
+import { ICONS } from '../chrome/icons';
 import { FilePicker } from '../native/FilePicker';
 import { IconButton } from '../native/IconButton';
 import { fullWidth } from '../native/layout';

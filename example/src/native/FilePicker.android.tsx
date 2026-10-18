@@ -7,7 +7,7 @@ import {
   TextButton,
 } from '@expo/ui/jetpack-compose';
 import { Fragment, useState } from 'react';
-import { ICONS } from '../icons';
+import { ICONS } from '../chrome/icons';
 import type { FilePickerProps } from './types';
 
 export function FilePicker({ groups, fileId, color, onFile }: FilePickerProps) {

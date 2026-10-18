@@ -1,4 +1,4 @@
-import type { AppIcon } from '../icons';
+import type { AppIcon } from '../chrome/icons';
 
 export type IconButtonProps = {
   icon: AppIcon;

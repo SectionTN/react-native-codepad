@@ -11,13 +11,13 @@ import {
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { chromeFor } from './chrome';
+import { ICONS } from './chrome/icons';
 import { BottomBar } from './components/BottomBar';
 import { FindBar } from './components/FindBar';
 import { GoToLineSheet } from './components/GoToLineSheet';
 import { SettingsSheet } from './components/SettingsSheet';
 import { TopBar } from './components/TopBar';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
-import { ICONS } from './icons';
 import type { FileGroup, MenuChoice, MenuItem } from './native/types';
 import { describeSelection } from './selection';
 import { DEFAULT_SETTINGS, type Settings } from './settings';

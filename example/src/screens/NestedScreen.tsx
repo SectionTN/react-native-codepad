@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { CodeEditor, githubDark } from 'react-native-codepad';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { chromeFor } from '../chrome';
-import { ICONS } from '../icons';
+import { ICONS } from '../chrome/icons';
 import { IconButton } from '../native/IconButton';
 import { fill, fullWidth } from '../native/layout';
 
