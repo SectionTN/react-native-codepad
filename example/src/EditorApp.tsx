@@ -13,10 +13,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { chromeFor } from './chrome';
 import { BottomBar } from './chrome/BottomBar';
 import { FindBar } from './chrome/FindBar';
+import { GoToLine } from './chrome/GoToLine';
 import { ICONS } from './chrome/icons';
+import { SettingsSheet } from './chrome/SettingsSheet';
 import { TopBar } from './chrome/TopBar';
-import { GoToLineSheet } from './components/GoToLineSheet';
-import { SettingsSheet } from './components/SettingsSheet';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
 import type { FileGroup, MenuChoice, MenuItem } from './native/types';
 import { describeSelection } from './selection';
@@ -242,14 +242,14 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
         />
       </View>
       <SettingsSheet
-        chrome={chrome}
+        scheme={chrome.scheme}
         open={sheet === 'settings'}
         onClose={() => setSheet(null)}
         settings={settings}
         onChange={patchSettings}
       />
-      <GoToLineSheet
-        chrome={chrome}
+      <GoToLine
+        scheme={chrome.scheme}
         open={sheet === 'goToLine'}
         lineCount={lineCount}
         onClose={() => setSheet(null)}
