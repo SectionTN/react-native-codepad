@@ -30,7 +30,6 @@ export type TopBarProps = {
   themes: MenuChoice[];
   themeId: string;
   onTheme: (id: string) => void;
-  onHeight: (height: number) => void;
 };
 
 export type FindBarProps = {
@@ -38,7 +37,6 @@ export type FindBarProps = {
   editor: RefObject<CodeEditorRef | null>;
   onStatus: (text: string) => void;
   onClose: () => void;
-  onHeight: (height: number) => void;
 };
 
 export type StatusLineProps = {

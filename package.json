@@ -194,7 +194,11 @@
       "<rootDir>/languages/",
       "<rootDir>/tests/",
       "<rootDir>/website/"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^react$": "<rootDir>/node_modules/react",
+      "^react/(.*)$": "<rootDir>/node_modules/react/$1"
+    }
   },
   "create-react-native-library": {
     "type": "nitro-view",

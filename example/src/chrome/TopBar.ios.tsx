@@ -48,7 +48,6 @@ export function TopBar({
   themes,
   themeId,
   onTheme,
-  onHeight,
 }: TopBarProps) {
   const palette = IOS[scheme];
   const fileName = groups.flatMap((g) => g.files).find((f) => f.id === fileId)?.label ?? '';
@@ -59,11 +58,7 @@ export function TopBar({
     tint(palette.label),
   ];
   return (
-    <View
-      style={styles.bar}
-      pointerEvents="box-none"
-      onLayout={(e) => onHeight(e.nativeEvent.layout.height)}
-    >
+    <View pointerEvents="box-none">
       <LinearGradient
         colors={[background, `${background}00`]}
         locations={[0.55, 1]}
@@ -168,6 +163,5 @@ export function TopBar({
 }
 
 const styles = StyleSheet.create({
-  bar: { position: 'absolute', top: 0, left: 0, right: 0 },
   host: { alignSelf: 'stretch' },
 });

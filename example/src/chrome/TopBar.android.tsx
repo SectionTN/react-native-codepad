@@ -31,7 +31,6 @@ export function TopBar({
   themes,
   themeId,
   onTheme,
-  onHeight,
 }: TopBarProps) {
   const colors = useAndroidColors(scheme);
   const [filesOpen, setFilesOpen] = useState(false);
@@ -43,10 +42,7 @@ export function TopBar({
     setThemeList(false);
   };
   return (
-    <View
-      style={{ paddingTop: topInset, backgroundColor: colors.surface }}
-      onLayout={(e) => onHeight(e.nativeEvent.layout.height)}
-    >
+    <View style={{ paddingTop: topInset, backgroundColor: colors.surface }}>
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <Row
           verticalAlignment="center"

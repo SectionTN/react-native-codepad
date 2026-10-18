@@ -11,10 +11,10 @@ import {
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { chromeFor } from './chrome';
+import { FindBar } from './chrome/FindBar';
 import { ICONS } from './chrome/icons';
 import { TopBar } from './chrome/TopBar';
 import { BottomBar } from './components/BottomBar';
-import { FindBar } from './components/FindBar';
 import { GoToLineSheet } from './components/GoToLineSheet';
 import { SettingsSheet } from './components/SettingsSheet';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
@@ -167,14 +167,34 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
         translucent
         backgroundColor="transparent"
       />
-      {findOpen ? (
-        <FindBar
-          chrome={chrome}
-          editor={editor}
-          onStatus={onStatus}
-          onClose={() => setFindOpen(false)}
+      <View
+        style={styles.chrome}
+        pointerEvents="box-none"
+        onLayout={(e) => setTopHeight(e.nativeEvent.layout.height)}
+      >
+        <TopBar
+          scheme={chrome.scheme}
+          background={theme.background}
+          topInset={safe.top}
+          groups={GROUPS}
+          fileId={fileId}
+          onFile={open}
+          findOpen={findOpen}
+          onFind={() => setFindOpen((v) => !v)}
+          items={items}
+          themes={THEMES}
+          themeId={themeId}
+          onTheme={setThemeId}
         />
-      ) : null}
+        {findOpen ? (
+          <FindBar
+            scheme={chrome.scheme}
+            editor={editor}
+            onStatus={onStatus}
+            onClose={() => setFindOpen(false)}
+          />
+        ) : null}
+      </View>
       <View style={styles.body}>
         <CodeEditor
           key={`${fileId}:${openCount}`}
@@ -221,21 +241,6 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
           onHeight={setBarHeight}
         />
       </View>
-      <TopBar
-        scheme={chrome.scheme}
-        background={theme.background}
-        topInset={safe.top}
-        groups={GROUPS}
-        fileId={fileId}
-        onFile={open}
-        findOpen={findOpen}
-        onFind={() => setFindOpen((v) => !v)}
-        items={items}
-        themes={THEMES}
-        themeId={themeId}
-        onTheme={setThemeId}
-        onHeight={setTopHeight}
-      />
       <SettingsSheet
         chrome={chrome}
         open={sheet === 'settings'}
@@ -255,6 +260,11 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
 }
 
 const styles = StyleSheet.create({
+  // iOS floats the top chrome over the editor; Android stacks it above like a Material app bar.
+  chrome: Platform.select({
+    ios: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 },
+    default: {},
+  }) as object,
   screen: { flex: 1 },
   body: { flex: 1 },
   editor: { flex: 1 },
