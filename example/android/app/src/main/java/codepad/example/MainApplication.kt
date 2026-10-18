@@ -15,7 +15,7 @@ class MainApplication : Application(), ReactApplication {
     ExpoReactHostFactory.getDefaultReactHost(
       context = applicationContext,
       packageList = PackageList(this).packages,
-      jsMainModulePath = "index",
+      jsMainModulePath = ".expo/.virtual-metro-entry",
     )
   }
 

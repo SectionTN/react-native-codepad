@@ -16,7 +16,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     else { return }
     let window = UIWindow(windowScene: windowScene)
     factory.startReactNative(
-      withModuleName: "CodepadExample",
+      withModuleName: "main",
       in: window,
       launchOptions: appDelegate.launchOptions
     )

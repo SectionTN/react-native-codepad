@@ -80,7 +80,7 @@ PODS:
     - Codepad
   - EXConstants (57.0.22):
     - ExpoModulesCore
-  - Expo (57.0.29):
+  - Expo (57.0.30):
     - ExpoModulesCore
     - ExpoModulesJSI
     - hermes-engine
@@ -115,6 +115,8 @@ PODS:
   - ExpoFont (57.0.4):
     - ExpoModulesCore
   - ExpoKeepAwake (57.0.2):
+    - ExpoModulesCore
+  - ExpoLinearGradient (57.0.2):
     - ExpoModulesCore
   - ExpoLogBox (57.0.4):
     - React-Core
@@ -153,7 +155,7 @@ PODS:
     - ExpoModulesJSI
     - ExpoModulesWorklets
     - RNWorklets
-  - ExpoUI (57.0.24):
+  - ExpoUI (57.0.25):
     - ExpoModulesCore
     - ExpoModulesWorklets
     - React-RCTFabric
@@ -1652,7 +1654,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-safe-area-context (5.10.1):
+  - react-native-safe-area-context (5.7.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1664,8 +1666,8 @@ PODS:
     - React-graphics
     - React-ImageManager
     - React-jsi
-    - react-native-safe-area-context/common (= 5.10.1)
-    - react-native-safe-area-context/fabric (= 5.10.1)
+    - react-native-safe-area-context/common (= 5.7.0)
+    - react-native-safe-area-context/fabric (= 5.7.0)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -1676,7 +1678,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-safe-area-context/common (5.10.1):
+  - react-native-safe-area-context/common (5.7.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1698,7 +1700,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-safe-area-context/fabric (5.10.1):
+  - react-native-safe-area-context/fabric (5.7.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2314,6 +2316,7 @@ DEPENDENCIES:
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
+  - ExpoLinearGradient (from `../node_modules/expo-linear-gradient/ios`)
   - "ExpoLogBox (from `../node_modules/@expo/log-box`)"
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoModulesJSI (from `../node_modules/expo-modules-jsi/apple`)
@@ -2449,6 +2452,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-font/ios"
   ExpoKeepAwake:
     :path: "../node_modules/expo-keep-awake/ios"
+  ExpoLinearGradient:
+    :path: "../node_modules/expo-linear-gradient/ios"
   ExpoLogBox:
     :path: "../node_modules/@expo/log-box"
   ExpoModulesCore:
@@ -2641,18 +2646,19 @@ SPEC CHECKSUMS:
   CodepadLangTypescript: 658be154c3813b6c9c702c5d2b9795a8f0ac1052
   CodepadLangYaml: 93112020220265bf38c0b88c2ba76075fc012f91
   EXConstants: 8a0eb5e2553569c0e6710b73a8d90d1ce358c153
-  Expo: 3bf13bf01a4cd154996b137478cef3e62528d889
+  Expo: 83ceec8498d39a83bfcdf6ad56118bc6c5c81c72
   ExpoAsset: 2581425f9b581b4fce3c83ffc9f28528d1c4ee68
   ExpoDomWebView: beaec034e51bd028428b98bb1f2633ab79c6d095
   ExpoFileSystem: 28778f942725170102f7c6cf4dee05a526ddacd0
   ExpoFont: f8198a952ba2ff53c9b393b5269ea435f232cfc3
   ExpoKeepAwake: 72af0b3be3615e59bc819d26061ff4e06b155ee0
+  ExpoLinearGradient: f08a0dea5ad3fe23042d15b1ced831312c9141b8
   ExpoLogBox: 80957303325cd4439137765c90a87d7f22aaf2ff
   ExpoModulesCore: b8ff6e7bf70bf8297bb752a70a295fbad243a1bf
   ExpoModulesJSI: b767422763350d2b248fb218f71bbb286fd2ee77
   ExpoModulesWorklets: 22d1898cfa60b815ffc7421c775e2e6a1bd8dc82
   ExpoModulesWorkletsAdapter: 9d1e55ef8c1efc403c1cde5e716451f77ec05019
-  ExpoUI: 7d535e830f98dceeac73a3b1d6b4f5fe3b516695
+  ExpoUI: a206a1ca6970e538af0f6969d113a0f38718b95c
   FBLazyVector: 2138c6c2ab66c31bf5754dc18097fbc498a49c7f
   hermes-engine: 63c5db7d529c36335fada6582fd293ae2a105d77
   NitroModules: 38f8754287858ff1294e43fd43f614a664e54050
@@ -2694,7 +2700,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: 97a771dbbb4315c71579995b53e4e3e351a99d89
   React-mutationobservernativemodule: 530bff1bba9511a5133e3cf8170e3b2c0df49e89
   react-native-keyboard-controller: 13b569883abad989ad75b635c8904527857b0e5f
-  react-native-safe-area-context: 3d2fac6d8e7405ec6d9325ff13b4c9145fa466c4
+  react-native-safe-area-context: 6b4966397ada0f7dd481e4486a2ef936834861a1
   React-NativeModulesApple: 2b658272ca69df0694cf5d54f9510aa7c33977bc
   React-networking: 6be0b80e18e710dd30e77b04838ec46666a7bb78
   React-oscompat: cea7c66df8076bd97e95885d7f584b86afffde41

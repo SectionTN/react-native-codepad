@@ -8,7 +8,7 @@ import expo.modules.ReactActivityDelegateWrapper
 
 class MainActivity : ReactActivity() {
 
-  override fun getMainComponentName(): String = "CodepadExample"
+  override fun getMainComponentName(): String = "main"
 
   // The wrapper forwards the activity lifecycle to the Expo modules.
   override fun createReactActivityDelegate(): ReactActivityDelegate =

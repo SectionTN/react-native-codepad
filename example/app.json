@@ -1,4 +1,17 @@
 {
-  "name": "CodepadExample",
-  "displayName": "CodepadExample"
+  "expo": {
+    "name": "Codepad Example",
+    "slug": "react-native-codepad-example",
+    "version": "0.1.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "me.sectiontn.codepad.example",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "me.sectiontn.codepad.example"
+    }
+  }
 }
