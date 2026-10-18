@@ -3,12 +3,14 @@ import {
   GlassEffectContainer,
   Host,
   HStack,
-  Image,
+  Menu,
   Text,
   TextField,
+  Toggle,
   VStack,
 } from '@expo/ui/swift-ui';
 import {
+  accessibilityLabel,
   autocorrectionDisabled,
   buttonBorderShape,
   buttonStyle,
@@ -18,7 +20,6 @@ import {
   frame,
   glassEffect,
   labelStyle,
-  layoutPriority,
   onSubmit,
   padding,
   submitLabel,
@@ -32,39 +33,36 @@ import { type FindOption, useFind } from './useFind';
 
 const FIELD_HEIGHT = 36;
 
-// Safari's find on page as the model: a capsule field with the count inside, glass buttons around it.
+const OPTIONS: { option: FindOption; label: string }[] = [
+  { option: 'caseSensitive', label: 'Match Case' },
+  { option: 'regex', label: 'Regular Expression' },
+  { option: 'wholeWord', label: 'Whole Words' },
+];
+
+// The system find panel as the model: the options live in the field's own menu, which leaves the
+// replace row its width; glass buttons around capsule fields.
 export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
   const palette = IOS[scheme];
   const find = useFind(editor, onStatus);
+  const anyOption = OPTIONS.some(({ option }) => find.options[option]);
   const capsule = [
     frame({ maxWidth: Infinity, height: FIELD_HEIGHT }),
     padding({ horizontal: 12 }),
     glassEffect({ shape: 'capsule' }),
   ];
-  // fixedSize keeps a label on one line when the replace row runs out of width.
   const glass = [
     buttonStyle('glass'),
     buttonBorderShape('capsule'),
     tint(palette.label),
     fixedSize({ horizontal: true }),
   ];
-  const toggle = (label: string, option: FindOption, mono = false) => {
-    const on = find.options[option];
-    return (
-      <Button
-        label={label}
-        onPress={() => find.toggle(option)}
-        modifiers={[
-          buttonStyle(on ? 'glassProminent' : 'glass'),
-          buttonBorderShape('capsule'),
-          tint(palette.label),
-          foregroundStyle(on ? palette.systemBackground : palette.label),
-          fixedSize({ horizontal: true }),
-          ...(mono ? [font({ design: 'monospaced' })] : []),
-        ]}
-      />
-    );
-  };
+  const arrow = [
+    labelStyle('iconOnly'),
+    buttonStyle('glass'),
+    buttonBorderShape('circle'),
+    tint(palette.label),
+  ];
+  const optionsColor = anyOption ? palette.label : palette.secondaryLabel;
   return (
     <View style={[styles.bar, { backgroundColor: `${palette.systemBackground}D9` }]}>
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
@@ -74,7 +72,27 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
         >
           <HStack alignment="center" spacing={8}>
             <HStack alignment="center" spacing={6} modifiers={capsule}>
-              <Image systemName="magnifyingglass" size={15} color={palette.secondaryLabel} />
+              <Menu
+                label="Search options"
+                systemImage="magnifyingglass"
+                modifiers={[
+                  labelStyle('iconOnly'),
+                  buttonStyle('plain'),
+                  font({ size: 15 }),
+                  tint(optionsColor),
+                  foregroundStyle(optionsColor),
+                  accessibilityLabel('Search options'),
+                ]}
+              >
+                {OPTIONS.map(({ option, label }) => (
+                  <Toggle
+                    key={option}
+                    label={label}
+                    isOn={find.options[option]}
+                    onIsOnChange={() => find.toggle(option)}
+                  />
+                ))}
+              </Menu>
               <TextField
                 placeholder="Find"
                 autoFocus
@@ -96,23 +114,13 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
                   label="Previous match"
                   systemImage="chevron.up"
                   onPress={() => void find.previous()}
-                  modifiers={[
-                    labelStyle('iconOnly'),
-                    buttonStyle('glass'),
-                    buttonBorderShape('circle'),
-                    tint(palette.label),
-                  ]}
+                  modifiers={arrow}
                 />
                 <Button
                   label="Next match"
                   systemImage="chevron.down"
                   onPress={() => void find.next()}
-                  modifiers={[
-                    labelStyle('iconOnly'),
-                    buttonStyle('glass'),
-                    buttonBorderShape('circle'),
-                    tint(palette.label),
-                  ]}
+                  modifiers={arrow}
                 />
               </HStack>
             </GlassEffectContainer>
@@ -123,10 +131,7 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
             />
           </HStack>
           <HStack alignment="center" spacing={8}>
-            {toggle('Aa', 'caseSensitive')}
-            {toggle('.*', 'regex', true)}
-            {toggle('W', 'wholeWord')}
-            <HStack alignment="center" modifiers={[...capsule, layoutPriority(-1)]}>
+            <HStack alignment="center" modifiers={capsule}>
               <TextField
                 placeholder="Replace"
                 onTextChange={find.setReplacement}
