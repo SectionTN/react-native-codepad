@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CodeEditor, type Theme } from 'react-native-codepad';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NestedBar } from '../chrome/NestedBar';
-import { IOS, schemeFor } from '../chrome/theme';
+import { IOS, schemeFor, topInsetFor } from '../chrome/theme';
 import { NESTED_SNIPPET } from './nestedSnippet';
 
 type Props = { theme: Theme; onBack: () => void };
@@ -30,7 +30,12 @@ export function NestedScreen({ theme, onBack }: Props) {
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: barHeight + 8, paddingBottom: safe.bottom + 16 },
+          {
+            paddingTop: barHeight + 8,
+            paddingBottom: safe.bottom + 16,
+            paddingLeft: 16 + safe.left,
+            paddingRight: 16 + safe.right,
+          },
         ]}
         scrollIndicatorInsets={{ top: barHeight }}
         keyboardShouldPersistTaps="handled"
@@ -65,7 +70,12 @@ export function NestedScreen({ theme, onBack }: Props) {
         pointerEvents="box-none"
         onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
       >
-        <NestedBar scheme={scheme} title="Nested scroll" topInset={safe.top} onBack={onBack} />
+        <NestedBar
+          scheme={scheme}
+          title="Nested scroll"
+          topInset={topInsetFor(safe.top)}
+          onBack={onBack}
+        />
       </View>
     </View>
   );

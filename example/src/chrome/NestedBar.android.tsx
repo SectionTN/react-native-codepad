@@ -1,6 +1,7 @@
 import { Host, Icon, IconButton, Row, Spacer, Text } from '@expo/ui/jetpack-compose';
 import { fillMaxWidth, height, padding, weight } from '@expo/ui/jetpack-compose/modifiers';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ICONS } from './icons';
 import { useAndroidColors } from './material';
 import type { NestedBarProps } from './types';
@@ -10,8 +11,16 @@ const BAR_HEIGHT = 64;
 // The Material 3 small top app bar of the demo page: a back arrow and the title on surface.
 export function NestedBar({ scheme, title, topInset, onBack }: NestedBarProps) {
   const colors = useAndroidColors(scheme);
+  const safe = useSafeAreaInsets();
   return (
-    <View style={{ paddingTop: topInset, backgroundColor: colors.surface }}>
+    <View
+      style={{
+        paddingTop: topInset,
+        paddingLeft: safe.left,
+        paddingRight: safe.right,
+        backgroundColor: colors.surface,
+      }}
+    >
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <Row
           verticalAlignment="center"

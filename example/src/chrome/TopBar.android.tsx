@@ -13,6 +13,7 @@ import {
 import { fillMaxWidth, height, padding, weight } from '@expo/ui/jetpack-compose/modifiers';
 import { Fragment, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ICONS } from './icons';
 import { useAndroidColors } from './material';
 import type { TopBarProps } from './types';
@@ -33,6 +34,7 @@ export function TopBar({
   onTheme,
 }: TopBarProps) {
   const colors = useAndroidColors(scheme);
+  const safe = useSafeAreaInsets();
   const [filesOpen, setFilesOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [themeList, setThemeList] = useState(false);
@@ -42,7 +44,14 @@ export function TopBar({
     setThemeList(false);
   };
   return (
-    <View style={{ paddingTop: topInset, backgroundColor: colors.surface }}>
+    <View
+      style={{
+        paddingTop: topInset,
+        paddingLeft: safe.left,
+        paddingRight: safe.right,
+        backgroundColor: colors.surface,
+      }}
+    >
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <Row
           verticalAlignment="center"

@@ -61,3 +61,8 @@ export function schemeFor(theme: Theme): Scheme {
   const [r, g, b] = rgb(theme.background);
   return 0.299 * r + 0.587 * g + 0.114 * b < 128 ? 'dark' : 'light';
 }
+
+/** The chrome keeps this much above the top bar when the status bar is gone, as in landscape. */
+export function topInsetFor(safeTop: number): number {
+  return Math.max(safeTop, 8);
+}

@@ -27,6 +27,7 @@ import {
   tint,
 } from '@expo/ui/swift-ui/modifiers';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IOS } from './theme';
 import type { FindBarProps } from './types';
 import { type FindOption, useFind } from './useFind';
@@ -43,6 +44,7 @@ const OPTIONS: { option: FindOption; label: string }[] = [
 // replace row its width; glass buttons around capsule fields.
 export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
   const palette = IOS[scheme];
+  const safe = useSafeAreaInsets();
   const find = useFind(editor, onStatus);
   const anyOption = OPTIONS.some(({ option }) => find.options[option]);
   const capsule = [
@@ -64,7 +66,16 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
   ];
   const optionsColor = anyOption ? palette.label : palette.secondaryLabel;
   return (
-    <View style={[styles.bar, { backgroundColor: `${palette.systemBackground}D9` }]}>
+    <View
+      style={[
+        styles.bar,
+        {
+          backgroundColor: `${palette.systemBackground}D9`,
+          paddingLeft: safe.left,
+          paddingRight: safe.right,
+        },
+      ]}
+    >
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <VStack
           spacing={8}

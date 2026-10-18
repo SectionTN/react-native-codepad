@@ -12,6 +12,7 @@ import {
 } from '@expo/ui/jetpack-compose';
 import { fillMaxWidth, height, padding, weight } from '@expo/ui/jetpack-compose/modifiers';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ICONS } from './icons';
 import { useAndroidColors } from './material';
 import type { FindBarProps } from './types';
@@ -20,6 +21,7 @@ import { type FindOption, useFind } from './useFind';
 // Outlined fields, filter chips for the options and text buttons for the actions, all Material 3.
 export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
   const colors = useAndroidColors(scheme);
+  const safe = useSafeAreaInsets();
   const find = useFind(editor, onStatus);
   const query = useNativeState('');
   const replacement = useNativeState('');
@@ -36,7 +38,9 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
     </FilterChip>
   );
   return (
-    <View style={{ backgroundColor: colors.surface }}>
+    <View
+      style={{ backgroundColor: colors.surface, paddingLeft: safe.left, paddingRight: safe.right }}
+    >
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <Column
           verticalArrangement={{ spacedBy: 8 }}

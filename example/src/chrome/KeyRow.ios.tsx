@@ -11,6 +11,7 @@ import {
   tint,
 } from '@expo/ui/swift-ui/modifiers';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KEYS } from './keys';
 import { IOS } from './theme';
 import type { KeyRowProps } from './types';
@@ -25,6 +26,7 @@ export function KeyRow({
   canRedo,
 }: KeyRowProps) {
   const palette = IOS[scheme];
+  const safe = useSafeAreaInsets();
   const cap = (on: boolean) => [
     buttonStyle(on ? 'borderedProminent' : 'bordered'),
     buttonBorderShape('roundedRectangle', 8),
@@ -33,7 +35,12 @@ export function KeyRow({
     foregroundStyle(on ? palette.systemBackground : palette.keyText),
   ];
   return (
-    <View style={[styles.row, { backgroundColor: palette.keyboard }]}>
+    <View
+      style={[
+        styles.row,
+        { backgroundColor: palette.keyboard, paddingLeft: safe.left, paddingRight: safe.right },
+      ]}
+    >
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <ScrollView axes="horizontal" showsIndicators={false}>
           <HStack

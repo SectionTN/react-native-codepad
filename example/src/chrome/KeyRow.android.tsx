@@ -1,6 +1,7 @@
 import { Button, Host, Icon, LazyRow, Text } from '@expo/ui/jetpack-compose';
 import { height } from '@expo/ui/jetpack-compose/modifiers';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KEYS } from './keys';
 import { useAndroidColors } from './material';
 import type { KeyRowProps } from './types';
@@ -17,12 +18,22 @@ export function KeyRow({
   canRedo,
 }: KeyRowProps) {
   const colors = useAndroidColors(scheme);
+  const safe = useSafeAreaInsets();
   const keyColors = (on: boolean) => ({
     containerColor: on ? colors.secondaryContainer : colors.surfaceContainerHigh,
     contentColor: on ? colors.onSecondaryContainer : colors.onSurface,
   });
   return (
-    <View style={[styles.row, { backgroundColor: colors.surfaceContainer }]}>
+    <View
+      style={[
+        styles.row,
+        {
+          backgroundColor: colors.surfaceContainer,
+          paddingLeft: safe.left,
+          paddingRight: safe.right,
+        },
+      ]}
+    >
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <LazyRow
           verticalAlignment="center"

@@ -29,6 +29,7 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IOS } from './theme';
 import type { TopBarProps } from './types';
 
@@ -52,6 +53,7 @@ export function TopBar({
   onTheme,
 }: TopBarProps) {
   const palette = IOS[scheme];
+  const safe = useSafeAreaInsets();
   const fileName = groups.flatMap((g) => g.files).find((f) => f.id === fileId)?.label ?? '';
   const glassButton = [
     labelStyle('iconOnly'),
@@ -67,7 +69,10 @@ export function TopBar({
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
-      <View style={{ paddingTop: topInset }} pointerEvents="box-none">
+      <View
+        style={{ paddingTop: topInset, paddingLeft: safe.left, paddingRight: safe.right }}
+        pointerEvents="box-none"
+      >
         <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
           <HStack
             alignment="center"

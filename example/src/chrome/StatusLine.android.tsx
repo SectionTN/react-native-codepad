@@ -1,6 +1,7 @@
 import { Host, Row, Spacer, Text, TextButton } from '@expo/ui/jetpack-compose';
 import { fillMaxWidth, height, padding, weight } from '@expo/ui/jetpack-compose/modifiers';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAndroidColors } from './material';
 import type { StatusLineProps } from './types';
 
@@ -16,8 +17,16 @@ export function StatusLine({
   bottomInset,
 }: StatusLineProps) {
   const colors = useAndroidColors(scheme);
+  const safe = useSafeAreaInsets();
   return (
-    <View style={{ backgroundColor: colors.surfaceContainer, paddingBottom: bottomInset }}>
+    <View
+      style={{
+        backgroundColor: colors.surfaceContainer,
+        paddingBottom: bottomInset,
+        paddingLeft: safe.left,
+        paddingRight: safe.right,
+      }}
+    >
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <Row
           verticalAlignment="center"

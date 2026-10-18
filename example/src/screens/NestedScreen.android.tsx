@@ -11,7 +11,7 @@ import { CodeEditor, type Theme } from 'react-native-codepad';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAndroidColors } from '../chrome/material';
 import { NestedBar } from '../chrome/NestedBar';
-import { schemeFor } from '../chrome/theme';
+import { schemeFor, topInsetFor } from '../chrome/theme';
 import { NESTED_SNIPPET } from './nestedSnippet';
 
 type Props = { theme: Theme; onBack: () => void };
@@ -27,10 +27,22 @@ export function NestedScreen({ theme, onBack }: Props) {
   const below = useNativeState('');
   return (
     <View style={[styles.screen, { backgroundColor: colors.surface }]}>
-      <NestedBar scheme={scheme} title="Nested scroll" topInset={safe.top} onBack={onBack} />
+      <NestedBar
+        scheme={scheme}
+        title="Nested scroll"
+        topInset={topInsetFor(safe.top)}
+        onBack={onBack}
+      />
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingBottom: safe.bottom + 16 }]}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingBottom: safe.bottom + 16,
+            paddingLeft: 16 + safe.left,
+            paddingRight: 16 + safe.right,
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.body, { color: colors.onSurface }]}>

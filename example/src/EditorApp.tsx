@@ -10,7 +10,7 @@ import { GoToLine } from './chrome/GoToLine';
 import { ICONS } from './chrome/icons';
 import { SettingsSheet } from './chrome/SettingsSheet';
 import { TopBar } from './chrome/TopBar';
-import { schemeFor } from './chrome/theme';
+import { schemeFor, topInsetFor } from './chrome/theme';
 import type { FileGroup, MenuItem } from './chrome/types';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
 import { describeSelection } from './selection';
@@ -168,7 +168,7 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
         <TopBar
           scheme={scheme}
           background={theme.background}
-          topInset={safe.top}
+          topInset={topInsetFor(safe.top)}
           groups={GROUPS}
           fileId={fileId}
           onFile={open}
@@ -192,7 +192,7 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
         <CodeEditor
           key={`${fileId}:${openCount}`}
           ref={editor}
-          style={styles.editor}
+          style={[styles.editor, { marginLeft: safe.left, marginRight: safe.right }]}
           initialValue={text}
           language={settings.highlight ? file.language : undefined}
           theme={theme}

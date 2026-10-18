@@ -14,6 +14,7 @@ import {
   truncationMode,
 } from '@expo/ui/swift-ui/modifiers';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IOS } from './theme';
 import type { StatusLineProps } from './types';
 
@@ -27,9 +28,16 @@ export function StatusLine({
   bottomInset,
 }: StatusLineProps) {
   const palette = IOS[scheme];
+  const safe = useSafeAreaInsets();
   const caption = [font({ size: 12 }), foregroundStyle(palette.secondaryLabel)];
   return (
-    <View style={[styles.wrap, { paddingBottom: bottomInset + 8 }]}>
+    <View
+      style={{
+        paddingBottom: bottomInset + 8,
+        paddingLeft: 16 + safe.left,
+        paddingRight: 16 + safe.right,
+      }}
+    >
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <HStack
           alignment="center"
@@ -65,6 +73,5 @@ export function StatusLine({
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingHorizontal: 16 },
   host: { alignSelf: 'stretch' },
 });
