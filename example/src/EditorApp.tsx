@@ -46,6 +46,7 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
   const [barHeight, setBarHeight] = useState(0);
   const [topHeight, setTopHeight] = useState(0);
   const [lineCount, setLineCount] = useState(1);
+  const [focused, setFocused] = useState(false);
 
   const file = fileById(fileId);
   const theme = themeById(themeId);
@@ -198,6 +199,8 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
           placeholder="Start typing"
           avoidKeyboard
           contentInsets={insets}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onReady={onReady}
           onChange={() => {
             setCanUndo(editor.current?.canUndo() ?? false);
@@ -212,6 +215,7 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
           scheme={scheme}
           editor={editor}
           keyboardVisible={keyboardVisible}
+          editorFocused={focused}
           bottomInset={safe.bottom}
           readOnly={settings.readOnly}
           selectMode={selectMode}

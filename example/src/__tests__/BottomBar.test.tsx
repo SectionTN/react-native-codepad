@@ -15,6 +15,7 @@ const StatusLine = jest.requireMock<{ StatusLine: jest.Mock }>('../chrome/Status
 const props = {
   scheme: 'dark' as const,
   editor: { current: null },
+  editorFocused: true,
   selectMode: false,
   onToggleSelect() {},
   canUndo: false,
@@ -32,6 +33,14 @@ test('the keyboard brings the key row and hides the status line', async () => {
   StatusLine.mockClear();
   await render(<BottomBar {...props} keyboardVisible readOnly={false} />);
   expect(KeyRow).toHaveBeenCalled();
+  expect(StatusLine).not.toHaveBeenCalled();
+});
+
+test('a keyboard owned by another field shows neither', async () => {
+  KeyRow.mockClear();
+  StatusLine.mockClear();
+  await render(<BottomBar {...props} keyboardVisible editorFocused={false} readOnly={false} />);
+  expect(KeyRow).not.toHaveBeenCalled();
   expect(StatusLine).not.toHaveBeenCalled();
 });
 
