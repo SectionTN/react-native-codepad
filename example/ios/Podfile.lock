@@ -2292,21 +2292,21 @@ PODS:
 
 DEPENDENCIES:
   - Codepad (from `../..`)
-  - CodepadLangC (from `../node_modules/react-native-codepad-lang-c`)
-  - CodepadLangCss (from `../node_modules/react-native-codepad-lang-css`)
-  - CodepadLangGo (from `../node_modules/react-native-codepad-lang-go`)
-  - CodepadLangHtml (from `../node_modules/react-native-codepad-lang-html`)
-  - CodepadLangJava (from `../node_modules/react-native-codepad-lang-java`)
-  - CodepadLangJavascript (from `../node_modules/react-native-codepad-lang-javascript`)
-  - CodepadLangJson (from `../node_modules/react-native-codepad-lang-json`)
-  - CodepadLangKotlin (from `../node_modules/react-native-codepad-lang-kotlin`)
-  - CodepadLangMarkdown (from `../node_modules/react-native-codepad-lang-markdown`)
-  - CodepadLangPython (from `../node_modules/react-native-codepad-lang-python`)
-  - CodepadLangRust (from `../node_modules/react-native-codepad-lang-rust`)
-  - CodepadLangSwift (from `../node_modules/react-native-codepad-lang-swift`)
-  - CodepadLangTsx (from `../node_modules/react-native-codepad-lang-tsx`)
-  - CodepadLangTypescript (from `../node_modules/react-native-codepad-lang-typescript`)
-  - CodepadLangYaml (from `../node_modules/react-native-codepad-lang-yaml`)
+  - CodepadLangC (from `../../languages/c`)
+  - CodepadLangCss (from `../../languages/css`)
+  - CodepadLangGo (from `../../languages/go`)
+  - CodepadLangHtml (from `../../languages/html`)
+  - CodepadLangJava (from `../../languages/java`)
+  - CodepadLangJavascript (from `../../languages/javascript`)
+  - CodepadLangJson (from `../../languages/json`)
+  - CodepadLangKotlin (from `../../languages/kotlin`)
+  - CodepadLangMarkdown (from `../../languages/markdown`)
+  - CodepadLangPython (from `../../languages/python`)
+  - CodepadLangRust (from `../../languages/rust`)
+  - CodepadLangSwift (from `../../languages/swift`)
+  - CodepadLangTsx (from `../../languages/tsx`)
+  - CodepadLangTypescript (from `../../languages/typescript`)
+  - CodepadLangYaml (from `../../languages/yaml`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - Expo (from `../node_modules/expo`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
@@ -2406,35 +2406,35 @@ EXTERNAL SOURCES:
   Codepad:
     :path: "../.."
   CodepadLangC:
-    :path: "../node_modules/react-native-codepad-lang-c"
+    :path: "../../languages/c"
   CodepadLangCss:
-    :path: "../node_modules/react-native-codepad-lang-css"
+    :path: "../../languages/css"
   CodepadLangGo:
-    :path: "../node_modules/react-native-codepad-lang-go"
+    :path: "../../languages/go"
   CodepadLangHtml:
-    :path: "../node_modules/react-native-codepad-lang-html"
+    :path: "../../languages/html"
   CodepadLangJava:
-    :path: "../node_modules/react-native-codepad-lang-java"
+    :path: "../../languages/java"
   CodepadLangJavascript:
-    :path: "../node_modules/react-native-codepad-lang-javascript"
+    :path: "../../languages/javascript"
   CodepadLangJson:
-    :path: "../node_modules/react-native-codepad-lang-json"
+    :path: "../../languages/json"
   CodepadLangKotlin:
-    :path: "../node_modules/react-native-codepad-lang-kotlin"
+    :path: "../../languages/kotlin"
   CodepadLangMarkdown:
-    :path: "../node_modules/react-native-codepad-lang-markdown"
+    :path: "../../languages/markdown"
   CodepadLangPython:
-    :path: "../node_modules/react-native-codepad-lang-python"
+    :path: "../../languages/python"
   CodepadLangRust:
-    :path: "../node_modules/react-native-codepad-lang-rust"
+    :path: "../../languages/rust"
   CodepadLangSwift:
-    :path: "../node_modules/react-native-codepad-lang-swift"
+    :path: "../../languages/swift"
   CodepadLangTsx:
-    :path: "../node_modules/react-native-codepad-lang-tsx"
+    :path: "../../languages/tsx"
   CodepadLangTypescript:
-    :path: "../node_modules/react-native-codepad-lang-typescript"
+    :path: "../../languages/typescript"
   CodepadLangYaml:
-    :path: "../node_modules/react-native-codepad-lang-yaml"
+    :path: "../../languages/yaml"
   EXConstants:
     :path: "../node_modules/expo-constants/ios"
   Expo:
@@ -2734,6 +2734,6 @@ SPEC CHECKSUMS:
   RNWorklets: 3da8f468c848547646f4e6b12fb46ad93a2cdee2
   Yoga: 18b74b3ade30bebc1904004dfaceae1dd02a330a
 
-PODFILE CHECKSUM: 4f82bdc8458ddb8685b078d967ab160089a5bad2
+PODFILE CHECKSUM: 8f6344859c4c007a950fc22e0421b2e7717a871e
 
 COCOAPODS: 1.15.2
