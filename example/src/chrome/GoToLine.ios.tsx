@@ -1,11 +1,12 @@
-import { Alert, Button, Host, Text, TextField } from '@expo/ui/swift-ui';
-import { keyboardType } from '@expo/ui/swift-ui/modifiers';
+import { Alert, Button, Host, Spacer, Text, TextField } from '@expo/ui/swift-ui';
+import { frame, keyboardType } from '@expo/ui/swift-ui/modifiers';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { parseLine } from './lineInput';
 import type { GoToLineProps } from './types';
 
 // A system alert with one field; Go is a no-op until the number is inside the document.
+// The alert presents from its trigger view, so an unseen zero-size one stands in for a button.
 export function GoToLine({ scheme, open, lineCount, onClose, onGo }: GoToLineProps) {
   const [text, setText] = useState('');
   const go = () => {
@@ -22,6 +23,9 @@ export function GoToLine({ scheme, open, lineCount, onClose, onGo }: GoToLinePro
           if (!presented) onClose();
         }}
       >
+        <Alert.Trigger>
+          <Spacer modifiers={[frame({ width: 0, height: 0 })]} />
+        </Alert.Trigger>
         <Alert.Message>
           <Text>{`1 to ${lineCount}`}</Text>
         </Alert.Message>
