@@ -1,13 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
-import {
-  CodeEditor,
-  type CodeEditorRef,
-  githubDark,
-  githubLight,
-  oneDark,
-  type Theme,
-} from 'react-native-codepad';
+import { CodeEditor, type CodeEditorRef } from 'react-native-codepad';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { chromeFor } from './chrome';
@@ -17,18 +10,11 @@ import { GoToLine } from './chrome/GoToLine';
 import { ICONS } from './chrome/icons';
 import { SettingsSheet } from './chrome/SettingsSheet';
 import { TopBar } from './chrome/TopBar';
+import type { FileGroup, MenuItem } from './chrome/types';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
-import type { FileGroup, MenuChoice, MenuItem } from './native/types';
 import { describeSelection } from './selection';
 import { DEFAULT_SETTINGS, type Settings } from './settings';
-
-type ThemeChoice = MenuChoice & { theme: Theme };
-
-const THEMES: ThemeChoice[] = [
-  { id: 'githubDark', label: 'GitHub Dark', theme: githubDark },
-  { id: 'githubLight', label: 'GitHub Light', theme: githubLight },
-  { id: 'oneDark', label: 'One Dark', theme: oneDark },
-];
+import { THEMES, themeById } from './themes';
 
 const GROUPS: FileGroup[] = [
   { title: 'Samples', files: SAMPLE_FILES.map((f) => ({ id: f.id, label: f.name })) },
@@ -38,7 +24,9 @@ const GROUPS: FileGroup[] = [
 
 type Sheet = 'settings' | 'goToLine' | null;
 
-export function EditorApp({ onNested }: { onNested: () => void }) {
+type Props = { themeId: string; onTheme: (id: string) => void; onNested: () => void };
+
+export function EditorApp({ themeId, onTheme, onNested }: Props) {
   const editor = useRef<CodeEditorRef>(null);
   const opened = useRef(0);
   const safe = useSafeAreaInsets();
@@ -46,7 +34,6 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
 
   const [fileId, setFileId] = useState(SAMPLE_FILES[0]?.id ?? UNTITLED.id);
   const [openCount, setOpenCount] = useState(0);
-  const [themeId, setThemeId] = useState(THEMES[0]?.id ?? 'githubDark');
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [findOpen, setFindOpen] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -60,7 +47,7 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
   const [lineCount, setLineCount] = useState(1);
 
   const file = fileById(fileId);
-  const theme = THEMES.find((t) => t.id === themeId)?.theme ?? githubDark;
+  const theme = themeById(themeId);
   const chrome = useMemo(() => chromeFor(theme), [theme]);
   // Loaded once per open; the generated files are built here, so the open time covers them.
   const text = useMemo(() => file.load(), [file]);
@@ -184,7 +171,7 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
           items={items}
           themes={THEMES}
           themeId={themeId}
-          onTheme={setThemeId}
+          onTheme={onTheme}
         />
         {findOpen ? (
           <FindBar

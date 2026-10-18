@@ -76,5 +76,6 @@ export type GoToLineProps = {
 export type NestedBarProps = {
   scheme: Scheme;
   title: string;
+  topInset: number;
   onBack: () => void;
 };
