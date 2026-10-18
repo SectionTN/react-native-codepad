@@ -33,6 +33,8 @@ import { IOS } from './theme';
 import type { TopBarProps } from './types';
 
 const BAR_HEIGHT = 44;
+// Two 50 pt glass circles and the gap between them, mirrored on the left so the title stays centered.
+const TRAILING_WIDTH = 108;
 
 // Floats over the editor like an iOS 27 navigation bar: a soft edge under the status bar, glass buttons, no opaque strip.
 export function TopBar({
@@ -75,7 +77,7 @@ export function TopBar({
               padding({ horizontal: 16 }),
             ]}
           >
-            <Spacer modifiers={[frame({ width: 88 })]} />
+            <Spacer modifiers={[frame({ width: TRAILING_WIDTH })]} />
             <Spacer />
             <Picker
               selection={fileId}
@@ -112,7 +114,7 @@ export function TopBar({
             </Picker>
             <Spacer />
             <GlassEffectContainer spacing={0}>
-              <HStack spacing={0}>
+              <HStack spacing={8}>
                 <Button
                   label="Find"
                   systemImage="magnifyingglass"

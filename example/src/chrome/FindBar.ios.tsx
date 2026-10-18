@@ -68,7 +68,10 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
       <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
         <VStack
           spacing={8}
-          modifiers={[frame({ maxWidth: Infinity }), padding({ horizontal: 16, vertical: 8 })]}
+          modifiers={[
+            frame({ maxWidth: Infinity }),
+            padding({ horizontal: 16, top: 12, bottom: 8 }),
+          ]}
         >
           <HStack alignment="center" spacing={8}>
             <HStack alignment="center" spacing={6} modifiers={capsule}>
@@ -109,7 +112,7 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
               </Text>
             </HStack>
             <GlassEffectContainer spacing={0}>
-              <HStack spacing={0}>
+              <HStack spacing={8}>
                 <Button
                   label="Previous match"
                   systemImage="chevron.up"

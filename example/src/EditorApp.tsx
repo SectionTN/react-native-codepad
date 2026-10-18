@@ -256,9 +256,10 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
 }
 
 const styles = StyleSheet.create({
-  // iOS floats the top chrome over the editor; Android stacks it above like a Material app bar.
+  // iOS floats the top chrome over the editor, with room below it before the first line; Android
+  // stacks it above like a Material app bar.
   chrome: Platform.select({
-    ios: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 },
+    ios: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1, paddingBottom: 8 },
     default: {},
   }) as object,
   screen: { flex: 1 },
