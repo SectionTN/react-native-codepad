@@ -45,6 +45,7 @@ export type StatusLineProps = {
   language: string;
   timing: string;
   onPosition: () => void;
+  bottomInset: number;
 };
 
 export type KeyRowProps = {

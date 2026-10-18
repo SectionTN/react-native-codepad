@@ -11,10 +11,10 @@ import {
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { chromeFor } from './chrome';
+import { BottomBar } from './chrome/BottomBar';
 import { FindBar } from './chrome/FindBar';
 import { ICONS } from './chrome/icons';
 import { TopBar } from './chrome/TopBar';
-import { BottomBar } from './components/BottomBar';
 import { GoToLineSheet } from './components/GoToLineSheet';
 import { SettingsSheet } from './components/SettingsSheet';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
@@ -225,7 +225,7 @@ export function EditorApp({ onNested }: { onNested: () => void }) {
           }
         />
         <BottomBar
-          chrome={chrome}
+          scheme={chrome.scheme}
           editor={editor}
           keyboardVisible={keyboardVisible}
           bottomInset={safe.bottom}
