@@ -8,6 +8,9 @@
   "files": {
     "includes": [
       "**",
+      "!docs",
+      "!.wolf",
+      "!.claude",
       "!example/android",
       "!example/ios",
       "!.yarn",
