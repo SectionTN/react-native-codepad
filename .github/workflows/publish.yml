@@ -22,29 +22,41 @@ jobs:
       - name: Check the tag against package.json
         run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
 
+      # Staged publishing needs npm 11.15 or newer; Node 24.13 ships 11.6.
+      - name: Update npm
+        run: npm install -g npm@11.19.1
+
       - name: Generate nitrogen code
         run: yarn nitrogen
 
       - name: Build package
         run: yarn prepare
 
-      - name: Publish the core, then the language packages
+      # Each package lands in the staging area; the versions go live once approved on npmjs.com, the core first.
+      - name: Stage the core, then the language packages
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [ -n "$NPM_TOKEN" ]; then
             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
           fi
-          publish() {
+          stage() {
             name=$(node -p "require('./$1/package.json').name")
             version=$(node -p "require('./$1/package.json').version")
             if [ -n "$(npm view "$name@$version" version 2>/dev/null)" ]; then
               echo "$name@$version is already on npm, skipping"
               return
             fi
-            (cd "$1" && npm publish --provenance --access public --ignore-scripts)
+            if (cd "$1" && npm stage publish --provenance --access public --ignore-scripts); then
+              return
+            fi
+            if npm stage list "$name" 2>/dev/null | grep -q "$version"; then
+              echo "$name@$version is already staged, skipping"
+              return
+            fi
+            return 1
           }
-          publish .
+          stage .
           for pkg in languages/*/package.json; do
-            publish "$(dirname "$pkg")"
+            stage "$(dirname "$pkg")"
           done
