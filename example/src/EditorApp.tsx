@@ -208,6 +208,7 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
           suggestions={settings.suggestions}
           readOnly={settings.readOnly}
           placeholder="Start typing"
+          tabSize={2}
           avoidKeyboard
           contentInsets={insets}
           onFocus={() => setFocused(true)}
