@@ -14,7 +14,7 @@ A native code editor for React Native, with **tree-sitter** highlighting and *no
 - Injections: fenced blocks, \`<script>\` and \`<style>\`, front matter
 - Themes that cover every capture the queries produce
 
-Read the [documentation](https://sectiontn.github.io/react-native-codepad/) for the API.
+Read the [documentation](https://reactnativecodepad.pages.dev/) for the API.
 
 \`\`\`js
 const editor = useRef(null);
