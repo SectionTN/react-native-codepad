@@ -28,4 +28,4 @@ The first release: `react-native-codepad` and fifteen language packages, publish
 
 ### Not in this release
 
-Autocomplete, an LSP client, code folding, a minimap, multiple cursors, diagnostics, VoiceOver and TalkBack, font ligatures, bidi editing and web. Each is tracked as an issue on GitHub.
+Autocomplete, an LSP client, code folding, a minimap, multiple cursors, diagnostics, font ligatures, bidi editing and web. Each is tracked as an issue on GitHub.

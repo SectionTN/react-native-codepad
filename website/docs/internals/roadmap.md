@@ -17,7 +17,6 @@ Both editors are complete. Android is tested on the JVM and on an emulator and m
 - An autocomplete popup with provider hooks, and an LSP client on top of it.
 - Code folding, a minimap and multiple cursors.
 - Diagnostics: squiggles and a gutter marker API.
-- VoiceOver and TalkBack. The view exposes nothing to screen readers yet.
 - Font ligatures.
 - Correct bidi editing. Caret movement is logical for now.
 - A web target.
