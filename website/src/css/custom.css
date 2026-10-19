@@ -178,13 +178,16 @@ p {
   height: 22px;
 }
 
-.navbar__toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  margin-right: 0.25rem;
+/* Infima shows the toggle below 996 px only; keep that breakpoint when giving it a touch size. */
+@media (max-width: 996px) {
+  .navbar__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin-right: 0.25rem;
+  }
 }
 
 .navbar__link {
