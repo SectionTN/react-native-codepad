@@ -157,14 +157,19 @@
       "allowSameVersion": true
     },
     "github": {
-      "release": true
+      "release": true,
+      "releaseNotes": "node scripts/release-notes.mjs ${version}"
     },
     "plugins": {
       "@release-it/conventional-changelog": {
         "preset": {
-          "name": "conventionalcommits"
+          "name": "angular"
         },
-        "infile": "CHANGELOG.md"
+        "parserOpts": {
+          "headerPattern": "^(\\w*)(?:\\((.*)\\))?!?: (.*)$"
+        },
+        "infile": "CHANGELOG.md",
+        "header": "# Changelog"
       }
     }
   },
