@@ -78,7 +78,7 @@
   "bugs": {
     "url": "https://github.com/SectionTN/react-native-codepad/issues"
   },
-  "homepage": "https://github.com/SectionTN/react-native-codepad#readme",
+  "homepage": "https://reactnativecodepad.pages.dev/",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
