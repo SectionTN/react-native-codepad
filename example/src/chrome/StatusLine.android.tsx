@@ -45,7 +45,12 @@ export function StatusLine({
             Spaces 2
           </Text>
           <Spacer modifiers={[weight(1)]} />
-          <Text color={colors.onSurfaceVariant} style={{ typography: 'labelMedium' }}>
+          <Text
+            maxLines={1}
+            overflow="ellipsis"
+            color={colors.onSurfaceVariant}
+            style={{ typography: 'labelMedium' }}
+          >
             {timing}
           </Text>
         </Row>
