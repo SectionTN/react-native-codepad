@@ -357,3 +357,48 @@
     gap: 3rem;
   }
 }
+
+.phones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 4vw, 2.5rem);
+  width: min(100%, 44rem);
+  margin-top: clamp(3rem, 7vw, 5rem);
+  align-items: start;
+}
+
+.phone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.phone img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--cp-border);
+  border-radius: clamp(1.25rem, 5vw, 2.25rem);
+  background: var(--cp-surface);
+}
+
+.phone figcaption {
+  font-family: var(--cp-mono);
+  font-size: 0.8125rem;
+  color: var(--cp-muted);
+}
+
+/* Each phone carries a dark and a light capture; the site theme picks one. */
+:global(html[data-theme='dark']) .lightShot,
+:global(html[data-theme='light']) .darkShot {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .phones {
+    grid-template-columns: minmax(0, 18rem);
+    justify-content: center;
+  }
+}

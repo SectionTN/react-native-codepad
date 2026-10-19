@@ -1,6 +1,7 @@
 import highlight from '!!raw-loader!../snippets/highlight.tsx';
 import keyboard from '!!raw-loader!../snippets/keyboard.tsx';
 import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import CodeBlock from '@theme/CodeBlock';
 import Layout from '@theme/Layout';
@@ -124,6 +125,47 @@ function Buttons() {
   );
 }
 
+// Release builds of the example app; each phone carries a dark and a light capture and the site theme picks one.
+const SHOTS = [
+  { platform: 'iOS', dark: 'ios-dark-js', light: 'ios-light-md', width: 760, height: 1652 },
+  {
+    platform: 'Android',
+    dark: 'android-dark-js',
+    light: 'android-light-md',
+    width: 760,
+    height: 1706,
+  },
+] as const;
+
+function Phones() {
+  const base = useBaseUrl('/img/shots/');
+  return (
+    <div className={styles.phones}>
+      {SHOTS.map((shot) => (
+        <figure key={shot.platform} className={styles.phone}>
+          <img
+            className={styles.darkShot}
+            src={`${base}${shot.dark}.webp`}
+            width={shot.width}
+            height={shot.height}
+            alt={`The example app on ${shot.platform} with a JavaScript file open in the dark theme`}
+            decoding="async"
+          />
+          <img
+            className={styles.lightShot}
+            src={`${base}${shot.light}.webp`}
+            width={shot.width}
+            height={shot.height}
+            alt={`The example app on ${shot.platform} with a Markdown file open in the light theme`}
+            decoding="async"
+          />
+          <figcaption>on {shot.platform}, release build</figcaption>
+        </figure>
+      ))}
+    </div>
+  );
+}
+
 function Hero() {
   return (
     <header className={styles.hero}>
@@ -137,6 +179,7 @@ function Hero() {
         <CopyButton text={INSTALL} />
       </div>
       <Buttons />
+      <Phones />
     </header>
   );
 }
