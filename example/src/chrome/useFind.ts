@@ -51,8 +51,7 @@ export function useFind(editor: RefObject<CodeEditorRef | null>, onStatus: (text
 
   // Leaving the bar clears the painted matches.
   useEffect(() => {
-    const api = editor.current;
-    return () => void api?.clearSearch();
+    return () => void editor.current?.clearSearch();
   }, [editor]);
 
   const move = useCallback(

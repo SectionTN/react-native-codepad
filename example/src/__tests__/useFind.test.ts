@@ -43,10 +43,13 @@ test('an invalid regex reports and keeps the query', async () => {
   expect(result.current.match).toEqual({ index: 0, count: 0 });
 });
 
-test('unmounting clears the painted matches', async () => {
-  const api = editor();
-  const ref = { current: api as never };
+// A file switch remounts the editor under an open bar; Done has to clear the instance mounted last.
+test('unmounting clears the painted matches on the editor mounted last', async () => {
+  const first = editor();
+  const last = editor();
+  const ref = { current: first as never };
   const { unmount } = await renderHook(() => useFind(ref, jest.fn()));
+  ref.current = last as never;
   await unmount();
-  expect(api.clearSearch).toHaveBeenCalled();
+  expect(last.clearSearch).toHaveBeenCalled();
 });
