@@ -391,8 +391,8 @@
 }
 
 /* Each phone carries a dark and a light capture; the site theme picks one. */
-:global(html[data-theme='dark']) .lightShot,
-:global(html[data-theme='light']) .darkShot {
+:global(html[data-theme="dark"]) .lightShot,
+:global(html[data-theme="light"]) .darkShot {
   display: none;
 }
 
