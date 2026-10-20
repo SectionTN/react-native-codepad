@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 (2026-10-20)
+
+No changes to the editor. The core is republished so that npm shows the rewritten README (the banner, the demo and the API tables) and its `homepage` points at the docs site. The fifteen language packages move to 0.1.1 with it, unchanged.
+
 # 0.1.0 (2026-10-19)
 
 The first release: `react-native-codepad` and fifteen language packages, published together.
