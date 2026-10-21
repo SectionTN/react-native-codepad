@@ -94,6 +94,16 @@ export function Screen() {
 | `setSearch(query)`, `findNext()`, `findPrevious()`, `replaceCurrent(text)`, `replaceAll(text)` | Search, with the match count and the painted matches. |
 | `focus()`, `blur()` | Show or hide the keyboard. |
 
+## Coding agents
+
+The CodePad skill gives coding agents such as Claude Code, Codex and Cursor the API and its pitfalls:
+
+```sh
+npx skills add SectionTN/react-native-codepad
+```
+
+The docs are also available as plain text in [`llms-full.txt`](https://reactnativecodepad.pages.dev/llms-full.txt). The [AI coding agents guide](https://reactnativecodepad.pages.dev/guides/ai-agents/) has the details.
+
 ## Roadmap
 
 - [x] 0.1: Android and iOS, fifteen languages, search, themes, the keyboard follower
