@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://reactnativecodepad.pages.dev/sitemap.xml

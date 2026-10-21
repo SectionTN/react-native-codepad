@@ -36,6 +36,12 @@ const config: Config = {
           showLastUpdateTime: true,
         },
         blog: false,
+        sitemap: {
+          lastmod: 'date',
+          changefreq: null,
+          priority: null,
+          ignorePatterns: ['/search/**'],
+        },
         theme: {
           customCss: './src/css/custom.css',
         },

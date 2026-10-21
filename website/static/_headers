@@ -1,0 +1,6 @@
+# Preview and per-deployment hosts duplicate production
+https://:version.:project.pages.dev/*
+  X-Robots-Tag: noindex
+
+/search/*
+  X-Robots-Tag: noindex

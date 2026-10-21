@@ -1,5 +1,6 @@
 import highlight from '!!raw-loader!../snippets/highlight.tsx';
 import keyboard from '!!raw-loader!../snippets/keyboard.tsx';
+import Head from '@docusaurus/Head';
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
@@ -274,8 +275,23 @@ function Speed() {
 
 export default function Home() {
   const { siteConfig } = useDocusaurusContext();
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareSourceCode',
+    name: siteConfig.title,
+    description: siteConfig.tagline,
+    url: `${siteConfig.url}/`,
+    codeRepository: REPO,
+    programmingLanguage: ['TypeScript', 'Kotlin', 'Swift'],
+    runtimePlatform: ['React Native', 'Android', 'iOS'],
+    license: 'https://opensource.org/licenses/MIT',
+    author: { '@type': 'Person', name: 'Rayen Sbai', url: 'https://github.com/SectionTN' },
+  };
   return (
-    <Layout title={siteConfig.title} description={siteConfig.tagline}>
+    <Layout title="Native code editor for React Native" description={siteConfig.tagline}>
+      <Head>
+        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
+      </Head>
       <main className={styles.page}>
         <Hero />
         <Speed />
