@@ -92,7 +92,7 @@ const languages = Codepad.availableLanguages();
 | `language` | `string` | undefined | The id of an installed language package. Without it the editor shows plain text. |
 | `theme` | `Theme` | `githubLight` | The colors. `githubDark` and `oneDark` ship too, and a theme is a plain object you can write yourself. |
 | `fontSize` | `number` | `14` | In dp on Android and points on iOS. |
-| `fontFamily` | `string` | Platform default | Sets the editor font family. |
+| `fontFamily` | `string` | `monospace` (Android), `Menlo` (iOS) | Sets the editor font family. |
 | `lineHeight` | `number` | `1.4` | Controls line height. |
 | `softWrap` | `boolean` | `false` | Wraps long lines. Off means horizontal scrolling. |
 | `lineNumbers` | `boolean` | `true` | Shows the line number gutter. |
@@ -105,17 +105,17 @@ const languages = Codepad.availableLanguages();
 | `tabSize` | `number` | `4` | The width of one indentation level. |
 | `placeholder` | `string` | — | Sets placeholder text. |
 | `scrollEnabled` | `boolean` | `true` | Enables or disables editor scrolling. |
-| `contentInsets` | `ContentInsets` | — | Configures the editor's content insets. |
+| `contentInsets` | `ContentInsets` | All insets 0 | Configures the editor's content insets. |
 | `avoidKeyboard` | `boolean` | `false` | Adds the keyboard overlap to the bottom inset on every frame of the keyboard animation. |
-| `suggestions` | `Suggestions` | — | Controls native keyboard suggestions. See the reference for platform-specific behavior. |
+| `suggestions` | `Suggestions` | `'off'` | Controls keyboard suggestions: `'off'` (disables suggestions), `'forceOff'` (also disables composition on Android), and `'on'` (allows autocorrect). |
 | `autoFocus` | `boolean` | `false` | Requests focus when the editor is initialized. |
-| `onChange` | `(event) => void` | — | Called after every edit with the replaced range, new text and its origin. |
-| `onChangeText` | `(text) => void` | — | Called with the complete document text after a change. |
-| `onSelectionChange` | `(selection) => void` | — | Called when the caret or selection moves. |
+| `onChange` | `(event: ChangeEvent) => void` | — | Called after every edit with the replaced range, new text and its origin. |
+| `onChangeText` | `(text: string) => void` | — | Called with the complete document text after a change. |
+| `onSelectionChange` | `(selection: SelectionChangeEvent) => void` | — | Called when the caret or selection moves. |
 | `onReady` | `() => void` | — | Called when the editor is ready. |
 | `onFocus` / `onBlur` | `() => void` | — | Report focus changes. |
-| `onScroll` | `(...) => void` | — | Reports editor scrolling. |
-| `onContentSizeChange` | `(...) => void` | — | Reports content-size changes. |
+| `onScroll` | `(event: ScrollEvent) => void` | — | Reports editor scrolling. |
+| `onContentSizeChange` | `(event: ContentSizeEvent) => void` | — | Reports content-size changes. |
 
 ### Methods
 
@@ -132,7 +132,7 @@ const languages = Codepad.availableLanguages();
 | `setSearch(query)`, `findNext()`, `findPrevious()`, `replaceCurrent(text)`, `replaceAll(text)`, `clearSearch()` | Search, replace matches, and clear the search state. |
 | `focus()`, `blur()`, `isFocused()` | Control or inspect focus. |
 
-See the [complete API reference](https://reactnativecodepad.pages.dev/reference/props/) for exact signatures, options, event types, and return values.
+See the [methods reference](https://reactnativecodepad.pages.dev/reference/methods/) for detailed argument types, options, and return values, and the [complete API reference](https://reactnativecodepad.pages.dev/reference/props/) for all props and types.
 
 ### Important API Behavior
 
