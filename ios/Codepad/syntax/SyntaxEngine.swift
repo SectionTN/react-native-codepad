@@ -116,6 +116,9 @@ final class SyntaxEngine: @unchecked Sendable {
   private var reconciledRevision = -1
   // New spans of the edits since the last completed pass, shifted like hulls: the diff misses a retyped leaf.
   private var dirty: [Int] = []
+  // The text a split parse keeps reading until it finishes, and the edits made since, replayed onto its tree.
+  private var frozen: Mirror?
+  private var replay: [InputEdit] = []
   private var revision = 0
   private var closed = false
 
@@ -134,6 +137,7 @@ final class SyntaxEngine: @unchecked Sendable {
       language = id.flatMap { LanguageRegistry.resolve($0) }
       tree = nil
       dropKept()
+      dropFrozen()
       parser.reset()
       if let language { parser.setLanguage(language.pointer) }
       reparse()
@@ -146,6 +150,7 @@ final class SyntaxEngine: @unchecked Sendable {
       self.revision = revision
       tree = nil
       dropKept()
+      dropFrozen()
       parser.reset()
       reparse()
     }
@@ -156,13 +161,11 @@ final class SyntaxEngine: @unchecked Sendable {
     queue.async { [self] in
       if closed { return }
       mirror.replace(change.start, change.end, change.inserted)
-      // A parse cut by the budget would resume over the edited mirror and ignore the old tree.
-      parser.reset()
       revision = change.revision
       let edit = InputEdit(
         start: change.start, oldEnd: change.end, newEnd: change.newEnd, startPoint: points.start, oldEndPoint: points.oldEnd,
         newEndPoint: points.newEnd)
-      tree?.edit(edit)
+      if frozen != nil { replay.append(edit) } else { tree?.edit(edit) }
       reconciled?.edit(edit)
       for k in kept {
         let s = k.start
@@ -210,6 +213,7 @@ final class SyntaxEngine: @unchecked Sendable {
       closed = true
       tree = nil
       dropKept()
+      dropFrozen()
     }
   }
 
@@ -242,14 +246,13 @@ final class SyntaxEngine: @unchecked Sendable {
   private func reparse() {
     guard let lang = language else { return }
     if pending.withLock({ $0 }) > 0 { return }
-    guard let result = parser.parse(tree, mirror, cancel, budgetMicros: budgetMicros) else {
-      if cancel.isSet {
-        parser.reset()
-        return
-      }
-      queue.async { [self] in if !closed { reparse() } }
+    guard let parsed = parser.parse(tree, frozen ?? mirror, cancel, budgetMicros: budgetMicros) else {
+      // The parse resumes on the text it started with, whatever the edits that cut in do to the live one.
+      if frozen == nil { frozen = mirror.copy() }
+      if !cancel.isSet { queue.async { [self] in if !closed { reparse() } } }
       return
     }
+    let result = catchUp(parsed)
     tree = result
     var counts = Counts()
     let basedOn = reconciled == nil ? -1 : reconciledRevision
@@ -287,6 +290,22 @@ final class SyntaxEngine: @unchecked Sendable {
     kept.removeAll()
     reconciled = nil
     dirty = []
+  }
+
+  private func dropFrozen() {
+    frozen = nil
+    replay.removeAll()
+  }
+
+  /// Brings a tree parsed from the frozen text to the live one: the replayed edits, then one parse that is never cut short.
+  private func catchUp(_ parsed: Tree) -> Tree {
+    guard frozen != nil else { return parsed }
+    frozen = nil
+    for e in replay { parsed.edit(e) }
+    replay.removeAll()
+    // Edits cutting into this parse too could keep every snapshot from landing.
+    guard let live = parser.parse(parsed, mirror, nil, budgetMicros: 0) else { preconditionFailure("an uncancellable parse returned no tree") }
+    return live
   }
 
   /// Pairs after the edit move with it, pairs before it stay, pairs meeting it grow over its new span.

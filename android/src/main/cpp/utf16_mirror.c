@@ -35,3 +35,13 @@ int mirror_replace(Mirror *m, uint32_t start, uint32_t end, const uint16_t *text
   m->length = new_len;
   return 1;
 }
+
+Mirror *mirror_copy(const Mirror *m) {
+  Mirror *copy = mirror_new();
+  if (!copy) return NULL;
+  if (m->length && !mirror_replace(copy, 0, 0, m->data, m->length)) {
+    mirror_delete(copy);
+    return NULL;
+  }
+  return copy;
+}

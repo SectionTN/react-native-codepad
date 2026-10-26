@@ -79,6 +79,13 @@ final class Mirror {
     units = Array(text.utf16)
   }
 
+  /// Shares the buffer until either side is edited.
+  func copy() -> Mirror {
+    let m = Mirror()
+    m.units = units
+    return m
+  }
+
   func text(_ start: Int, _ end: Int) -> String {
     let (s, e) = clamp(start, end)
     return String(decoding: units[s..<e], as: UTF16.self)

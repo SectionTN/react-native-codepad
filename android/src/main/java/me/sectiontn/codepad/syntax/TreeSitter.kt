@@ -26,12 +26,14 @@ class TSNodeRef(val raw: LongArray = LongArray(4)) {
     TSNodeRef().also { TreeSitterNative.nodeDescendantForUnitRange(raw, start, end, it.raw) }
 }
 
-class Mirror : AutoCloseable {
-  val handle: Long = TreeSitterNative.mirrorNew()
+class Mirror private constructor(val handle: Long) : AutoCloseable {
+  constructor() : this(TreeSitterNative.mirrorNew())
+
   val length: Int get() = TreeSitterNative.mirrorLength(handle)
   fun replace(start: Int, end: Int, text: String) = TreeSitterNative.mirrorReplace(handle, start, end, text)
   fun setText(text: String) = replace(0, length, text)
   fun text(start: Int, end: Int): String = TreeSitterNative.mirrorText(handle, start, end)
+  fun copy(): Mirror = Mirror(TreeSitterNative.mirrorCopy(handle))
   override fun close() = TreeSitterNative.mirrorDelete(handle)
 }
 

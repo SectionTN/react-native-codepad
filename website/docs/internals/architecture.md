@@ -31,7 +31,7 @@ The document is an array of lines, each a growable UTF-16 buffer. `\r\n` and a `
 
 ### `syntax`
 
-One serial thread per editor holds the parser and the live tree. It applies each edit, reparses incrementally, reconciles the injected trees against the ranges tree-sitter reports as changed, and publishes an immutable snapshot to the main thread. The first parse of a large file runs with a time budget and resumes, and an edit during a parse cancels it.
+One serial thread per editor holds the parser and the live tree. It applies each edit, reparses incrementally, reconciles the injected trees against the ranges tree-sitter reports as changed, and publishes an immutable snapshot to the main thread. The first parse of a large file runs with a time budget and resumes, and an edit during a parse is replayed onto its tree once it finishes.
 
 The main thread queries the published snapshot for the visible lines only and caches the spans per line. A snapshot lists the regions whose structure changed, so the painter re-queries only the visible lines inside those regions. Overlapping captures apply in pattern order and the later pattern takes precedence, which is the rule nvim queries are written for.
 

@@ -54,6 +54,7 @@ internal object TreeSitterNative {
   @JvmStatic external fun mirrorNew(): Long
   @JvmStatic external fun mirrorDelete(mirror: Long)
   @JvmStatic external fun mirrorReplace(mirror: Long, start: Int, end: Int, text: String)
+  @JvmStatic external fun mirrorCopy(mirror: Long): Long
   @JvmStatic external fun mirrorLength(mirror: Long): Int
   @JvmStatic external fun mirrorText(mirror: Long, start: Int, end: Int): String
   @JvmStatic external fun languageAbiVersion(language: Long): Int

@@ -13,5 +13,7 @@ typedef struct {
 Mirror *mirror_new(void);
 void mirror_delete(Mirror *m);
 int mirror_replace(Mirror *m, uint32_t start, uint32_t end, const uint16_t *text, uint32_t text_len);
+// NULL when the allocation fails.
+Mirror *mirror_copy(const Mirror *m);
 
 #endif

@@ -495,6 +495,13 @@ void FN(mirrorReplace)(JNIEnv *env, jclass cls, jlong mirror, jint start, jint e
   if (!ok) (*env)->ThrowNew(env, (*env)->FindClass(env, "java/lang/OutOfMemoryError"), "codepad mirror");
 }
 
+jlong FN(mirrorCopy)(JNIEnv *env, jclass cls, jlong mirror) {
+  (void) cls;
+  Mirror *copy = mirror_copy((Mirror *) (intptr_t) mirror);
+  if (!copy) (*env)->ThrowNew(env, (*env)->FindClass(env, "java/lang/OutOfMemoryError"), "codepad mirror");
+  return (jlong) (intptr_t) copy;
+}
+
 jint FN(mirrorLength)(JNIEnv *env, jclass cls, jlong mirror) {
   (void) env; (void) cls;
   return (jint) ((Mirror *) (intptr_t) mirror)->length;

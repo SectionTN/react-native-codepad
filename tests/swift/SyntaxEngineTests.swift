@@ -55,8 +55,22 @@ final class SyntaxEngineTests: XCTestCase {
     engine.close()
   }
 
-  // The blocker runs between two budget slices of the first parse, so the edit lands while a parse is outstanding.
-  func testAnEditBetweenBudgetSlicesRestartsTheParse() throws {
+  private struct Hold {
+    let started = DispatchSemaphore(value: 0)
+    let release = DispatchSemaphore(value: 0)
+  }
+
+  private func hold(_ engine: SyntaxEngine) -> Hold {
+    let h = Hold()
+    engine.queue.async {
+      h.started.signal()
+      h.release.wait()
+    }
+    return h
+  }
+
+  // Each round queues the next blocker behind its edit, so one budget slice and one edit run between two blockers.
+  func testEditsBetweenEveryBudgetSliceStillPublish() throws {
     let base = String(repeating: "let a = 1;\n", count: 2000)
     let core = EditorCore(base)
     let q = snapshots
@@ -64,17 +78,23 @@ final class SyntaxEngineTests: XCTestCase {
     wire(core, engine)
     engine.setLanguage("javascript")
     engine.setText(base, revision: core.document.revision)
-    let started = DispatchSemaphore(value: 0)
-    let release = DispatchSemaphore(value: 0)
-    engine.queue.async {
-      started.signal()
-      release.wait()
+    var current = hold(engine)
+    current.started.wait()
+    defer { current.release.signal() }
+    var published: Snapshot?
+    for _ in 1...20_000 {
+      core.replace(0, 0, " ")
+      let next = hold(engine)
+      current.release.signal()
+      current = next
+      current.started.wait()
+      while published == nil, let s = snapshots.take(0) {
+        if s.revision > 0 { published = s }
+      }
+      if published != nil { break }
     }
-    started.wait()
-    core.replace(0, 0, " ")
-    release.signal()
-    let snapshot = try XCTUnwrap(snapshots.takeRevision(1))
-    XCTAssertEqual(shape(try freshTree(" " + base)), shape(snapshot.tree))
+    let snapshot = try XCTUnwrap(published, "no snapshot while an edit landed between every budget slice")
+    XCTAssertEqual(shape(try freshTree(String(repeating: " ", count: snapshot.revision) + base)), shape(snapshot.tree))
     engine.close()
   }
 

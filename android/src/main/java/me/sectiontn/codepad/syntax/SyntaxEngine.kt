@@ -74,6 +74,9 @@ class SyntaxEngine(
   private var reconciledRevision = -1
   // New spans of the edits since the last completed pass, shifted like hulls: the diff misses a retyped leaf.
   private var dirty = IntArray(0)
+  // The text a split parse keeps reading until it finishes, and the edits made since, replayed onto its tree.
+  private var frozen: Mirror? = null
+  private val replay = ArrayList<InputEdit>()
   private var revision = 0
   private var closed = false
 
@@ -82,6 +85,7 @@ class SyntaxEngine(
     tree?.close()
     tree = null
     dropKept()
+    dropFrozen()
     parser.reset()
     language?.let { parser.setLanguage(it.pointer) }
     reparse()
@@ -93,6 +97,7 @@ class SyntaxEngine(
     tree?.close()
     tree = null
     dropKept()
+    dropFrozen()
     parser.reset()
     reparse()
   }
@@ -104,11 +109,9 @@ class SyntaxEngine(
     executor.execute {
       if (closed) return@execute
       mirror.replace(change.start, change.end, change.inserted)
-      // A parse cut by the budget would resume over the edited mirror and ignore the old tree.
-      parser.reset()
       revision = change.revision
       val edit = InputEdit(change.start, change.end, change.newEnd, points.start, points.oldEnd, points.newEnd)
-      tree?.edit(edit)
+      if (frozen != null) replay.add(edit) else tree?.edit(edit)
       reconciled?.edit(edit)
       for (k in kept) {
         val s = k.start
@@ -160,6 +163,7 @@ class SyntaxEngine(
       tree?.close()
       tree = null
       dropKept()
+      dropFrozen()
       parser.close()
       mirror.close()
       cancel.close()
@@ -181,15 +185,14 @@ class SyntaxEngine(
   private fun reparse() {
     val lang = language ?: return
     if (pending.get() > 0) return
-    val result = parser.parse(tree, mirror, cancel, budgetMicros)
-    if (result == null) {
-      if (cancel.isSet) {
-        parser.reset()
-        return
-      }
-      resume()
+    val parsed = parser.parse(tree, frozen ?: mirror, cancel, budgetMicros)
+    if (parsed == null) {
+      // The parse resumes on the text it started with, whatever the edits that cut in do to the live one.
+      if (frozen == null) frozen = mirror.copy()
+      if (!cancel.isSet) resume()
       return
     }
+    val result = catchUp(parsed)
     tree?.close()
     tree = result
     val counts = Counts()
@@ -232,6 +235,25 @@ class SyntaxEngine(
     reconciled?.close()
     reconciled = null
     dirty = IntArray(0)
+  }
+
+  private fun dropFrozen() {
+    frozen?.close()
+    frozen = null
+    replay.clear()
+  }
+
+  /** Brings a tree parsed from the frozen text to the live one: the replayed edits, then one parse that is never cut short. */
+  private fun catchUp(parsed: Tree): Tree {
+    val f = frozen ?: return parsed
+    f.close()
+    frozen = null
+    for (e in replay) parsed.edit(e)
+    replay.clear()
+    // Edits cutting into this parse too could keep every snapshot from landing.
+    val live = checkNotNull(parser.parse(parsed, mirror, null, 0))
+    parsed.close()
+    return live
   }
 
   /** Pairs after the edit move with it, pairs before it stay, pairs meeting it grow over its new span. */

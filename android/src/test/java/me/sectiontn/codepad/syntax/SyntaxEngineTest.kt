@@ -1,6 +1,7 @@
 package me.sectiontn.codepad.syntax
 
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -84,9 +85,18 @@ class SyntaxEngineTest {
     engine.close()
   }
 
-  // The blocker runs between two budget slices of the first parse, so the edit lands while a parse is outstanding.
+  private class Hold(val started: CountDownLatch = CountDownLatch(1), val release: CountDownLatch = CountDownLatch(1))
+
+  private fun hold(executor: ExecutorService): Hold = Hold().also { h ->
+    executor.execute {
+      h.started.countDown()
+      h.release.await()
+    }
+  }
+
+  // Each round queues the next blocker behind its edit, so one budget slice and one edit run between two blockers.
   @Test
-  fun anEditBetweenBudgetSlicesRestartsTheParse() {
+  fun editsBetweenEveryBudgetSliceStillPublish() {
     val base = "let a = 1;\n".repeat(2000)
     val core = EditorCore(base)
     val executor = Executors.newSingleThreadExecutor()
@@ -94,17 +104,27 @@ class SyntaxEngineTest {
     core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
     engine.setText(base, core.document.revision)
-    val started = CountDownLatch(1)
-    val release = CountDownLatch(1)
-    executor.execute {
-      started.countDown()
-      release.await()
+    var current = hold(executor)
+    current.started.await()
+    var published: Snapshot? = null
+    try {
+      for (round in 1..20_000) {
+        core.replace(0, 0, " ")
+        val next = hold(executor)
+        current.release.countDown()
+        current = next
+        current.started.await()
+        while (published == null) {
+          val s = snapshots.poll() ?: break
+          if (s.revision > 0) published = s else s.close()
+        }
+        if (published != null) break
+      }
+    } finally {
+      current.release.countDown()
     }
-    started.await()
-    core.replace(0, 0, " ")
-    release.countDown()
-    val snapshot = awaitRevision(1)
-    assertEquals(shape(freshTree(" $base")), shape(snapshot.tree))
+    val snapshot = checkNotNull(published) { "no snapshot while an edit landed between every budget slice" }
+    assertEquals(shape(freshTree(" ".repeat(snapshot.revision) + base)), shape(snapshot.tree))
     snapshot.close()
     engine.close()
   }
