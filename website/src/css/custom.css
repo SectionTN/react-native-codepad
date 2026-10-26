@@ -218,56 +218,22 @@ html.plugin-docs .navbar {
   background-color: color-mix(in srgb, var(--cp-bg) 80%, transparent);
 }
 
-/* Sidebar and table of contents */
-
-.theme-doc-sidebar-container {
-  border-right-color: var(--cp-border);
-}
-
-.menu__link {
-  font-size: 0.9375rem;
-  border-radius: 8px;
-}
-
-.menu__link--active:not(.menu__link--sublist) {
-  color: var(--cp-accent);
-  font-weight: 500;
-}
-
-.theme-doc-sidebar-menu .menu__list-item-collapsible > .menu__link {
-  font-family: var(--cp-mono);
-  font-weight: 500;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--cp-muted);
-}
-
-.table-of-contents__link {
-  color: var(--cp-muted);
-}
-
-.table-of-contents__link--active,
-.table-of-contents__link:hover {
-  color: var(--cp-text);
-}
-
 /* Docs content */
 
 .markdown {
   --ifm-line-height-base: 1.65;
 }
 
-.markdown h1:first-child {
-  font-size: 2.25rem;
-  letter-spacing: -0.03em;
-  margin-bottom: 1rem;
+/* The paragraph under the page header reads as its introduction. */
+.markdown > header + p {
+  color: var(--cp-muted);
 }
 
 .markdown > h2 {
-  margin-top: 2.75rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--cp-border);
+  margin: 56px 0 14px;
+  font-size: 26px;
+  letter-spacing: -0.03em;
+  font-weight: 600;
 }
 
 .markdown > h3 {
@@ -287,15 +253,29 @@ html.plugin-docs .navbar {
 
 code {
   border: 1px solid var(--cp-border);
-  padding: 0.12rem 0.35rem;
-  font-weight: 500;
-  font-size: 0.85em;
+  border-radius: 6px;
+  padding: 1px 6px;
+  background: var(--cp-surface-2);
+  color: var(--cp-text);
+  font-weight: 400;
+  font-size: 0.86em;
+  vertical-align: baseline;
+}
+
+/* Inline values take their syntax color (src/theme/MDXComponents). */
+.cp-code-n {
+  color: var(--cp-n);
+}
+
+.cp-code-s {
+  color: var(--cp-s);
 }
 
 pre code {
   border: 0;
   padding: 0;
   font-weight: 400;
+  color: inherit;
 }
 
 /* An identifier in the table of contents reads as mono text, like a heading. */
@@ -388,23 +368,6 @@ table th {
   text-align: left;
 }
 
-.pagination-nav__link {
-  border-color: var(--cp-border);
-  border-radius: var(--cp-radius);
-}
-
-.pagination-nav__link:hover {
-  border-color: var(--cp-border-strong);
-}
-
-.breadcrumbs__item--active .breadcrumbs__link {
-  background: var(--cp-surface);
-}
-
-.theme-edit-this-page {
-  color: var(--cp-muted);
-}
-
 /* Secondary links reach 44 px on a coarse pointer, as layout. */
 @media (pointer: coarse) {
   [class*="searchQueryInput"] {
@@ -412,15 +375,6 @@ table th {
   }
 
   .table-scroll td > a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  .breadcrumbs__link,
-  .theme-edit-this-page {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -464,6 +418,19 @@ table th {
   }
 
   :where(.cp-redesign) :is(a, button)::after {
+    content: "";
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}
+
+/* Docs controls drawn under 44 px get their touch target from a hit area. */
+@media (pointer: coarse) {
+  :where(.cp-touch) :is(a, button) {
+    position: relative;
+  }
+
+  :where(.cp-touch) :is(a, button)::after {
     content: "";
     position: absolute;
     inset: min(0px, calc(50% - 22px));

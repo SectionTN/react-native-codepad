@@ -1,0 +1,69 @@
+.bar {
+  position: sticky;
+  top: 76px;
+  z-index: 5;
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--cp-border-strong);
+  background: color-mix(in srgb, var(--cp-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 12px 32px -20px rgba(0, 0, 0, 0.6);
+}
+
+.tag,
+.tagEnd {
+  font-family: var(--cp-mono);
+  font-size: 13px;
+  color: var(--cp-accent);
+}
+
+.tagEnd {
+  padding-right: 8px;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 1px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--cp-text);
+  font-family: var(--cp-mono);
+  font-size: 13.5px;
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--cp-faint);
+}
+
+.count {
+  font-family: var(--cp-mono);
+  font-size: 12px;
+  color: var(--cp-faint);
+  white-space: nowrap;
+}
+
+.empty {
+  margin-top: 40px;
+  padding: 40px 24px;
+  border-radius: 16px;
+  border: 1px dashed var(--cp-border-strong);
+  text-align: center;
+  color: var(--cp-muted);
+}
+
+.emptyQuery {
+  font-family: var(--cp-mono);
+  color: var(--cp-text);
+}
+
+.bar:focus-within {
+  border-color: var(--cp-link);
+}

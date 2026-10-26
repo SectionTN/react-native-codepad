@@ -1,0 +1,107 @@
+.propsH2 {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 56px 0 14px;
+  scroll-margin-top: 140px;
+  line-height: 1.65;
+}
+
+.count {
+  font-family: var(--cp-mono);
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--cp-faint);
+  letter-spacing: 0;
+}
+
+.rows {
+  border-top: 1px solid var(--cp-border);
+}
+
+.row {
+  position: relative;
+  padding: 18px 16px;
+  margin: 0 -16px;
+  border-bottom: 1px solid var(--cp-border);
+  scroll-margin-top: 150px;
+}
+
+.row:hover {
+  background: var(--cp-surface);
+}
+
+.flash {
+  position: absolute;
+  inset: 0;
+  background: var(--cp-accent-soft);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.rowHead {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.name {
+  font-family: var(--cp-mono);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--cp-text);
+  text-decoration: none;
+}
+
+.name:hover {
+  color: var(--cp-accent);
+}
+
+.type {
+  font-family: var(--cp-mono);
+  font-size: 12.5px;
+  padding: 1px 8px;
+  border-radius: 6px;
+  background: var(--cp-surface-2);
+  border: 1px solid var(--cp-border);
+  color: var(--cp-t);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.default {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--cp-muted);
+}
+
+.defaultLabel {
+  font-family: var(--cp-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cp-faint);
+}
+
+.undefined {
+  font-family: var(--cp-mono);
+  font-size: 0.86em;
+  color: var(--cp-faint);
+  font-style: italic;
+}
+
+.notes {
+  position: relative;
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--cp-muted);
+  text-wrap: pretty;
+}

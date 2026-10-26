@@ -127,7 +127,8 @@
 .input {
   flex: 1;
   min-width: 0;
-  height: 56px;
+  height: 58px;
+  padding: 1px 2px;
   border: 0;
   background: transparent;
   color: var(--cp-text);

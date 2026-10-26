@@ -1,0 +1,222 @@
+.main {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 40px clamp(4px, 4vw, 64px) 96px;
+  box-sizing: border-box;
+}
+
+.article {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Menu, below 900 px */
+
+.menu {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .menu {
+    display: block;
+  }
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-surface);
+  color: var(--cp-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+}
+
+.burger {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.burger > span {
+  width: 14px;
+  height: 1.5px;
+  background: currentColor;
+}
+
+.menuWhere {
+  color: var(--cp-faint);
+}
+
+.drawer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  margin: -8px 0 24px;
+  border-radius: 14px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-surface);
+}
+
+.drawerLabel {
+  font-family: var(--cp-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cp-faint);
+  margin-bottom: 6px;
+}
+
+.drawerLink {
+  display: block;
+  padding: 3px 0;
+  font-size: 14px;
+  color: var(--cp-muted);
+}
+
+/* On this page, from 1240 px */
+
+.toc {
+  flex: 0 0 216px;
+  position: sticky;
+  top: 65px;
+  padding: 44px 0 40px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1239px) {
+  .toc {
+    display: none;
+  }
+}
+
+.tocLabel {
+  font-family: var(--cp-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cp-faint);
+  margin-bottom: 14px;
+}
+
+.tocList {
+  position: relative;
+  padding-left: 14px;
+}
+
+.tocRail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--cp-border);
+}
+
+.tocBar {
+  position: absolute;
+  left: 0;
+  width: 2px;
+  height: 18px;
+  margin-left: -0.5px;
+  border-radius: 1px;
+  background: var(--cp-accent);
+  transition: top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.tocLink {
+  display: block;
+  height: 30px;
+  line-height: 30px;
+  font-size: 13.5px;
+  color: var(--cp-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.25s;
+}
+
+.tocLink code {
+  border: 0;
+  padding: 0;
+  background: none;
+  font-size: 0.92em;
+  color: inherit;
+}
+
+.tocNested {
+  padding-left: 12px;
+}
+
+.tocActive {
+  color: var(--cp-text);
+  font-weight: 500;
+}
+
+.tocMore {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--cp-border);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.tocMoreLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  color: var(--cp-muted);
+}
+
+/* Previous and next */
+
+.pager {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
+  margin-top: 72px;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--cp-border);
+  color: var(--cp-text);
+}
+
+.page:hover {
+  border-color: var(--cp-accent);
+  background: var(--cp-surface);
+  color: var(--cp-text);
+}
+
+.pageNext {
+  align-items: flex-end;
+}
+
+.pageLabel {
+  font-family: var(--cp-mono);
+  font-size: 12px;
+  color: var(--cp-faint);
+}
+
+.pageTitle {
+  font-size: 17px;
+  font-weight: 500;
+}
