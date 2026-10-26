@@ -60,12 +60,6 @@ export function usePackageManager(): [Pm, (pm: Pm) => void] {
 export const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export function useReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => setReduced(prefersReducedMotion()), []);
-  return reduced;
-}
-
 // Writes to the clipboard and reports "Copied" for 1.6 s.
 export function useCopy(): [string | null, (key: string, text: string) => void] {
   const [copied, setCopied] = useState<string | null>(null);

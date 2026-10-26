@@ -11,7 +11,7 @@ const NONE: IndexProp[] = [];
 
 export const usePropFilter = () => useContext(Context);
 
-export type PropText = { name: string; type: string; text: string };
+type PropText = { name: string; type: string; text: string };
 
 export function matchesProp(query: string, prop: PropText) {
   const q = query.trim().toLowerCase();

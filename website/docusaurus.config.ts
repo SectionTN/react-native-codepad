@@ -111,12 +111,6 @@ const config: Config = {
       ],
     },
     navbar: {
-      title: 'CodePad',
-      logo: {
-        alt: 'React Native CodePad',
-        src: 'img/logo.svg',
-        srcDark: 'img/logo-dark.svg',
-      },
       items: [
         { to: '/start/introduction/', label: 'Docs', activeBaseRegex: '^/(start|internals)/' },
         { to: '/guides/languages/', label: 'Guides', activeBaseRegex: '^/guides/' },
@@ -153,7 +147,6 @@ const config: Config = {
           ],
         },
       ],
-      copyright: 'Made by <a href="https://github.com/SectionTN">SectionTN</a>',
     },
   } satisfies Preset.ThemeConfig,
 };

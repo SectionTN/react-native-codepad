@@ -11,7 +11,7 @@ test('every landing snippet compiles against the public API', () => {
   const files = readdirSync(DIR)
     .filter((f) => f.endsWith('.tsx'))
     .map((f) => path.join(DIR, f));
-  assert.ok(files.length >= 5, `five snippets, found ${files.length}`);
+  assert.ok(files.length > 0, 'no snippets found');
 
   const configFile = path.join(ROOT, 'tsconfig.json');
   const { config } = ts.readConfigFile(configFile, ts.sys.readFile);

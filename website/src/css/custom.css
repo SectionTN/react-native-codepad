@@ -55,7 +55,6 @@
   --cp-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --cp-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --cp-radius: 12px;
-  --cp-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   --ifm-color-primary: var(--cp-link);
   --ifm-color-primary-dark: #0860c4;
@@ -104,7 +103,6 @@
   --ifm-alert-border-width: 0;
   --ifm-alert-border-left-width: 3px;
   --docusaurus-highlighted-code-line-bg: color-mix(in srgb, var(--cp-link) 14%, transparent);
-  --search-local-modal-background: var(--cp-bg);
 }
 
 /* Infima defines its dark variables on html[data-theme], so the override needs that specificity. */
@@ -187,10 +185,6 @@ h4 {
 
 p {
   text-wrap: pretty;
-}
-
-kbd {
-  --ifm-color-emphasis-0: transparent;
 }
 
 @keyframes cpBlink {
