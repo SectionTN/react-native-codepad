@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.2 (2026-10-27)
+
+### Editor
+
+- Typing while a large file is still in its first parse no longer restarts that parse. The engine finishes it on the text it started from, replays the edits made in the meantime onto its tree, and runs one incremental pass to catch up before it publishes the highlights. On the Android emulator, typing into the 100,000-line example file during its first parse used to hold the first highlight back for 32 seconds. It now arrives after 1.6 seconds. The fix covers the Android and iOS engines.
+
+### Docs
+
+- The README tables list every prop, event and method, worded like the reference pages (#2).
+- Coding agents can install a skill that covers the setup, the API and the traps of treating the editor like a `TextInput`, with `npx skills add SectionTN/react-native-codepad`. The AI coding agents guide on the docs site explains how to use it.
+- The docs site has a new design: the landing page, the docs layout, the navigation and the code blocks.
+
+### Contributors
+
+- Thanks to @fazi-gondal for the missing README API entries (#2, 3c2a064).
+
+The fifteen language packages move to 0.1.2 with the core, unchanged.
+
 ## 0.1.1 (2026-10-20)
 
 No changes to the editor. The core is republished so that npm shows the rewritten README (the banner, the demo and the API tables) and its `homepage` points at the docs site. The fifteen language packages move to 0.1.1 with it, unchanged.
