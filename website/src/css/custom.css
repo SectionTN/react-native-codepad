@@ -438,3 +438,13 @@ table th {
     inset: min(0px, calc(50% - 22px));
   }
 }
+
+/* Under reduced motion the redesigned pages show their final states: no carets blink, nothing loops. */
+@media (prefers-reduced-motion: reduce) {
+  .cp-redesign *,
+  .cp-redesign *::before,
+  .cp-redesign *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: beats the inline and module loops it stops */
+    animation: none !important;
+  }
+}

@@ -3,6 +3,7 @@ import { usePluginData } from '@docusaurus/useGlobalData';
 import clsx from 'clsx';
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { OPEN_SEARCH } from '../../data/site';
 import type { SiteIndex } from '../../plugins/siteIndex';
 import styles from './styles.module.css';
 
@@ -180,8 +181,13 @@ export default function SearchBar() {
         setOpen(false);
       }
     };
+    const onOpen = () => setOpen(true);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener(OPEN_SEARCH, onOpen);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener(OPEN_SEARCH, onOpen);
+    };
   }, []);
 
   return (

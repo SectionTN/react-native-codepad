@@ -1,3 +1,4 @@
+import useBrokenLinks from '@docusaurus/useBrokenLinks';
 import clsx from 'clsx';
 import { FX } from './fx';
 import { useLoop } from './hooks';
@@ -27,6 +28,7 @@ function Shipped() {
 }
 
 export function Roadmap() {
+  useBrokenLinks().collectAnchor('roadmap');
   return (
     <section id="roadmap" className={ui.section}>
       <SectionHeader
