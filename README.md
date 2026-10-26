@@ -72,26 +72,45 @@ export function Screen() {
 | `initialValue` | `string` | `''` | Sets the initial text. It is read once, so use `setText()` to replace the document later. |
 | `language` | `string` | undefined | The id of an installed language package. Without it the editor shows plain text. |
 | `theme` | `Theme` | `githubLight` | The colors. `githubDark` and `oneDark` ship too, and a theme is a plain object you can write yourself. |
+| `fontFamily` | `string` | `monospace` on Android, `Menlo` on iOS | The font, by name. |
 | `fontSize` | `number` | `14` | In dp on Android and points on iOS. |
+| `lineHeight` | `number` | `1.4` | A multiplier of the font size. |
 | `softWrap` | `boolean` | `false` | Wraps long lines. Off means horizontal scrolling. |
 | `lineNumbers` | `boolean` | `true` | Shows the line number gutter. |
+| `highlightActiveLine` | `boolean` | `true` | Paints the line the caret is on. |
+| `matchBrackets` | `boolean` | `true` | Paints the bracket pair at the caret. |
+| `placeholder` | `string` | undefined | Text drawn while the document is empty. |
 | `readOnly` | `boolean` | `false` | Hides the keyboard and refuses edits. Selection and copy keep working. |
 | `autoCloseBrackets` | `boolean` | `true` | Closes pairs as you type and skips over a closer you type yourself. |
+| `autoIndent` | `boolean` | `true` | A newline keeps the line's indentation and adds a level inside an open bracket. |
+| `insertSpaces` | `boolean` | `true` | Indents with spaces. Off indents with tabs. |
 | `tabSize` | `number` | `4` | The width of one indentation level. |
+| `suggestions` | `Suggestions` | `'off'` | `'on'` allows autocorrect. `'forceOff'` also stops composition on most Android keyboards. |
+| `autoFocus` | `boolean` | `false` | Focuses the editor and shows the keyboard once the view is attached. |
+| `scrollEnabled` | `boolean` | `true` | Off lets a parent `ScrollView` scroll through the editor. |
+| `contentInsets` | `ContentInsets` | all 0 | The padding inside the scrollable area. Style padding on the view is ignored. |
 | `avoidKeyboard` | `boolean` | `false` | Adds the keyboard overlap to the bottom inset on every frame of the keyboard animation. |
+| `onReady` | `() => void` | | Called once after the first draw. Ref methods are valid from here. |
 | `onChange` | `(event) => void` | | Called after every edit with the replaced range, the new text and its origin. |
+| `onChangeText` | `(text) => void` | | Called with the full text after every change. Prefer `onChange` on large documents. |
 | `onSelectionChange` | `(selection) => void` | | Called when the caret or the selection moves. |
+| `onFocus`, `onBlur` | `() => void` | | Called when the editor gains or loses focus. |
+| `onScroll` | `(event) => void` | | Called with the scroll offset and the content size, at most once per frame. |
+| `onContentSizeChange` | `(event) => void` | | Called when the content size changes, insets included. |
 
 ### Methods
 
 | Method | Description |
 | --- | --- |
-| `getText()`, `getSelection()`, `getLineCount()` | Read the document synchronously on the JS thread. |
+| `getText()`, `getTextInRange(range)`, `getLine(index)`, `getLength()`, `getLineCount()` | Read the document synchronously on the JS thread. |
+| `getSelection()`, `getRevision()`, `getCursorRect()`, `getVisibleLines()` | Read the selection, the revision, the caret rectangle and the lines on screen. |
+| `offsetToPosition(offset)`, `positionToOffset(position)` | Convert between UTF-16 offsets and 0-based lines and columns. |
+| `canUndo()`, `canRedo()`, `isFocused()` | Report whether there is an edit to undo or redo and whether the editor has focus. |
 | `setText(text)`, `replaceRange(range, text)`, `insertText(text)` | Change the document. Each resolves once the edit is applied. |
 | `setSelection(selection)`, `selectAll()`, `scrollToLine(line)`, `revealSelection()` | Move the selection and the viewport. |
 | `undo()`, `redo()`, `indent()`, `outdent()`, `cut()`, `copy()`, `paste()` | The edit menu, from JavaScript. |
 | `moveCaret(direction)`, `typeText(text)`, `deleteBackward()`, `deleteForward()` | The toolbar API. Each goes through the same path as the keyboard. |
-| `setSearch(query)`, `findNext()`, `findPrevious()`, `replaceCurrent(text)`, `replaceAll(text)` | Search, with the match count and the painted matches. |
+| `setSearch(query)`, `findNext()`, `findPrevious()`, `replaceCurrent(text)`, `replaceAll(text)`, `clearSearch()` | Search, with the match count and the painted matches. |
 | `focus()`, `blur()` | Show or hide the keyboard. |
 
 ## Coding agents
