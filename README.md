@@ -37,8 +37,6 @@ Requirements:
 - Expo: a development build or `npx expo prebuild` (Expo Go isn't supported)
 - One `react-native-codepad-lang-*` package for each language you highlight
 
-After adding the package or changing native configuration, rebuild your native application. Installing the JavaScript package alone does not update an already-installed native app.
-
 ## Usage
 
 ```tsx
@@ -49,7 +47,6 @@ const INITIAL = 'export const answer = 42;\n';
 
 export function Screen() {
   const editor = useRef<CodeEditorRef>(null);
-
   return (
     <CodeEditor
       ref={editor}
@@ -64,22 +61,6 @@ export function Screen() {
 }
 ```
 
-The editor needs a parent layout that gives it space to render. For example, `style={{ flex: 1 }}` works when its parent has a defined size.
-
-## Language Support
-
-Syntax highlighting is provided by separate `react-native-codepad-lang-*` packages. Install the package for each language your app uses, then set `language` to that package's language identifier.
-
-For example, the JavaScript package is installed in the setup command above and used with `language="javascript"`. See the [Language Reference](https://reactnativecodepad.pages.dev/reference/languages/) for supported languages, package names, and identifiers.
-
-You can check which languages are available at runtime:
-
-```tsx
-import { Codepad } from 'react-native-codepad';
-
-const languages = Codepad.availableLanguages();
-```
-
 ## API
 
 `CodeEditor` takes the usual `View` props, plus the ones below. The [reference](https://reactnativecodepad.pages.dev/reference/props/) lists every prop, method, event and type.
@@ -91,63 +72,48 @@ const languages = Codepad.availableLanguages();
 | `initialValue` | `string` | `''` | Sets the initial text. It is read once, so use `setText()` to replace the document later. |
 | `language` | `string` | undefined | The id of an installed language package. Without it the editor shows plain text. |
 | `theme` | `Theme` | `githubLight` | The colors. `githubDark` and `oneDark` ship too, and a theme is a plain object you can write yourself. |
+| `fontFamily` | `string` | `monospace` on Android, `Menlo` on iOS | The font, by name. |
 | `fontSize` | `number` | `14` | In dp on Android and points on iOS. |
-| `fontFamily` | `string` | `monospace` (Android), `Menlo` (iOS) | Sets the editor font family. |
-| `lineHeight` | `number` | `1.4` | Controls line height. |
+| `lineHeight` | `number` | `1.4` | A multiplier of the font size. |
 | `softWrap` | `boolean` | `false` | Wraps long lines. Off means horizontal scrolling. |
 | `lineNumbers` | `boolean` | `true` | Shows the line number gutter. |
+| `highlightActiveLine` | `boolean` | `true` | Paints the line the caret is on. |
+| `matchBrackets` | `boolean` | `true` | Paints the bracket pair at the caret. |
+| `placeholder` | `string` | undefined | Text drawn while the document is empty. |
 | `readOnly` | `boolean` | `false` | Hides the keyboard and refuses edits. Selection and copy keep working. |
-| `highlightActiveLine` | `boolean` | `true` | Highlights the current line. |
-| `matchBrackets` | `boolean` | `true` | Highlights matching brackets. |
 | `autoCloseBrackets` | `boolean` | `true` | Closes pairs as you type and skips over a closer you type yourself. |
-| `autoIndent` | `boolean` | `true` | Enables automatic indentation. |
-| `insertSpaces` | `boolean` | `true` | Inserts spaces instead of tab characters. |
+| `autoIndent` | `boolean` | `true` | A newline keeps the line's indentation and adds a level inside an open bracket. |
+| `insertSpaces` | `boolean` | `true` | Indents with spaces. Off indents with tabs. |
 | `tabSize` | `number` | `4` | The width of one indentation level. |
-| `placeholder` | `string` | — | Sets placeholder text. |
-| `scrollEnabled` | `boolean` | `true` | Enables or disables editor scrolling. |
-| `contentInsets` | `ContentInsets` | All insets 0 | Configures the editor's content insets. |
+| `suggestions` | `Suggestions` | `'off'` | `'on'` allows autocorrect. `'forceOff'` also stops composition on most Android keyboards. |
+| `autoFocus` | `boolean` | `false` | Focuses the editor and shows the keyboard once the view is attached. |
+| `scrollEnabled` | `boolean` | `true` | Off lets a parent `ScrollView` scroll through the editor. |
+| `contentInsets` | `ContentInsets` | all 0 | The padding inside the scrollable area. Style padding on the view is ignored. |
 | `avoidKeyboard` | `boolean` | `false` | Adds the keyboard overlap to the bottom inset on every frame of the keyboard animation. |
-| `suggestions` | `Suggestions` | `'off'` | Controls keyboard suggestions: `'off'` (disables suggestions), `'forceOff'` (also disables composition on Android), and `'on'` (allows autocorrect). |
-| `autoFocus` | `boolean` | `false` | Requests focus when the editor is initialized. |
-| `onChange` | `(event: ChangeEvent) => void` | — | Called after every edit with the replaced range, new text and its origin. |
-| `onChangeText` | `(text: string) => void` | — | Called with the complete document text after a change. |
-| `onSelectionChange` | `(selection: SelectionChangeEvent) => void` | — | Called when the caret or selection moves. |
-| `onReady` | `() => void` | — | Called when the editor is ready. |
-| `onFocus` / `onBlur` | `() => void` | — | Report focus changes. |
-| `onScroll` | `(event: ScrollEvent) => void` | — | Reports editor scrolling. |
-| `onContentSizeChange` | `(event: ContentSizeEvent) => void` | — | Reports content-size changes. |
+| `onReady` | `() => void` | | Called once after the first draw. Ref methods are valid from here. |
+| `onChange` | `(event) => void` | | Called after every edit with the replaced range, the new text and its origin. |
+| `onChangeText` | `(text) => void` | | Called with the full text after every change. Prefer `onChange` on large documents. |
+| `onSelectionChange` | `(selection) => void` | | Called when the caret or the selection moves. |
+| `onFocus`, `onBlur` | `() => void` | | Called when the editor gains or loses focus. |
+| `onScroll` | `(event) => void` | | Called with the scroll offset and the content size, at most once per frame. |
+| `onContentSizeChange` | `(event) => void` | | Called when the content size changes, insets included. |
 
 ### Methods
 
 | Method | Description |
 | --- | --- |
-| `getText()`, `getSelection()`, `getLineCount()` | Read the document or current selection. |
-| `getTextInRange()`, `getLength()`, `getLine()`, `getRevision()` | Read a range, document length, a line, or the current revision. |
+| `getText()`, `getTextInRange(range)`, `getLine(index)`, `getLength()`, `getLineCount()` | Read the document synchronously on the JS thread. |
+| `getSelection()`, `getRevision()`, `getCursorRect()`, `getVisibleLines()` | Read the selection, the revision, the caret rectangle and the lines on screen. |
+| `offsetToPosition(offset)`, `positionToOffset(position)` | Convert between UTF-16 offsets and 0-based lines and columns. |
+| `canUndo()`, `canRedo()`, `isFocused()` | Report whether there is an edit to undo or redo and whether the editor has focus. |
 | `setText(text)`, `replaceRange(range, text)`, `insertText(text)` | Change the document. Each resolves once the edit is applied. |
 | `setSelection(selection)`, `selectAll()`, `scrollToLine(line)`, `revealSelection()` | Move the selection and the viewport. |
-| `offsetToPosition()`, `positionToOffset()`, `getCursorRect()`, `getVisibleLines()` | Convert positions or inspect the caret and visible lines. |
-| `undo()`, `redo()`, `canUndo()`, `canRedo()` | Undo or redo edits and check whether those actions are available. |
-| `indent()`, `outdent()`, `cut()`, `copy()`, `paste()` | Editing and clipboard operations. |
-| `moveCaret(direction)`, `typeText(text)`, `deleteBackward()`, `deleteForward()` | The toolbar API. These use the editor's editing path. |
-| `setSearch(query)`, `findNext()`, `findPrevious()`, `replaceCurrent(text)`, `replaceAll(text)`, `clearSearch()` | Search, replace matches, and clear the search state. |
-| `focus()`, `blur()`, `isFocused()` | Control or inspect focus. |
+| `undo()`, `redo()`, `indent()`, `outdent()`, `cut()`, `copy()`, `paste()` | The edit menu, from JavaScript. |
+| `moveCaret(direction)`, `typeText(text)`, `deleteBackward()`, `deleteForward()` | The toolbar API. Each goes through the same path as the keyboard. |
+| `setSearch(query)`, `findNext()`, `findPrevious()`, `replaceCurrent(text)`, `replaceAll(text)`, `clearSearch()` | Search, with the match count and the painted matches. |
+| `focus()`, `blur()` | Show or hide the keyboard. |
 
-See the [methods reference](https://reactnativecodepad.pages.dev/reference/methods/) for detailed argument types, options, and return values, and the [complete API reference](https://reactnativecodepad.pages.dev/reference/props/) for all props and types.
-
-### Important API Behavior
-
-- **`initialValue` is not a controlled value.** It is read when the editor is initialized. Use `setText()` to replace the document after initialization.
-- **Choose the change callback for your use case.** `onChange` provides edit details, including the replaced range and origin. `onChangeText` provides the full document after each change, which can be more expensive for large files.
-- **Offsets and ranges have specific conventions.** Offsets use UTF-16 code units; ranges are half-open (`[start, end)`), with the start included and the end excluded. Line and column positions are zero-based.
-- **Search supports literal and regular-expression queries.** Regex queries use the ICU dialect. Invalid expressions are rejected, and replacement text is treated literally.
-
-## Keyboard and Scrolling
-
-For editors that share a screen with other scrollable content, review `scrollEnabled` and the layout of the parent scroll container. To manage keyboard overlap, check `avoidKeyboard` and `contentInsets`; the right setup depends on your screen layout.
-
-See the [props reference](https://reactnativecodepad.pages.dev/reference/props/) for the available options and behavior.
-
-## Coding Agents
+## Coding agents
 
 The CodePad skill gives coding agents such as Claude Code, Codex and Cursor the API and its pitfalls:
 
