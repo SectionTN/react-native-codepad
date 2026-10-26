@@ -23,14 +23,7 @@ export function sectionCount(filter: PropFilter, sectionId: string) {
   return { total: rows.length, shown: rows.filter((p) => matchesProp(filter.query, p)).length };
 }
 
-const FLASH: Keyframe[] = [
-  { opacity: 0 },
-  { opacity: 1, offset: 0.15 },
-  { opacity: 1, offset: 0.5 },
-  { opacity: 0 },
-];
-
-// Holds the props filter of the props page; a #prop-* hash clears it, scrolls to the row and flashes it.
+// Holds the props filter of the props page; a #prop-* hash clears it and scrolls to the row.
 export function PropFilterProvider({
   docPath,
   children,
@@ -49,13 +42,9 @@ export function PropFilterProvider({
     if (!props.length || !hash.startsWith('#prop-')) return;
     setQuery('');
     const timer = setTimeout(() => {
-      const row = document.getElementById(decodeURIComponent(hash.slice(1)));
-      if (!row) return;
-      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      row.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
-      row
-        .querySelector('[data-flash]')
-        ?.animate(FLASH, { duration: 1800, delay: 350, easing: 'ease-out' });
+      document
+        .getElementById(decodeURIComponent(hash.slice(1)))
+        ?.scrollIntoView({ block: 'start' });
     }, 60);
     return () => clearTimeout(timer);
   }, [hash, key, props]);

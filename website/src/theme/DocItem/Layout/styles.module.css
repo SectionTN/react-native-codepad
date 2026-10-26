@@ -129,7 +129,6 @@
   margin-left: -0.5px;
   border-radius: 1px;
   background: var(--cp-accent);
-  transition: top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .tocLink {
@@ -141,7 +140,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.25s;
 }
 
 .tocLink code {

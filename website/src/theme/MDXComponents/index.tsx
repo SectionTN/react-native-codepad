@@ -44,7 +44,6 @@ function PropRows({ rows }: { rows: Row[] }) {
     <div className={styles.rows}>
       {visible.map((row) => (
         <div key={row.name} id={`prop-${row.name}`} className={styles.row}>
-          <span data-flash className={styles.flash} />
           <div className={styles.rowHead}>
             <a href={`#prop-${row.name}`} className={styles.name}>
               {row.name}

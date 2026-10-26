@@ -31,14 +31,6 @@
   background: var(--cp-surface);
 }
 
-.flash {
-  position: absolute;
-  inset: 0;
-  background: var(--cp-accent-soft);
-  opacity: 0;
-  pointer-events: none;
-}
-
 .rowHead {
   position: relative;
   display: flex;

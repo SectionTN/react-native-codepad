@@ -97,11 +97,7 @@ function Toc() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [items]);
   if (!items.length) return null;
-  const toTop = () =>
-    window.scrollTo({
-      top: 0,
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-    });
+  const toTop = () => window.scrollTo(0, 0);
   return (
     <div className={clsx(styles.toc, 'cp-touch')}>
       <div className={styles.tocLabel}>On this page</div>

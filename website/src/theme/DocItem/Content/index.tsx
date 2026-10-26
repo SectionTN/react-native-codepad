@@ -11,8 +11,6 @@ import { RAW_DOCS } from '../../../data/site';
 import type { SiteIndex } from '../../../plugins/siteIndex';
 import styles from './styles.module.css';
 
-const stagger = (i: number) => ({ animationDelay: `${60 + i * 60}ms` });
-
 // docs / reference / props: each folder links to its first page, the page itself is the accent.
 function Crumbs({ permalink }: { permalink: string }) {
   const index = usePluginData('codepad-site-index') as SiteIndex;
@@ -20,7 +18,7 @@ function Crumbs({ permalink }: { permalink: string }) {
   const first = (segment: string) =>
     index.pages.find((p) => p.path.startsWith(`/${segment}/`))?.path;
   return (
-    <div className={clsx(styles.crumbs, styles.in)} style={stagger(0)}>
+    <div className={styles.crumbs}>
       <Link to={index.pages[0]?.path ?? '/'} className={styles.crumb}>
         docs
       </Link>
@@ -72,15 +70,9 @@ export default function DocItemContent({ children }: Props) {
     <div className={clsx(ThemeClassNames.docs.docMarkdown, 'markdown')}>
       <header className={styles.header}>
         <Crumbs permalink={metadata.permalink} />
-        <h1 className={clsx(styles.title, styles.in)} style={stagger(1)}>
-          {metadata.title}
-        </h1>
-        {frontMatter.description && (
-          <p className={clsx(styles.description, styles.in)} style={stagger(2)}>
-            {frontMatter.description}
-          </p>
-        )}
-        <div className={clsx(styles.actions, styles.in, 'cp-touch')} style={stagger(3)}>
+        <h1 className={styles.title}>{metadata.title}</h1>
+        {frontMatter.description && <p className={styles.description}>{frontMatter.description}</p>}
+        <div className={clsx(styles.actions, 'cp-touch')}>
           <CopyMarkdown source={metadata.source} />
           {metadata.editUrl && (
             <a href={metadata.editUrl} className={styles.edit}>
