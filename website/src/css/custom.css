@@ -297,16 +297,18 @@ pre code {
   font-weight: 600;
 }
 
+/* Code blocks share the redesign's code cards: radius 18, mono 13.5 on 24 px rows. */
 .theme-code-block {
   border: 1px solid var(--cp-border);
-  border-radius: var(--cp-radius);
+  border-radius: 18px;
+  overflow: hidden;
   box-shadow: none;
 }
 
 .theme-code-block pre,
 .prism-code {
-  font-size: 0.85rem;
-  line-height: 1.65;
+  font-size: 13.5px;
+  line-height: 24px;
 }
 
 [class*="codeBlockTitle"] {

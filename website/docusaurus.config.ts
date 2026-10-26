@@ -91,7 +91,7 @@ const config: Config = {
     prism: {
       theme: prismThemeFrom(githubLight),
       darkTheme: prismThemeFrom(githubDark),
-      additionalLanguages: ['bash', 'json', 'kotlin', 'swift', 'groovy', 'ruby', 'diff'],
+      additionalLanguages: ['bash', 'json', 'kotlin', 'swift', 'groovy', 'ruby', 'diff', 'java'],
       magicComments: [
         {
           className: 'theme-code-block-highlighted-line',
