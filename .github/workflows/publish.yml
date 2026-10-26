@@ -32,14 +32,10 @@ jobs:
       - name: Build package
         run: yarn prepare
 
-      # Each package lands in the staging area; the versions go live once approved on npmjs.com, the core first.
+      # Trusted publishing stages each package; the versions go live once approved on npmjs.com, the core first.
+      # A re-run skips only the live versions, so approve or reject the staged ones before it.
       - name: Stage the core, then the language packages
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          if [ -n "$NPM_TOKEN" ]; then
-            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-          fi
           stage() {
             name=$(node -p "require('./$1/package.json').name")
             version=$(node -p "require('./$1/package.json').version")
@@ -47,14 +43,7 @@ jobs:
               echo "$name@$version is already on npm, skipping"
               return
             fi
-            if (cd "$1" && npm stage publish --provenance --access public --ignore-scripts); then
-              return
-            fi
-            if npm stage list "$name" 2>/dev/null | grep -q "$version"; then
-              echo "$name@$version is already staged, skipping"
-              return
-            fi
-            return 1
+            (cd "$1" && npm stage publish --provenance --access public --ignore-scripts)
           }
           stage .
           for pkg in languages/*/package.json; do
