@@ -1,0 +1,135 @@
+.footer {
+  margin-top: clamp(96px, 12vw, 140px);
+  border-top: 1px solid var(--cp-border);
+}
+
+.top {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 56px clamp(16px, 3vw, 32px) 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.about {
+  max-width: 300px;
+}
+
+.about p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--cp-muted);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 56px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 120px;
+}
+
+.title {
+  font-family: var(--cp-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cp-faint);
+  margin-bottom: 4px;
+}
+
+.link {
+  font-size: 14.5px;
+  color: var(--cp-muted);
+}
+
+.link:hover {
+  color: var(--cp-text);
+}
+
+.bottom {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 20px clamp(16px, 3vw, 32px) 32px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--cp-border);
+  font-size: 13px;
+  color: var(--cp-faint);
+  box-sizing: border-box;
+}
+
+.bottom a {
+  color: var(--cp-text);
+}
+
+.version {
+  font-family: var(--cp-mono);
+}
+
+.slim {
+  border-top: 1px solid var(--cp-border);
+}
+
+.slimInner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 3vw, 32px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13.5px;
+  color: var(--cp-faint);
+  box-sizing: border-box;
+}
+
+:global(html.plugin-docs) .slimInner {
+  max-width: 1440px;
+  padding: 28px clamp(16px, 2vw, 24px);
+}
+
+.slimLinks {
+  display: flex;
+  gap: 20px;
+}
+
+.slimLinks a {
+  color: var(--cp-muted);
+}
+
+.slimInner > span:first-child a {
+  color: var(--cp-text);
+}
+
+@media (pointer: coarse) {
+  .link,
+  .slim a {
+    position: relative;
+  }
+
+  .link::after,
+  .slim a::after {
+    content: "";
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}

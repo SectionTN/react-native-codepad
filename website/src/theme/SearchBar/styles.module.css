@@ -1,0 +1,249 @@
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 6px 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-surface);
+  color: var(--cp-muted);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  border-color: var(--cp-border-strong);
+  color: var(--cp-text);
+}
+
+.glass {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.glass::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 8px;
+  height: 8px;
+  border: 1.6px solid currentColor;
+  border-radius: 50%;
+}
+
+.glass::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 8px;
+  width: 1.6px;
+  height: 5px;
+  background: currentColor;
+  transform: rotate(-45deg);
+  border-radius: 1px;
+}
+
+.kbd {
+  font-family: var(--cp-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-bg);
+  color: inherit;
+  box-shadow: none;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(1, 4, 9, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12vh 16px 16px;
+  font-family: var(--cp-sans);
+  line-height: 1.6;
+}
+
+.panel {
+  width: 100%;
+  max-width: 620px;
+  border-radius: 18px;
+  border: 1px solid var(--cp-border-strong);
+  background: var(--cp-bg-raise);
+  box-shadow: var(--cp-shadow);
+  overflow: hidden;
+  color: var(--cp-text);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--cp-border);
+}
+
+.lens {
+  position: relative;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--cp-accent);
+}
+
+.lens::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  border: 1.8px solid currentColor;
+  border-radius: 50%;
+}
+
+.lens::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 9px;
+  width: 1.8px;
+  height: 6px;
+  background: currentColor;
+  transform: rotate(-45deg);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 56px;
+  border: 0;
+  background: transparent;
+  color: var(--cp-text);
+  font: inherit;
+  font-size: 17px;
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--cp-faint);
+}
+
+.esc {
+  font-family: var(--cp-mono);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--cp-border);
+  background: transparent;
+  color: var(--cp-faint);
+  box-shadow: none;
+}
+
+.list {
+  max-height: min(420px, 60vh);
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.rowActive {
+  background: var(--cp-accent-soft);
+}
+
+.icon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-family: var(--cp-mono);
+  font-size: 12px;
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-border);
+  color: var(--cp-muted);
+}
+
+.iconProp {
+  color: var(--cp-t);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--cp-text);
+}
+
+.titleProp {
+  font-family: var(--cp-mono);
+}
+
+.sub {
+  font-size: 12.5px;
+  color: var(--cp-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kind {
+  font-family: var(--cp-mono);
+  font-size: 11px;
+  color: var(--cp-faint);
+}
+
+.empty {
+  padding: 28px;
+  text-align: center;
+  color: var(--cp-muted);
+  font-size: 14px;
+}
+
+.foot {
+  display: flex;
+  gap: 18px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--cp-border);
+  font-family: var(--cp-mono);
+  font-size: 11.5px;
+  color: var(--cp-faint);
+}
+
+@media (pointer: coarse) {
+  .trigger {
+    position: relative;
+  }
+
+  .trigger::after {
+    content: "";
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}

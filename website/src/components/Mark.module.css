@@ -1,0 +1,8 @@
+.tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--cp-accent-soft);
+  color: var(--cp-accent);
+}

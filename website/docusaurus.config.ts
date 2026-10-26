@@ -1,7 +1,9 @@
 import type * as Preset from '@docusaurus/preset-classic';
 import type { Config } from '@docusaurus/types';
+import { version } from '../package.json';
 import { githubDark } from '../src/themes/githubDark';
 import { githubLight } from '../src/themes/githubLight';
+import siteIndex from './src/plugins/siteIndex';
 import { prismThemeFrom } from './src/prism/fromEditorTheme';
 
 const config: Config = {
@@ -48,7 +50,9 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
+  customFields: { version },
   plugins: [
+    siteIndex,
     [
       'docusaurus-plugin-llms',
       {
@@ -107,22 +111,17 @@ const config: Config = {
       ],
     },
     navbar: {
-      title: 'React Native CodePad',
+      title: 'CodePad',
       logo: {
         alt: 'React Native CodePad',
         src: 'img/logo.svg',
         srcDark: 'img/logo-dark.svg',
       },
       items: [
-        { type: 'docSidebar', sidebarId: 'docs', label: 'Docs', position: 'left' },
-        { type: 'doc', docId: 'guides/themes', label: 'Guides', position: 'left' },
-        { type: 'doc', docId: 'reference/props', label: 'Reference', position: 'left' },
-        {
-          href: 'https://github.com/SectionTN/react-native-codepad',
-          position: 'right',
-          className: 'header-github-link',
-          'aria-label': 'GitHub repository',
-        },
+        { to: '/start/introduction/', label: 'Docs', activeBaseRegex: '^/(start|internals)/' },
+        { to: '/guides/languages/', label: 'Guides', activeBaseRegex: '^/guides/' },
+        { to: '/reference/props/', label: 'Reference', activeBaseRegex: '^/reference/' },
+        { to: '/#roadmap', label: 'Roadmap', activeBaseRegex: '^$' },
       ],
     },
     footer: {
@@ -146,7 +145,7 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            { label: 'Roadmap', to: '/internals/roadmap/' },
+            { label: 'Roadmap', to: '/#roadmap' },
             {
               label: 'Releases',
               href: 'https://github.com/SectionTN/react-native-codepad/releases',

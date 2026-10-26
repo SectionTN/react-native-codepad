@@ -1,0 +1,138 @@
+.inner {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  min-height: 64px;
+  padding: 0 clamp(16px, 3vw, 32px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 28px;
+  box-sizing: border-box;
+}
+
+:global(html.plugin-docs) .inner {
+  max-width: 1440px;
+  padding: 0 clamp(16px, 2vw, 24px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--cp-text);
+}
+
+.brand:hover {
+  color: var(--cp-text);
+}
+
+.name {
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.version {
+  font-family: var(--cp-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--cp-border);
+  color: var(--cp-muted);
+}
+
+.links {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.link {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--cp-muted);
+}
+
+.link:hover,
+.active {
+  color: var(--cp-text);
+  background: var(--cp-surface);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.square {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--cp-muted);
+}
+
+.square:hover {
+  color: var(--cp-text);
+  background: var(--cp-surface);
+}
+
+button.square {
+  border-color: var(--cp-border);
+  color: var(--cp-text);
+}
+
+.moon {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: inset -4px -3px 0 0 var(--cp-text);
+  transform: rotate(-20deg);
+}
+
+.sun {
+  display: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cp-text);
+  box-shadow:
+    0 0 0 3px var(--cp-bg),
+    0 0 0 4.5px var(--cp-text);
+}
+
+:global(html[data-theme="light"]) .moon {
+  display: none;
+}
+
+:global(html[data-theme="light"]) .sun {
+  display: block;
+}
+
+/* A touch target reaches 44 px through its hit area; the drawn size stays the design's. */
+@media (pointer: coarse) {
+  .brand,
+  .link,
+  .square {
+    position: relative;
+  }
+
+  .brand::after,
+  .link::after,
+  .square::after {
+    content: "";
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}
