@@ -1,6 +1,6 @@
 {
   "name": "react-native-codepad-lang-python",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "tree-sitter Python grammar and highlight queries for react-native-codepad",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -29,7 +29,7 @@
   "license": "MIT",
   "homepage": "https://github.com/SectionTN/react-native-codepad#readme",
   "peerDependencies": {
-    "react-native-codepad": "0.1.1"
+    "react-native-codepad": "0.1.2"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
