@@ -1,0 +1,132 @@
+.stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(20px, 5vw, 72px);
+  padding: 48px 0 24px;
+}
+
+.glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70%;
+  height: 70%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, var(--cp-glow), transparent 65%);
+  pointer-events: none;
+}
+
+.figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.lower {
+  margin-top: 64px;
+}
+
+.device {
+  position: relative;
+  width: clamp(140px, 22vw, 260px);
+  transform: perspective(1400px) rotateY(calc(12deg + var(--ry, 0deg)))
+    rotateX(calc(3deg + var(--rx, 0deg))) rotateZ(-2deg);
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.deviceRight {
+  transform: perspective(1400px) rotateY(calc(-12deg + var(--ry, 0deg)))
+    rotateX(calc(3deg + var(--rx, 0deg))) rotateZ(2deg);
+}
+
+.shot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border-radius: clamp(18px, 3vw, 36px);
+  border: 1px solid var(--cp-border-strong);
+  box-shadow: var(--cp-shadow);
+  transition: opacity 0.5s ease;
+}
+
+.light {
+  opacity: 0;
+}
+
+:global(html[data-theme="light"]) .dark {
+  opacity: 0;
+}
+
+:global(html[data-theme="light"]) .light {
+  opacity: 1;
+}
+
+.caption {
+  font-family: var(--cp-mono);
+  font-size: 12.5px;
+  color: var(--cp-muted);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+  margin-top: 40px;
+}
+
+.fact {
+  padding-top: 18px;
+  border-top: 1px solid var(--cp-border-strong);
+}
+
+.factLabel {
+  font-family: var(--cp-mono);
+  font-size: 12px;
+  color: var(--cp-accent);
+  margin-bottom: 8px;
+}
+
+.factText {
+  font-size: 16px;
+  text-wrap: pretty;
+}
+
+.requirements {
+  margin-top: 48px;
+  border-radius: 22px;
+  padding: 28px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 28px 40px;
+}
+
+.listLabel {
+  margin-bottom: 14px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-bg);
+  font-family: var(--cp-mono);
+  font-size: 12.5px;
+}
+
+.expo {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--cp-faint);
+}

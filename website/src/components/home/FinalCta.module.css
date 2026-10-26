@@ -1,0 +1,126 @@
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-surface);
+  padding: clamp(56px, 8vw, 112px) clamp(20px, 5vw, 72px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.rules {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 31px,
+    var(--cp-border) 31px 32px
+  );
+  -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 50%, #000 10%, transparent 75%);
+  mask-image: radial-gradient(ellipse 60% 70% at 50% 50%, #000 10%, transparent 75%);
+}
+
+.glow {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 900px;
+  height: 600px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, var(--cp-glow), transparent 62%);
+  pointer-events: none;
+}
+
+.title {
+  position: relative;
+  margin: 0;
+  font-size: clamp(40px, 6.4vw, 88px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.pm {
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  border-bottom: 3px dashed color-mix(in srgb, var(--cp-accent) 45%, transparent);
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--cp-mono);
+  font-size: inherit;
+  font-weight: 500;
+  line-height: inherit;
+  letter-spacing: -0.06em;
+  color: var(--cp-accent);
+}
+
+.lead {
+  position: relative;
+  margin: 24px 0 36px;
+  max-width: 44ch;
+  font-size: 17.5px;
+  color: var(--cp-muted);
+  text-wrap: pretty;
+}
+
+.tabs {
+  position: relative;
+  justify-content: center;
+}
+
+.commands {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  border-radius: 16px;
+  border: 1px solid var(--cp-border-strong);
+  background: var(--cp-bg);
+  text-align: left;
+  font-family: var(--cp-mono);
+  font-size: 13.5px;
+  line-height: 1.9;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.commands > div {
+  white-space: nowrap;
+}
+
+.prompt {
+  color: var(--cp-accent);
+}
+
+.and {
+  color: var(--cp-k);
+}
+
+.actions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.actions .big {
+  min-height: 48px;
+  padding: 0 24px;
+}
+
+.actions .ghost {
+  padding: 0 22px;
+}
+
+.actions .ghost:hover {
+  background: var(--cp-bg);
+}

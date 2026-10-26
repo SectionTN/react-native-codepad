@@ -1,0 +1,201 @@
+.split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+  align-items: center;
+}
+
+.copy {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
+.lead {
+  margin: 24px 0 32px;
+  max-width: 44ch;
+  font-size: 17.5px;
+  line-height: 1.55;
+  color: var(--cp-muted);
+  text-wrap: pretty;
+}
+
+.snippet {
+  border-radius: 18px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-surface);
+  padding: 18px 0;
+  font-family: var(--cp-mono);
+  font-size: 13.5px;
+  line-height: 24px;
+  overflow-x: auto;
+}
+
+.line {
+  display: flex;
+  height: 24px;
+}
+
+.lineOn {
+  background: var(--cp-accent-soft);
+}
+
+.gutter {
+  width: 40px;
+  flex: none;
+  text-align: right;
+  padding-right: 16px;
+  box-sizing: border-box;
+  color: var(--cp-faint);
+  user-select: none;
+}
+
+.text {
+  white-space: pre;
+  padding-right: 20px;
+}
+
+.card {
+  flex: 1 1 460px;
+  min-width: 0;
+  border-radius: 24px;
+  padding: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  box-sizing: border-box;
+}
+
+.mock {
+  position: relative;
+  width: 220px;
+  height: 360px;
+  flex: none;
+  margin: 0 auto;
+  border-radius: 28px;
+  border: 1px solid var(--cp-border-strong);
+  background: var(--cp-bg);
+  overflow: hidden;
+}
+
+.mockLines {
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.mockLine {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 7px;
+}
+
+.bar {
+  height: 7px;
+  border-radius: 4px;
+}
+
+.caret {
+  width: 2px;
+  height: 13px;
+  border-radius: 1px;
+  background: var(--cp-accent);
+}
+
+.keyboard {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 150px;
+  background: var(--cp-surface-2);
+  box-sizing: border-box;
+  padding: 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inset {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  border-top: 1.5px dashed var(--cp-accent);
+}
+
+.insetLabel {
+  position: absolute;
+  right: 10px;
+  top: -22px;
+  font-family: var(--cp-mono);
+  font-size: 10.5px;
+  color: var(--cp-accent);
+}
+
+.keyRow {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.key {
+  flex: 1;
+  border-radius: 4px;
+  background: var(--cp-bg);
+  box-shadow: 0 1px 0 rgba(127, 127, 127, 0.3);
+}
+
+.plotColumn {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plotTitle {
+  font-family: var(--cp-mono);
+  font-size: 12px;
+  color: var(--cp-muted);
+}
+
+.plot {
+  position: relative;
+  flex: 1;
+  min-height: 220px;
+  border-left: 1px solid var(--cp-border-strong);
+  border-bottom: 1px solid var(--cp-border-strong);
+  background: repeating-linear-gradient(to top, transparent 0 43px, var(--cp-border) 43px 44px);
+}
+
+.plotArea {
+  position: absolute;
+  inset: 10px 12px 10px 10px;
+}
+
+.dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--cp-accent);
+  box-shadow: 0 0 0 3px var(--cp-surface);
+  transform: translate(-50%, 50%);
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--cp-mono);
+  font-size: 11px;
+  color: var(--cp-faint);
+}
+
+.caption {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--cp-muted);
+  text-wrap: pretty;
+}

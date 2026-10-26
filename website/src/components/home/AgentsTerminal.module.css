@@ -1,0 +1,126 @@
+.split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+  align-items: center;
+}
+
+.copy {
+  flex: 1 1 380px;
+  min-width: 0;
+}
+
+.lead {
+  margin: 24px 0;
+  max-width: 42ch;
+  font-size: 17.5px;
+  line-height: 1.55;
+  color: var(--cp-muted);
+  text-wrap: pretty;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--cp-border);
+  font-size: 13.5px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-size: 15px;
+}
+
+.terminal {
+  flex: 1 1 480px;
+  min-width: 0;
+  border-radius: 20px;
+  border: 1px solid var(--cp-border-strong);
+  background: var(--cp-bg-raise);
+  overflow: hidden;
+  box-shadow: var(--cp-shadow);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 10px 18px;
+  border-bottom: 1px solid var(--cp-border);
+  font-family: var(--cp-mono);
+  font-size: 12px;
+  color: var(--cp-muted);
+}
+
+.copyButton {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--cp-border);
+  background: transparent;
+  color: var(--cp-muted);
+  cursor: pointer;
+  font-family: var(--cp-sans);
+  font-size: 12.5px;
+}
+
+.copyButton:hover {
+  color: var(--cp-text);
+  border-color: var(--cp-border-strong);
+}
+
+.body {
+  padding: 24px 22px 28px;
+  font-family: var(--cp-mono);
+  font-size: clamp(12.5px, 1.3vw, 15px);
+  line-height: 1.9;
+  overflow-x: auto;
+}
+
+.command {
+  display: flex;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.prompt {
+  color: var(--cp-accent);
+}
+
+.relative {
+  position: relative;
+}
+
+.typed {
+  display: inline-block;
+}
+
+.caret {
+  position: absolute;
+  left: 45ch;
+  top: 0.25em;
+  width: 0.55em;
+  height: 1.2em;
+  background: var(--cp-accent);
+  opacity: 0.85;
+}
+
+.comment {
+  margin-top: 14px;
+  color: var(--cp-c);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.url {
+  color: var(--cp-s);
+}

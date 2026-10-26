@@ -1,0 +1,30 @@
+.band {
+  border-top: 1px solid var(--cp-border);
+  border-bottom: 1px solid var(--cp-border);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  padding: 18px 0;
+}
+
+.track {
+  display: flex;
+  width: max-content;
+  font-family: var(--cp-mono);
+  font-size: 13.5px;
+  color: var(--cp-muted);
+  white-space: nowrap;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 44px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+}

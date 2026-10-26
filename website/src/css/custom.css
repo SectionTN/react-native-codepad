@@ -446,3 +446,26 @@ table th {
   background-color: rgba(248, 81, 73, 0.16);
   border-left: 3px solid #f85149;
 }
+
+/* The redesigned pages size boxes the way their design files do: content-box unless a rule says otherwise. */
+:where(.cp-redesign *) {
+  box-sizing: content-box;
+}
+
+:where(.cp-redesign button) {
+  box-sizing: border-box;
+  font: inherit;
+}
+
+/* Touch targets on the redesigned pages reach 44 px through their hit area, not their drawn size. */
+@media (pointer: coarse) {
+  :where(.cp-redesign) :is(a, button) {
+    position: relative;
+  }
+
+  :where(.cp-redesign) :is(a, button)::after {
+    content: "";
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}
