@@ -57,7 +57,8 @@
   color: var(--cp-faint);
 }
 
-.tagDone {
+/* Compound so the minifier merging it into an earlier rule cannot let .tag win. */
+.tag.tagDone {
   color: var(--cp-accent);
 }
 

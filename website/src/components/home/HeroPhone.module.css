@@ -456,7 +456,8 @@
     transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.findOpen {
+/* Compound so the minifier merging it into an earlier rule cannot let .find win. */
+.find.findOpen {
   opacity: 1;
   transform: translateY(0);
 }
@@ -678,7 +679,8 @@
   transition: color 0.3s;
 }
 
-.chapterOn {
+/* Compound for the same reason as .find.findOpen. */
+.chapterLabel.chapterOn {
   color: var(--cp-text);
 }
 
