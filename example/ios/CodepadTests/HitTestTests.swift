@@ -63,6 +63,32 @@ final class HitTestTests: XCTestCase {
     XCTAssertTrue(lineLayers(editor).allSatisfy { $0.padding == 0 }, "placeholder layer")
   }
 
+  func testTheCaretViewFollowsATextPaddingChange() {
+    let editor = launch()
+    editor.setLineNumbers(false)
+    editor.setInitialText("abc")
+    layout(editor)
+    editor.focus()
+    draw(editor)
+    let cursor = editor.textInput.cursorView
+    spin(until: { cursor.frame.minX == editor.caretRect(offset: 0).minX })
+    XCTAssertEqual(cursor.frame.minX, 8, "unset")
+    editor.setTextPadding(0)
+    draw(editor)
+    spin(until: { cursor.frame.minX == 0 })
+    XCTAssertEqual(cursor.frame.minX, 0, "padding only")
+    editor.setTextPadding(8)
+    draw(editor)
+    spin(until: { cursor.frame.minX == 8 })
+    editor.setFont(family: nil, size: 20, lineHeight: 1.4)
+    editor.setContentInsets(top: 0, bottom: 0, left: 13, right: 0)
+    editor.setTextPadding(0)
+    layout(editor)
+    draw(editor)
+    spin(until: { cursor.frame.minX == 0 })
+    XCTAssertEqual(cursor.frame.minX, 0, "font, insets and padding in one batch")
+  }
+
   private func caretX(_ editor: CodeEditorView) -> CGFloat? {
     editor.core.setSelection(anchor: 0, head: 0)
     draw(editor)
