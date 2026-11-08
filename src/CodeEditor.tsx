@@ -54,7 +54,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     placeholder,
     scrollEnabled = true,
     contentInsets,
-    textPadding,
+    textPadding = 8,
     avoidKeyboard = false,
     tabSize = 4,
     insertSpaces = true,

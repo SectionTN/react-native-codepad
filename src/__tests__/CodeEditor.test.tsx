@@ -107,6 +107,7 @@ describe('CodeEditor', () => {
       highlightActiveLine: true,
       matchBrackets: true,
       scrollEnabled: true,
+      textPadding: 8,
       avoidKeyboard: false,
       tabSize: 4,
       insertSpaces: true,
@@ -126,6 +127,7 @@ describe('CodeEditor', () => {
           avoidKeyboard
           placeholder="Type here"
           contentInsets={{ bottom: 40 }}
+          textPadding={0}
         />,
       ),
     );
@@ -135,6 +137,7 @@ describe('CodeEditor', () => {
       avoidKeyboard: true,
       placeholder: 'Type here',
       contentInsets: { bottom: 40 },
+      textPadding: 0,
     });
   });
 
