@@ -72,7 +72,7 @@ export function Screen() {
 | `initialValue` | `string` | `''` | Sets the initial text. It is read once, so use `setText()` to replace the document later. |
 | `language` | `string` | undefined | The id of an installed language package. Without it the editor shows plain text. |
 | `theme` | `Theme` | `githubLight` | The colors. `githubDark` and `oneDark` ship too, and a theme is a plain object you can write yourself. |
-| `fontFamily` | `string` | `monospace` on Android, `Menlo` on iOS | The font, by name. |
+| `fontFamily` | `string` | `monospace` on Android, `Menlo` on iOS | The font, by the name React Native's `Text` takes, such as the `expo-font` key `JetBrainsMono_400Regular`. iOS also takes a PostScript name. Load the font before the editor mounts. An unknown name falls back to the default. |
 | `fontSize` | `number` | `14` | In dp on Android and points on iOS. |
 | `lineHeight` | `number` | `1.4` | A multiplier of the font size. |
 | `softWrap` | `boolean` | `false` | Wraps long lines. Off means horizontal scrolling. |

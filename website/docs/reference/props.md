@@ -19,7 +19,7 @@ sidebar_position: 1
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `theme` | `Theme` | `githubLight` | The colors. Hoist the object, it is compared by identity. See [theme tokens](/reference/theme-tokens/). |
-| `fontFamily` | `string` | `monospace` on Android, `Menlo` on iOS | The font, by name. Fonts linked with `react-native-asset` or `expo-font` resolve by name. |
+| `fontFamily` | `string` | `monospace` on Android, `Menlo` on iOS | The font, by the name React Native's `Text` takes: an `expo-font` key such as `JetBrainsMono_400Regular`, a font linked with `react-native-asset` or a system family. iOS also takes a PostScript name. Load the font before the editor mounts. With an unknown name or a font that loads later, the editor draws the default. |
 | `fontSize` | `number` | `14` | In dp on Android and points on iOS. |
 | `lineHeight` | `number` | `1.4` | A multiplier of the font size. The row height is `round(fontSize * lineHeight)`. |
 | `lineNumbers` | `boolean` | `true` | Shows the line number gutter. |
