@@ -9,6 +9,12 @@ import ui from './ui.module.css';
 // From the README's roadmap; the first step has shipped.
 const STEPS: [string, string][] = [
   ['0.1', 'Android and iOS, fifteen languages, search, themes and the keyboard follower'],
+  [
+    'planned',
+    'Text padding, one font name for both platforms and horizontal scroll in a ScrollView',
+  ],
+  ['planned', 'Languages: PHP, SQL and the Tunisian Bac pseudocode'],
+  ['planned', 'Decorations: underlines, space under a line and line backgrounds'],
   ['planned', 'Autocomplete and an LSP client'],
   ['planned', 'Code folding and a minimap'],
   ['planned', 'Multiple cursors, diagnostics, font ligatures and bidi editing'],

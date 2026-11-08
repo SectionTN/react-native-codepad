@@ -127,6 +127,9 @@ The docs are also available as plain text in [`llms-full.txt`](https://reactnati
 ## Roadmap
 
 - [x] 0.1: Android and iOS, fifteen languages, search, themes, the keyboard follower
+- [ ] Text padding, one font name for both platforms and horizontal scroll in a ScrollView
+- [ ] Languages: PHP, SQL and the Tunisian Bac pseudocode
+- [ ] Decorations: underlines, space under a line and line backgrounds
 - [ ] Autocomplete and an LSP client
 - [ ] Code folding and a minimap
 - [ ] Multiple cursors, diagnostics, font ligatures and bidi editing
