@@ -64,6 +64,7 @@ namespace margelo::nitro::codepad::views {
     nitro::ReactProp<std::optional<std::string>> placeholder;
     nitro::ReactProp<std::optional<bool>> scrollEnabled;
     nitro::ReactProp<std::optional<NativeInsets>> contentInsets;
+    nitro::ReactProp<std::optional<double>> textPadding;
     nitro::ReactProp<std::optional<bool>> avoidKeyboard;
     nitro::ReactProp<std::optional<NativeSuggestions>> suggestions;
     nitro::ReactProp<std::optional<bool>> autoFocus;
@@ -97,6 +98,7 @@ namespace margelo::nitro::codepad::views {
              placeholder.hasSameValue(other.placeholder) &&
              scrollEnabled.hasSameValue(other.scrollEnabled) &&
              contentInsets.hasSameValue(other.contentInsets) &&
+             textPadding.hasSameValue(other.textPadding) &&
              avoidKeyboard.hasSameValue(other.avoidKeyboard) &&
              suggestions.hasSameValue(other.suggestions) &&
              autoFocus.hasSameValue(other.autoFocus) &&
@@ -131,6 +133,7 @@ namespace margelo::nitro::codepad::views {
              placeholder.isProvided() ||
              scrollEnabled.isProvided() ||
              contentInsets.isProvided() ||
+             textPadding.isProvided() ||
              avoidKeyboard.isProvided() ||
              suggestions.isProvided() ||
              autoFocus.isProvided() ||

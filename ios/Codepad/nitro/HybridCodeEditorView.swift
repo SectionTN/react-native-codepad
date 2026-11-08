@@ -7,7 +7,7 @@ import UIKit
 final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable {
   private enum Prop: CaseIterable {
     case text, language, theme, font, lineNumbers, softWrap, readOnly, highlightActiveLine, matchBrackets, placeholder
-    case scrollEnabled, contentInsets, avoidKeyboard, suggestions, autoFocus, settings
+    case scrollEnabled, contentInsets, textPadding, avoidKeyboard, suggestions, autoFocus, settings
   }
 
   private let editor: CodeEditorView
@@ -40,6 +40,7 @@ final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable 
   var placeholder: String? { didSet { dirty.insert(.placeholder) } }
   var scrollEnabled: Bool? { didSet { dirty.insert(.scrollEnabled) } }
   var contentInsets: NativeInsets? { didSet { dirty.insert(.contentInsets) } }
+  var textPadding: Double? { didSet { dirty.insert(.textPadding) } }
   var avoidKeyboard: Bool? { didSet { dirty.insert(.avoidKeyboard) } }
   var suggestions: NativeSuggestions? { didSet { dirty.insert(.suggestions) } }
   var autoFocus: Bool? { didSet { dirty.insert(.autoFocus) } }
@@ -119,6 +120,7 @@ final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable 
       editor.setContentInsets(
         top: contentInsets?.top ?? 0, bottom: contentInsets?.bottom ?? 0, left: contentInsets?.left ?? 0,
         right: contentInsets?.right ?? 0)
+    case .textPadding: editor.setTextPadding(textPadding.map { CGFloat($0) } ?? CodeEditorView.defaultTextPadding)
     case .avoidKeyboard: editor.setAvoidKeyboard(avoidKeyboard ?? false)
     case .suggestions: editor.setSuggestions(Self.toSuggestions(suggestions))
     case .autoFocus: editor.setAutoFocus(autoFocus ?? false)

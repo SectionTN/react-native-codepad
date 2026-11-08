@@ -138,6 +138,12 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
       )
     }
 
+  override var textPadding: Double? = null
+    set(value) {
+      field = value
+      editor.setTextPadding((value ?: 8.0).toFloat())
+    }
+
   override var avoidKeyboard: Boolean? = null
     set(value) {
       field = value

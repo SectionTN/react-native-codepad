@@ -45,4 +45,5 @@ sidebar_position: 1
 | --- | --- | --- | --- |
 | `scrollEnabled` | `boolean` | `true` | Off lets a parent `ScrollView` scroll through the editor. |
 | `contentInsets` | `ContentInsets` | all 0 | The padding inside the scrollable area, in dp on Android and points on iOS. A bottom inset keeps the caret above a toolbar. |
+| `textPadding` | `number` | `8` | The space between the text and its left and right edges, inside `contentInsets`, in dp on Android and points on iOS. Set it to `0` to start the text exactly at `contentInsets.left`. |
 | `avoidKeyboard` | `boolean` | `false` | Adds the keyboard overlap to the bottom inset on every frame of the keyboard animation. See the [keyboard guide](/guides/keyboard/). |

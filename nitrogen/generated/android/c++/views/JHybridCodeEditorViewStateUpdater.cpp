@@ -124,6 +124,11 @@ void JHybridCodeEditorViewStateUpdater::updateViewProps(jni::alias_ref<jni::JCla
     hybridView->setContentInsets(newProps->contentInsets.get());
   }
   if (oldProps == nullptr
+        ? newProps->textPadding.isProvided()
+        : !newProps->textPadding.hasSameValue(oldProps->textPadding)) {
+    hybridView->setTextPadding(newProps->textPadding.get());
+  }
+  if (oldProps == nullptr
         ? newProps->avoidKeyboard.isProvided()
         : !newProps->avoidKeyboard.hasSameValue(oldProps->avoidKeyboard)) {
     hybridView->setAvoidKeyboard(newProps->avoidKeyboard.get());

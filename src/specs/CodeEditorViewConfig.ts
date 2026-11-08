@@ -19,6 +19,7 @@ export default {
     "placeholder": true,
     "scrollEnabled": true,
     "contentInsets": true,
+    "textPadding": true,
     "avoidKeyboard": true,
     "suggestions": true,
     "autoFocus": true,

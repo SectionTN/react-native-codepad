@@ -89,6 +89,7 @@ export function Screen() {
 | `autoFocus` | `boolean` | `false` | Focuses the editor and shows the keyboard once the view is attached. |
 | `scrollEnabled` | `boolean` | `true` | Off lets a parent `ScrollView` scroll through the editor. |
 | `contentInsets` | `ContentInsets` | all 0 | The padding inside the scrollable area. Style padding on the view is ignored. |
+| `textPadding` | `number` | `8` | The space between the text and its left and right edges, inside `contentInsets`. |
 | `avoidKeyboard` | `boolean` | `false` | Adds the keyboard overlap to the bottom inset on every frame of the keyboard animation. |
 | `onReady` | `() => void` | | Called once after the first draw. Ref methods are valid from here. |
 | `onChange` | `(event) => void` | | Called after every edit with the replaced range, the new text and its origin. |

@@ -239,6 +239,15 @@ namespace margelo::nitro::codepad {
     static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<JNativeInsets> /* contentInsets */)>("setContentInsets");
     method(_javaPart, contentInsets.has_value() ? JNativeInsets::fromCpp(contentInsets.value()) : nullptr);
   }
+  std::optional<double> JHybridCodeEditorViewSpec::getTextPadding() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JDouble>()>("getTextPadding");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(__result->value()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setTextPadding(std::optional<double> textPadding) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JDouble> /* textPadding */)>("setTextPadding");
+    method(_javaPart, textPadding.has_value() ? jni::JDouble::valueOf(textPadding.value()) : nullptr);
+  }
   std::optional<bool> JHybridCodeEditorViewSpec::getAvoidKeyboard() {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JBoolean>()>("getAvoidKeyboard");
     auto __result = method(_javaPart);

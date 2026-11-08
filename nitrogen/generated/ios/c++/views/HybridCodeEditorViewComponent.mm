@@ -182,6 +182,12 @@ using namespace margelo::nitro::codepad::views;
           : !newViewProps.contentInsets.hasSameValue(oldViewProps->contentInsets)) {
       swiftPart.setContentInsets(newViewProps.contentInsets.get());
     }
+    // textPadding: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.textPadding.isProvided()
+          : !newViewProps.textPadding.hasSameValue(oldViewProps->textPadding)) {
+      swiftPart.setTextPadding(newViewProps.textPadding.get());
+    }
     // avoidKeyboard: optional
     if (oldViewProps == nullptr
           ? newViewProps.avoidKeyboard.isProvided()

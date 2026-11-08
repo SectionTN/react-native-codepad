@@ -78,6 +78,8 @@ namespace margelo::nitro::codepad {
     void setScrollEnabled(std::optional<bool> scrollEnabled) override;
     std::optional<NativeInsets> getContentInsets() override;
     void setContentInsets(const std::optional<NativeInsets>& contentInsets) override;
+    std::optional<double> getTextPadding() override;
+    void setTextPadding(std::optional<double> textPadding) override;
     std::optional<bool> getAvoidKeyboard() override;
     void setAvoidKeyboard(std::optional<bool> avoidKeyboard) override;
     std::optional<NativeSuggestions> getSuggestions() override;

@@ -131,6 +131,8 @@ export interface CodeEditorProps extends ViewProps {
   autoFocus?: boolean;
   /** Padding inside the scrollable area in dp. Style padding on the view is ignored. */
   contentInsets?: ContentInsets;
+  /** Space in dp between the text and the left and right edges of the text area, 8 by default. */
+  textPadding?: number;
   /** Inset the content by the keyboard's overlap with the view, following the keyboard animation. */
   avoidKeyboard?: boolean;
   onReady?: () => void;
