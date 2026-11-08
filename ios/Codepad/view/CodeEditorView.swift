@@ -219,14 +219,20 @@ final class CodeEditorView: UIScrollView {
     setNeedsLayout()
   }
 
-  /// `family` resolves through UIFont, Menlo when nil or unknown; the size is in points.
+  /// `family` is a family's regular upright face, else a font name, else Menlo; the size is in points.
   func setFont(family: String?, size: CGFloat, lineHeight: CGFloat) {
     self.lineHeight = lineHeight
-    let name = family.flatMap { UIFont(name: $0, size: size)?.fontName } ?? "Menlo"
-    font = CTFontCreateWithName(name as CFString, size, nil)
+    font = CTFontCreateWithName(Self.fontName(for: family) as CFString, size, nil)
     metrics = nil
     placeholderLayout = nil
     relayout()
+  }
+
+  /// The family lookup also answers expo-font's keys, which `UIFont(name:)` never sees.
+  static func fontName(for family: String?) -> String {
+    guard let family else { return "Menlo" }
+    return FontFace.regular(of: UIFont.fontNames(forFamilyName: family)) ?? UIFont(name: family, size: 12)?.fontName
+      ?? "Menlo"
   }
 
   func setLineNumbers(_ enabled: Bool) {

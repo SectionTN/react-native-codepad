@@ -110,4 +110,12 @@ extension SelectionGeometryTests {
     }
     XCTAssertEqual(blue, 0, "system blue pixels above the content")
   }
+
+  func testTheFontNameFollowsTextsLookup() {
+    // UIFont(name:) takes this family's italic face.
+    XCTAssertEqual(CodeEditorView.fontName(for: "Avenir Next Condensed"), "AvenirNextCondensed-Regular")
+    XCTAssertEqual(CodeEditorView.fontName(for: "Menlo-Bold"), "Menlo-Bold")
+    XCTAssertEqual(CodeEditorView.fontName(for: "NoSuchFont"), "Menlo")
+    XCTAssertEqual(CodeEditorView.fontName(for: nil), "Menlo")
+  }
 }
