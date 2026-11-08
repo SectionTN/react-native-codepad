@@ -89,6 +89,23 @@ final class HitTestTests: XCTestCase {
     XCTAssertEqual(cursor.frame.minX, 0, "font, insets and padding in one batch")
   }
 
+  func testATextPaddingChangeKeepsTheFocusedCaretInView() {
+    let editor = launch()
+    editor.setLineNumbers(false)
+    editor.setInitialText(String(repeating: "x", count: 80))
+    layout(editor)
+    editor.focus()
+    editor.core.setSelection(anchor: 80, head: 80)
+    draw(editor)
+    editor.setTextPadding(40)
+    draw(editor)
+    guard let caret = editor.latestFrame.caret else {
+      XCTFail("no caret")
+      return
+    }
+    XCTAssertLessThanOrEqual(caret.maxX, editor.bounds.width, "caret \(caret)")
+  }
+
   private func caretX(_ editor: CodeEditorView) -> CGFloat? {
     editor.core.setSelection(anchor: 0, head: 0)
     draw(editor)

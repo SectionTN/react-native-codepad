@@ -247,6 +247,7 @@ final class CodeEditorView: UIScrollView {
     placeholderLayer?.padding = padding
     placeholderLayer?.setNeedsDisplay()
     relayout()
+    if hasFocus { revealPending = true }
   }
 
   func setSoftWrap(_ enabled: Bool) {
