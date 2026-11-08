@@ -199,6 +199,7 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
           initialValue={text}
           language={settings.highlight ? file.language : undefined}
           theme={theme}
+          fontFamily={settings.jetBrainsMono ? 'JetBrainsMono_400Regular' : undefined}
           fontSize={settings.fontSize}
           softWrap={settings.softWrap}
           lineNumbers={settings.lineNumbers}

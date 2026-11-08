@@ -7,6 +7,7 @@ export type Settings = {
   matchBrackets: boolean;
   autoClose: boolean;
   highlight: boolean;
+  jetBrainsMono: boolean;
   readOnly: boolean;
   suggestions: Suggestions;
   fontSize: number;
@@ -19,6 +20,7 @@ export const DEFAULT_SETTINGS: Settings = {
   matchBrackets: true,
   autoClose: true,
   highlight: true,
+  jetBrainsMono: false,
   readOnly: false,
   suggestions: 'off',
   fontSize: 14,

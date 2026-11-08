@@ -3433,6 +3433,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@expo-google-fonts/jetbrains-mono@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "@expo-google-fonts/jetbrains-mono@npm:0.4.1"
+  checksum: 10c0/cd141277f9577803fb83d4ed0c74b92b3333ef6a60a0e46b3a38111914c0c8b42d6dc074bcc32f14b12b09bb3480248517afe27d8b227a7e362bd9d679102a30
+  languageName: node
+  linkType: hard
+
 "@expo/cli@npm:^57.0.31":
   version: 57.0.31
   resolution: "@expo/cli@npm:57.0.31"
@@ -17796,6 +17803,7 @@ __metadata:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.3"
     "@babel/runtime": "npm:^7.25.0"
+    "@expo-google-fonts/jetbrains-mono": "npm:^0.4.1"
     "@expo/material-symbols": "npm:^0.1.1"
     "@expo/ui": "npm:~57.0.25"
     "@react-native/babel-preset": "npm:0.86.3"
@@ -17805,6 +17813,7 @@ __metadata:
     "@types/react": "npm:~19.2.4"
     babel-preset-expo: "npm:~57.0.15"
     expo: "npm:~57.0.30"
+    expo-font: "npm:~57.0.4"
     expo-linear-gradient: "npm:~57.0.2"
     expo-status-bar: "npm:~57.0.1"
     react: "npm:19.2.3"

@@ -8,6 +8,7 @@ export const SWITCHES: [keyof Settings, string][] = [
   ['matchBrackets', 'Match brackets'],
   ['autoClose', 'Auto close brackets'],
   ['highlight', 'Syntax highlighting'],
+  ['jetBrainsMono', 'JetBrains Mono'],
   ['readOnly', 'Read only'],
 ];
 

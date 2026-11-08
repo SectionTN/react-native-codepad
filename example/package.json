@@ -11,9 +11,11 @@
     "build:android": "cd android && ./gradlew :app:assembleDebugOptimized --no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a"
   },
   "dependencies": {
+    "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@expo/material-symbols": "^0.1.1",
     "@expo/ui": "~57.0.25",
     "expo": "~57.0.30",
+    "expo-font": "~57.0.4",
     "expo-linear-gradient": "~57.0.2",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
