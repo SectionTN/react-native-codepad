@@ -53,10 +53,11 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
       }
     }
 
+  // The wrapper sends "" for an unset string prop, since Nitro rejects the null a removed prop arrives as.
   override var language: String? = null
     set(value) {
       field = value
-      editor.setLanguage(value)
+      editor.setLanguage(value?.ifEmpty { null })
     }
 
   override var theme: NativeTheme? = null
@@ -117,7 +118,7 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
   override var placeholder: String? = null
     set(value) {
       field = value
-      editor.setPlaceholder(value)
+      editor.setPlaceholder(value?.ifEmpty { null })
     }
 
   override var scrollEnabled: Boolean? = null
@@ -211,7 +212,7 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
   override fun afterUpdate() {
     if (fontDirty) {
       fontDirty = false
-      editor.setFont(fontFamily, (fontSize ?: 14.0).toFloat(), (lineHeight ?: 1.4).toFloat())
+      editor.setFont(fontFamily?.ifEmpty { null }, (fontSize ?: 14.0).toFloat(), (lineHeight ?: 1.4).toFloat())
     }
     if (settingsDirty) {
       settingsDirty = false

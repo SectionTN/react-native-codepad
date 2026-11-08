@@ -106,15 +106,15 @@ final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable 
       pendingText = nil
       loaded = true
       editor.setInitialText(text)
-    case .language: editor.setLanguage(language)
+    case .language: editor.setLanguage(language?.nonEmpty)
     case .theme: editor.setTheme(theme.map(Self.toColors) ?? .default)
-    case .font: editor.setFont(family: fontFamily, size: fontSize ?? 14, lineHeight: lineHeight ?? 1.4)
+    case .font: editor.setFont(family: fontFamily?.nonEmpty, size: fontSize ?? 14, lineHeight: lineHeight ?? 1.4)
     case .lineNumbers: editor.setLineNumbers(lineNumbers ?? true)
     case .softWrap: editor.setSoftWrap(softWrap ?? false)
     case .readOnly: editor.setReadOnly(readOnly ?? false)
     case .highlightActiveLine: editor.setHighlightActiveLine(highlightActiveLine ?? true)
     case .matchBrackets: editor.setMatchBrackets(matchBrackets ?? true)
-    case .placeholder: editor.setPlaceholder(placeholder)
+    case .placeholder: editor.setPlaceholder(placeholder?.nonEmpty)
     case .scrollEnabled: editor.setScrollEnabled(scrollEnabled ?? true)
     case .contentInsets:
       editor.setContentInsets(
@@ -418,4 +418,9 @@ final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable 
       searchMatch: color(t.searchMatch, base.searchMatch),
       searchMatchActive: color(t.searchMatchActive, base.searchMatchActive), tokens: tokens)
   }
+}
+
+/// The wrapper sends "" for an unset string prop, since Nitro rejects the null a removed prop arrives as.
+private extension String {
+  var nonEmpty: String? { isEmpty ? nil : self }
 }

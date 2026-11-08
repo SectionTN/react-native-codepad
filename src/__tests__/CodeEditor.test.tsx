@@ -96,9 +96,12 @@ describe('CodeEditor', () => {
   });
 
   it('fills the prop defaults and passes explicit values through', async () => {
-    const props = host(await render(<CodeEditor />));
+    const api = await render(<CodeEditor />);
+    const props = host(api);
     expect(props).toMatchObject({
       initialValue: '',
+      language: '',
+      fontFamily: '',
       fontSize: 14,
       lineHeight: 1.4,
       lineNumbers: true,
@@ -106,6 +109,7 @@ describe('CodeEditor', () => {
       readOnly: false,
       highlightActiveLine: true,
       matchBrackets: true,
+      placeholder: '',
       scrollEnabled: true,
       textPadding: 8,
       avoidKeyboard: false,
@@ -116,8 +120,10 @@ describe('CodeEditor', () => {
       suggestions: 'off',
       autoFocus: false,
     });
-    expect(props.placeholder).toBeUndefined();
-    expect(props.contentInsets).toBeUndefined();
+    // A removed prop would reach Nitro as null, which it rejects; the insets keep one identity across renders.
+    expect(props.contentInsets).toEqual({});
+    await api.rerender(<CodeEditor />);
+    expect(host(api).contentInsets).toBe(props.contentInsets);
     expect(props.onChangeText).toBeUndefined();
     const custom = host(
       await render(
@@ -139,6 +145,14 @@ describe('CodeEditor', () => {
       contentInsets: { bottom: 40 },
       textPadding: 0,
     });
+  });
+
+  it('keeps onChangeText on the native view after the handler goes away', async () => {
+    const api = await render(<CodeEditor onChangeText={() => {}} />);
+    const wired = host(api).onChangeText;
+    expect(wired).toBeDefined();
+    await api.rerender(<CodeEditor />);
+    expect(host(api).onChangeText).toBe(wired);
   });
 
   it('maps the selection and scroll methods onto the native object', async () => {

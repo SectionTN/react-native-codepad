@@ -13,7 +13,7 @@ import type {
 } from './specs/CodeEditorView.nitro';
 import CodeEditorViewConfig from './specs/CodeEditorViewConfig';
 import { githubLight } from './themes/githubLight';
-import type { CodeEditorProps, CodeEditorRef, SearchHit, Theme } from './types';
+import type { CodeEditorProps, CodeEditorRef, ContentInsets, SearchHit, Theme } from './types';
 
 const NativeCodeEditor = getHostComponent<CodeEditorViewProps, CodeEditorViewMethods>(
   'CodeEditorView',
@@ -21,6 +21,10 @@ const NativeCodeEditor = getHostComponent<CodeEditorViewProps, CodeEditorViewMet
 );
 
 type NativeRef = CodeEditorViewMethods;
+
+// A prop that turns undefined reaches Nitro as null, which it rejects, so optional props default to unset values.
+// The insets default is one object, so it never crosses to native again on a re-render.
+const NO_INSETS: ContentInsets = {};
 
 // Nitro crosses "no match" as a total of 0.
 const toHit = (hit: NativeSearchHit): SearchHit | null => (hit.total === 0 ? null : hit);
@@ -41,9 +45,9 @@ export function normalizeTheme(theme: Theme): NativeTheme {
 export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function CodeEditor(
   {
     initialValue = '',
-    language,
+    language = '',
     theme = githubLight,
-    fontFamily,
+    fontFamily = '',
     fontSize = 14,
     lineHeight = 1.4,
     lineNumbers = true,
@@ -51,9 +55,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     readOnly = false,
     highlightActiveLine = true,
     matchBrackets = true,
-    placeholder,
+    placeholder = '',
     scrollEnabled = true,
-    contentInsets,
+    contentInsets = NO_INSETS,
     textPadding = 8,
     avoidKeyboard = false,
     tabSize = 4,
@@ -85,6 +89,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   onChangeRef.current = onChange;
   const onChangeTextRef = useRef(onChangeText);
   onChangeTextRef.current = onChangeText;
+  // Native builds the full text only for a listener; once wired it stays, since a removed prop reaches Nitro as null.
+  const textListened = useRef(false);
+  if (onChangeText) textListened.current = true;
   const onFocusRef = useRef(onFocus);
   onFocusRef.current = onFocus;
   const onBlurRef = useRef(onBlur);
@@ -215,7 +222,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       onScroll={onScrollCallback}
       onSelectionChange={onSelectionChangeCallback}
       onChange={onChangeCallback}
-      onChangeText={onChangeText ? onChangeTextCallback : undefined}
+      onChangeText={textListened.current ? onChangeTextCallback : undefined}
       onEditorFocus={onFocusCallback}
       onEditorBlur={onBlurCallback}
       onContentSizeChange={onContentSizeChangeCallback}
