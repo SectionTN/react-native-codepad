@@ -374,6 +374,15 @@ class CodeEditorView(context: Context) : View(context) {
     applyInsets()
   }
 
+  /** Space in dp between the text and the left and right edges of the text area. */
+  fun setTextPadding(value: Float) {
+    val px = dp(value.coerceAtLeast(0f))
+    if (px == viewport.textPadding) return
+    viewport.textPadding = px
+    relayout()
+    if (isFocused) revealPending = true
+  }
+
   /** Pixels of the view under the keyboard, from KeyboardInsetTracker; applied like a bottom inset. */
   fun applyKeyboardInset(px: Int) {
     if (px == keyboardInset) return
