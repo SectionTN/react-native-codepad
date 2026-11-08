@@ -9,7 +9,7 @@ log=$(mktemp)
 trap 'rm -f "$log"' EXIT
 status=0
 xcodebuild test -workspace example/ios/CodepadExample.xcworkspace -scheme CodepadExample \
-  -destination "platform=iOS Simulator,id=${CODEPAD_IOS_UDID:-C337C80F-5873-4156-B2AC-D9E22BC6ADFD}" \
+  -destination "platform=iOS Simulator,id=${CODEPAD_IOS_UDID:-6BF45D63-4F4D-495C-846D-28B63F0E99E2}" \
   -only-testing:CodepadTests "$@" > "$log" 2>&1 || status=$?
 grep -E "Test Case .* (passed|failed)|(^|: )error: |Executed [0-9]+ tests|\*\* TEST" "$log" | sed "s|$PWD/||" || true
 exit "$status"

@@ -4,7 +4,7 @@
 set -euo pipefail
 
 name=${1:?usage: $0 <name> [udid]}
-udid=${2:-${CODEPAD_IOS_UDID:-C337C80F-5873-4156-B2AC-D9E22BC6ADFD}}
+udid=${2:-${CODEPAD_IOS_UDID:-6BF45D63-4F4D-495C-846D-28B63F0E99E2}}
 bundle=${CODEPAD_BUNDLE:-me.sectiontn.codepad.example}
 root=$(cd "$(dirname "$0")/.." && pwd)
 raw=$(mktemp)
