@@ -279,7 +279,9 @@ class CodeEditorView(context: Context) : View(context) {
 
   fun setFont(family: String?, sizeDp: Float, lineHeightMultiplier: Float) {
     lineHeight = lineHeightMultiplier
-    applyFont(family?.let { typefaceResolver?.invoke(it) } ?: Typeface.MONOSPACE, sizeDp)
+    // React Native's font manager answers a name it does not know with the system default.
+    val typeface = family?.let { typefaceResolver?.invoke(it) }?.takeUnless { it === Typeface.DEFAULT }
+    applyFont(typeface ?: Typeface.MONOSPACE, sizeDp)
     relayout()
   }
 
