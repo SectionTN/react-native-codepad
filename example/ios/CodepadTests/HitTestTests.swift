@@ -35,6 +35,44 @@ final class HitTestTests: XCTestCase {
     }
   }
 
+  func testTextPaddingMovesTheTextAndItsHitTest() {
+    let editor = launch()
+    editor.setLineNumbers(false)
+    editor.setContentInsets(top: 0, bottom: 0, left: 11, right: 0)
+    editor.setInitialText("abc\ndef")
+    layout(editor)
+    XCTAssertEqual(caretX(editor), 19, "unset")
+    editor.setTextPadding(0)
+    XCTAssertEqual(caretX(editor), 11, "zero")
+    XCTAssertEqual(editor.caretRect(offset: 0).minX, 0)
+    XCTAssertEqual(editor.offsetAt(contentPoint: CGPoint(x: editor.caretRect(offset: 2).minX + 1, y: 1)), 2)
+    XCTAssertEqual(editor.offsetAt(x: 12, y: editor.latestFrame.caret?.midY ?? 0), 0)
+    XCTAssertTrue(lineLayers(editor).allSatisfy { $0.padding == 0 }, "line layers")
+    editor.setTextPadding(10.6)
+    XCTAssertEqual(caretX(editor), 22, "rounded like the viewport")
+    editor.setTextPadding(-4)
+    XCTAssertEqual(caretX(editor), 11, "clamped")
+    editor.setTextPadding(8)
+    editor.setInitialText("")
+    editor.setPlaceholder("hint")
+    layout(editor)
+    draw(editor)
+    editor.setTextPadding(0)
+    draw(editor)
+    XCTAssertFalse(lineLayers(editor).isEmpty)
+    XCTAssertTrue(lineLayers(editor).allSatisfy { $0.padding == 0 }, "placeholder layer")
+  }
+
+  private func caretX(_ editor: CodeEditorView) -> CGFloat? {
+    editor.core.setSelection(anchor: 0, head: 0)
+    draw(editor)
+    return editor.latestFrame.caret?.minX
+  }
+
+  private func lineLayers(_ editor: CodeEditorView) -> [LineLayer] {
+    editor.textInput.textHost.sublayers?.compactMap { $0 as? LineLayer } ?? []
+  }
+
   func testATouchBelowTheLastLineReachesTheTextView() {
     let editor = launch()
     editor.setInitialText("one\ntwo")

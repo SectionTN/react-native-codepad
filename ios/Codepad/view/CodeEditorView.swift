@@ -33,7 +33,7 @@ final class CodeEditorView: UIScrollView {
     var rowHeight: Int { view.rowMetrics().rowHeight }
     var spaceWidth: CGFloat { view.rowMetrics().spaceWidth }
     var viewHeight: Int { view.viewport.scrollY - view.viewport.insetTop + view.viewport.height }
-    var originX: CGFloat { CodeEditorView.textPadding }
+    var originX: CGFloat { view.textPadding }
     func lineAt(_ offset: Int) -> Int { view.core.document.lineAt(offset) }
     func lineStart(_ line: Int) -> Int { view.core.document.lineStart(line) }
     func lineLength(_ line: Int) -> Int { view.core.document.lineLength(line) }
@@ -60,7 +60,7 @@ final class CodeEditorView: UIScrollView {
     func columnAt(line: Int, row: Int, x: CGFloat) -> Int { layout(line).columnAt(row: row, x: x) }
   }
 
-  static let textPadding: CGFloat = 8
+  static let defaultTextPadding: CGFloat = 8
   static let gutterPadding: CGFloat = 8
   static let caretWidth: CGFloat = 2
 
@@ -115,6 +115,8 @@ final class CodeEditorView: UIScrollView {
   private var placeholderLayer: LineLayer?
   private var placeholderLayout: LineLayout?
   private var lineNumbers = true
+  /// Whole points, so the viewport's Int padding and the layers' CGFloat padding never disagree.
+  private(set) var textPadding = CodeEditorView.defaultTextPadding
   private var highlightActiveLine = true
   private var placeholder: String?
   private var contentInsetTop: CGFloat = 0
@@ -155,7 +157,7 @@ final class CodeEditorView: UIScrollView {
       for effect in [topEdgeEffect, bottomEdgeEffect, leftEdgeEffect, rightEdgeEffect] { effect.isHidden = true }
     }
     backgroundColor = UIColor(cgColor: theme.background)
-    viewport.textPadding = Int(CodeEditorView.textPadding)
+    viewport.textPadding = Int(textPadding)
     gutter.padding = CodeEditorView.gutterPadding
     textInput.editor = self
     textInput.decorations.setTheme(theme)
@@ -230,6 +232,20 @@ final class CodeEditorView: UIScrollView {
   func setLineNumbers(_ enabled: Bool) {
     if lineNumbers == enabled { return }
     lineNumbers = enabled
+    relayout()
+  }
+
+  func setTextPadding(_ points: CGFloat) {
+    let padding = max(0, points).rounded()
+    if padding == textPadding { return }
+    textPadding = padding
+    viewport.textPadding = Int(padding)
+    for layer in layers.values {
+      layer.padding = padding
+      layer.setNeedsDisplay()
+    }
+    placeholderLayer?.padding = padding
+    placeholderLayer?.setNeedsDisplay()
     relayout()
   }
 
@@ -494,7 +510,7 @@ final class CodeEditorView: UIScrollView {
   /// The same for a point in the content view's coordinates, what UITextInput receives.
   func offsetAt(contentPoint point: CGPoint) -> Int {
     let row = Int((point.y / CGFloat(rowMetrics().rowHeight)).rounded(.down))
-    return offsetAt(row: row, contentX: point.x - CodeEditorView.textPadding)
+    return offsetAt(row: row, contentX: point.x - textPadding)
   }
 
   private func offsetAt(row: Int, contentX: CGFloat) -> Int {
@@ -516,7 +532,7 @@ final class CodeEditorView: UIScrollView {
     let col = offset - doc.lineStart(line)
     let top = CGFloat((heights.rowStart(line) + entry.layout.rowOf(col)) * m.rowHeight)
     return CGRect(
-      x: CodeEditorView.textPadding + entry.layout.caretX(col), y: top, width: CodeEditorView.caretWidth,
+      x: textPadding + entry.layout.caretX(col), y: top, width: CodeEditorView.caretWidth,
       height: CGFloat(m.rowHeight))
   }
 
@@ -993,7 +1009,7 @@ final class CodeEditorView: UIScrollView {
 
   private func takeLayer(_ entry: Entry) -> LineLayer {
     let layer = pool.popLast() ?? LineLayer()
-    layer.padding = CodeEditorView.textPadding
+    layer.padding = textPadding
     textInput.textHost.addSublayer(layer)
     layers[entry.id] = layer
     return layer
@@ -1103,7 +1119,7 @@ final class CodeEditorView: UIScrollView {
       layer = existing
     } else {
       layer = LineLayer()
-      layer.padding = CodeEditorView.textPadding
+      layer.padding = textPadding
       textInput.textHost.addSublayer(layer)
       placeholderLayer = layer
     }
