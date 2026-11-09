@@ -22,6 +22,7 @@
       "!languages/*/android",
       "!languages/*/ios",
       "!languages/*/queries",
+      "!tests/fixtures/*/src",
       "!src/specs/CodeEditorViewConfig.ts",
       "!website/.docusaurus",
       "!website/build"
