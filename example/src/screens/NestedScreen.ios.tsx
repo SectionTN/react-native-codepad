@@ -11,7 +11,7 @@ import { NESTED_SNIPPET } from './nestedSnippet';
 type Props = { theme: Theme; onBack: () => void };
 
 // Caret reveal inside a parent scroll view is the consumer's job: read getCursorRect and scroll the
-// parent to it. This screen only shows the auto height loop.
+// parent to it. This screen shows the auto height loop and the sideways scroll.
 export function NestedScreen({ theme, onBack }: Props) {
   const scheme = schemeFor(theme);
   const palette = IOS[scheme];
@@ -41,8 +41,8 @@ export function NestedScreen({ theme, onBack }: Props) {
         keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.body, { color: palette.label }]}>
-          The editor below takes its height from onContentSizeChange and leaves scrolling to this
-          page.
+          The editor below takes its height from onContentSizeChange and leaves vertical scrolling
+          to this page. Long lines scroll sideways.
         </Text>
         <Host matchContents={{ vertical: true }} colorScheme={scheme} style={styles.host}>
           <TextField placeholder="A field above" modifiers={field} />
@@ -52,7 +52,6 @@ export function NestedScreen({ theme, onBack }: Props) {
           initialValue={NESTED_SNIPPET}
           language="javascript"
           theme={theme}
-          softWrap
           lineNumbers
           scrollEnabled={false}
           onContentSizeChange={(e) => setHeight(Math.ceil(e.height))}

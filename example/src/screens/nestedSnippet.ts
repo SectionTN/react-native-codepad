@@ -10,6 +10,7 @@ export const NESTED_SNIPPET = [
   'for (const name of names) {',
   '  greet(name);',
   '}',
+  'const greeting = names.map((name) => greet(name)).join(", ") + "!";',
   '',
   'export default greet;',
 ].join('\n');
