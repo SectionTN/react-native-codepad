@@ -12,6 +12,9 @@
     },
     "./package.json": "./package.json"
   },
+  "bin": {
+    "react-native-codepad": "./lib/cli/bin.js"
+  },
   "files": [
     "src",
     "lib",
@@ -37,8 +40,9 @@
   "scripts": {
     "example": "yarn workspace react-native-codepad-example",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib build",
-    "prepare": "bob build",
+    "prepare": "bob build && yarn build:cli",
     "nitrogen": "nitrogen && node scripts/sync-view-config.mjs",
+    "build:cli": "node scripts/build-cli.mjs",
     "gen:languages": "node languages/generator/cli.ts gen",
     "gen:report": "node languages/generator/cli.ts report",
     "lint": "biome check .",
