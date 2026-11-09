@@ -1,18 +1,10 @@
+import { type Dropped, dropReason } from './drops.ts';
 import { dirPattern, ensureCheckout } from './git.ts';
 import { loadManifest } from './manifest.ts';
-import {
-  isLuaMatch,
-  isVimMatch,
-  luaPatternToRegex,
-  SUPPORTED_DIRECTIVES,
-  SUPPORTED_PREDICATES,
-  TranslateError,
-  vimRegexToRegex,
-} from './predicates.ts';
 import { checkoutReader, collectQueryLangs, resolveQuery } from './queries.ts';
 import { type Pattern, splitPatterns } from './scm.ts';
 
-export type Dropped = { pattern: Pattern; reason: string };
+export { type Dropped, dropReason } from './drops.ts';
 export type Analysis = { kept: Pattern[]; dropped: Dropped[]; counts: Record<string, number> };
 export type LangReport = {
   id: string;
@@ -21,29 +13,6 @@ export type LangReport = {
   counts: Record<string, number>;
   reasons: string[];
 };
-
-function lastString(p: { args: { kind: string; value: string }[] }): string {
-  const strings = p.args.filter((a) => a.kind === 'string');
-  return strings.length ? strings[strings.length - 1]!.value : '';
-}
-
-export function dropReason(pattern: Pattern): string | null {
-  for (const pred of pattern.predicates) {
-    if (pred.name.endsWith('!')) {
-      if (!SUPPORTED_DIRECTIVES.has(pred.name)) return `unsupported directive ${pred.name}`;
-      continue;
-    }
-    if (!SUPPORTED_PREDICATES.has(pred.name)) return `unsupported predicate ${pred.name}`;
-    try {
-      if (isLuaMatch(pred.name)) luaPatternToRegex(lastString(pred));
-      else if (isVimMatch(pred.name)) vimRegexToRegex(lastString(pred));
-    } catch (e) {
-      if (e instanceof TranslateError) return `${pred.name}: ${e.message}`;
-      throw e;
-    }
-  }
-  return null;
-}
 
 export function analyzePatterns(patterns: Pattern[]): Analysis {
   const kept: Pattern[] = [];

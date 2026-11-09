@@ -1,5 +1,5 @@
+import { type Dropped, dropReason } from './drops.ts';
 import { isLuaMatch, isVimMatch, luaPatternToRegex, vimRegexToRegex } from './predicates.ts';
-import { type Dropped, dropReason } from './report.ts';
 import { type Pattern, splitPatterns, tokenize } from './scm.ts';
 
 function queryString(value: string): string {

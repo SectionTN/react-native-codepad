@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { captureNames } from './captures.ts';
-import { hasScanner } from './grammar.ts';
-import { type GrammarEntry, type LanguageEntry, pascal } from './manifest.ts';
+import { type GrammarEntry, type LanguageEntry, pascal } from './entry.ts';
+import { hasScanner } from './grammar-files.ts';
 import type { QueryKind } from './queries.ts';
 
 export type GrammarQueries = Record<QueryKind, string | null>;
