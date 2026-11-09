@@ -1,5 +1,6 @@
 package me.sectiontn.codepad.view
 
+import kotlin.math.abs
 import kotlin.math.hypot
 
 /**
@@ -20,6 +21,8 @@ class GestureMachine(private val host: Host, private val config: Config) {
     fun offsetAt(x: Float, y: Float): Int
     fun handleAt(x: Float, y: Float): Handle?
     fun insideSelection(offset: Int): Boolean
+    /** Off leaves vertical drags to the parent and scrolls only sideways. */
+    val scrollsVertically: Boolean get() = true
     /** Content deltas: positive dy means the content would move up. */
     fun canScroll(dx: Float, dy: Float): Boolean
     fun placeCaret(offset: Int)
@@ -32,6 +35,7 @@ class GestureMachine(private val host: Host, private val config: Config) {
     fun endScroll(velocityX: Float, velocityY: Float)
     fun showMenu()
     fun disallowIntercept()
+    fun allowIntercept() {}
     fun postLongPress(delayMs: Long)
     fun cancelLongPress()
   }
@@ -40,6 +44,7 @@ class GestureMachine(private val host: Host, private val config: Config) {
 
   private var state = State.Idle
   private var handle: Handle? = null
+  private var holdingParent = false
   private var downX = 0f
   private var downY = 0f
   private var lastX = 0f
@@ -49,6 +54,7 @@ class GestureMachine(private val host: Host, private val config: Config) {
   private var lastTapY = 0f
 
   fun down(x: Float, y: Float, time: Long) {
+    holdingParent = false
     downX = x
     downY = y
     lastX = x
@@ -61,22 +67,29 @@ class GestureMachine(private val host: Host, private val config: Config) {
     }
     state = State.Pressed
     host.postLongPress(config.longPressTimeout)
+    // A parent ScrollView intercepts on its own slop, before the axis is known: hold it until then.
+    if (!host.scrollsVertically && (host.canScroll(1f, 0f) || host.canScroll(-1f, 0f))) {
+      host.disallowIntercept()
+      holdingParent = true
+    }
   }
 
   fun move(x: Float, y: Float, time: Long) {
     when (state) {
       State.Pressed -> if (hypot(x - downX, y - downY) > config.touchSlop) {
         host.cancelLongPress()
-        if (host.canScroll(downX - x, downY - y)) {
+        if (claims(downX - x, downY - y)) {
           state = State.Scrolling
-          host.disallowIntercept()
+          if (!holdingParent) host.disallowIntercept()
           host.beginScroll()
-          host.scrollBy(lastX - x, lastY - y)
+          scrollBy(lastX - x, lastY - y)
         } else {
           state = State.Passed
+          if (holdingParent) host.allowIntercept()
+          holdingParent = false
         }
       }
-      State.Scrolling -> host.scrollBy(lastX - x, lastY - y)
+      State.Scrolling -> scrollBy(lastX - x, lastY - y)
       State.HandleDrag -> handle?.let { host.moveHandle(it, x, y) }
       State.LongPressed -> if (hypot(x - downX, y - downY) > config.touchSlop) {
         state = State.WordDrag
@@ -93,7 +106,7 @@ class GestureMachine(private val host: Host, private val config: Config) {
     host.cancelLongPress()
     when (state) {
       State.Pressed -> tap(x, y, time)
-      State.Scrolling -> host.endScroll(velocityX, velocityY)
+      State.Scrolling -> host.endScroll(velocityX, if (host.scrollsVertically) velocityY else 0f)
       State.HandleDrag -> host.endHandleDrag()
       State.WordDrag -> host.showMenu()
       State.LongPressed, State.Idle, State.Passed -> {}
@@ -119,6 +132,11 @@ class GestureMachine(private val host: Host, private val config: Config) {
     host.selectWord(host.offsetAt(downX, downY))
     host.showMenu()
   }
+
+  private fun claims(dx: Float, dy: Float): Boolean =
+    if (host.scrollsVertically) host.canScroll(dx, dy) else abs(dx) > abs(dy) && host.canScroll(dx, 0f)
+
+  private fun scrollBy(dx: Float, dy: Float) = host.scrollBy(dx, if (host.scrollsVertically) dy else 0f)
 
   private fun tap(x: Float, y: Float, time: Long) {
     val offset = host.offsetAt(x, y)

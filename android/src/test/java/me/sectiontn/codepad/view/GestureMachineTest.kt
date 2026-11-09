@@ -11,6 +11,7 @@ class GestureMachineTest {
     var handle: GestureMachine.Handle? = null
     var scrollable = true
     var selected: IntRange = IntRange.EMPTY
+    override var scrollsVertically = true
 
     override fun offsetAt(x: Float, y: Float): Int = x.toInt()
     override fun handleAt(x: Float, y: Float): GestureMachine.Handle? = handle
@@ -26,6 +27,7 @@ class GestureMachineTest {
     override fun endScroll(velocityX: Float, velocityY: Float) { calls.add("scroll end ${velocityX.toInt()} ${velocityY.toInt()}") }
     override fun showMenu() { calls.add("menu") }
     override fun disallowIntercept() { calls.add("disallow") }
+    override fun allowIntercept() { calls.add("allow") }
     override fun postLongPress(delayMs: Long) { calls.add("timer $delayMs") }
     override fun cancelLongPress() { calls.add("cancel") }
   }
@@ -92,6 +94,32 @@ class GestureMachineTest {
     m.move(100f, 60f, 20)
     m.up(100f, 60f, 40, 0f, -3000f)
     assertEquals(listOf("timer 400", "cancel", "cancel"), h.calls)
+  }
+
+  @Test
+  fun sidewaysFlickScrollsOnlyHorizontallyWhenVerticalIsOff() {
+    val h = FakeHost()
+    h.scrollsVertically = false
+    val m = machine(h)
+    m.down(100f, 100f, 0)
+    m.move(70f, 88f, 10)
+    m.move(50f, 80f, 20)
+    m.up(50f, 80f, 30, -2000f, -500f)
+    assertEquals(
+      listOf("timer 400", "disallow", "cancel", "scroll begin", "scroll 30 0", "scroll 20 0", "cancel", "scroll end -2000 0"),
+      h.calls,
+    )
+  }
+
+  @Test
+  fun verticalDragReleasesTheParentWhenVerticalIsOff() {
+    val h = FakeHost()
+    h.scrollsVertically = false
+    val m = machine(h)
+    m.down(100f, 100f, 0)
+    m.move(97f, 60f, 10)
+    m.up(97f, 60f, 20, 0f, -3000f)
+    assertEquals(listOf("timer 400", "disallow", "cancel", "allow", "cancel"), h.calls)
   }
 
   @Test
