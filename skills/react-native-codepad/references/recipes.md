@@ -134,15 +134,14 @@ import { useState } from 'react';
 import { ScrollView, TextInput } from 'react-native';
 import { CodeEditor } from 'react-native-codepad';
 
-export function NoteForm() {
+export function SnippetForm() {
   const [height, setHeight] = useState(120);
   return (
     <ScrollView keyboardShouldPersistTaps="handled">
       <TextInput placeholder="Title" />
       <CodeEditor
         style={{ height }}
-        language="markdown"
-        softWrap
+        language="javascript"
         scrollEnabled={false}
         onContentSizeChange={(e) => setHeight(Math.ceil(e.height))}
       />
@@ -152,4 +151,4 @@ export function NoteForm() {
 }
 ```
 
-The editor cannot scroll the page. To keep the caret visible, read `getCursorRect()` in `onSelectionChange`, add the editor's `onLayout` offset, and call `scrollTo` on the page when the caret leaves the visible band. Handle the keyboard at the page level (`KeyboardAvoidingView` or keyboard-controller's `KeyboardAwareScrollView`), not with `avoidKeyboard`.
+Lines wider than the editor scroll sideways with a mostly horizontal drag, and every other drag scrolls the page. Add `softWrap` to wrap long lines instead. The editor cannot scroll the page. To keep the caret visible, read `getCursorRect()` in `onSelectionChange`, add the editor's `onLayout` offset, and call `scrollTo` on the page when the caret leaves the visible band. Handle the keyboard at the page level (`KeyboardAvoidingView` or keyboard-controller's `KeyboardAwareScrollView`), not with `avoidKeyboard`.

@@ -66,7 +66,7 @@ export function Screen() {
 - **Object props are compared by identity.** A `theme` or `contentInsets` literal in JSX crosses to native on every render. Hoist it to module scope or `useMemo` it. Callback props are wrapped once, so inline arrows are fine.
 - **Style padding is ignored.** Use `contentInsets` (dp on Android, points on iOS) for space inside the scroll area, for example under a floating toolbar.
 - **Keyboard:** pass `avoidKeyboard` so the content follows the keyboard animation; the overlap is added on top of `contentInsets.bottom`. On Android it does nothing under `adjustPan`, where the window pans instead.
-- **Inside a `ScrollView`:** set `scrollEnabled={false}`, `softWrap`, feed `onContentSizeChange` height back into `style` with `Math.ceil`, leave `avoidKeyboard` off and scroll the page yourself from `getCursorRect()`. Only for documents of a few hundred lines; a large file needs its own fixed height editor.
+- **Inside a `ScrollView`:** set `scrollEnabled={false}` so vertical drags scroll the page (lines wider than the editor still scroll sideways; add `softWrap` to wrap them instead), feed `onContentSizeChange` height back into `style` with `Math.ceil`, leave `avoidKeyboard` off and scroll the page yourself from `getCursorRect()`. Only for documents of a few hundred lines; a large file needs its own fixed height editor.
 - **Search:** `setSearch()` rejects when a regex does not compile, so wrap it in `try`. `replaceCurrent()` resolves `false` until a match is selected, so call `findNext()` first. Replacement text is literal (no `$1`).
 - **Expo Go cannot run it.** A development build is required.
 

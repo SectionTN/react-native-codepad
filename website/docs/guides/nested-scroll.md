@@ -4,22 +4,21 @@ description: An auto height editor inside a page that scrolls.
 sidebar_position: 4
 ---
 
-A form, a note, a snippet in a list: sometimes the editor sits in a page that scrolls and must not scroll on its own. Two props and one event do it.
+A form, a note, a snippet in a list: sometimes the editor is inside a page that scrolls and must not scroll up and down on its own. One prop and one event do it.
 
 ```tsx
 import { useState } from 'react';
 import { ScrollView, TextInput } from 'react-native';
 import { CodeEditor } from 'react-native-codepad';
 
-export function NotePage() {
+export function SnippetPage() {
   const [height, setHeight] = useState(120);
   return (
     <ScrollView keyboardShouldPersistTaps="handled">
       <TextInput placeholder="Title" />
       <CodeEditor
         style={{ height }}
-        language="markdown"
-        softWrap
+        language="javascript"
         scrollEnabled={false}
         onContentSizeChange={(e) => setHeight(Math.ceil(e.height))}
       />
@@ -29,14 +28,14 @@ export function NotePage() {
 }
 ```
 
-- `scrollEnabled={false}` means the view never claims touch scrolling, so a drag over it scrolls the page. Taps, long presses and handle drags still work.
-- `softWrap` keeps the content within the page width.
+- `scrollEnabled={false}` leaves vertical drags to the page, so a drag over the editor scrolls the page. A mostly horizontal drag over lines wider than the editor scrolls them sideways. Taps, long presses and handle drags still work.
+- Add `softWrap` instead to wrap long lines within the page width. The editor then never scrolls sideways.
 - `onContentSizeChange` reports the size at which nothing scrolls, insets included. Feed its height back into `style`. With soft wrap a tall document converges over a few frames as lines are measured, and `Math.ceil` avoids a one pixel scroll.
 - `keyboardShouldPersistTaps="handled"` lets a tap place the caret without the page dismissing the keyboard first.
 
 ## Caret reveal is yours
 
-The editor cannot scroll the page. In `onSelectionChange`, read `getCursorRect()` (view coordinates, in dp), add the editor's offset in the page from its `onLayout`, and scroll the page when the caret leaves the visible band:
+The editor scrolls sideways to keep the caret in view, but it cannot scroll the page. In `onSelectionChange`, read `getCursorRect()` (view coordinates, in dp), add the editor's offset in the page from its `onLayout`, and scroll the page when the caret leaves the visible band:
 
 ```tsx
 onSelectionChange={() => {
