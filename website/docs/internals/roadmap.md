@@ -14,15 +14,12 @@ Both editors are complete. Android is tested on the JVM and on an emulator, and 
 
 The work planned before `1.0.0`, in order:
 
-1. Text padding that you can set. Both editors pad the text by 8 points today.
-2. One `fontFamily` name for both platforms: the name that React Native's `Text` takes.
-3. Horizontal scroll when `scrollEnabled` is off and a parent `ScrollView` scrolls the editor.
-4. Language packages for PHP with the HTML around it, SQL and the Tunisian Bac pseudocode.
-5. Decorations, so an app can underline a range, open space under a line or tint a line's background.
-6. [Autocomplete](https://github.com/SectionTN/react-native-codepad/issues/3) with provider hooks, and an [LSP client](https://github.com/SectionTN/react-native-codepad/issues/6) on top of it.
-7. [Code folding](https://github.com/SectionTN/react-native-codepad/issues/5) and a [minimap](https://github.com/SectionTN/react-native-codepad/issues/7).
-8. [Multiple cursors](https://github.com/SectionTN/react-native-codepad/issues/8), [diagnostics](https://github.com/SectionTN/react-native-codepad/issues/4), [font ligatures](https://github.com/SectionTN/react-native-codepad/issues/9) and [correct bidi editing](https://github.com/SectionTN/react-native-codepad/issues/10). Caret movement is logical for now.
-9. A [web target](https://github.com/SectionTN/react-native-codepad/issues/11).
+1. Language packages for PHP with the HTML around it, SQL and the Tunisian Bac pseudocode.
+2. Decorations, so an app can underline a range, open space under a line or tint a line's background.
+3. [Autocomplete](https://github.com/SectionTN/react-native-codepad/issues/3) with provider hooks, and an [LSP client](https://github.com/SectionTN/react-native-codepad/issues/6) on top of it.
+4. [Code folding](https://github.com/SectionTN/react-native-codepad/issues/5) and a [minimap](https://github.com/SectionTN/react-native-codepad/issues/7).
+5. [Multiple cursors](https://github.com/SectionTN/react-native-codepad/issues/8), [diagnostics](https://github.com/SectionTN/react-native-codepad/issues/4), [font ligatures](https://github.com/SectionTN/react-native-codepad/issues/9) and [correct bidi editing](https://github.com/SectionTN/react-native-codepad/issues/10). Caret movement is logical for now.
+6. A [web target](https://github.com/SectionTN/react-native-codepad/issues/11).
 
 `1.0.0` is the first stable release, with this list done on both platforms.
 
