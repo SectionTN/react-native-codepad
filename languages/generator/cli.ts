@@ -1,7 +1,7 @@
 import { readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { writeLanguagesPage } from './docs.ts';
-import { emitPackage, type GrammarQueries } from './emit.ts';
+import { emitPackage, type GrammarQueries, shippedIdentity } from './emit.ts';
 import { dirPattern, ensureCheckout } from './git.ts';
 import { fetchGrammar, readAbiRange } from './grammar.ts';
 import { writeHostHeader } from './host.ts';
@@ -74,8 +74,13 @@ function gen(ids: string[]): void {
       outDir,
       grammarDir,
       queries,
-      grammarLicense: license,
-      nvimRev: manifest.queries.rev,
+      identity: shippedIdentity({
+        entry,
+        version,
+        queries,
+        grammarLicense: license,
+        nvimRev: manifest.queries.rev,
+      }),
     });
     process.stdout.write(`generated ${entry.id} (${droppedTotal} patterns dropped)\n`);
   }

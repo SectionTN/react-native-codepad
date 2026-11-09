@@ -6,14 +6,29 @@ import { hasScanner } from './grammar-files.ts';
 import type { QueryKind } from './queries.ts';
 
 export type GrammarQueries = Record<QueryKind, string | null>;
-export type EmitContext = {
+export type EmitEntry = Pick<LanguageEntry, 'id' | 'grammars'>;
+/** What makes a package ours or the app's: its package.json, README, notices and pod source. */
+export type PackageIdentity = {
+  packageJson: Record<string, unknown>;
+  readme: string;
+  notices: string | null;
+  podSource: string;
+  podFallbacks: boolean;
+};
+export type ShippedArgs = {
   entry: LanguageEntry;
+  version: string;
+  queries: Record<string, GrammarQueries>;
+  grammarLicense: string | null;
+  nvimRev: string;
+};
+export type EmitContext = {
+  entry: EmitEntry;
   version: string;
   outDir: string;
   grammarDir: string;
   queries: Record<string, GrammarQueries>;
-  grammarLicense: string | null;
-  nvimRev: string;
+  identity: PackageIdentity;
 };
 
 const KOTLIN_CHUNK = 60_000;
@@ -51,6 +66,7 @@ const kotlinClass = (g: GrammarEntry) => `${pascal(g.name)}Language`;
 const packageName = (id: string) => `react-native-codepad-lang-${id}`;
 const podName = (id: string) => `CodepadLang${pascal(id)}`;
 const libName = (id: string) => `codepad_lang_${id}`;
+const symbol = (g: GrammarEntry) => g.symbol ?? g.name;
 
 function write(root: string, rel: string, text: string): void {
   const file = path.join(root, rel);
@@ -90,14 +106,14 @@ target_compile_options(${libName(entry.id)} PRIVATE -std=c11 -O2 -fvisibility=hi
 }
 
 function langC(ctx: EmitContext): string {
-  const decls = ctx.entry.grammars.map((g) => `const void *tree_sitter_${g.name}(void);`);
+  const decls = ctx.entry.grammars.map((g) => `const void *tree_sitter_${symbol(g)}(void);`);
   const fns = ctx.entry.grammars.map(
     (
       g,
     ) => `JNIEXPORT jlong JNICALL ${jniName(kotlinPackage(g), kotlinClass(g), 'nativeLanguage')}(JNIEnv *env, jobject thiz) {
   (void) env;
   (void) thiz;
-  return (jlong) (intptr_t) tree_sitter_${g.name}();
+  return (jlong) (intptr_t) tree_sitter_${symbol(g)}();
 }`,
   );
   return `#include <jni.h>
@@ -174,7 +190,7 @@ dependencies {
 `;
 }
 
-function kotlinLanguage(g: GrammarEntry, q: GrammarQueries): string {
+function kotlinLanguage(g: GrammarEntry, q: GrammarQueries, id: string): string {
   return `package ${kotlinPackage(g)}
 
 import me.sectiontn.codepad.syntax.LanguageProvider
@@ -189,7 +205,7 @@ class ${kotlinClass(g)} : LanguageProvider {
 
   companion object {
     init {
-      System.loadLibrary("${libName(g.name.split('_')[0]!)}")
+      System.loadLibrary("${libName(id)}")
     }
 
     private val HIGHLIGHTS: String = ${kotlinStringLiteral(q.highlights ?? '')}
@@ -225,7 +241,7 @@ import Codepad
 @objc(${cls})
 public final class ${cls}: NSObject, CPLanguageProvider {
   public let id: String = "${g.name}"
-  public var languagePointer: UnsafeRawPointer { UnsafeRawPointer(tree_sitter_${g.name}()) }
+  public var languagePointer: UnsafeRawPointer { UnsafeRawPointer(tree_sitter_${symbol(g)}()) }
   public let highlights: String = ${swiftRawString(q.highlights ?? '')}
   public let injections: String = ${swiftRawString(q.injections ?? '')}
 }
@@ -239,7 +255,7 @@ function swiftHeader(g: GrammarEntry): string {
 extern "C" {
 #endif
 
-const void *tree_sitter_${g.name}(void);
+const void *tree_sitter_${symbol(g)}(void);
 
 #ifdef __cplusplus
 }
@@ -249,6 +265,7 @@ const void *tree_sitter_${g.name}(void);
 
 function podspec(ctx: EmitContext): string {
   const { entry, grammarDir } = ctx;
+  const fallback = (value: string) => (ctx.identity.podFallbacks ? ` || ${value}` : '');
   const sources = entry.grammars.flatMap((g) => [
     `"grammar/${g.src}/parser.c"`,
     ...(hasScanner(grammarDir, g.src) ? [`"grammar/${g.src}/scanner.c"`] : []),
@@ -264,11 +281,11 @@ Pod::Spec.new do |s|
   s.name         = "${podName(entry.id)}"
   s.version      = package["version"]
   s.summary      = package["description"]
-  s.homepage     = package["homepage"]
+  s.homepage     = package["homepage"]${fallback('"https://reactnativecodepad.pages.dev/guides/custom-languages/"')}
   s.license      = package["license"]
-  s.authors      = package["author"]
+  s.authors      = package["author"]${fallback('"unknown"')}
   s.platforms    = { :ios => "17.0" }
-  s.source       = { :git => "https://github.com/SectionTN/react-native-codepad.git", :tag => "v#{s.version}" }
+  s.source       = ${ctx.identity.podSource}
 
   s.source_files = ["ios/*.{h,swift}", ${sources.join(', ')}]
   s.public_header_files = "ios/*.h"
@@ -287,8 +304,8 @@ end
 `;
 }
 
-function packageJson(ctx: EmitContext): string {
-  const { entry, version } = ctx;
+function shippedPackageJson(a: ShippedArgs): string {
+  const { entry, version } = a;
   return `${JSON.stringify(
     {
       name: packageName(entry.id),
@@ -320,7 +337,7 @@ function packageJson(ctx: EmitContext): string {
       codepad: {
         generated: true,
         grammar: `${entry.repo}@${entry.rev}`,
-        queries: `nvim-treesitter/nvim-treesitter@${ctx.nvimRev}`,
+        queries: `nvim-treesitter/nvim-treesitter@${a.nvimRev}`,
       },
     },
     null,
@@ -328,7 +345,7 @@ function packageJson(ctx: EmitContext): string {
   )}\n`;
 }
 
-function readme(ctx: EmitContext): string {
+function readme(ctx: ShippedArgs): string {
   const { entry } = ctx;
   const sections = entry.grammars.map((g) => {
     const names = captureNames(ctx.queries[g.name]?.highlights ?? '');
@@ -354,7 +371,7 @@ See the [languages guide](https://sectiontn.github.io/react-native-codepad/guide
 `;
 }
 
-function notices(ctx: EmitContext): string {
+function notices(ctx: ShippedArgs): string {
   const grammar = ctx.grammarLicense
     ? `## Grammar (${ctx.entry.repo})\n\n${ctx.grammarLicense}`
     : `## Grammar (${ctx.entry.repo})\n\nSee the upstream repository for its license.`;
@@ -368,11 +385,23 @@ Copyright nvim-treesitter contributors. Licensed under the Apache License, Versi
 `;
 }
 
+/** Our identity for a package generated from grammars.json. */
+export function shippedIdentity(a: ShippedArgs): PackageIdentity {
+  return {
+    packageJson: JSON.parse(shippedPackageJson(a)) as Record<string, unknown>,
+    readme: readme(a),
+    notices: notices(a),
+    podSource:
+      '{ :git => "https://github.com/SectionTN/react-native-codepad.git", :tag => "v#{s.version}" }',
+    podFallbacks: false,
+  };
+}
+
 export function emitPackage(ctx: EmitContext): void {
-  const { entry, outDir } = ctx;
-  write(outDir, 'package.json', packageJson(ctx));
-  write(outDir, 'README.md', readme(ctx));
-  write(outDir, 'THIRD_PARTY_NOTICES.md', notices(ctx));
+  const { entry, outDir, identity } = ctx;
+  write(outDir, 'package.json', `${JSON.stringify(identity.packageJson, null, 2)}\n`);
+  write(outDir, 'README.md', identity.readme);
+  if (identity.notices != null) write(outDir, 'THIRD_PARTY_NOTICES.md', identity.notices);
   write(outDir, `${podName(entry.id)}.podspec`, podspec(ctx));
   write(
     outDir,
@@ -402,7 +431,7 @@ export function emitPackage(ctx: EmitContext): void {
   for (const g of entry.grammars) {
     const q = ctx.queries[g.name]!;
     const kotlinDir = `android/src/main/java/${kotlinPackage(g).replace(/\./g, '/')}`;
-    write(outDir, `${kotlinDir}/${kotlinClass(g)}.kt`, kotlinLanguage(g, q));
+    write(outDir, `${kotlinDir}/${kotlinClass(g)}.kt`, kotlinLanguage(g, q, entry.id));
     write(outDir, `android/src/main/assets/codepad-languages/${g.name}`, ctx.version);
     write(outDir, `ios/CPLang${pascal(g.name)}.h`, swiftHeader(g));
     write(outDir, `ios/CPLang${pascal(g.name)}.swift`, swiftLanguage(g, q));
