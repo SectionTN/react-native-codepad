@@ -332,8 +332,31 @@ final class CodeEditorView: UIScrollView {
     keyboardTracker = nil
   }
 
+  /// Off leaves vertical drags to the parent; the pan stays on for lines wider than the view.
+  private(set) var scrollsVertically = true
+
   func setScrollEnabled(_ enabled: Bool) {
-    isScrollEnabled = enabled
+    scrollsVertically = enabled
+    alwaysBounceVertical = enabled
+    // A second scroll-to-top view in the window turns off the page's status bar tap.
+    scrollsToTop = enabled
+  }
+
+  override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+    if gestureRecognizer === panGestureRecognizer && !scrollsVertically {
+      let t = panGestureRecognizer.translation(in: self)
+      if !viewport.pansSideways(dx: Double(t.x), dy: Double(t.y)) { return false }
+    }
+    return super.gestureRecognizerShouldBegin(gestureRecognizer)
+  }
+
+  override var contentOffset: CGPoint {
+    get { super.contentOffset }
+    set {
+      var offset = newValue
+      if !scrollsVertically && (isDragging || isDecelerating) { offset.y = CGFloat(viewport.scrollY) }
+      super.contentOffset = offset
+    }
   }
 
   func focus() {

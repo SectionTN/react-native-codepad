@@ -63,6 +63,17 @@ final class ViewportTests: XCTestCase {
     XCTAssertEqual(v.contentWidth, 360)
   }
 
+  func testPansSidewaysOnlyForAMostlyHorizontalDragOverWideText() {
+    let v = viewport()
+    v.widestLine = 1000
+    XCTAssertTrue(v.pansSideways(dx: 30, dy: 12))
+    XCTAssertTrue(v.pansSideways(dx: -30, dy: 12))
+    XCTAssertFalse(v.pansSideways(dx: 12, dy: 30))
+    XCTAssertFalse(v.pansSideways(dx: 20, dy: -20))
+    v.widestLine = 100
+    XCTAssertFalse(v.pansSideways(dx: 30, dy: 0))
+  }
+
   func testRevealScrollsTheMinimumDistance() {
     let v = viewport()
     v.textPadding = 8

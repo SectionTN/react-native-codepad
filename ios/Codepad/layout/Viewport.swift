@@ -40,6 +40,11 @@ final class Viewport {
   var maxScrollX: Int { max(0, contentWidth - textAreaWidth) }
   var maxScrollY: Int { max(0, contentHeight - viewportHeight) }
 
+  /// With vertical scrolling off, a drag pans only when it is mostly horizontal and the text overflows.
+  func pansSideways(dx: Double, dy: Double) -> Bool {
+    maxScrollX > 0 && abs(dx) > abs(dy)
+  }
+
   /// Clamps and applies. Returns true when the position moved.
   @discardableResult
   func scrollTo(_ x: Int, _ y: Int) -> Bool {
