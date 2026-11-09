@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.3 (2026-11-09)
+
+### Editor
+
+- The new `textPadding` prop sets the space between the text and the left and right edges of the editor, inside `contentInsets`. The default is 8, the same space the editor used before. You can change it at runtime on Android and iOS.
+- `fontFamily` now takes the same names as React Native's `Text`. On iOS, an `expo-font` key now works (before, the editor drew Menlo instead). A family name such as `JetBrains Mono` now draws the regular style of that family, not bold and not italic. Before, iOS took the first style it found in the family, so four system families now look different: Avenir Next Condensed, Chalkboard SE, Hiragino Sans and Marker Felt.
+- On Android, when `fontFamily` names a font that the app does not have, the editor now uses the default monospace font. Before, it used Roboto.
+- On Android, text now draws at its exact size, so every column has the width the font asks for, the same as on iOS. For example, at 14 dp, 18 columns of JetBrains Mono are 151.2 dp wide. Before, normal code rounded each character to a whole pixel and italic comments used a slightly smaller size, so comments and code did not line up. Tabs now line up with spaces at every font size.
+- Removing an optional prop at runtime (`language`, `fontFamily`, `placeholder`, `contentInsets` or `onChangeText`) no longer throws a render error.
+
+### Docs
+
+- The props reference and the README now explain which font names `fontFamily` accepts on each platform, and where `textPadding` adds its space: between the text and the left and right edges of the editor.
+
+The fifteen language packages move to 0.1.3 with the core, unchanged.
+
 ## 0.1.2 (2026-10-27)
 
 ### Editor
