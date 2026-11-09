@@ -420,7 +420,9 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   fun setScrollEnabled(enabled: Boolean) {
+    if (enabled == isScrollEnabled) return
     isScrollEnabled = enabled
+    scroller.abort()
   }
 
   fun scrollToLine(line: Int, animated: Boolean) {
@@ -909,7 +911,9 @@ class CodeEditorView(context: Context) : View(context) {
       return !sel.isEmpty && offset >= sel.min && offset <= sel.max
     }
 
-    override fun canScroll(dx: Float, dy: Float): Boolean = isScrollEnabled && viewport.canScroll(dx, dy)
+    override val scrollsVertically: Boolean get() = isScrollEnabled
+
+    override fun canScroll(dx: Float, dy: Float): Boolean = viewport.canScroll(dx, dy)
 
     override fun placeCaret(offset: Int) {
       menu.hide()
@@ -971,6 +975,10 @@ class CodeEditorView(context: Context) : View(context) {
 
     override fun disallowIntercept() {
       parent?.requestDisallowInterceptTouchEvent(true)
+    }
+
+    override fun allowIntercept() {
+      parent?.requestDisallowInterceptTouchEvent(false)
     }
 
     override fun postLongPress(delayMs: Long) {
