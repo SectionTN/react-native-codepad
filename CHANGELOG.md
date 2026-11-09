@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.4 (2026-11-09)
+
+### Editor
+
+- With `scrollEnabled={false}`, lines wider than the editor now scroll sideways when you drag mostly horizontally. Every other drag still goes to the parent `ScrollView`. Before, a nested editor without `softWrap` had no way to show the end of a long line.
+
+### Docs
+
+- The nested scroll guide no longer requires `softWrap`. Add it when long lines should wrap within the page instead of scrolling sideways.
+- The roadmap lists only the work left before 1.0.
+
+The fifteen language packages move to 0.1.4 with the core, unchanged.
+
 ## 0.1.3 (2026-11-09)
 
 ### Editor
