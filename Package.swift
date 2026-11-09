@@ -3,12 +3,12 @@
 import Foundation
 import PackageDescription
 
-/// Every generated grammar's parser.c with the scanner.c beside it, the rule scripts/build-host-treesitter.sh
+/// Every generated grammar's parser.c under root with the scanner.c beside it, the rule scripts/build-host-treesitter.sh
 /// uses. A scanner that includes a header outside its src gets that src as a search path, so the header's own
 /// tree_sitter/parser.h include resolves to the grammar's copy.
-func grammarSources() -> (sources: [String], searchPaths: [String]) {
+func grammarSources(_ root: String) -> (sources: [String], searchPaths: [String]) {
   let fm = FileManager.default
-  let languages = URL(fileURLWithPath: Context.packageDirectory).appendingPathComponent("languages")
+  let languages = URL(fileURLWithPath: Context.packageDirectory).appendingPathComponent(root)
   var sources: [String] = []
   var searchPaths: [String] = []
   func walk(_ dir: URL, _ relative: String) {
@@ -33,7 +33,9 @@ func grammarSources() -> (sources: [String], searchPaths: [String]) {
   return (sources, searchPaths)
 }
 
-let grammars = grammarSources()
+let grammars = grammarSources("languages")
+// The example app's custom packages, written by the language command.
+let modules = grammarSources("example/modules")
 
 let package = Package(
   name: "Codepad",
@@ -54,6 +56,14 @@ let package = Package(
       cSettings: grammars.searchPaths.map { .headerSearchPath($0) }
     ),
     .target(
+      name: "CodepadHostModules",
+      path: "example/modules",
+      sources: modules.sources,
+      // SwiftPM needs a public headers dir; nothing imports this module, so the first grammar's headers serve.
+      publicHeadersPath: modules.sources.first.map { ($0 as NSString).deletingLastPathComponent + "/tree_sitter" },
+      cSettings: modules.searchPaths.map { .headerSearchPath($0) }
+    ),
+    .target(
       name: "Codepad",
       dependencies: ["CTreeSitter"],
       path: "ios/Codepad",
@@ -61,7 +71,7 @@ let package = Package(
     ),
     .testTarget(
       name: "CodepadTests",
-      dependencies: ["Codepad", "CodepadHostGrammars"],
+      dependencies: ["Codepad", "CodepadHostGrammars", "CodepadHostModules"],
       path: "tests/swift"
     ),
   ],

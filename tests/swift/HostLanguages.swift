@@ -22,14 +22,23 @@ enum HostLanguages {
     .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
     .appendingPathComponent("languages")
 
+  // The example app's custom packages, written by the language command.
+  static let modulesDir = languagesDir.deletingLastPathComponent()
+    .appendingPathComponent("example").appendingPathComponent("modules")
+
+  private static func packageDir(_ id: String) -> URL {
+    let ours = languagesDir.appendingPathComponent(id)
+    return FileManager.default.fileExists(atPath: ours.path) ? ours : modulesDir.appendingPathComponent(id)
+  }
+
   static func javascript() -> LoadedLanguage {
     load("javascript", "javascript")
   }
 
-  /// Registers languages/<id>/queries/<grammar> under the grammar name and resolves it.
+  /// Registers <package>/queries/<grammar> under the grammar name and resolves it.
   @discardableResult
   static func load(_ id: String, _ grammar: String) -> LoadedLanguage {
-    let dir = languagesDir.appendingPathComponent(id).appendingPathComponent("queries").appendingPathComponent(grammar)
+    let dir = packageDir(id).appendingPathComponent("queries").appendingPathComponent(grammar)
     guard let pointer = HostGrammars.language(named: grammar),
       let highlights = try? String(contentsOf: dir.appendingPathComponent("highlights.scm"), encoding: .utf8)
     else { fatalError("\(grammar) is not in the host grammars or has no highlights query") }
@@ -39,13 +48,14 @@ enum HostLanguages {
     return loaded
   }
 
-  /// Every (package id, grammar name) with a highlights query, sorted by id then grammar.
+  /// Every (package folder, grammar name) with a highlights query in languages and example/modules, sorted.
   static func packages() -> [(id: String, grammar: String)] {
     let fm = FileManager.default
     var out: [(id: String, grammar: String)] = []
-    for id in ((try? fm.contentsOfDirectory(atPath: languagesDir.path)) ?? []).sorted() {
+    let ids = [languagesDir, modulesDir].flatMap { (try? fm.contentsOfDirectory(atPath: $0.path)) ?? [] }
+    for id in ids.sorted() {
       if id == "generator" || id == "host" || id.hasPrefix(".") { continue }
-      let queries = languagesDir.appendingPathComponent(id).appendingPathComponent("queries")
+      let queries = packageDir(id).appendingPathComponent("queries")
       for grammar in ((try? fm.contentsOfDirectory(atPath: queries.path)) ?? []).sorted() {
         if fm.fileExists(atPath: queries.appendingPathComponent(grammar).appendingPathComponent("highlights.scm").path) {
           out.append((id, grammar))

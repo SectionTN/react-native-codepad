@@ -7,12 +7,18 @@ object HostLanguages {
   private val languagesDir: File
     get() = File(System.getProperty("codepad.vectorsDir")!!).resolveSibling("../languages")
 
+  // The example app's custom packages, written by the language command.
+  private val modulesDir: File
+    get() = File(System.getProperty("codepad.vectorsDir")!!).resolveSibling("../example/modules")
+
+  private fun packageDir(id: String): File = languagesDir.resolve(id).takeIf { it.isDirectory } ?: modulesDir.resolve(id)
+
   fun javascript(): LoadedLanguage = load("javascript", "javascript")
 
-  /** Registers languages/<id>/queries/<grammar> under the grammar name and resolves it. */
+  /** Registers <package>/queries/<grammar> under the grammar name and resolves it. */
   fun load(id: String, grammar: String): LoadedLanguage {
     val pointer = HostLib.language(grammar)
-    val dir = languagesDir.resolve("$id/queries/$grammar")
+    val dir = packageDir(id).resolve("queries/$grammar")
     LanguageRegistry.register(object : LanguageProvider {
       override val id = grammar
       override val languagePointer = pointer
@@ -22,10 +28,11 @@ object HostLanguages {
     return LanguageRegistry.resolve(grammar) ?: error("$grammar did not load")
   }
 
-  /** Every (package id, grammar name) with a highlights query, sorted by id then grammar. */
+  /** Every (package folder, grammar name) with a highlights query in languages and example/modules, sorted. */
   fun packages(): List<Pair<String, String>> {
-    val packages = languagesDir.listFiles { f -> f.isDirectory && f.name != "generator" && !f.name.startsWith(".") }
-      ?: return emptyList()
+    val packages = listOf(languagesDir, modulesDir).flatMap { root ->
+      root.listFiles { f -> f.isDirectory && f.name != "generator" && !f.name.startsWith(".") }?.toList() ?: emptyList()
+    }
     return packages.sortedBy { it.name }.flatMap { pkg ->
       val queries = pkg.resolve("queries").listFiles { f -> f.resolve("highlights.scm").exists() } ?: emptyArray()
       queries.sortedBy { it.name }.map { pkg.name to it.name }

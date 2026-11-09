@@ -85,7 +85,7 @@ function gen(ids: string[]): void {
     process.stdout.write(`generated ${entry.id} (${droppedTotal} patterns dropped)\n`);
   }
   writeLanguagesPage(languagesDir, repoRoot);
-  writeHostHeader(languagesDir);
+  writeHostHeader(languagesDir, path.join(repoRoot, 'example/modules'));
 }
 
 const [command, ...args] = process.argv.slice(2);

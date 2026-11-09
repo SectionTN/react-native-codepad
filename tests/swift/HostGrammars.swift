@@ -12,6 +12,7 @@ enum HostGrammars {
     "javascript": { tree_sitter_javascript() },
     "json": { tree_sitter_json() },
     "kotlin": { tree_sitter_kotlin() },
+    "kv_lite": { tree_sitter_kv_lite() },
     "markdown": { tree_sitter_markdown() },
     "markdown_inline": { tree_sitter_markdown_inline() },
     "python": { tree_sitter_python() },

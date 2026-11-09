@@ -34,12 +34,14 @@ class LanguagePackagesTest {
     "kotlin" to "fun main() { val x = 1 }", "swift" to "let x = 1 // hi",
     "c" to "int main(void) { return 0; }", "rust" to "fn main() { let x = 1; }",
     "go" to "package main\nfunc main() { x := 1 }", "yaml" to "a: 1\nb: [x, y]",
+    "kv_lite" to "name = \"x\" # hi",
   )
 
   @Test
   fun everyPackageCompilesItsQueriesAndHighlightsASnippet() {
     val packages = HostLanguages.packages()
     assertTrue(packages.isNotEmpty())
+    assertTrue("the emitted custom package is a host package", packages.any { it.second == "kv_lite" })
     for ((id, grammar) in packages) HostLanguages.load(id, grammar)
     for ((_, grammar) in packages) {
       val lang = checkNotNull(LanguageRegistry.resolve(grammar)) { "$grammar did not load" }

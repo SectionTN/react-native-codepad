@@ -14,11 +14,13 @@ final class LanguageSmokeTests: XCTestCase {
     "kotlin": "fun main() { val x = 1 }", "swift": "let x = 1 // hi",
     "c": "int main(void) { return 0; }", "rust": "fn main() { let x = 1; }",
     "go": "package main\nfunc main() { x := 1 }", "yaml": "a: 1\nb: [x, y]",
+    "kv_lite": "name = \"x\" # hi",
   ]
 
   func testEveryPackageCompilesItsQueriesAndHighlightsASnippet() throws {
     let packages = HostLanguages.packages()
     XCTAssertFalse(packages.isEmpty)
+    XCTAssertTrue(packages.contains { $0.grammar == "kv_lite" }, "the emitted custom package is a host package")
     for (id, grammar) in packages { HostLanguages.load(id, grammar) }
     for (_, grammar) in packages {
       let lang = try XCTUnwrap(LanguageRegistry.resolve(grammar), "\(grammar) did not load")

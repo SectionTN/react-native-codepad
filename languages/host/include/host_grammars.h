@@ -10,6 +10,7 @@ const void *tree_sitter_java(void);
 const void *tree_sitter_javascript(void);
 const void *tree_sitter_json(void);
 const void *tree_sitter_kotlin(void);
+const void *tree_sitter_kv_lite(void);
 const void *tree_sitter_markdown(void);
 const void *tree_sitter_markdown_inline(void);
 const void *tree_sitter_python(void);

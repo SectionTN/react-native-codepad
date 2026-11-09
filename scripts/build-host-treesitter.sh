@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Builds the tree-sitter runtime, the JNI binding and every generated grammar into one host library
-# so JUnit can exercise the syntax layer on the JVM without a device.
+# Builds the tree-sitter runtime, the JNI binding and every generated grammar, the example's custom
+# package included, into one host library so JUnit can exercise the syntax layer on the JVM.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -35,10 +35,10 @@ while IFS= read -r parser; do
   DECLS+="const void *tree_sitter_${name}(void);"$'\n'
   TABLE+="  { \"${name}\", tree_sitter_${name} },"$'\n'
   COUNT=$((COUNT + 1))
-done < <(find "$ROOT/languages" -path '*/grammar/*' -name parser.c -not -path '*/.cache/*' | sort)
+done < <(find "$ROOT/languages" "$ROOT/example/modules" -path '*/grammar/*' -name parser.c -not -path '*/.cache/*' | sort)
 
 LANG_C=()
-while IFS= read -r f; do LANG_C+=("$f"); done < <(find "$ROOT/languages" -path '*/android/src/main/cpp/lang.c' -not -path '*/.cache/*' | sort)
+while IFS= read -r f; do LANG_C+=("$f"); done < <(find "$ROOT/languages" "$ROOT/example/modules" -path '*/android/src/main/cpp/lang.c' -not -path '*/.cache/*' | sort)
 
 cat > "$OUT/host_languages.c" <<EOC
 #include <jni.h>

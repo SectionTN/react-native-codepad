@@ -18,13 +18,16 @@ function parserFiles(dir: string, out: string[]): void {
   }
 }
 
-/** Every grammar name under languagesDir, read from the parser.c files outside the cache, sorted. */
-export function hostGrammarNames(languagesDir: string): string[] {
+/** Every grammar name under the package roots, read from the parser.c files outside the cache, sorted. */
+export function hostGrammarNames(...roots: string[]): string[] {
   const files: string[] = [];
-  for (const id of readdirSync(languagesDir).sort()) {
-    const grammar = path.join(languagesDir, id, 'grammar');
-    if (id.startsWith('.') || !existsSync(grammar) || !statSync(grammar).isDirectory()) continue;
-    parserFiles(grammar, files);
+  for (const root of roots) {
+    if (!existsSync(root)) continue;
+    for (const id of readdirSync(root).sort()) {
+      const grammar = path.join(root, id, 'grammar');
+      if (id.startsWith('.') || !existsSync(grammar) || !statSync(grammar).isDirectory()) continue;
+      parserFiles(grammar, files);
+    }
   }
   const names = files.map((file) => {
     const symbol = languageSymbol(readFileSync(file, 'utf8'));
@@ -49,9 +52,10 @@ export function hostHeader(names: string[]): string {
   ].join('\n');
 }
 
-export function writeHostHeader(languagesDir: string): void {
+/** Writes the header for our grammars plus those under extraRoots, such as the example's custom packages. */
+export function writeHostHeader(languagesDir: string, ...extraRoots: string[]): void {
   const file = path.join(languagesDir, HEADER);
-  const text = hostHeader(hostGrammarNames(languagesDir));
+  const text = hostHeader(hostGrammarNames(languagesDir, ...extraRoots));
   if (existsSync(file) && readFileSync(file, 'utf8') === text) return;
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, text);

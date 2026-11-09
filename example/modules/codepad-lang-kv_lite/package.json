@@ -1,0 +1,32 @@
+{
+  "name": "codepad-lang-kv_lite",
+  "version": "1.0.0",
+  "description": "tree-sitter KvLite grammar for react-native-codepad",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "src",
+    "android",
+    "ios",
+    "grammar",
+    "queries",
+    "*.podspec",
+    "!android/build",
+    "!android/.cxx"
+  ],
+  "keywords": [
+    "react-native",
+    "codepad",
+    "tree-sitter",
+    "kv_lite"
+  ],
+  "peerDependencies": {
+    "react-native-codepad": "^0.1.4"
+  },
+  "codepad": {
+    "generated": true,
+    "core": "0.1.4"
+  }
+}
