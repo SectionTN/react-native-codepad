@@ -85,8 +85,8 @@ class CodeEditorView(context: Context) : View(context) {
 
   private val density = resources.displayMetrics.density
   private val mainHandler = Handler(Looper.getMainLooper())
-  private val paint = TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG)
-  private val gutterPaint = TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG)
+  private val paint = TextPaint(TEXT_FLAGS)
+  private val gutterPaint = TextPaint(TEXT_FLAGS)
   private var theme: ThemeColors = ThemeColors.default
   private var lineHeight = 1.4f
   private var languageId: String? = null
@@ -1332,6 +1332,8 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   companion object {
+    // Without linear text, hinting snaps plain runs to whole pixel advances and draws faked italics at the floored size.
+    private const val TEXT_FLAGS = Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG or Paint.LINEAR_TEXT_FLAG
     private const val TEXT_PADDING_DP = 8f
     private const val CARET_BLINK_MS = 500L
     private const val INSERTION_HANDLE_MS = 4000L

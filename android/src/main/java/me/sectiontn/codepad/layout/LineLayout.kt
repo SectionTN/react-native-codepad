@@ -21,7 +21,7 @@ class RowMetrics(paint: TextPaint, lineHeight: Float, tabSize: Int) {
   val ascent: Int
   val descent: Int
   val spaceWidth: Float
-  val tabWidth: Int
+  val tabWidth: Float
 
   init {
     val fm = paint.fontMetricsInt
@@ -30,8 +30,9 @@ class RowMetrics(paint: TextPaint, lineHeight: Float, tabSize: Int) {
     val extra = rowHeight - fontHeight
     ascent = fm.ascent - extra / 2
     descent = fm.descent + (extra - extra / 2)
-    spaceWidth = paint.measureText(" ")
-    tabWidth = Math.round(spaceWidth * tabSize)
+    // measureText rounds the width up; the run advance is the space as drawn.
+    spaceWidth = paint.getRunAdvance(" ", 0, 1, 0, 1, false, 1)
+    tabWidth = spaceWidth * tabSize
   }
 }
 
@@ -79,7 +80,7 @@ class LineLayout(
       if (tabs > 0) {
         // StaticLayout honours listed stops and then falls back to a 20px default, so list enough of them.
         val stops = n / tabSize + tabs + 1
-        for (k in 1..stops) sp.setSpan(TabStopSpan.Standard(k * metrics.tabWidth), 0, n, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
+        for (k in 1..stops) sp.setSpan(TabStopSpan.Standard(Math.round(k * metrics.tabWidth)), 0, n, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
       }
     }
     layout = StaticLayout.Builder.obtain(sp, 0, n, paint, if (wrapWidth > 0) wrapWidth else NO_WRAP_WIDTH)
