@@ -977,8 +977,13 @@ class CodeEditorView(context: Context) : View(context) {
       parent?.requestDisallowInterceptTouchEvent(true)
     }
 
-    override fun allowIntercept() {
-      parent?.requestDisallowInterceptTouchEvent(false)
+    override fun holdParent() {
+      isNestedScrollingEnabled = true
+      startNestedScroll(View.SCROLL_AXIS_VERTICAL)
+    }
+
+    override fun releaseParent() {
+      stopNestedScroll()
     }
 
     override fun postLongPress(delayMs: Long) {

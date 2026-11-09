@@ -27,7 +27,8 @@ class GestureMachineTest {
     override fun endScroll(velocityX: Float, velocityY: Float) { calls.add("scroll end ${velocityX.toInt()} ${velocityY.toInt()}") }
     override fun showMenu() { calls.add("menu") }
     override fun disallowIntercept() { calls.add("disallow") }
-    override fun allowIntercept() { calls.add("allow") }
+    override fun holdParent() { calls.add("hold") }
+    override fun releaseParent() { calls.add("release") }
     override fun postLongPress(delayMs: Long) { calls.add("timer $delayMs") }
     override fun cancelLongPress() { calls.add("cancel") }
   }
@@ -106,7 +107,7 @@ class GestureMachineTest {
     m.move(50f, 80f, 20)
     m.up(50f, 80f, 30, -2000f, -500f)
     assertEquals(
-      listOf("timer 400", "disallow", "cancel", "scroll begin", "scroll 30 0", "scroll 20 0", "cancel", "scroll end -2000 0"),
+      listOf("timer 400", "hold", "cancel", "disallow", "release", "scroll begin", "scroll 30 0", "scroll 20 0", "cancel", "scroll end -2000 0"),
       h.calls,
     )
   }
@@ -119,7 +120,17 @@ class GestureMachineTest {
     m.down(100f, 100f, 0)
     m.move(97f, 60f, 10)
     m.up(97f, 60f, 20, 0f, -3000f)
-    assertEquals(listOf("timer 400", "disallow", "cancel", "allow", "cancel"), h.calls)
+    assertEquals(listOf("timer 400", "hold", "cancel", "release", "cancel"), h.calls)
+  }
+
+  @Test
+  fun tapReleasesTheParentWhenVerticalIsOff() {
+    val h = FakeHost()
+    h.scrollsVertically = false
+    val m = machine(h)
+    m.down(100f, 10f, 0)
+    m.up(100f, 10f, 50, 0f, 0f)
+    assertEquals(listOf("timer 400", "hold", "cancel", "release", "caret 100"), h.calls)
   }
 
   @Test

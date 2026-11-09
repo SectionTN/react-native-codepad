@@ -35,7 +35,9 @@ class GestureMachine(private val host: Host, private val config: Config) {
     fun endScroll(velocityX: Float, velocityY: Float)
     fun showMenu()
     fun disallowIntercept()
-    fun allowIntercept() {}
+    /** Keeps a vertical parent from intercepting without taking the touch, which gesture-handler roots read as a grab. */
+    fun holdParent() {}
+    fun releaseParent() {}
     fun postLongPress(delayMs: Long)
     fun cancelLongPress()
   }
@@ -69,7 +71,7 @@ class GestureMachine(private val host: Host, private val config: Config) {
     host.postLongPress(config.longPressTimeout)
     // A parent ScrollView intercepts on its own slop, before the axis is known: hold it until then.
     if (!host.scrollsVertically && (host.canScroll(1f, 0f) || host.canScroll(-1f, 0f))) {
-      host.disallowIntercept()
+      host.holdParent()
       holdingParent = true
     }
   }
@@ -80,13 +82,13 @@ class GestureMachine(private val host: Host, private val config: Config) {
         host.cancelLongPress()
         if (claims(downX - x, downY - y)) {
           state = State.Scrolling
-          if (!holdingParent) host.disallowIntercept()
+          host.disallowIntercept()
+          releaseHold()
           host.beginScroll()
           scrollBy(lastX - x, lastY - y)
         } else {
           state = State.Passed
-          if (holdingParent) host.allowIntercept()
-          holdingParent = false
+          releaseHold()
         }
       }
       State.Scrolling -> scrollBy(lastX - x, lastY - y)
@@ -104,6 +106,7 @@ class GestureMachine(private val host: Host, private val config: Config) {
 
   fun up(x: Float, y: Float, time: Long, velocityX: Float, velocityY: Float) {
     host.cancelLongPress()
+    releaseHold()
     when (state) {
       State.Pressed -> tap(x, y, time)
       State.Scrolling -> host.endScroll(velocityX, if (host.scrollsVertically) velocityY else 0f)
@@ -116,6 +119,7 @@ class GestureMachine(private val host: Host, private val config: Config) {
 
   fun cancel() {
     host.cancelLongPress()
+    releaseHold()
     when (state) {
       State.Scrolling -> host.endScroll(0f, 0f)
       State.HandleDrag -> host.endHandleDrag()
@@ -131,6 +135,11 @@ class GestureMachine(private val host: Host, private val config: Config) {
     host.disallowIntercept()
     host.selectWord(host.offsetAt(downX, downY))
     host.showMenu()
+  }
+
+  private fun releaseHold() {
+    if (holdingParent) host.releaseParent()
+    holdingParent = false
   }
 
   private fun claims(dx: Float, dy: Float): Boolean =

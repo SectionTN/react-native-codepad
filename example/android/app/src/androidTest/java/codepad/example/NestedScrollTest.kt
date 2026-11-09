@@ -1,5 +1,6 @@
 package codepad.example
 
+import android.content.Context
 import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
@@ -15,18 +16,31 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/** Counts the editor's touch grabs, which react-native-gesture-handler's root reads as a native gesture taking over. */
+private class GrabCounter(context: Context) : LinearLayout(context) {
+  var grabs = 0
+
+  override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
+    if (disallowIntercept) grabs++
+    super.requestDisallowInterceptTouchEvent(disallowIntercept)
+  }
+}
+
 @RunWith(AndroidJUnit4::class)
 class NestedScrollTest {
+  private var column: GrabCounter? = null
+
   private fun nest(s: ActivityScenario<TestActivity>): ScrollView {
     var page: ScrollView? = null
     s.onActivity { a ->
       (a.editor.parent as ViewGroup).removeView(a.editor)
-      val column = LinearLayout(a).apply {
+      val column = GrabCounter(a).apply {
         orientation = LinearLayout.VERTICAL
         addView(a.editor, LinearLayout.LayoutParams(600, 400))
         addView(View(a), LinearLayout.LayoutParams(600, 4000))
       }
       page = ScrollView(a).apply { addView(column) }
+      this.column = column
       a.setContentView(page)
     }
     return page!!
@@ -83,6 +97,7 @@ class NestedScrollTest {
         draw(editor)
         assertTrue("page scrollY ${page.scrollY}", page.scrollY > 0)
         assertEquals("editor scrollX", 0f, editor.frame.scrollX, 0.5f)
+        assertEquals("editor touch grabs", 0, column!!.grabs)
       }
     }
   }
