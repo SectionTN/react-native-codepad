@@ -24,12 +24,12 @@ class Highlighter {
     let rangeStart = doc.lineStart(firstLine)
     let rangeEnd = doc.lineEnd(lastLine)
     var hits: [Hit] = []
-    collect(language.highlights, snapshot.tree, doc, rangeStart, rangeEnd, 0, 0, &hits)
+    collect(language.highlights, snapshot.tree, doc, rangeStart, rangeEnd, 0, 0, nil, &hits)
     // The list is sorted by start: skip trees ending before the range, stop at the first one starting past it.
     for (i, inj) in snapshot.injected.enumerated() {
       if inj.end <= rangeStart { continue }
       if inj.start >= rangeEnd { break }
-      collect(inj.language.highlights, inj.tree, doc, rangeStart, rangeEnd, i + 1, inj.shift, &hits)
+      collect(inj.language.highlights, inj.tree, doc, rangeStart, rangeEnd, i + 1, inj.shift, inj.clip, &hits)
     }
     // Same precedence as nvim: injections paint over the host, then later starts win, then later patterns.
     hits.sort { a, b in
@@ -64,7 +64,7 @@ class Highlighter {
   /// Queries [start, end) of the document; a tree whose positions lag the document by `shift` is read in its own units.
   private func collect(
     _ compiled: CompiledQuery, _ tree: Tree, _ doc: Document, _ start: Int, _ end: Int, _ layer: Int, _ shift: Int,
-    _ out: inout [Hit]
+    _ clip: [Int]?, _ out: inout [Hit]
   ) {
     let read: (Node) -> String = { n in doc.text(n.startUnit + shift, n.endUnit + shift) }
     let cursor = QueryCursor()
@@ -89,10 +89,24 @@ class Highlighter {
       let name = compiled.query.captureNames[capture.captureIndex]
       if name.hasPrefix("_") || Highlighter.markers.contains(name) { continue }
       let style = name == "none" ? -1 : compiled.styleIds[capture.captureIndex]
-      out.append(
-        Hit(
-          start: capture.node.startUnit + shift, end: capture.node.endUnit + shift, styleId: style, layer: layer,
-          pattern: capture.patternIndex, order: out.count))
+      let s = capture.node.startUnit
+      let e = capture.node.endUnit
+      guard let clip else {
+        out.append(
+          Hit(start: s + shift, end: e + shift, styleId: style, layer: layer, pattern: capture.patternIndex, order: out.count))
+        continue
+      }
+      // A combined tree only paints its own ranges: a node can span the host text between two of them.
+      var i = 0
+      while i < clip.count && clip[i] < e {
+        let a = max(s, clip[i])
+        let b = min(e, clip[i + 1])
+        if a < b {
+          out.append(
+            Hit(start: a + shift, end: b + shift, styleId: style, layer: layer, pattern: capture.patternIndex, order: out.count))
+        }
+        i += 2
+      }
     }
   }
 

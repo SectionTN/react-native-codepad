@@ -556,7 +556,7 @@ final class SyntaxEngine: @unchecked Sendable {
       if let old { old.consumed = true }
       if same { counts.reused += 1 } else { counts.fresh += 1 }
       let extent = [group[0].start, group[group.count - 1].end]
-      out.append(Injected(language: target, tree: t, start: extent[0], end: extent[1]))
+      out.append(Injected(language: target, tree: t, start: extent[0], end: extent[1], clip: Self.clipOf(flat)))
       next.append(
         Kept(
           language: target, tree: t.copy(), combined: true, hulls: hulls, extent: extent, row: group[0].ranges6[2],
@@ -565,10 +565,28 @@ final class SyntaxEngine: @unchecked Sendable {
     kept = carried + next
     kept.sort { $0.start < $1.start }
     counts.carried = carried.count
-    var result = carried.map { Injected(language: $0.language, tree: $0.tree.copy(), start: $0.start, end: $0.end, shift: $0.shift) }
+    var result = carried.map { k in
+      Injected(
+        language: k.language, tree: k.tree.copy(), start: k.start, end: k.end, shift: k.shift,
+        clip: k.combined ? Self.clipOf(k.tree.includedRanges()) : nil)
+    }
     result.append(contentsOf: out)
     result.sort { $0.start < $1.start }
     return result
+  }
+
+  /// The unit pairs of six-int included ranges, or nil for a single range.
+  static func clipOf(_ ranges6: [Int]) -> [Int]? {
+    if ranges6.count <= 6 { return nil }
+    var out: [Int] = []
+    out.reserveCapacity(ranges6.count / 3)
+    var i = 0
+    while i < ranges6.count {
+      out.append(ranges6[i])
+      out.append(ranges6[i + 1])
+      i += 6
+    }
+    return out
   }
 
   /// Call right after a change was applied: the start is unchanged, the old end comes from the removed text.

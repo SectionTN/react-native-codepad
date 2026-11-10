@@ -10,12 +10,12 @@ class Highlighter(private val language: LoadedLanguage) {
     val rangeStart = doc.lineStart(firstLine)
     val rangeEnd = doc.lineEnd(lastLine)
     val hits = ArrayList<Hit>()
-    collect(language.highlights, snapshot.tree, doc, rangeStart, rangeEnd, 0, 0, hits)
+    collect(language.highlights, snapshot.tree, doc, rangeStart, rangeEnd, 0, 0, null, hits)
     // The list is sorted by start: skip trees ending before the range, stop at the first one starting past it.
     for ((i, inj) in snapshot.injected.withIndex()) {
       if (inj.end <= rangeStart) continue
       if (inj.start >= rangeEnd) break
-      collect(inj.language.highlights, inj.tree, doc, rangeStart, rangeEnd, i + 1, inj.shift, hits)
+      collect(inj.language.highlights, inj.tree, doc, rangeStart, rangeEnd, i + 1, inj.shift, inj.clip, hits)
     }
     // Same precedence as nvim: injections paint over the host, then later starts win, then later patterns.
     hits.sortWith(compareBy<Hit>({ it.layer }, { it.start }, { it.pattern }))
@@ -48,6 +48,7 @@ class Highlighter(private val language: LoadedLanguage) {
     end: Int,
     layer: Int,
     shift: Int,
+    clip: IntArray?,
     out: MutableList<Hit>,
   ) {
     val read: (TSNodeRef) -> String = { n -> doc.text(n.startUnit + shift, n.endUnit + shift) }
@@ -76,7 +77,20 @@ class Highlighter(private val language: LoadedLanguage) {
         val name = compiled.query.captureNames[capture.captureIndex]
         if (name.startsWith("_") || name in MARKERS) continue
         val style = if (name == "none") -1 else compiled.styleIds[capture.captureIndex]
-        out.add(Hit(capture.node.startUnit + shift, capture.node.endUnit + shift, style, layer, capture.patternIndex))
+        val s = capture.node.startUnit
+        val e = capture.node.endUnit
+        if (clip == null) {
+          out.add(Hit(s + shift, e + shift, style, layer, capture.patternIndex))
+          continue
+        }
+        // A combined tree only paints its own ranges: a node can span the host text between two of them.
+        var i = 0
+        while (i < clip.size && clip[i] < e) {
+          val a = maxOf(s, clip[i])
+          val b = minOf(e, clip[i + 1])
+          if (a < b) out.add(Hit(a + shift, b + shift, style, layer, capture.patternIndex))
+          i += 2
+        }
       }
     }
   }

@@ -302,6 +302,12 @@ class SyntaxEngine(
   }
 
   /** Appends the capture hull of every highlight match the regions meet: a capture whose pattern constrains a changed sibling. */
+  /** The unit pairs of six-int included ranges, or null for a single range. */
+  private fun clipOf(ranges6: IntArray): IntArray? {
+    if (ranges6.size <= 6) return null
+    return IntArray(ranges6.size / 3) { i -> ranges6[(i / 2) * 6 + i % 2] }
+  }
+
   private fun collectHulls(compiled: CompiledQuery, tree: Tree, regions: IntArray, length: Int, out: MutableList<Int>) {
     val root = tree.rootNode()
     QueryCursor().use { cursor ->
@@ -483,7 +489,7 @@ class SyntaxEngine(
         }
         if (same) counts.reused++ else counts.fresh++
         val extent = intArrayOf(group[0].start, group[group.size - 1].end)
-        out.add(Injected(target, t, extent[0], extent[1]))
+        out.add(Injected(target, t, extent[0], extent[1], clip = clipOf(flat)))
         next.add(Kept(target, t.copy(), true, hulls, extent, group[0].ranges6[2], group[0].ranges6[3]))
       }
     }
@@ -494,7 +500,10 @@ class SyntaxEngine(
     kept.sortBy { it.start }
     counts.carried = carried.size
     val result = ArrayList<Injected>(carried.size + out.size)
-    for (k in carried) result.add(Injected(k.language, k.tree.copy(), k.start, k.end, k.shift))
+    for (k in carried) {
+      val clip = if (k.combined) clipOf(k.tree.includedRanges()) else null
+      result.add(Injected(k.language, k.tree.copy(), k.start, k.end, k.shift, clip))
+    }
     result.addAll(out)
     result.sortBy { it.start }
     return result

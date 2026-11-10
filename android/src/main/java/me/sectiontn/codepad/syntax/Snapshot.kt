@@ -4,7 +4,15 @@ package me.sectiontn.codepad.syntax
  * One injected tree with the unit extent of its content; the tree itself keeps the included ranges.
  * A carried tree's own positions lag the edits made before it: `shift` is what to add to reach the document.
  */
-class Injected(val language: LoadedLanguage, val tree: Tree, val start: Int, val end: Int, val shift: Int = 0)
+class Injected(
+  val language: LoadedLanguage,
+  val tree: Tree,
+  val start: Int,
+  val end: Int,
+  val shift: Int = 0,
+  /** Unit pairs in the tree's own positions that a combined tree covers, null for one range. Its nodes can span the gaps. */
+  val clip: IntArray? = null,
+)
 
 /** Edit to snapshot time plus how many injected trees were parsed fresh, reused incrementally or carried without a parse. */
 class ParseStats(val latencyMillis: Int, val freshInjections: Int, val reusedInjections: Int, val carriedInjections: Int)

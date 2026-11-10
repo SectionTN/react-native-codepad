@@ -87,6 +87,20 @@ final class InjectionReuseTests: XCTestCase {
     engine.close()
   }
 
+  // A combined tree joins its ranges, so an HTML node can span the PHP between two of them.
+  func testACombinedTreePaintsOnlyItsOwnRanges() throws {
+    HostLanguages.load("php", "php")
+    let text = "<a href=\"<?= $url ?>\">Back</a>\n<p>Hello <?= $name ?>, welcome</p>"
+    let (core, engine) = start("php", text)
+    let snapshot = try XCTUnwrap(snapshots.takeParsed())
+    let php = try XCTUnwrap(LanguageRegistry.resolve("php"))
+    let spans = Highlighter(language: php).spans(snapshot: snapshot, doc: core.document, firstLine: 0, lastLine: 1)
+    XCTAssertEqual(styleAt(spans[0], 13), "variable")
+    XCTAssertEqual(styleAt(spans[1], 13), "variable")
+    XCTAssertEqual(styleAt(spans[0], 8), "string")
+    engine.close()
+  }
+
   func testMarkdownParagraphsReuseTheirTreesAndUnknownFencesInjectNothing() throws {
     let text = "# T\n\nfirst para\n\nsecond para\n\n```JS\nlet a = 1;\n```\n\n```ruby\nputs 1\n```\n"
     let core = EditorCore(text)

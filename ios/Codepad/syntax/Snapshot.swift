@@ -8,13 +8,16 @@ struct Injected: Sendable {
   let start: Int
   let end: Int
   let shift: Int
+  /// Unit pairs in the tree's own positions that a combined tree covers, nil for one range. Its nodes can span the gaps.
+  let clip: [Int]?
 
-  init(language: LoadedLanguage, tree: Tree, start: Int, end: Int, shift: Int = 0) {
+  init(language: LoadedLanguage, tree: Tree, start: Int, end: Int, shift: Int = 0, clip: [Int]? = nil) {
     self.language = language
     self.tree = tree
     self.start = start
     self.end = end
     self.shift = shift
+    self.clip = clip
   }
 }
 

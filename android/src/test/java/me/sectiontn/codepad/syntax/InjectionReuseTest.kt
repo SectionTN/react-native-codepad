@@ -111,6 +111,22 @@ class InjectionReuseTest {
     engine.close()
   }
 
+  // A combined tree joins its ranges, so an HTML node can span the PHP between two of them.
+  @Test
+  fun aCombinedTreePaintsOnlyItsOwnRanges() {
+    HostLanguages.load("php", "php")
+    val text = "<a href=\"<?= \$url ?>\">Back</a>\n<p>Hello <?= \$name ?>, welcome</p>"
+    val (core, engine) = start("php", text)
+    val snapshot = awaitParsed()
+    val php = checkNotNull(LanguageRegistry.resolve("php"))
+    val spans = Highlighter(php).spans(snapshot, core.document, 0, 1)
+    assertEquals("variable", styleAt(spans[0], 13))
+    assertEquals("variable", styleAt(spans[1], 13))
+    assertEquals("string", styleAt(spans[0], 8))
+    snapshot.close()
+    engine.close()
+  }
+
   @Test
   fun markdownParagraphsReuseTheirTreesAndUnknownFencesInjectNothing() {
     val text = "# T\n\nfirst para\n\nsecond para\n\n```JS\nlet a = 1;\n```\n\n```ruby\nputs 1\n```\n"
