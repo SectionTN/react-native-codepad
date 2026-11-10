@@ -61,7 +61,7 @@ A grammar's injection query hands ranges to another language: fenced blocks in M
 | `md` | `markdown` |
 | `h` | `c` |
 
-A name with no package keeps the host language's colors. A name from nvim-treesitter's list (`cpp`, `bash`, `sh`, `sql`, `graphql`, `text` and the rest) doesn't log a warning. Any other name logs the fallback warning once.
+A name with no package keeps the host language's colors. A name from nvim-treesitter's list (`cpp`, `bash`, `sh`, `sql`, `graphql`, `text` and the rest) doesn't log a warning, and highlights only when a [custom language](/guides/custom-languages/) with that id is installed. Any other name logs the fallback warning once.
 
 - Injections go one level deep: a JavaScript block inside Markdown highlights, an HTML template inside that block does not.
 - `${...}` substitutions inside a tagged template are parsed by the injected language.
@@ -97,4 +97,4 @@ Packages are generated from `languages/grammars.json` in the repository, never w
 
 CI regenerates every package and fails on any diff. A grammar bump is a `rev` change followed by the same steps.
 
-A third party package works when it follows the convention: the npm name `react-native-codepad-lang-<id>`, a Kotlin `LanguageProvider` at `me.sectiontn.codepad.lang.<id>` with a keep rule, an asset marker at `codepad-languages/<id>`, and a parser built against tree-sitter 0.26 (ABI 13 to 15).
+To highlight a language from your own grammar without adding it here, build a package with the command in the [custom languages guide](/guides/custom-languages/).
