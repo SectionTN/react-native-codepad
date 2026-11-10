@@ -57,6 +57,15 @@ final class RangeRectsTests: XCTestCase {
 
   private func rect(_ l: Int, _ t: Int, _ r: Int, _ b: Int) -> [CGFloat] { [CGFloat(l), CGFloat(t), CGFloat(r), CGFloat(b)] }
 
+  // Underlines stop at the text: an empty middle line has nothing to underline.
+  func testNoNewlinePadWhenAsked() {
+    var out: [[CGFloat]] = []
+    RangeRects.forEach(Fake(["ab", "", "cd"]), start: 1, end: 6, firstLine: 0, padNewline: false) { l, t, r, b in
+      out.append([l, t, r, b])
+    }
+    XCTAssertEqual(out, [rect(10, 0, 20, 20), rect(0, 40, 20, 60)])
+  }
+
   func testSingleLineRange() {
     XCTAssertEqual(rects(Fake(["abcdef"]), 1, 3), [rect(10, 0, 30, 20)])
   }

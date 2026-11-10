@@ -1146,6 +1146,49 @@ final class CodeEditorView: UIScrollView {
     } else {
       d.setBrackets(nil)
     }
+    placeAppDecorations(first, lastLine, m)
+  }
+
+  /// The app's line backgrounds and underlines over the visible lines, in content coordinates like the fills.
+  private func placeAppDecorations(_ first: Int, _ lastLine: Int, _ m: RowMetrics) {
+    let items = core.decorations.items
+    let layers = textInput.decorationLayers
+    if items.isEmpty {
+      layers.clear()
+      return
+    }
+    let scale = displayScale()
+    var backgrounds = DecorationLayers.Batch()
+    var underlines = DecorationLayers.Batch()
+    for item in items {
+      switch item {
+      case .lineBackground(let line, let color):
+        if line < first || line > lastLine { continue }
+        let rect = CGRect(
+          x: 0, y: CGFloat(heights.rowStart(line) * m.rowHeight), width: CGFloat(viewport.contentWidth),
+          height: CGFloat(heights.rows(line) * m.rowHeight))
+        backgrounds.path(DecorationLayers.Paint(color: color, width: 0)).addRect(rect)
+      case .underline(let u):
+        let thickness = CGFloat(u.thickness)
+        RangeRects.forEach(geometry, start: u.start, end: u.end, firstLine: first, padNewline: false) { left, top, right, _ in
+          let lineTop = top + m.ascent + CGFloat(u.offset)
+          if u.style == .solid {
+            // Whole pixels, so the line stays as crisp as a browser draws it.
+            let y = (lineTop * scale).rounded() / scale
+            let height = max(1, (thickness * scale).rounded()) / scale
+            underlines.path(DecorationLayers.Paint(color: u.color, width: 0))
+              .addRect(CGRect(x: left, y: y, width: right - left, height: height))
+          } else {
+            let path = underlines.path(DecorationLayers.Paint(color: u.color, width: thickness))
+            WaveGeometry.add(
+              to: path, left: left, right: right, centre: lineTop + WaveGeometry.centre(thickness), thickness: thickness)
+          }
+        }
+      case .gap:
+        continue
+      }
+    }
+    layers.set(backgrounds: backgrounds, underlines: underlines)
   }
 
   /// A one point line along the bottom of every row of the marked text, the composing cue.

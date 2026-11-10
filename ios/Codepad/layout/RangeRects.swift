@@ -17,10 +17,10 @@ protocol RowGeometry: AnyObject {
 }
 
 enum RangeRects {
-  /// Calls `out` once per row rect of [start, end) from `firstLine` down to the view bottom. The last row of
-  /// every line but the last one gets a space of width so the newline shows; empty spans are skipped.
+  /// Calls `out` once per row rect of [start, end) from `firstLine` down to the view bottom. With `padNewline`, the
+  /// last row of every line but the last one gets a space of width so the newline shows; empty spans are skipped.
   static func forEach(
-    _ g: RowGeometry, start: Int, end: Int, firstLine: Int,
+    _ g: RowGeometry, start: Int, end: Int, firstLine: Int, padNewline: Bool = true,
     _ out: (_ left: CGFloat, _ top: CGFloat, _ right: CGFloat, _ bottom: CGFloat) -> Void
   ) {
     let startLine = g.lineAt(start)
@@ -36,7 +36,7 @@ enum RangeRects {
       let to = line == endLine ? end - ls : g.lineLength(line)
       let lastRow = rows - 1
       g.rowSpans(line: line, from: from, to: to) { row, left, right in
-        let r = line != endLine && row == lastRow ? right + g.spaceWidth : right
+        let r = padNewline && line != endLine && row == lastRow ? right + g.spaceWidth : right
         if r > left {
           let y = CGFloat(top + row * g.rowHeight)
           out(g.originX + left, y, g.originX + r, y + CGFloat(g.rowHeight))

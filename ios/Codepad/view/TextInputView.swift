@@ -13,6 +13,7 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
   static let gestureConfig = GestureMachine.Config(touchSlop: 10, doubleTapSlop: 40, doubleTapTimeout: 0.3, longPressTimeout: 0.5)
 
   let decorations = Decorations()
+  let decorationLayers = DecorationLayers()
   let selectionContainer = UIView()
   let textHost = StillLayer()
   let markedUnderline = StillShapeLayer()
@@ -61,9 +62,11 @@ final class TextInputView: UIView, UITextInput, UITextSelectionDisplayInteractio
     super.init(frame: .zero)
     isOpaque = false
     for sublayer in decorations.layers { layer.addSublayer(sublayer) }
+    layer.insertSublayer(decorationLayers.backgrounds, above: decorations.activeLine)
     selectionContainer.isUserInteractionEnabled = false
     addSubview(selectionContainer)
     layer.addSublayer(textHost)
+    layer.insertSublayer(decorationLayers.underlines, below: textHost)
     markedUnderline.isHidden = true
     layer.addSublayer(markedUnderline)
     selectionInteraction = UITextSelectionDisplayInteraction(textInput: self, delegate: self)
