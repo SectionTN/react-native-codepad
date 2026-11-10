@@ -85,7 +85,29 @@ final class VectorRunner {
     case "positionToOffset": lastResult = core.document.positionToOffset(line: int(op, "line"), column: int(op, "column"))
     case "getLine": lastResult = core.document.lineString(int(op, "index"))
     case "wait": clock.now += Int64(int(op, "ms"))
+    case "decorate":
+      let items = (op["items"] as? [[String: Any]] ?? []).map(decorationOf)
+      _ = core.setDecorations(items, revision: op["revision"] as? Int ?? -1)
     default: XCTFail("op not implemented: \(name)")
+    }
+  }
+
+  private func decorationOf(_ o: [String: Any]) -> Decoration {
+    switch string(o, "kind") {
+    case "underline":
+      return .underline(Underline(start: int(o, "start"), end: int(o, "end"), color: 0, style: .solid, thickness: 1, offset: 2))
+    case "gap": return .gap(line: int(o, "line"), rows: int(o, "rows"))
+    case "lineBackground": return .lineBackground(line: int(o, "line"), color: 0)
+    default: fatalError("unknown decoration kind \(string(o, "kind"))")
+    }
+  }
+
+  // Only what mapping changes: kind and range, or kind, line and rows.
+  private func describe(_ d: Decoration) -> String {
+    switch d {
+    case .underline(let u): return "underline \(u.start) \(u.end)"
+    case .gap(let line, let rows): return "gap \(line) \(rows)"
+    case .lineBackground(let line, _): return "lineBackground \(line)"
     }
   }
 
@@ -102,6 +124,14 @@ final class VectorRunner {
   }
 
   private func check(_ expect: [String: Any], _ at: String) {
+    if let arr = expect["decorations"] as? [[String: Any]] {
+      XCTAssertEqual(core.decorations.items.map(describe), arr.map { describe(decorationOf($0)) }, "decorations \(at)")
+    }
+    if let o = expect["gapRows"] as? [String: Int] {
+      var expected: [Int: Int] = [:]
+      for (k, v) in o { expected[Int(k)!] = v }
+      XCTAssertEqual(core.decorations.gapRows(), expected, "gapRows \(at)")
+    }
     let doc = core.document
     if let v = expect["text"] as? String { XCTAssertEqual(doc.text(), v, "text \(at)") }
     if let v = expect["length"] as? Int { XCTAssertEqual(doc.length, v, "length \(at)") }

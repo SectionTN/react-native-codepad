@@ -14,6 +14,13 @@ final class EditorCore: @unchecked Sendable {
   var onChange: ((Change, ChangeOrigin) -> Void)?
   var onSelectionChange: ((Selection) -> Void)?
 
+  static let decorationEditLog = 256
+  let decorations = DecorationSet()
+  private var edits: [EditSpan] = []
+
+  // A decoration set computed before this revision belongs to text setText replaced.
+  private var decorationsFloor = 0
+
   init(_ initialText: String = "", clock: @escaping () -> Int64 = { Int64(Date().timeIntervalSince1970 * 1000) }) {
     document = Document(initialText)
     history = UndoManager(clock: clock)
@@ -38,6 +45,10 @@ final class EditorCore: @unchecked Sendable {
   func applyChange(_ start: Int, _ end: Int, _ text: String, origin: ChangeOrigin, typing: Bool, caretAfter: Bool) -> Change {
     let before = selection
     let change = lock.write { document.replace(start, end, text) }
+    let span = EditSpan.of(change, document)
+    if edits.count == EditorCore.decorationEditLog { edits.removeFirst() }
+    edits.append(span)
+    decorations.map(span)
     let after =
       caretAfter
       ? Selection.caret(change.newEnd)
@@ -62,6 +73,44 @@ final class EditorCore: @unchecked Sendable {
     applyChange(0, document.length, text, origin: .api, typing: false, caretAfter: false)
     moveSelection(Selection(anchor: 0, head: 0), fromEdit: true)
     if !keepHistory { history.clear() }
+    decorations.clear()
+    edits.removeAll()
+    decorationsFloor = document.revision
+  }
+
+  /// Replaces the decorations. `revision` is the document revision they were computed for, below zero for the
+  /// current one. False when the edits since then are no longer known, which keeps the current set.
+  @discardableResult
+  func setDecorations(_ items: [Decoration], revision: Int) -> Bool {
+    var list = items
+    if revision >= 0 && revision < document.revision {
+      if revision < decorationsFloor { return false }
+      if (edits.first?.revision ?? Int.max) > revision + 1 { return false }
+      list = []
+      for item in items {
+        var d: Decoration? = item
+        for span in edits where span.revision > revision {
+          if let current = d { d = DecorationSet.mapOne(current, span) }
+        }
+        if let d { list.append(d) }
+      }
+    }
+    decorations.replace(list.compactMap(fitted))
+    return true
+  }
+
+  /// Clamps an underline to the document. Nil for an empty range, a line outside it or a gap without rows.
+  private func fitted(_ d: Decoration) -> Decoration? {
+    switch d {
+    case .underline(var u):
+      u.start = min(max(u.start, 0), document.length)
+      u.end = min(max(u.end, 0), document.length)
+      return u.start < u.end ? .underline(u) : nil
+    case .gap(let line, let rows):
+      return line >= 0 && line < document.lineCount && rows >= 1 ? d : nil
+    case .lineBackground(let line, _):
+      return line >= 0 && line < document.lineCount ? d : nil
+    }
   }
 
   func typeText(_ text: String) {

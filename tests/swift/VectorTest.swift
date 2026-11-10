@@ -14,6 +14,7 @@ final class VectorTest: XCTestCase {
   func testAutoclose() { runFile("autoclose") }
   func testBrackets() { runFile("brackets") }
   func testSearch() { runFile("search") }
+  func testDecorations() { runFile("decorations") }
 
   private func runFile(_ area: String) {
     let url = URL(fileURLWithPath: #filePath)
