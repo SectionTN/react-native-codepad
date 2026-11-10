@@ -232,3 +232,17 @@ test('SHIPPED_IDS matches grammars.json', () => {
   const ids = loadManifest().languages.flatMap((l) => [l.id, ...l.grammars.map((g) => g.name)]);
   assert.deepEqual([...SHIPPED_IDS].sort(), [...new Set(ids)].sort());
 });
+
+test('refuses a grammar whose C name is a grammar CodePad ships', () => {
+  const dir = fixtureCopy();
+  const parser = path.join(dir, 'src/parser.c');
+  writeFileSync(
+    parser,
+    read(dir, 'src/parser.c').replace(/tree_sitter_kv_lite/g, 'tree_sitter_python'),
+  );
+  rejects(
+    () =>
+      emitCustomLanguage({ grammarDir: dir, outDir: path.join(temp(), 'pkg'), id: 'python_ext' }),
+    /tree_sitter_python.*grammar\.js/s,
+  );
+});

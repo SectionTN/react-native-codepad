@@ -146,6 +146,12 @@ export function emitCustomLanguage(opts: CustomOptions): CustomResult {
   const symbol = languageSymbol(readFileSync(parserC, 'utf8'));
   if (!symbol)
     fail('src/parser.c has no tree_sitter_<name> function. Is it tree-sitter generate output?');
+  // iOS links every language pod statically, so two grammars with one C name share a parser.
+  if (SHIPPED_IDS.includes(symbol)) {
+    fail(
+      `src/parser.c defines tree_sitter_${symbol}, the same function as a language react-native-codepad ships. Rename the grammar in grammar.js and run tree-sitter generate again.`,
+    );
+  }
   if (!existsSync(path.join(src, 'tree_sitter/parser.h'))) {
     fail(
       'src/tree_sitter/parser.h not found. Keep the tree_sitter folder that tree-sitter generate writes.',
