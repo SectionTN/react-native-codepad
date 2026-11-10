@@ -64,7 +64,14 @@ final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable 
       MainActor.assumeIsolated {
         editor.onGapLayout = listener.map { cb in
           { gaps in
-            cb(gaps.map { NativeGap(line: Double($0.line), rect: Self.nativeRect($0.rect)) })
+            // A plain loop, since Swift 6.2 can fail to type check a closure that converts numbers into a struct.
+            var out: [NativeGap] = []
+            out.reserveCapacity(gaps.count)
+            for gap in gaps {
+              let line = Double(gap.line)
+              out.append(NativeGap(line: line, rect: Self.nativeRect(gap.rect)))
+            }
+            cb(out)
           }
         }
       }

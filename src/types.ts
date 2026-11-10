@@ -171,7 +171,7 @@ export interface CodeEditorProps extends ViewProps {
   onContentSizeChange?: (e: ContentSizeEvent) => void;
   /** Underlines, gaps under lines and line backgrounds. They follow edits until the next array arrives. */
   decorations?: Decoration[];
-  /** The revision the decorations were computed for (ChangeEvent.revision, getRevision()); the current text by default. */
+  /** The revision the decorations were computed for, from ChangeEvent.revision or getRevision(). The current text by default. */
   decorationsRevision?: number;
   /** Fires after a draw in which a gap appeared, moved or went away, scrolling included. */
   onGapLayout?: (e: GapLayoutEvent) => void;
@@ -188,7 +188,7 @@ export interface CodeEditorRef {
   offsetToPosition(offset: number): Position;
   positionToOffset(pos: Position): number;
   getCursorRect(): Rect | null;
-  /** The gap under line from the last frame, in the same coordinates as getCursorRect; null when it has none. */
+  /** The gap under line from the last frame, in the same coordinates as getCursorRect, or null when it has none. */
   getGapRect(line: number): Rect | null;
   getVisibleLines(): { first: number; last: number };
   canUndo(): boolean;

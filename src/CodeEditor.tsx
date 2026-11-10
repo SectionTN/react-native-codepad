@@ -182,7 +182,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   );
   const onGapLayoutRef = useRef(onGapLayout);
   onGapLayoutRef.current = onGapLayout;
-  // Native builds the gap list only for a listener; once wired it stays, like onChangeText.
+  // Native builds the gap list only for a listener. Once wired it stays, like onChangeText.
   const gapsListened = useRef(false);
   if (onGapLayout) gapsListened.current = true;
   const onGapLayoutCallback = useMemo(
