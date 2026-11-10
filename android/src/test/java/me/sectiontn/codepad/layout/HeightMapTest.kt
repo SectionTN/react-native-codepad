@@ -1,6 +1,8 @@
 package me.sectiontn.codepad.layout
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HeightMapTest {
@@ -65,5 +67,45 @@ class HeightMapTest {
     h.replaceLines(39, 1, 30)
     assertEquals(69, h.lineCount)
     assertEquals(69, h.totalRows)
+  }
+
+  @Test
+  fun gapRowsCountInRowStartsAndTotal() {
+    val h = HeightMap(4)
+    h.setGaps(mapOf(1 to 2))
+    assertEquals(1, h.rowStart(1))
+    assertEquals(4, h.rowStart(2))
+    assertEquals(6, h.totalRows)
+    assertEquals(1, h.lineAtRow(3))
+    assertTrue(h.isGapRow(3))
+    assertFalse(h.isGapRow(1))
+  }
+
+  @Test
+  fun relayoutKeepsGaps() {
+    val h = HeightMap(3)
+    h.setGaps(mapOf(0 to 2))
+    h.setRows(0, 3)
+    h.resetAll()
+    assertEquals(2, h.gapRows(0))
+    assertEquals(3, h.rowStart(1))
+  }
+
+  @Test
+  fun replaceLinesMovesGapsWithTheirLines() {
+    val h = HeightMap(4)
+    h.setGaps(mapOf(2 to 1))
+    h.replaceLines(0, 1, 3)
+    assertEquals(1, h.gapRows(4))
+    assertEquals(0, h.gapRows(2))
+  }
+
+  @Test
+  fun setGapsReplacesThePreviousGaps() {
+    val h = HeightMap(4)
+    h.setGaps(mapOf(0 to 2))
+    h.setGaps(mapOf(2 to 1))
+    assertEquals(0, h.gapRows(0))
+    assertEquals(5, h.totalRows)
   }
 }

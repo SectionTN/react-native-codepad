@@ -60,4 +60,40 @@ final class HeightMapTests: XCTestCase {
     XCTAssertEqual(h.lineCount, 69)
     XCTAssertEqual(h.totalRows, 69)
   }
+
+  func testGapRowsCountInRowStartsAndTotal() {
+    let h = HeightMap(lineCount: 4)
+    h.setGaps([1: 2])
+    XCTAssertEqual(h.rowStart(1), 1)
+    XCTAssertEqual(h.rowStart(2), 4)
+    XCTAssertEqual(h.totalRows, 6)
+    XCTAssertEqual(h.lineAtRow(3), 1)
+    XCTAssertTrue(h.isGapRow(3))
+    XCTAssertFalse(h.isGapRow(1))
+  }
+
+  func testRelayoutKeepsGaps() {
+    let h = HeightMap(lineCount: 3)
+    h.setGaps([0: 2])
+    h.setRows(0, 3)
+    h.resetAll()
+    XCTAssertEqual(h.gapRows(0), 2)
+    XCTAssertEqual(h.rowStart(1), 3)
+  }
+
+  func testReplaceLinesMovesGapsWithTheirLines() {
+    let h = HeightMap(lineCount: 4)
+    h.setGaps([2: 1])
+    h.replaceLines(first: 0, oldCount: 1, newCount: 3)
+    XCTAssertEqual(h.gapRows(4), 1)
+    XCTAssertEqual(h.gapRows(2), 0)
+  }
+
+  func testSetGapsReplacesThePreviousGaps() {
+    let h = HeightMap(lineCount: 4)
+    h.setGaps([0: 2])
+    h.setGaps([2: 1])
+    XCTAssertEqual(h.gapRows(0), 0)
+    XCTAssertEqual(h.totalRows, 5)
+  }
 }

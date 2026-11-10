@@ -131,4 +131,24 @@ final class ViewportTests: XCTestCase {
     XCTAssertTrue(v.setInsets(top: 10, bottom: 20, left: 8, right: 4))
     XCTAssertFalse(v.setInsets(top: 0, bottom: 0, left: 8, right: 4))
   }
+
+  func testMeasuringAWrappedLineAboveKeepsTheGapAndTheVisibleText() {
+    let v = viewport(lines: 40, rowHeight: 10, height: 100)
+    v.heights.setGaps([5: 2])
+    _ = v.scrollTo(0, v.heights.rowStart(20) * 10)
+    let before = v.scrollY
+    v.measured(3, 3)
+    XCTAssertEqual(v.scrollY, before + 20)
+    XCTAssertEqual(v.lineTop(6) - v.lineTop(5), 30)
+  }
+
+  func testAnchorRestoreInsideAGapStaysInIt() {
+    let v = viewport(lines: 10, rowHeight: 10, height: 50)
+    v.heights.setGaps([1: 2])
+    _ = v.scrollTo(0, 25)
+    let a = v.anchor()
+    v.heights.resetAll()
+    v.restore(a)
+    XCTAssertEqual(v.scrollY, 25)
+  }
 }

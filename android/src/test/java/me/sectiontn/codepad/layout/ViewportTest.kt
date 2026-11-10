@@ -140,4 +140,26 @@ class ViewportTest {
     assertTrue(v.setInsets(10, 20, 8, 4))
     assertFalse(v.setInsets(0, 0, 8, 4))
   }
+
+  @Test
+  fun measuringAWrappedLineAboveKeepsTheGapAndTheVisibleText() {
+    val v = viewport(lines = 40, rowHeight = 10, height = 100)
+    v.heights.setGaps(mapOf(5 to 2))
+    v.scrollTo(0, v.heights.rowStart(20) * 10)
+    val before = v.scrollY
+    v.measured(3, 3)
+    assertEquals(before + 20, v.scrollY)
+    assertEquals(30, v.lineTop(6) - v.lineTop(5))
+  }
+
+  @Test
+  fun anchorRestoreInsideAGapStaysInIt() {
+    val v = viewport(lines = 10, rowHeight = 10, height = 50)
+    v.heights.setGaps(mapOf(1 to 2))
+    v.scrollTo(0, 25)
+    val a = v.anchor()
+    v.heights.resetAll()
+    v.restore(a)
+    assertEquals(25, v.scrollY)
+  }
 }

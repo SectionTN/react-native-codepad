@@ -137,7 +137,8 @@ final class Viewport {
 
   func restore(_ anchor: Anchor) {
     let line = max(0, min(anchor.line, heights.lineCount - 1))
-    let within = anchor.offset >= 0 && anchor.offset < heights.rows(line) * rowHeight ? anchor.offset : 0
+    let span = (heights.rows(line) + heights.gapRows(line)) * rowHeight
+    let within = anchor.offset >= 0 && anchor.offset < span ? anchor.offset : 0
     scrollTo(scrollX, heights.rowStart(line) * rowHeight + within)
   }
 

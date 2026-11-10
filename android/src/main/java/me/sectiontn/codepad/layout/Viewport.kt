@@ -111,7 +111,7 @@ class Viewport(var heights: HeightMap) {
 
   fun restore(anchor: Anchor) {
     val line = anchor.line.coerceIn(0, heights.lineCount - 1)
-    val within = if (anchor.offset in 0 until heights.rows(line) * rowHeight) anchor.offset else 0
+    val within = if (anchor.offset in 0 until (heights.rows(line) + heights.gapRows(line)) * rowHeight) anchor.offset else 0
     scrollTo(scrollX, heights.rowStart(line) * rowHeight + within)
   }
 
