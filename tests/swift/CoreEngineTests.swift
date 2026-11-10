@@ -20,6 +20,8 @@ final class TestHost: @unchecked Sendable {
   private let worker = DispatchQueue(label: "codepad.test.worker")
   private let main = DispatchQueue(label: "codepad.test.main")
   private var languages: [String: OpaquePointer] = [:]
+  // Maps an injection name to a language id, as the platform registries apply their aliases.
+  var canonical: @Sendable (String) -> String? = { $0 }
   private var snapshots: [OpaquePointer] = []
   private var finals = 0
   var finalPosts: Int { lock.withLock { finals } }
@@ -62,7 +64,8 @@ final class TestHost: @unchecked Sendable {
 
   private func resolve(_ id: UnsafePointer<CChar>?) -> OpaquePointer? {
     let name = String(cString: id!)
-    return lock.withLock { languages[name] }
+    guard let id = canonical(name) else { return nil }
+    return lock.withLock { languages[id] }
   }
 
   /// Runs queued work one item at a time until none is left, returning how many items ran.

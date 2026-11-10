@@ -90,8 +90,10 @@ CP_API uint32_t cp_snapshot_length(const cp_snapshot *snapshot);
 CP_API uint32_t cp_highlight(const cp_snapshot *snapshot, int32_t first_line, int32_t last_line,
                              uint32_t first_line_start, int32_t *out, uint32_t cap);
 // cp_frame: the dirty runs of [first_line, last_line] then their spans, for one draw. entry_revisions[i] is the
-// cached revision of line first_line + i, -1 without an entry. use_changed is 1 when the snapshot is based on
-// applied_revision. Layout: run_count, run_count (lo, hi) pairs, then for each line of each run as cp_highlight.
+// cached revision of line first_line + i: CP_NO_ENTRY without one, -1 for a line laid out plain. use_changed is 1
+// when the snapshot is based on applied_revision. Layout: run_count, run_count inclusive (lo, hi) pairs, then for
+// each line of each run as cp_highlight.
+enum { CP_NO_ENTRY = -2147483647 - 1 };
 CP_API uint32_t cp_frame(const cp_snapshot *snapshot, int32_t first_line, int32_t last_line,
                          uint32_t first_line_start, int32_t applied_revision, int32_t use_changed,
                          const int32_t *entry_revisions, int32_t *out, uint32_t cap);
@@ -104,6 +106,13 @@ CP_API uint32_t cp_shift_spans(const int32_t *spans, uint32_t count, int32_t sta
 // predicates, or -1 with a message in error when the query does not compile.
 CP_API int32_t cp_test_predicate(const cp_language *language, const char *query, uint32_t query_len,
                                  const cp_unit *source, uint32_t source_len, char *error, uint32_t error_cap);
+// The dirty runs of cp_frame over text whose line first_line starts at first_line_start, with any revision
+// and regions. changed_len -1 means no regions.
+CP_API uint32_t cp_test_dirty_runs(const cp_unit *text, uint32_t length, uint32_t first_line_start,
+                                   int32_t first_line, int32_t last_line, int32_t revision, int32_t applied,
+                                   const int32_t *changed, int32_t changed_len, const int32_t *entry_revisions,
+                                   int32_t *out, uint32_t cap);
+CP_API uint32_t cp_test_coalesce(const int32_t *pairs, uint32_t count, int32_t *out, uint32_t cap);
 #endif
 
 #ifdef __cplusplus
