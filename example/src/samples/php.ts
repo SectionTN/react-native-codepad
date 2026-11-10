@@ -3,6 +3,7 @@ export const php = `<?php
  * The student list page.
  */
 $title = "Class 4 SI";
+$home = "index.php";
 $students = [
   ['name' => 'Amira', 'grade' => 17.5],
   ['name' => 'Youssef', 'grade' => 14],
@@ -17,6 +18,7 @@ $passed = count(array_filter($students, fn ($s) => $s['grade'] >= 10));
   </head>
   <body>
     <h1 class="title"><?= $title ?></h1>
+    <a class="back" href="<?= $home ?>">Back to <?= $title ?> list</a>
     <table>
       <?php foreach ($students as $student): ?>
         <tr>
