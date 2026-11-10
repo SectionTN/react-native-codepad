@@ -23,10 +23,10 @@
     "kv_lite"
   ],
   "peerDependencies": {
-    "react-native-codepad": "^0.1.6"
+    "react-native-codepad": "^0.1.7"
   },
   "codepad": {
     "generated": true,
-    "core": "0.1.6"
+    "core": "0.1.7"
   }
 }
