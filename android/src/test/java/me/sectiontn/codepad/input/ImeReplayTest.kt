@@ -56,7 +56,7 @@ class ImeReplayTest(private val session: JSONObject, private val label: String) 
     }
   }
 
-  private fun dispatch(core: EditorCore, ime: ImeSession, call: String, a: JSONArray, where: String): Any? = when (call) {
+  internal fun dispatch(core: EditorCore, ime: ImeSession, call: String, a: JSONArray, where: String): Any? = when (call) {
     "commitText" -> ime.commitText(a.getString(0), a.getInt(1))
     "setComposingText" -> ime.setComposingText(a.getString(0), a.getInt(1))
     "setComposingRegion" -> ime.setComposingRegion(a.getInt(0), a.getInt(1))

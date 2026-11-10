@@ -19,6 +19,8 @@ class GestureMachine(private val host: Host, private val config: Config) {
 
   interface Host {
     fun offsetAt(x: Float, y: Float): Int
+    /** True over empty space a decoration opened under a line, where taps leave the caret alone. */
+    fun inGap(x: Float, y: Float): Boolean = false
     fun handleAt(x: Float, y: Float): Handle?
     fun insideSelection(offset: Int): Boolean
     /** Off leaves vertical drags to the parent and scrolls only sideways. */
@@ -130,7 +132,7 @@ class GestureMachine(private val host: Host, private val config: Config) {
 
   /** The view's long press timer fired. */
   fun longPress() {
-    if (state != State.Pressed) return
+    if (state != State.Pressed || host.inGap(downX, downY)) return
     state = State.LongPressed
     host.disallowIntercept()
     host.selectWord(host.offsetAt(downX, downY))
@@ -148,6 +150,7 @@ class GestureMachine(private val host: Host, private val config: Config) {
   private fun scrollBy(dx: Float, dy: Float) = host.scrollBy(dx, if (host.scrollsVertically) dy else 0f)
 
   private fun tap(x: Float, y: Float, time: Long) {
+    if (host.inGap(x, y)) return
     val offset = host.offsetAt(x, y)
     val doubleTap = lastTapTime >= 0 && time - lastTapTime <= config.doubleTapTimeout &&
       hypot(x - lastTapX, y - lastTapY) <= config.doubleTapSlop

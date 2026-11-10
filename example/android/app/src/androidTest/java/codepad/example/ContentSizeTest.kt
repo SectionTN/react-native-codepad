@@ -1,6 +1,7 @@
 package codepad.example
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import me.sectiontn.codepad.core.Gap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -53,6 +54,24 @@ class ContentSizeTest {
         draw(editor)
         assertEquals(2, sizes.size)
         assertEquals(2 * row + 24f, sizes[1].second, 0.5f)
+      }
+    }
+  }
+
+  // A note under the last line, as a checker would open after the final line of an exercise.
+  @Test
+  fun gapRowsCountInTheContentHeight() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        editor.setInitialText((0 until 6).joinToString("\n") { "line $it" })
+        layout(editor)
+        draw(editor)
+        val before = editor.frame.contentHeight
+        val rh = before / 6
+        editor.setDecorations(listOf(Gap(1, 2), Gap(5, 3)), -1)
+        draw(editor)
+        assertEquals(before + 5 * rh, editor.frame.contentHeight, 0.01f)
       }
     }
   }

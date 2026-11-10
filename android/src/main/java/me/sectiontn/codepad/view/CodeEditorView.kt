@@ -24,6 +24,7 @@ import android.view.inputmethod.InputConnection
 import android.widget.Magnifier
 import me.sectiontn.codepad.core.Change
 import me.sectiontn.codepad.core.ChangeOrigin
+import me.sectiontn.codepad.core.Decoration
 import me.sectiontn.codepad.core.EditorCore
 import me.sectiontn.codepad.core.EditorSettings
 import me.sectiontn.codepad.core.Range
@@ -73,6 +74,7 @@ class CodeEditorView(context: Context) : View(context) {
   var onScrollListener: ((FrameInfo) -> Unit)? = null
   var onSelectionListener: ((Selection) -> Unit)? = null
   var onContentSizeListener: ((Float, Float) -> Unit)? = null
+  var onGapLayoutListener: ((List<GapRect>) -> Unit)? = null
 
   var isScrollEnabled = true
     private set
@@ -165,6 +167,8 @@ class CodeEditorView(context: Context) : View(context) {
   private var contentDirty = false
   private var lastContentWidth = -1f
   private var lastContentHeight = -1f
+  private var gapsDirty = false
+  private var syncedDecorations = -1
   private var grabDy = 0f
   private var dragFixed = 0
   private var anchorX = 0f
@@ -250,6 +254,7 @@ class CodeEditorView(context: Context) : View(context) {
   fun setText(text: String, keepHistory: Boolean) {
     ime.reset()
     core.setText(text, keepHistory)
+    syncGaps()
     viewport.scrollTo(0, 0)
     restartInput()
     invalidate()
@@ -539,6 +544,7 @@ class CodeEditorView(context: Context) : View(context) {
     val oldCount = lineSpan(change.removed)
     val newCount = lineSpan(change.inserted)
     heights.replaceLines(first, oldCount, newCount)
+    syncGaps()
     keepSpans(first, oldCount, newCount, change)
     cache.shift(first, oldCount, newCount)
     engine().edit(change, SyntaxEngine.pointsFor(doc, change))
@@ -561,8 +567,26 @@ class CodeEditorView(context: Context) : View(context) {
     return n
   }
 
+  /** Replaces the decorations. [revision] is the one they were computed for, below zero for the current text. */
+  fun setDecorations(items: List<Decoration>, revision: Int) {
+    if (!core.setDecorations(items, revision)) return
+    val anchor = viewport.anchor()
+    if (syncGaps()) viewport.restore(anchor)
+    invalidate()
+  }
+
+  /** Pushes the gap rows of a changed decoration set into the height map. True when it pushed. */
+  private fun syncGaps(): Boolean {
+    val set = core.decorations
+    if (set.version == syncedDecorations) return false
+    syncedDecorations = set.version
+    heights.setGaps(set.gapRows())
+    return true
+  }
+
   private fun resetDocument() {
     heights = HeightMap(core.document.lineCount)
+    syncedDecorations = -1
     viewport.heights = heights
     cache.clear()
     viewport.widestLine = 0
@@ -898,6 +922,8 @@ class CodeEditorView(context: Context) : View(context) {
   private inner class GestureHost : GestureMachine.Host {
     override fun offsetAt(x: Float, y: Float): Int = this@CodeEditorView.offsetAt(x, y)
 
+    override fun inGap(x: Float, y: Float): Boolean = heights.isGapRow(viewport.rowAt(y.toInt()))
+
     // Runs on touch down, so this is where the grab offset and the fixed selection end are captured.
     override fun handleAt(x: Float, y: Float): GestureMachine.Handle? {
       val handle = handles.hitTest(x, y) ?: return null
@@ -1184,6 +1210,7 @@ class CodeEditorView(context: Context) : View(context) {
     canvas.clipRect(0, 0, width, height)
     canvas.drawColor(theme.background)
     if (width == 0 || height == 0) return
+    syncGaps()
     val doc = core.document
     val m = rowMetrics()
     if (revealPending) {
@@ -1213,6 +1240,10 @@ class CodeEditorView(context: Context) : View(context) {
     if (contentDirty) {
       contentDirty = false
       onContentSizeListener?.invoke(lastContentWidth, lastContentHeight)
+    }
+    if (gapsDirty) {
+      gapsDirty = false
+      onGapLayoutListener?.invoke(frame.gaps)
     }
     if (selectionDirty) {
       selectionDirty = false
@@ -1324,8 +1355,23 @@ class CodeEditorView(context: Context) : View(context) {
 
   private fun caretRect(m: RowMetrics, line: Int): RectF? = painter.caretRect(m, line, core.selection.head - core.document.lineStart(line))
 
+  /** Every gap in view dp, sorted by line, the full view width wide. */
+  private fun gapRects(m: RowMetrics): List<GapRect> {
+    val rows = core.decorations.gapRows()
+    if (rows.isEmpty()) return emptyList()
+    return rows.keys.sorted().map { line ->
+      val top = viewport.rowTop(heights.rowStart(line) + heights.rows(line)).toFloat()
+      GapRect(line, RectF(0f, top / density, width / density, (top + rows.getValue(line) * m.rowHeight) / density))
+    }
+  }
+
+  /** The gap under [line] in view dp from the last frame, or null. */
+  fun gapRect(line: Int): RectF? = frame.gaps.firstOrNull { it.line == line }?.rect
+
   private fun publish(firstLine: Int, lastLine: Int, caretLine: Int, m: RowMetrics) {
     val caret = caretRect(m, caretLine)?.let { RectF(it.left / density, it.top / density, it.right / density, it.bottom / density) }
+    val gaps = gapRects(m)
+    if (gaps != frame.gaps) gapsDirty = true
     frame = FrameInfo(
       firstLine,
       lastLine,
@@ -1334,6 +1380,7 @@ class CodeEditorView(context: Context) : View(context) {
       viewport.scrollY / density,
       viewport.contentWidth / density,
       viewport.contentHeight / density,
+      gaps,
     )
     val w = (viewport.textAreaLeft + viewport.contentWidth + viewport.insetRight) / density
     val h = (viewport.insetTop + viewport.contentHeight + viewport.insetBottom - keyboardInset) / density

@@ -13,7 +13,9 @@ class GestureMachineTest {
     var selected: IntRange = IntRange.EMPTY
     override var scrollsVertically = true
 
+    var gap: ClosedFloatingPointRange<Float>? = null
     override fun offsetAt(x: Float, y: Float): Int = x.toInt()
+    override fun inGap(x: Float, y: Float): Boolean = gap?.contains(y) == true
     override fun handleAt(x: Float, y: Float): GestureMachine.Handle? = handle
     override fun insideSelection(offset: Int): Boolean = offset in selected
     override fun canScroll(dx: Float, dy: Float): Boolean = scrollable
@@ -36,6 +38,18 @@ class GestureMachineTest {
   private val config = GestureMachine.Config(touchSlop = 8f, doubleTapSlop = 40f, doubleTapTimeout = 300, longPressTimeout = 400)
 
   private fun machine(host: FakeHost) = GestureMachine(host, config)
+
+  @Test
+  fun tapOrLongPressInAGapLeavesTheCaret() {
+    val h = FakeHost().apply { gap = 20f..40f }
+    val m = machine(h)
+    m.down(100f, 30f, 0)
+    m.up(100f, 30f, 50, 0f, 0f)
+    m.down(100f, 30f, 1000)
+    m.longPress()
+    m.up(100f, 30f, 1600, 0f, 0f)
+    assertEquals(listOf("timer 400", "cancel", "timer 400", "cancel"), h.calls)
+  }
 
   @Test
   fun tapPlacesTheCaret() {
