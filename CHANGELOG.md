@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.5 (2026-11-10)
+
+### Languages
+
+- `npx react-native-codepad language <grammar-dir>` builds a language package from your own tree-sitter grammar. The package is written into your app (`modules/codepad-lang-<id>` by default), stays private, and highlights through `language="<id>"` like the packages CodePad ships. Expo autolinks it, and the [custom languages guide](https://reactnativecodepad.pages.dev/guides/custom-languages/) covers the grammar folder, the options and a cache to clear on Android.
+- An installed language whose id is also an injection alias, such as `sql`, `bash` or `graphql`, now highlights inside Markdown code blocks and other injections. Before, those names never highlighted, even with a package installed.
+
+### Docs
+
+- The new custom languages guide explains how to prepare a grammar, build its package and link it in an Expo or a bare React Native app.
+- The language package READMEs link the docs site instead of the old GitHub Pages address.
+
+The fifteen language packages move to 0.1.5 with the core. Only their READMEs changed.
+
 ## 0.1.4 (2026-11-09)
 
 ### Editor
