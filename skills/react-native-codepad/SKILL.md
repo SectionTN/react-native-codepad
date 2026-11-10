@@ -21,7 +21,7 @@ The installed package ships its API contract at `node_modules/react-native-codep
 npm install react-native-codepad react-native-nitro-modules react-native-codepad-lang-javascript
 ```
 
-- One `react-native-codepad-lang-<id>` package per highlighted language. Ids: `c`, `css`, `go`, `html`, `java`, `javascript`, `json`, `kotlin`, `markdown`, `python`, `rust`, `swift`, `tsx`, `typescript`, `yaml`. Use the project's package manager.
+- One `react-native-codepad-lang-<id>` package per highlighted language. Ids: `c`, `css`, `go`, `html`, `java`, `javascript`, `json`, `kotlin`, `markdown`, `php`, `python`, `rust`, `sql`, `swift`, `tsx`, `typescript`, `yaml`. Use the project's package manager.
 - A language without a package: `npx react-native-codepad language <grammar-dir>` builds a private package from a tree-sitter grammar into `modules/`. See https://reactnativecodepad.pages.dev/guides/custom-languages/.
 - iOS deployment target 17.0: `platform :ios, '17.0'` in `ios/Podfile`, or on Expo `["expo-build-properties", { "ios": { "deploymentTarget": "17.0" } }]` in the `app.json` plugins.
 - Rebuild the native app after adding or removing any of these packages: `cd ios && pod install`, then run the app again. On Expo: `npx expo prebuild`, then `npx expo run:ios` or `run:android`. A Metro reload is not enough.

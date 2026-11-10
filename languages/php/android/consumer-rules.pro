@@ -1,0 +1,2 @@
+-keep class me.sectiontn.codepad.lang.php.PhpLanguage { *; }
+-keep class me.sectiontn.codepad.lang.php_only.PhpOnlyLanguage { *; }

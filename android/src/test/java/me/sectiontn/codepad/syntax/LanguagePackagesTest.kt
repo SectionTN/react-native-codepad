@@ -35,6 +35,8 @@ class LanguagePackagesTest {
     "c" to "int main(void) { return 0; }", "rust" to "fn main() { let x = 1; }",
     "go" to "package main\nfunc main() { x := 1 }", "yaml" to "a: 1\nb: [x, y]",
     "kv_lite" to "name = \"x\" # hi",
+    "php" to "<p><?php echo \$name; ?></p>", "php_only" to "function f(\$x) { return \$x + 1; }",
+    "sql" to "SELECT id FROM users WHERE id = 1; -- hi",
   )
 
   @Test
@@ -54,6 +56,7 @@ class LanguagePackagesTest {
       val spans = Highlighter(lang).spans(snapshot, core.document, 0, 0)
       assertTrue("$grammar paints line 0", spans[0].isNotEmpty())
       if (grammar == "markdown") assertTrue("markdown injects inline and the fence", snapshot.injected.size >= 2)
+      if (grammar == "php") assertTrue("php injects html around the tags", snapshot.injected.isNotEmpty())
       snapshot.close()
       engine.close()
     }

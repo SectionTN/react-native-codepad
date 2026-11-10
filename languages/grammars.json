@@ -16,6 +16,8 @@
     { "id": "c", "repo": "tree-sitter/tree-sitter-c", "rev": "b780e47fc780ddc8da13afa35a3f4ed5c157823d", "grammars": [{ "name": "c", "src": "src" }] },
     { "id": "rust", "repo": "tree-sitter/tree-sitter-rust", "rev": "77a3747266f4d621d0757825e6b11edcbf991ca5", "grammars": [{ "name": "rust", "src": "src" }] },
     { "id": "go", "repo": "tree-sitter/tree-sitter-go", "rev": "2346a3ab1bb3857b48b29d779a1ef9799a248cd7", "grammars": [{ "name": "go", "src": "src" }] },
-    { "id": "yaml", "repo": "tree-sitter-grammars/tree-sitter-yaml", "rev": "a1c4812a73ec5e089de8e441fdea3a921e8d5079", "grammars": [{ "name": "yaml", "src": "src" }] }
+    { "id": "yaml", "repo": "tree-sitter-grammars/tree-sitter-yaml", "rev": "a1c4812a73ec5e089de8e441fdea3a921e8d5079", "grammars": [{ "name": "yaml", "src": "src" }] },
+    { "id": "php", "repo": "tree-sitter/tree-sitter-php", "rev": "92b5271b60bec77fb65b5e5bc41561e8dac81299", "grammars": [{ "name": "php", "src": "php/src" }, { "name": "php_only", "src": "php_only/src" }], "extraPaths": ["common/scanner.h"] },
+    { "id": "sql", "repo": "DerekStride/tree-sitter-sql", "rev": "39fdb006403747241244326e8af3b3e96b85381c", "grammars": [{ "name": "sql", "src": "src" }] }
   ]
 }

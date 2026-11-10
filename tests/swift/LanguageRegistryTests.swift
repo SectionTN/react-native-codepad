@@ -37,11 +37,11 @@ final class LanguageRegistryTests: XCTestCase {
   }
 
   func testAnInstalledLanguageBeatsTheAliasTable() {
-    XCTAssertNil(LanguageRegistry.canonicalInjectionId("sql"))
+    XCTAssertNil(LanguageRegistry.canonicalInjectionId("graphql"))
     let base = HostLanguages.javascript()
     LanguageRegistry.register(
-      HostProvider(id: "sql", pointer: base.pointer, highlights: "(identifier) @variable", injections: ""))
-    XCTAssertEqual(LanguageRegistry.canonicalInjectionId("SQL"), "sql")
+      HostProvider(id: "graphql", pointer: base.pointer, highlights: "(identifier) @variable", injections: ""))
+    XCTAssertEqual(LanguageRegistry.canonicalInjectionId("GraphQL"), "graphql")
     XCTAssertEqual(LanguageRegistry.canonicalInjectionId("js"), "javascript")
   }
 

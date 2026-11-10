@@ -15,6 +15,8 @@ final class LanguageSmokeTests: XCTestCase {
     "c": "int main(void) { return 0; }", "rust": "fn main() { let x = 1; }",
     "go": "package main\nfunc main() { x := 1 }", "yaml": "a: 1\nb: [x, y]",
     "kv_lite": "name = \"x\" # hi",
+    "php": "<p><?php echo $name; ?></p>", "php_only": "function f($x) { return $x + 1; }",
+    "sql": "SELECT id FROM users WHERE id = 1; -- hi",
   ]
 
   func testEveryPackageCompilesItsQueriesAndHighlightsASnippet() throws {
@@ -34,6 +36,7 @@ final class LanguageSmokeTests: XCTestCase {
       let spans = Highlighter(language: lang).spans(snapshot: snapshot, doc: core.document, firstLine: 0, lastLine: 0)
       XCTAssertFalse(spans[0].isEmpty, "\(grammar) paints line 0")
       if grammar == "markdown" { XCTAssertGreaterThanOrEqual(snapshot.injected.count, 2, "markdown injects inline and the fence") }
+      if grammar == "php" { XCTAssertFalse(snapshot.injected.isEmpty, "php injects html around the tags") }
       engine.close()
     }
     print("LanguageSmokeTests: \(packages.count) grammars")

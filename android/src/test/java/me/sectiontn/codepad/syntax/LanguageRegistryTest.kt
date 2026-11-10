@@ -24,15 +24,15 @@ class LanguageRegistryTest {
 
   @Test
   fun anInstalledLanguageBeatsTheAliasTable() {
-    assertNull(LanguageRegistry.canonicalInjectionId("sql"))
+    assertNull(LanguageRegistry.canonicalInjectionId("graphql"))
     val base = HostLanguages.javascript()
     LanguageRegistry.register(object : LanguageProvider {
-      override val id = "sql"
+      override val id = "graphql"
       override val languagePointer = base.pointer
       override val highlights = "(identifier) @variable"
       override val injections = ""
     })
-    assertEquals("sql", LanguageRegistry.canonicalInjectionId("SQL"))
+    assertEquals("graphql", LanguageRegistry.canonicalInjectionId("GraphQL"))
     assertEquals("javascript", LanguageRegistry.canonicalInjectionId("js"))
   }
 

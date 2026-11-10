@@ -17915,6 +17915,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"react-native-codepad-lang-php@workspace:languages/php":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-php@workspace:languages/php"
+  peerDependencies:
+    react-native-codepad: 0.1.6
+  languageName: unknown
+  linkType: soft
+
 "react-native-codepad-lang-python@npm:*, react-native-codepad-lang-python@workspace:languages/python":
   version: 0.0.0-use.local
   resolution: "react-native-codepad-lang-python@workspace:languages/python"
@@ -17926,6 +17934,14 @@ __metadata:
 "react-native-codepad-lang-rust@npm:*, react-native-codepad-lang-rust@workspace:languages/rust":
   version: 0.0.0-use.local
   resolution: "react-native-codepad-lang-rust@workspace:languages/rust"
+  peerDependencies:
+    react-native-codepad: 0.1.6
+  languageName: unknown
+  linkType: soft
+
+"react-native-codepad-lang-sql@workspace:languages/sql":
+  version: 0.0.0-use.local
+  resolution: "react-native-codepad-lang-sql@workspace:languages/sql"
   peerDependencies:
     react-native-codepad: 0.1.6
   languageName: unknown
