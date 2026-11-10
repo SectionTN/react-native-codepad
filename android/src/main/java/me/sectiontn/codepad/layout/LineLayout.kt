@@ -102,7 +102,10 @@ class LineLayout(
 
   fun rowOf(column: Int): Int = layout.getLineForOffset(column.coerceIn(0, length))
 
-  fun caretX(column: Int): Float = layout.getPrimaryHorizontal(column.coerceIn(0, length))
+  // getPrimaryHorizontal re-measures the line up to the column on every call, and every frame asks the same columns.
+  private val xs = ColumnXCache { layout.getPrimaryHorizontal(it) }
+
+  fun caretX(column: Int): Float = xs.x(column.coerceIn(0, length))
 
   fun columnAt(row: Int, x: Float): Int = layout.getOffsetForHorizontal(row.coerceIn(0, rowCount - 1), x)
 
