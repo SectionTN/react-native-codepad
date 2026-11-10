@@ -72,6 +72,11 @@ class VectorRunner(private val case: JSONObject) {
       "positionToOffset" -> lastResult = core.document.positionToOffset(op.getInt("line"), op.getInt("column"))
       "getLine" -> lastResult = core.document.line(op.getInt("index")).toString()
       "wait" -> now += op.getLong("ms")
+      "decorate" -> {
+        val arr = op.getJSONArray("items")
+        val items = (0 until arr.length()).map { i -> decorationOf(arr.getJSONObject(i)) }
+        core.setDecorations(items, op.optInt("revision", -1))
+      }
       else -> fail("op not implemented: $name")
     }
   }
@@ -86,7 +91,30 @@ class VectorRunner(private val case: JSONObject) {
     else -> error("unknown unit $name")
   }
 
+  private fun decorationOf(o: JSONObject): Decoration = when (val kind = o.getString("kind")) {
+    "underline" -> Underline(o.getInt("start"), o.getInt("end"), 0, UnderlineStyle.Solid, 1f, 2f)
+    "gap" -> Gap(o.getInt("line"), o.getInt("rows"))
+    "lineBackground" -> LineBackground(o.getInt("line"), 0)
+    else -> error("unknown decoration kind $kind")
+  }
+
+  // Only what mapping changes: kind and range, or kind, line and rows.
+  private fun describe(d: Decoration): String = when (d) {
+    is Underline -> "underline ${d.start} ${d.end}"
+    is Gap -> "gap ${d.line} ${d.rows}"
+    is LineBackground -> "lineBackground ${d.line}"
+  }
+
   private fun check(expect: JSONObject, where: String) {
+    if (expect.has("decorations")) {
+      val arr = expect.getJSONArray("decorations")
+      val expected = (0 until arr.length()).map { describe(decorationOf(arr.getJSONObject(it))) }
+      assertEquals("decorations $where", expected, core.decorations.items.map(::describe))
+    }
+    if (expect.has("gapRows")) {
+      val o = expect.getJSONObject("gapRows")
+      assertEquals("gapRows $where", o.keys().asSequence().associate { it.toInt() to o.getInt(it) }, core.decorations.gapRows())
+    }
     val doc = core.document
     if (expect.has("text")) assertEquals("text $where", expect.getString("text"), doc.text())
     if (expect.has("length")) assertEquals("length $where", expect.getInt("length"), doc.length)

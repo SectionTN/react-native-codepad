@@ -18,6 +18,12 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
   var onChange: ((Change, ChangeOrigin) -> Unit)? = null
   var onSelectionChange: ((Selection) -> Unit)? = null
 
+  val decorations = DecorationSet()
+  private val edits = ArrayDeque<EditSpan>()
+
+  // A decoration set computed before this revision belongs to text setText replaced.
+  private var decorationsFloor = 0
+
   val canUndo: Boolean get() = undo.canUndo
   val canRedo: Boolean get() = undo.canRedo
 
@@ -34,6 +40,10 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
   internal fun applyChange(start: Int, end: Int, text: String, origin: ChangeOrigin, typing: Boolean, caretAfter: Boolean): Change {
     val before = selection
     val change = lock.write { document.replace(start, end, text) }
+    val span = EditSpan.of(change, document)
+    if (edits.size == DECORATION_EDIT_LOG) edits.removeFirst()
+    edits.addLast(span)
+    decorations.map(span)
     val after = if (caretAfter) Selection.caret(change.newEnd)
       else Selection(mapOffset(before.anchor, change), mapOffset(before.head, change))
     moveSelection(after, fromEdit = true)
@@ -54,6 +64,39 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     applyChange(0, document.length, text, ChangeOrigin.Api, typing = false, caretAfter = false)
     moveSelection(Selection(0, 0), fromEdit = true)
     if (!keepHistory) undo.clear()
+    decorations.clear()
+    edits.clear()
+    decorationsFloor = document.revision
+  }
+
+  /**
+   * Replaces the decorations. [revision] is the document revision they were computed for, below zero for the
+   * current one. False when the edits since then are no longer known, which keeps the current set.
+   */
+  fun setDecorations(items: List<Decoration>, revision: Int): Boolean {
+    var list = items
+    if (revision in 0 until document.revision) {
+      if (revision < decorationsFloor) return false
+      if ((edits.firstOrNull()?.revision ?: Int.MAX_VALUE) > revision + 1) return false
+      list = items.mapNotNull { item ->
+        var d: Decoration? = item
+        for (span in edits) if (span.revision > revision) d = d?.let { DecorationSet.mapOne(it, span) }
+        d
+      }
+    }
+    decorations.replace(list.mapNotNull(::fitted))
+    return true
+  }
+
+  /** Clamps an underline to the document. Null for an empty range, a line outside it or a gap without rows. */
+  private fun fitted(d: Decoration): Decoration? = when (d) {
+    is Underline -> {
+      val s = d.start.coerceIn(0, document.length)
+      val e = d.end.coerceIn(0, document.length)
+      if (s < e) d.copy(start = s, end = e) else null
+    }
+    is Gap -> d.takeIf { it.line in 0 until document.lineCount && it.rows >= 1 }
+    is LineBackground -> d.takeIf { it.line in 0 until document.lineCount }
   }
 
   fun typeText(text: String) {
@@ -321,6 +364,8 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
   }
 
   companion object {
+    const val DECORATION_EDIT_LOG = 256
+
     /** Maps an offset through a change. A caret sitting exactly at a pure insertion follows the insert. */
     fun mapOffset(offset: Int, c: Change): Int = when {
       offset < c.start -> offset
