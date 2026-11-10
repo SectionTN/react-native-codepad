@@ -33,3 +33,7 @@ Every callback is wrapped once by the component, so an inline arrow function is 
 ## `onContentSizeChange`
 
 `(e: ContentSizeEvent) => void`. The view size at which nothing scrolls, `contentInsets` included, in dp. Sent after a draw whose content size changed, at most once per frame, and the first time before `onReady`. With soft wrap the value converges over a few frames as lines are measured. The keyboard overlap from `avoidKeyboard` is not included. See [nested in a ScrollView](/guides/nested-scroll/).
+
+## `onGapLayout`
+
+`(e: GapLayoutEvent) => void`. Fires after a draw in which a gap appeared, moved or went away, scrolling included, and once after the first array with gaps is applied. `gaps` holds every gap sorted by line, in the view coordinates of `getCursorRect()`. Place a note view from it, as the [decorations guide](/guides/decorations/#a-note-under-a-line) shows.

@@ -22,6 +22,8 @@ All of these are exported from `react-native-codepad`. Offsets count UTF-16 code
 | `Suggestions` | `'off' \| 'forceOff' \| 'on'` | For the `suggestions` prop. |
 | `SearchQuery` | `{ text: string; regex?: boolean; caseSensitive?: boolean; wholeWord?: boolean }` | ICU regex on both platforms. The replacement text is literal. |
 | `SearchHit` | `{ index: number; total: number }` | The 0 based index of the selected match. |
+| `Decoration` | `{ kind: 'underline'; range: Range; color: string; style?: 'solid' \| 'wavy'; thickness?: number; offset?: number } \| { kind: 'gap'; line: number; rows: number } \| { kind: 'lineBackground'; line: number; color: string }` | For the `decorations` prop, with sizes in dp. Underlines default to solid, 1 dp thick and 2 dp below the baseline, and a gap takes `rows` whole rows under its line. |
+| `GapLayoutEvent` | `{ gaps: { line: number; rect: Rect }[] }` | Every gap, sorted by line. |
 | `TokenStyle` | `string \| { color: string; bold?: boolean; italic?: boolean }` | A color string is the shorthand. |
 | `Theme` | see [theme tokens](/reference/theme-tokens/) | |
 | `CodeEditorProps` | see [props](/reference/props/) | Extends React Native `ViewProps`. |

@@ -21,6 +21,7 @@ Get the ref with `useRef<CodeEditorRef>(null)` and pass it as `ref`. Readers run
 | `positionToOffset(pos)` | `number` | The offset of a line and column. |
 | `getCursorRect()` | `Rect` or `null` | The caret in view coordinates, in dp. `null` before the first layout. |
 | `getVisibleLines()` | `{ first, last }` | The range of lines on screen. |
+| `getGapRect(line)` | `Rect` or `null` | The gap under the line from the last frame, in the view coordinates of `getCursorRect()`. `null` when the line has no gap. |
 | `canUndo()`, `canRedo()` | `boolean` | Refresh them from `onChange`. |
 | `isFocused()` | `boolean` | Whether the editor has focus. |
 

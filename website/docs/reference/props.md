@@ -47,3 +47,10 @@ sidebar_position: 1
 | `contentInsets` | `ContentInsets` | all 0 | The padding inside the scrollable area, in dp on Android and points on iOS. A bottom inset keeps the caret above a toolbar. |
 | `textPadding` | `number` | `8` | The space between the text and the editor's left and right edges, inside `contentInsets`, in dp on Android and points on iOS. Set it to `0` to start the text exactly at `contentInsets.left`. |
 | `avoidKeyboard` | `boolean` | `false` | Adds the keyboard overlap to the bottom inset on every frame of the keyboard animation. See the [keyboard guide](/guides/keyboard/). |
+
+## Decorations
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `decorations` | `Decoration[]` | undefined | Underlines, gaps under lines and line backgrounds drawn over the text. They follow edits until the next array arrives. See the [decorations guide](/guides/decorations/). |
+| `decorationsRevision` | `number` | undefined | The revision the array was computed for, from `getRevision()` or `ChangeEvent.revision`. The editor maps the array through the edits made since then. Without it the array is taken as computed for the current text. |
