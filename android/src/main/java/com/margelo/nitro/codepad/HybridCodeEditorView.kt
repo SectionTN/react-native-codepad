@@ -60,6 +60,7 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
         editor.setInitialText(value)
         // Loading the text clears the decorations, so the current ones go back on in afterUpdate.
         decorationsDirty = decorations != null
+        decorationsForced = decorationsDirty
       }
     }
 
@@ -230,19 +231,28 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
     }
     if (decorationsDirty) {
       decorationsDirty = false
-      editor.setDecorations(decorations?.mapNotNull(::toDecoration) ?: emptyList(), (decorationsRevision ?: -1.0).toInt())
+      val revision = (decorationsRevision ?: -1.0).toInt()
+      if (decorationsGate.admit(decorations, revision, force = decorationsForced)) {
+        editor.setDecorations(decorations?.mapNotNull(::toDecoration) ?: emptyList(), revision)
+      }
+      decorationsForced = false
     }
   }
 
-  // The array is memoized in JS, so an equal one means nothing changed; re-applying it would move offsets back.
+  private val decorationsGate = DecorationsGate()
+  private var decorationsForced = false
+
   override var decorations: Array<NativeDecoration>? = null
     set(value) {
-      if (value contentEquals field) return
       field = value
       decorationsDirty = true
     }
 
   override var decorationsRevision: Double? = null
+    set(value) {
+      field = value
+      decorationsDirty = true
+    }
 
   override var onGapLayout: ((gaps: Array<NativeGap>) -> Unit)? = null
     set(value) {
