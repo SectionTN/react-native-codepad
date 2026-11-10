@@ -83,6 +83,17 @@ CP_API const int32_t *cp_snapshot_changed(const cp_snapshot *snapshot);
 CP_API const cp_language *cp_snapshot_language(const cp_snapshot *snapshot);
 CP_API uint32_t cp_snapshot_length(const cp_snapshot *snapshot);
 
+// The injected trees of a snapshot, sorted by start. ranges is how many ranges the tree covers.
+typedef struct {
+  const cp_language *language;
+  int32_t start;
+  int32_t end;
+  int32_t shift;
+  uint32_t ranges;
+} cp_injected_info;
+CP_API uint32_t cp_snapshot_injected_count(const cp_snapshot *snapshot);
+CP_API void cp_snapshot_injected_get(const cp_snapshot *snapshot, uint32_t index, cp_injected_info *out);
+
 // Highlighting writes runs of ints and returns how many it needs. A short buffer gets nothing written,
 // and the caller retries with at least the returned size.
 // cp_highlight: for each line of [first_line, last_line], its triple count then its

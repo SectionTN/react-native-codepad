@@ -34,7 +34,7 @@ final class SyntaxEngineTests: XCTestCase {
     core.replace(4, 5, "value")
     let second = try XCTUnwrap(snapshots.take())
     XCTAssertEqual(second.revision, 1)
-    XCTAssertEqual(second.tree.rootNode.endUnit, 14)
+    XCTAssertEqual(second.length, 14)
     engine.close()
   }
 
@@ -94,27 +94,15 @@ final class SyntaxEngineTests: XCTestCase {
       if published != nil { break }
     }
     let snapshot = try XCTUnwrap(published, "no snapshot while an edit landed between every budget slice")
-    XCTAssertEqual(shape(try freshTree(String(repeating: " ", count: snapshot.revision) + base)), shape(snapshot.tree))
-    engine.close()
-  }
-
-  private func freshTree(_ text: String) throws -> Tree {
+    // The incremental result paints exactly like a fresh parse of the same text.
     let lang = try XCTUnwrap(LanguageRegistry.resolve("javascript"))
-    let mirror = Mirror()
-    mirror.setText(text)
-    let parser = Parser()
-    parser.setLanguage(lang.pointer)
-    return try XCTUnwrap(parser.parse(nil, mirror, nil, budgetMicros: 0))
-  }
-
-  private func shape(_ tree: Tree) -> [String] {
-    var out: [String] = []
-    func walk(_ n: Node) {
-      out.append("\(n.type) \(n.startUnit) \(n.endUnit)")
-      for i in 0..<n.childCount { walk(n.child(i)) }
-    }
-    walk(tree.rootNode)
-    return out
+    let (fresh, doc) = parseSnapshot(lang, String(repeating: " ", count: snapshot.revision) + base)
+    XCTAssertEqual(snapshot.length, fresh.length)
+    let hl = Highlighter(language: lang)
+    XCTAssertEqual(
+      hl.spans(snapshot: snapshot, doc: doc, firstLine: 0, lastLine: doc.lineCount - 1),
+      hl.spans(snapshot: fresh, doc: doc, firstLine: 0, lastLine: doc.lineCount - 1))
+    engine.close()
   }
 
   func testOffsetDirectiveTrimsTheTemplateStringDelimiters() throws {
@@ -125,7 +113,7 @@ final class SyntaxEngineTests: XCTestCase {
     engine.setLanguage("javascript")
     engine.setText(text, revision: 1)
     let snapshot = try XCTUnwrap(snapshots.takeRevision(1))
-    XCTAssertEqual(snapshot.tree.rootNode.type, "program")
+    XCTAssertEqual(snapshot.languageId, "javascript")
     XCTAssertEqual(snapshot.injected.count, 1)
     XCTAssertEqual(snapshot.injected.first?.language.id, "html")
     XCTAssertEqual(snapshot.injected.first?.start, 5)

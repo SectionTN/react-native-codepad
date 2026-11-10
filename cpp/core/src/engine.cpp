@@ -715,3 +715,14 @@ extern "C" const cp_language *cp_snapshot_language(const cp_snapshot *snapshot) 
 extern "C" uint32_t cp_snapshot_length(const cp_snapshot *snapshot) {
   return snapshot->text ? static_cast<uint32_t>(snapshot->text->size()) : 0;
 }
+
+extern "C" uint32_t cp_snapshot_injected_count(const cp_snapshot *snapshot) {
+  return static_cast<uint32_t>(snapshot->injected.size());
+}
+
+extern "C" void cp_snapshot_injected_get(const cp_snapshot *snapshot, uint32_t index, cp_injected_info *out) {
+  const codepad::InjectedTree &inj = snapshot->injected[index];
+  uint32_t ranges = 0;
+  free(ts_tree_included_ranges(inj.tree.get(), &ranges));
+  *out = cp_injected_info{inj.language, inj.start, inj.end, inj.shift, ranges};
+}

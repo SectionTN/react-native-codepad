@@ -79,10 +79,10 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Run the core tests under AddressSanitizer
-        run: swift test --sanitize=address --filter Core
+        run: swift test --sanitize=address --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
 
       - name: Run the core tests under ThreadSanitizer
-        run: swift test --sanitize=thread --filter Core
+        run: swift test --sanitize=thread --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
 
   docs:
     runs-on: ubuntu-24.04

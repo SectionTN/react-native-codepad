@@ -85,7 +85,7 @@ final class SnapshotQueue: @unchecked Sendable {
   /// Skips the empty document snapshot setLanguage can publish before setText's one lands.
   func takeParsed(_ timeout: TimeInterval = 5) -> Snapshot? {
     while let s = take(timeout) {
-      if s.tree.rootNode.endUnit > 0 { return s }
+      if s.length > 0 { return s }
     }
     return nil
   }
@@ -107,14 +107,18 @@ func styleAt(_ spans: [Int], _ column: Int) -> String? {
   return nil
 }
 
+/// The whole text parsed by an engine, injections included.
 func parseSnapshot(_ lang: LoadedLanguage, _ text: String) -> (Snapshot, Document) {
   let doc = Document(text)
-  let parser = Parser()
-  parser.setLanguage(lang.pointer)
-  let mirror = Mirror()
-  mirror.setText(text)
-  guard let tree = parser.parse(nil, mirror, nil, budgetMicros: 0) else { fatalError("parse failed") }
-  return (Snapshot(revision: doc.revision, tree: tree, injected: [], languageId: lang.id), doc)
+  let q = SnapshotQueue()
+  let engine = SyntaxEngine(postToMain: { $0() }, onSnapshot: { q.add($0) })
+  defer { engine.close() }
+  engine.setLanguage(lang.id)
+  engine.setText(text, revision: doc.revision)
+  while let s = q.take(10) {
+    if s.revision == doc.revision && s.length == text.utf16.count { return (s, doc) }
+  }
+  fatalError("parse failed")
 }
 
 /// True when one of the unit pairs meets the line [start, end], the painter's rule for a dirty line.

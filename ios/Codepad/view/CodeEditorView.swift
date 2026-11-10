@@ -970,20 +970,19 @@ final class CodeEditorView: UIScrollView {
     let consistent = snapshot.flatMap { $0.revision == doc.revision ? $0 : nil }
     let revision = consistent != nil && highlighter != nil ? doc.revision : -1
     var runs: [Int] = []
-    if let consistent, highlighter != nil {
+    var spans: [[Int]] = []
+    if let consistent, let highlighter {
       let incremental = consistent.basedOn >= 0 && consistent.basedOn == appliedRevision
-      runs = dirtyRuns(
-        first: first, last: last, revision: revision, applied: appliedRevision, changed: incremental ? consistent.changed : nil,
-        doc: doc
-      ) { cache[$0]?.revision }
+      let entries = (first...last).map { cache[$0].map { Int32($0.revision) } ?? Int32(CP_NO_ENTRY) }
+      (runs, spans) = highlighter.frame(
+        snapshot: consistent, doc: doc, first: first, last: last, applied: appliedRevision, useChanged: incremental,
+        entries: entries)
     }
     var r = 0
-    var batch: [[Int]]? = nil
+    // The spans of the run lines arrive in line order, one entry per line.
+    var next = 0
     for line in first...last {
-      while r + 1 < runs.count && runs[r + 1] < line {
-        r += 2
-        batch = nil
-      }
+      while r + 1 < runs.count && runs[r + 1] < line { r += 2 }
       let inRun = r + 1 < runs.count && line >= runs[r]
       let entry = cache[line]
       if !inRun, let entry {
@@ -992,9 +991,10 @@ final class CodeEditorView: UIScrollView {
         continue
       }
       var fresh: [Int]? = nil
-      if inRun, let consistent, let highlighter {
-        if batch == nil { batch = highlighter.spans(snapshot: consistent, doc: doc, firstLine: runs[r], lastLine: runs[r + 1]) }
-        if let batch, !batch[line - runs[r]].isEmpty { fresh = batch[line - runs[r]] }
+      if inRun {
+        let lineSpans = next < spans.count ? spans[next] : []
+        next += 1
+        if !lineSpans.isEmpty { fresh = lineSpans }
         if let entry, entry.spans == fresh {
           entry.revision = revision
           continue

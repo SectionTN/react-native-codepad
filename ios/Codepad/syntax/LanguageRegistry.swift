@@ -1,33 +1,18 @@
 import Foundation
 import os
 
-final class CompiledQuery: @unchecked Sendable {
-  let query: Query
-  let evaluator: PredicateEvaluator
-  let styleIds: [Int]
-  let captureIndex: [String: Int]
+#if canImport(CodepadCore)
+  import CodepadCore
+#endif
 
-  init(query: Query, evaluator: PredicateEvaluator) {
-    self.query = query
-    self.evaluator = evaluator
-    styleIds = query.captureNames.map { StyleTable.id($0) }
-    var index: [String: Int] = [:]
-    for (i, name) in query.captureNames.enumerated() { index[name] = i }
-    captureIndex = index
-  }
-}
-
+/// A language loaded into the core. The core keeps it for the life of the process.
 final class LoadedLanguage: @unchecked Sendable {
   let id: String
-  let pointer: OpaquePointer
-  let highlights: CompiledQuery
-  let injections: CompiledQuery?
+  let handle: OpaquePointer
 
-  init(id: String, pointer: OpaquePointer, highlights: CompiledQuery, injections: CompiledQuery?) {
+  init(id: String, handle: OpaquePointer) {
     self.id = id
-    self.pointer = pointer
-    self.highlights = highlights
-    self.injections = injections
+    self.handle = handle
   }
 }
 
@@ -37,6 +22,12 @@ enum LanguageRegistry {
     var providers: [String: any CPLanguageProvider] = [:]
     var cache: [String: LoadedLanguage?] = [:]
     var installed: [String: Bool] = [:]
+    var byHandle: [OpaquePointer: LoadedLanguage] = [:]
+  }
+
+  /// The language a core handle was loaded as.
+  static func loaded(_ handle: OpaquePointer) -> LoadedLanguage? {
+    state.lock.withLock { state.byHandle[handle] }
   }
 
   private static let log = Logger(subsystem: "me.sectiontn.codepad", category: "syntax")
@@ -98,28 +89,29 @@ enum LanguageRegistry {
       log.warning("language \(id, privacy: .public) is not installed, falling back to plain text")
       return nil
     }
-    let pointer = OpaquePointer(provider.languagePointer)
-    let abi = TreeSitterRuntime.abiVersion(of: pointer)
-    let range = TreeSitterRuntime.abiRange
-    guard range.contains(abi) else {
-      log.warning("language \(id, privacy: .public) has ABI \(abi), runtime supports \(range.lowerBound) to \(range.upperBound)")
+    let highlights = Array(provider.highlights.utf8)
+    let injections = provider.injections.allSatisfy { $0.isWhitespace } ? [] : Array(provider.injections.utf8)
+    var error = [CChar](repeating: 0, count: 512)
+    let handle = highlights.withUnsafeBufferPointer { h in
+      injections.withUnsafeBufferPointer { i in
+        h.withMemoryRebound(to: CChar.self) { hc in
+          i.withMemoryRebound(to: CChar.self) { ic in
+            cp_language_load(
+              id, provider.languagePointer, hc.baseAddress, UInt32(hc.count), ic.baseAddress, UInt32(ic.count), &error, 512)
+          }
+        }
+      }
+    }
+    let message = String(cString: error)
+    guard let handle else {
+      log.warning("\(message, privacy: .public)")
       return nil
     }
-    guard let highlights = compile(pointer, provider.highlights, "\(id) highlights") else { return nil }
-    let injectionSource = provider.injections
-    let blank = injectionSource.allSatisfy { $0.isWhitespace }
-    let injections = blank ? nil : compile(pointer, injectionSource, "\(id) injections")
-    return LoadedLanguage(id: id, pointer: pointer, highlights: highlights, injections: injections)
-  }
-
-  private static func compile(_ pointer: OpaquePointer, _ source: String, _ label: String) -> CompiledQuery? {
-    do {
-      let query = try Query.compile(pointer, source)
-      return CompiledQuery(query: query, evaluator: PredicateEvaluator(query: query))
-    } catch {
-      log.warning("\(label, privacy: .public) query failed to compile: \(String(describing: error), privacy: .public)")
-      return nil
-    }
+    // A broken injections query still loads the language, without injections.
+    if !message.isEmpty { log.warning("\(message, privacy: .public)") }
+    let language = LoadedLanguage(id: id, handle: handle)
+    state.byHandle[handle] = language
+    return language
   }
 
   /// A generated package ships CPLang<Pascal id> as an NSObject conforming to CPLanguageProvider.

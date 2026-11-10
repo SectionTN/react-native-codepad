@@ -9,49 +9,14 @@ final class HighlighterTests: XCTestCase {
     let html = HostLanguages.load("html", "html")
     let js = HostLanguages.javascript()
     let text = "<p>a</p>\n<p>b</p>\n<script>\nlet x = 1;\n</script>\n<p>c</p>"
-    let doc = Document(text)
-    let start = (text as NSString).range(of: "\nlet").location
-    let end = (text as NSString).range(of: "</script>").location
-    let mirror = Mirror()
-    mirror.setText(text)
-    let hostParser = Parser()
-    hostParser.setLanguage(html.pointer)
-    let host = try XCTUnwrap(hostParser.parse(nil, mirror, nil, budgetMicros: 0))
-    let subParser = Parser()
-    subParser.setLanguage(js.pointer)
-    subParser.setIncludedRanges([start, end, 2, 8, 4, 0])
-    let sub = try XCTUnwrap(subParser.parse(nil, mirror, nil, budgetMicros: 0))
-    let injected = Injected(language: js, tree: sub, start: start, end: end)
-    let snapshot = Snapshot(revision: 0, tree: host, injected: [injected], languageId: "html")
+    let (snapshot, doc) = parseSnapshot(html, text)
+    XCTAssertEqual(snapshot.injected.map { $0.language.id }, [js.id])
+    XCTAssertEqual(snapshot.injected.first?.start, (text as NSString).range(of: "\nlet").location)
     let hl = Highlighter(language: html)
     XCTAssertEqual(styleAt(hl.spans(snapshot: snapshot, doc: doc, firstLine: 3, lastLine: 3)[0], 0), "keyword")
     XCTAssertEqual(styleAt(hl.spans(snapshot: snapshot, doc: doc, firstLine: 2, lastLine: 3)[1], 0), "keyword")
     XCTAssertEqual(styleAt(hl.spans(snapshot: snapshot, doc: doc, firstLine: 3, lastLine: 4)[0], 0), "keyword")
     XCTAssertEqual(hl.spans(snapshot: snapshot, doc: doc, firstLine: 0, lastLine: 1).count, 2)
-  }
-
-  // A carried tree keeps the positions of its last parse; painted without its shift, `let` lands four units early.
-  func testCarriedTreesPaintAtTheirShiftedPosition() throws {
-    let html = HostLanguages.load("html", "html")
-    let js = HostLanguages.javascript()
-    let before = "<p>a</p>\n<script>\nlet x = 1;\n</script>\n"
-    let after = "<p>a</p>\n\n\n\n\n<script>\nlet x = 1;\n</script>\n"
-    let start = (before as NSString).range(of: "\nlet").location
-    let end = (before as NSString).range(of: "</script>").location
-    let mirror = Mirror()
-    mirror.setText(before)
-    let subParser = Parser()
-    subParser.setLanguage(js.pointer)
-    subParser.setIncludedRanges([start, end, 1, 8, 3, 0])
-    let sub = try XCTUnwrap(subParser.parse(nil, mirror, nil, budgetMicros: 0))
-    mirror.setText(after)
-    let hostParser = Parser()
-    hostParser.setLanguage(html.pointer)
-    let host = try XCTUnwrap(hostParser.parse(nil, mirror, nil, budgetMicros: 0))
-    let injected = Injected(language: js, tree: sub, start: start + 4, end: end + 4, shift: 4)
-    let snapshot = Snapshot(revision: 0, tree: host, injected: [injected], languageId: "html")
-    let spans = Highlighter(language: html).spans(snapshot: snapshot, doc: Document(after), firstLine: 6, lastLine: 6)
-    XCTAssertEqual(styleAt(spans[0], 0), "keyword")
   }
 
   func testCapturesMapToStylesPerLine() {
@@ -87,9 +52,9 @@ final class HighlighterTests: XCTestCase {
   }
 
   func testConcealCapturesNeverPaint() {
-    let base = HostLanguages.javascript()
+    _ = HostLanguages.javascript()
     LanguageRegistry.register(
-      HostProvider(id: "javascript_conceal", pointer: base.pointer, highlights: "(comment) @conceal\n(number) @number", injections: ""))
+      HostProvider(id: "javascript_conceal", pointer: HostGrammars.language(named: "javascript")!, highlights: "(comment) @conceal\n(number) @number", injections: ""))
     guard let lang = LanguageRegistry.resolve("javascript_conceal") else { return XCTFail("javascript_conceal did not load") }
     let (snapshot, doc) = parseSnapshot(lang, "1 // hi")
     let spans = Highlighter(language: lang).spans(snapshot: snapshot, doc: doc, firstLine: 0, lastLine: 0)

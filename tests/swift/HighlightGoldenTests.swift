@@ -37,7 +37,7 @@ final class HighlightGoldenTests: XCTestCase {
       engine.setText(text, revision: 0)
       var snapshot: Snapshot?
       while let s = snapshots.take(10) {
-        if s.tree.rootNode.endUnit == text.utf16.count {
+        if s.length == text.utf16.count {
           snapshot = s
           break
         }

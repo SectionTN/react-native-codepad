@@ -38,19 +38,19 @@ final class LanguageRegistryTests: XCTestCase {
 
   func testAnInstalledLanguageBeatsTheAliasTable() {
     XCTAssertNil(LanguageRegistry.canonicalInjectionId("graphql"))
-    let base = HostLanguages.javascript()
+    _ = HostLanguages.javascript()
     LanguageRegistry.register(
-      HostProvider(id: "graphql", pointer: base.pointer, highlights: "(identifier) @variable", injections: ""))
+      HostProvider(id: "graphql", pointer: HostGrammars.language(named: "javascript")!, highlights: "(identifier) @variable", injections: ""))
     XCTAssertEqual(LanguageRegistry.canonicalInjectionId("GraphQL"), "graphql")
     XCTAssertEqual(LanguageRegistry.canonicalInjectionId("js"), "javascript")
   }
 
   func testUnknownLanguagesAndBadQueriesResolveToNilOnce() {
-    let base = HostLanguages.javascript()
+    _ = HostLanguages.javascript()
     XCTAssertNil(LanguageRegistry.resolve("no_such_language"))
     XCTAssertNil(LanguageRegistry.resolveInjection("c_sharp"))
     XCTAssertTrue(LanguageRegistry.resolveInjection("js") === LanguageRegistry.resolve("javascript"))
-    let bad = BadQueryProvider(pointer: base.pointer)
+    let bad = BadQueryProvider(pointer: HostGrammars.language(named: "javascript")!)
     LanguageRegistry.register(bad)
     XCTAssertNil(LanguageRegistry.resolve("javascript_bad"), "a highlights query naming a missing node fails the load")
     XCTAssertNil(LanguageRegistry.resolve("javascript_bad"))
