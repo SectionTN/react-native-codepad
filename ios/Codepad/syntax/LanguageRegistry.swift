@@ -36,6 +36,7 @@ enum LanguageRegistry {
     let lock = NSLock()
     var providers: [String: any CPLanguageProvider] = [:]
     var cache: [String: LoadedLanguage?] = [:]
+    var installed: [String: Bool] = [:]
   }
 
   private static let log = Logger(subsystem: "me.sectiontn.codepad", category: "syntax")
@@ -70,11 +71,22 @@ enum LanguageRegistry {
     }
   }
 
-  /// Lowercases a fence or query name and maps it through the aliases; nil means never inject, unknown names pass through.
+  /// Lowercases a fence or query name; an installed id wins over the aliases, nil means never inject.
   static func canonicalInjectionId(_ name: String) -> String? {
     let lower = name.lowercased()
     guard let mapped = aliases[lower] else { return lower }
+    if isInstalled(lower) { return lower }
     return mapped.isEmpty ? nil : mapped
+  }
+
+  private static func isInstalled(_ id: String) -> Bool {
+    state.lock.withLock {
+      if state.providers[id] != nil { return true }
+      if let known = state.installed[id] { return known }
+      let found = reflect(id) != nil
+      state.installed[id] = found
+      return found
+    }
   }
 
   static func resolveInjection(_ name: String) -> LoadedLanguage? {

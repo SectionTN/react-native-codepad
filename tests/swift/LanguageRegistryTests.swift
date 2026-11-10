@@ -36,6 +36,15 @@ final class LanguageRegistryTests: XCTestCase {
     XCTAssertEqual(LanguageRegistry.canonicalInjectionId("ruby"), "ruby")
   }
 
+  func testAnInstalledLanguageBeatsTheAliasTable() {
+    XCTAssertNil(LanguageRegistry.canonicalInjectionId("sql"))
+    let base = HostLanguages.javascript()
+    LanguageRegistry.register(
+      HostProvider(id: "sql", pointer: base.pointer, highlights: "(identifier) @variable", injections: ""))
+    XCTAssertEqual(LanguageRegistry.canonicalInjectionId("SQL"), "sql")
+    XCTAssertEqual(LanguageRegistry.canonicalInjectionId("js"), "javascript")
+  }
+
   func testUnknownLanguagesAndBadQueriesResolveToNilOnce() {
     let base = HostLanguages.javascript()
     XCTAssertNil(LanguageRegistry.resolve("no_such_language"))

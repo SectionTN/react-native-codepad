@@ -13,6 +13,7 @@ object LanguageRegistry {
   private const val TAG = "codepad"
   private val providers = HashMap<String, LanguageProvider>()
   private val cache = HashMap<String, LoadedLanguage?>()
+  private val installed = HashMap<String, Boolean>()
 
   // Names nvim queries and fence info strings use for languages we ship under another id. Empty means never inject.
   private val aliases = mapOf(
@@ -39,12 +40,16 @@ object LanguageRegistry {
     return load(id).also { cache[id] = it }
   }
 
-  /** Lowercases a fence or query name and maps it through the aliases; null means never inject, unknown names pass through. */
+  /** Lowercases a fence or query name; an installed id wins over the aliases, null means never inject. */
   fun canonicalInjectionId(name: String): String? {
     val lower = name.lowercase()
     val mapped = aliases[lower] ?: return lower
+    if (isInstalled(lower)) return lower
     return mapped.ifEmpty { null }
   }
+
+  @Synchronized
+  private fun isInstalled(id: String): Boolean = providers.containsKey(id) || installed.getOrPut(id) { reflect(id) != null }
 
   fun resolveInjection(name: String): LoadedLanguage? = canonicalInjectionId(name)?.let { resolve(it) }
 

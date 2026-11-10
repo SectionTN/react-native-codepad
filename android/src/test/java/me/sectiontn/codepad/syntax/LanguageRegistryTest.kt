@@ -23,6 +23,20 @@ class LanguageRegistryTest {
   }
 
   @Test
+  fun anInstalledLanguageBeatsTheAliasTable() {
+    assertNull(LanguageRegistry.canonicalInjectionId("sql"))
+    val base = HostLanguages.javascript()
+    LanguageRegistry.register(object : LanguageProvider {
+      override val id = "sql"
+      override val languagePointer = base.pointer
+      override val highlights = "(identifier) @variable"
+      override val injections = ""
+    })
+    assertEquals("sql", LanguageRegistry.canonicalInjectionId("SQL"))
+    assertEquals("javascript", LanguageRegistry.canonicalInjectionId("js"))
+  }
+
+  @Test
   fun unknownLanguagesAndBadQueriesResolveToNull() {
     val base = HostLanguages.javascript()
     assertNull(LanguageRegistry.resolve("no_such_language"))
