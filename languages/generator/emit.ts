@@ -56,9 +56,11 @@ export function kotlinStringLiteral(text: string): string {
   return `listOf(\n${parts.join('\n')}\n).joinToString("")`;
 }
 
+/** Swift raw string with the fewest # that let the text neither close it nor start an escape. */
 export function swiftRawString(text: string): string {
-  if (text.includes('"""#')) throw new Error('query text contains the raw string terminator');
-  return `#"""\n${text}\n"""#`;
+  let hashes = '#';
+  while (text.includes(`"""${hashes}`) || text.includes(`\\${hashes}`)) hashes += '#';
+  return `${hashes}"""\n${text}\n"""${hashes}`;
 }
 
 const kotlinPackage = (g: GrammarEntry) => `me.sectiontn.codepad.lang.${g.name}`;

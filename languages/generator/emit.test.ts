@@ -35,7 +35,8 @@ test('the string literal emitters escape their delimiters and chunk long text', 
     /^listOf\(\n\s+"""q+""",\n\s+"""q+""",\n\)\.joinToString\(""\)$/,
   );
   assert.equal(swiftRawString('a\\b"c'), '#"""\na\\b"c\n"""#');
-  assert.throws(() => swiftRawString('x"""#y'), /terminator/);
+  assert.equal(swiftRawString('x"""#y'), '##"""\nx"""#y\n"""##');
+  assert.equal(swiftRawString('"^\\#(a)"'), '##"""\n"^\\#(a)"\n"""##');
 });
 
 test('cmake puts each grammar source dir on the include path', () => {
