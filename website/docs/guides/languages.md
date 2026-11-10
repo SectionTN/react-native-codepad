@@ -34,7 +34,7 @@ Use `markdown`, not `markdown_inline`: the inline grammar is reached through inj
 
 Use `php` for web pages and for files that start with `<?php`, and `php_only` for PHP code without the `<?php` tag. The HTML around the PHP code highlights when `react-native-codepad-lang-html` is installed too.
 
-The `sql` grammar parses the usual MySQL statements, with keywords in any case. It doesn't parse `#` comments, `USE` statements or backslash escapes in strings such as `'It\'s'`. Those spots lose their colors, and the rest of the file keeps them. To highlight them, build a patched grammar as a [custom language](/guides/custom-languages/) under another id, such as `mysql`.
+The `sql` grammar parses the usual MySQL statements, with keywords in any case. It doesn't parse `#` comments or `USE` statements. Those lines lose their colors, and the rest of the file keeps them. A backslash escape such as `'It\'s'` ends the string early, and the colors after it can be wrong for the rest of the file. Write `'It''s'` instead, the standard SQL form, which parses. To highlight the MySQL forms, build a patched grammar as a [custom language](/guides/custom-languages/) and rename it in `grammar.js`, for example to `mysql`.
 
 `Codepad.availableLanguages()` lists the installed packages:
 
