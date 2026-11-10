@@ -8,8 +8,11 @@ import { json } from './json';
 import { kotlin } from './kotlin';
 import { kv_lite } from './kv_lite';
 import { markdown } from './markdown';
+import { php } from './php';
+import { php_only } from './php_only';
 import { python } from './python';
 import { rust } from './rust';
+import { sql } from './sql';
 import { swift } from './swift';
 import { tsx } from './tsx';
 import { typescript } from './typescript';
@@ -31,6 +34,9 @@ export const LANGUAGES = [
   'rust',
   'go',
   'yaml',
+  'php',
+  'php_only',
+  'sql',
   'kv_lite',
 ] as const;
 
@@ -52,5 +58,8 @@ export const SAMPLES: Record<LanguageId, string> = {
   rust,
   go,
   yaml,
+  php,
+  php_only,
+  sql,
   kv_lite,
 };

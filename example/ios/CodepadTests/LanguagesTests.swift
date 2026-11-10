@@ -15,6 +15,8 @@ final class LanguagesTests: XCTestCase {
     "c": "int main(void) { return 0; }", "rust": "fn main() { let x = 1; }",
     "go": "package main\nfunc main() { x := 1 }", "yaml": "a: 1\nb: [x, y]",
     "kv_lite": "name = \"x\" # hi",
+    "php": "<p><?php echo $name; ?></p>", "php_only": "function f($x) { return $x + 1; }",
+    "sql": "SELECT id FROM users WHERE id = 1; -- hi",
   ]
 
   func testLinkedLanguagesLoadAndParse() {
@@ -24,7 +26,7 @@ final class LanguagesTests: XCTestCase {
       ids,
       [
         "c", "css", "go", "html", "java", "javascript", "json", "kotlin", "kv_lite", "markdown", "markdown_inline",
-        "python", "rust", "swift", "tsx", "typescript", "yaml",
+        "php", "php_only", "python", "rust", "sql", "swift", "tsx", "typescript", "yaml",
       ])
     for id in ids {
       guard let language = LanguageRegistry.resolve(id) else {

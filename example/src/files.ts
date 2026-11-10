@@ -24,6 +24,9 @@ export const LANGUAGE_NAMES: Record<string, string> = {
   rust: 'Rust',
   go: 'Go',
   yaml: 'YAML',
+  php: 'PHP',
+  php_only: 'PHP (no tags)',
+  sql: 'SQL',
   kv_lite: 'KV (custom)',
 };
 
@@ -43,6 +46,9 @@ const SAMPLE_NAMES: [LanguageId, string][] = [
   ['rust', 'main.rs'],
   ['go', 'main.go'],
   ['yaml', 'config.yaml'],
+  ['php', 'index.php'],
+  ['php_only', 'snippet.php'],
+  ['sql', 'schema.sql'],
   ['kv_lite', 'settings.kv'],
 ];
 

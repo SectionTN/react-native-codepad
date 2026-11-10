@@ -17828,8 +17828,10 @@ __metadata:
     react-native-codepad-lang-json: "npm:*"
     react-native-codepad-lang-kotlin: "npm:*"
     react-native-codepad-lang-markdown: "npm:*"
+    react-native-codepad-lang-php: "npm:*"
     react-native-codepad-lang-python: "npm:*"
     react-native-codepad-lang-rust: "npm:*"
+    react-native-codepad-lang-sql: "npm:*"
     react-native-codepad-lang-swift: "npm:*"
     react-native-codepad-lang-tsx: "npm:*"
     react-native-codepad-lang-typescript: "npm:*"
@@ -17915,7 +17917,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"react-native-codepad-lang-php@workspace:languages/php":
+"react-native-codepad-lang-php@npm:*, react-native-codepad-lang-php@workspace:languages/php":
   version: 0.0.0-use.local
   resolution: "react-native-codepad-lang-php@workspace:languages/php"
   peerDependencies:
@@ -17939,7 +17941,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"react-native-codepad-lang-sql@workspace:languages/sql":
+"react-native-codepad-lang-sql@npm:*, react-native-codepad-lang-sql@workspace:languages/sql":
   version: 0.0.0-use.local
   resolution: "react-native-codepad-lang-sql@workspace:languages/sql"
   peerDependencies:
