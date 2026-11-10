@@ -503,6 +503,10 @@ extension TextInputView: @MainActor GestureHost {
     editor?.offsetAt(contentPoint: CGPoint(x: x, y: y)) ?? 0
   }
 
+  func inGap(x: CGFloat, y: CGFloat) -> Bool {
+    editor?.inGap(contentY: y) ?? false
+  }
+
   func insideSelection(_ offset: Int) -> Bool {
     guard let sel = editor?.core.selection, !sel.isEmpty else { return false }
     return offset >= sel.min && offset <= sel.max

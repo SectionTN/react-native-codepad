@@ -22,6 +22,7 @@
 		77E4DC2FD1B23B76EB060A44 /* ToolbarApiTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90EF449DDEB258D79CEA3F22 /* ToolbarApiTests.swift */; };
 		789D6BA1A8D384C14452E7C6 /* LanguageSwitchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B813E2B1BCDEE1AE37F47D2 /* LanguageSwitchTests.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		828B78BB2272434BF5005EAC /* GapLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC3DED79C5D26EBDEBBDB0A6 /* GapLayoutTests.swift */; };
 		83260D5CF89F1C93CB5B7A0A /* SearchPaintTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F036F77C4601D08E5875C5 /* SearchPaintTests.swift */; };
 		886FE20130DB50D29808051C /* KeyFrameHighlightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9F1DCEAA80D2FE89C5BB26 /* KeyFrameHighlightTests.swift */; };
 		8CEE448DF1D2EBEE2DB4BB33 /* InitialTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A958039B4E3547886C83EB7 /* InitialTextTests.swift */; };
@@ -79,6 +80,7 @@
 		8BEC0764E1AD0075FA52E873 /* FocusTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FocusTests.swift; sourceTree = "<group>"; };
 		90EF449DDEB258D79CEA3F22 /* ToolbarApiTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ToolbarApiTests.swift; sourceTree = "<group>"; };
 		99BE42E14E67927D090B6E7E /* ScrollTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScrollTests.swift; sourceTree = "<group>"; };
+		AC3DED79C5D26EBDEBBDB0A6 /* GapLayoutTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GapLayoutTests.swift; sourceTree = "<group>"; };
 		ADB564FFC53EAD71BE35C574 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		B2F036F77C4601D08E5875C5 /* SearchPaintTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SearchPaintTests.swift; sourceTree = "<group>"; };
 		C6FE5BF6F2CE3729B6C7778C /* LanguagesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LanguagesTests.swift; sourceTree = "<group>"; };
@@ -217,6 +219,7 @@
 				7133C4873626B3B59917468F /* RecordingTests.swift */,
 				4A958039B4E3547886C83EB7 /* InitialTextTests.swift */,
 				0A9F1DCEAA80D2FE89C5BB26 /* KeyFrameHighlightTests.swift */,
+				AC3DED79C5D26EBDEBBDB0A6 /* GapLayoutTests.swift */,
 			);
 			name = CodepadTests;
 			path = CodepadTests;
@@ -519,6 +522,7 @@
 				8CEE448DF1D2EBEE2DB4BB33 /* InitialTextTests.swift in Sources */,
 				886FE20130DB50D29808051C /* KeyFrameHighlightTests.swift in Sources */,
 				B1CBA895ED37E76E91B1A6F0 /* ExpoModulesProvider.swift in Sources */,
+				828B78BB2272434BF5005EAC /* GapLayoutTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

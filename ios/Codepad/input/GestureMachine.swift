@@ -3,6 +3,8 @@ import Foundation
 /// What the editor does with the machine's decisions. The view conforms on the main actor.
 protocol GestureHost: AnyObject {
   func offsetAt(x: CGFloat, y: CGFloat) -> Int
+  /// True over empty space a decoration opened under a line, where taps leave the caret alone.
+  func inGap(x: CGFloat, y: CGFloat) -> Bool
   func insideSelection(_ offset: Int) -> Bool
   func caretHit(x: CGFloat, y: CGFloat) -> Bool
   func placeCaret(_ offset: Int)
@@ -15,6 +17,10 @@ protocol GestureHost: AnyObject {
   func yieldToScroll()
   func postLongPress(delay: TimeInterval)
   func cancelLongPress()
+}
+
+extension GestureHost {
+  func inGap(x: CGFloat, y: CGFloat) -> Bool { false }
 }
 
 /// Touch state machine behind the editor's gesture recognizer. It sees plain points and timestamps, so taps,
@@ -101,13 +107,14 @@ final class GestureMachine {
 
   /// The view's long press timer fired.
   func longPress() {
-    if state != .pressed { return }
+    if state != .pressed || host.inGap(x: downX, y: downY) { return }
     state = .loupe
     host.placeCaret(host.offsetAt(x: downX, y: downY))
     host.beginLoupe(x: downX, y: downY)
   }
 
   private func tap(x: CGFloat, y: CGFloat, time: TimeInterval) {
+    if host.inGap(x: x, y: y) { return }
     let offset = host.offsetAt(x: x, y: y)
     let chained =
       lastTapTime >= 0 && time - lastTapTime <= config.doubleTapTimeout

@@ -1,5 +1,11 @@
 import CoreGraphics
 
+/// Empty space a decoration opened under `line`, in view points.
+struct GapRect: Equatable, Sendable {
+  let line: Int
+  let rect: CGRect
+}
+
 /// Geometry of the last frame in points. Immutable so the JS thread can read it under the view's lock.
 struct FrameInfo: Sendable {
   let firstLine: Int
@@ -9,7 +15,8 @@ struct FrameInfo: Sendable {
   let scrollY: CGFloat
   let contentWidth: CGFloat
   let contentHeight: CGFloat
+  let gaps: [GapRect]
 
   static let empty = FrameInfo(
-    firstLine: 0, lastLine: 0, caret: nil, scrollX: 0, scrollY: 0, contentWidth: 0, contentHeight: 0)
+    firstLine: 0, lastLine: 0, caret: nil, scrollX: 0, scrollY: 0, contentWidth: 0, contentHeight: 0, gaps: [])
 }

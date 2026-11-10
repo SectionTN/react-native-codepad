@@ -78,6 +78,7 @@ final class CodeEditorView: UIScrollView {
   var onChange: ((Change, ChangeOrigin) -> Void)?
   var onChangeText: ((String) -> Void)?
   var onContentSizeChange: ((CGSize) -> Void)?
+  var onGapLayout: (([GapRect]) -> Void)?
   var onEditorFocus: (() -> Void)?
   var onEditorBlur: (() -> Void)?
   private(set) var isReadOnly = false
@@ -131,6 +132,8 @@ final class CodeEditorView: UIScrollView {
   private var selectionDirty = false
   private var selectionViewsDirty = false
   private var contentDirty = false
+  private var gapsDirty = false
+  private var syncedDecorations = -1
   private var revealPending = false
   private var autoFocusPending = false
   private var lastContentSize = CGSize(width: -1, height: -1)
@@ -191,6 +194,7 @@ final class CodeEditorView: UIScrollView {
   func setText(_ text: String, keepHistory: Bool) {
     textInput.session.reset()
     core.setText(text, keepHistory: keepHistory)
+    syncGaps()
     viewport.scrollTo(0, 0)
     pushScroll()
     setNeedsLayout()
@@ -650,6 +654,7 @@ final class CodeEditorView: UIScrollView {
     if viewport.scrollTo(Int(contentOffset.x.rounded()), Int(contentOffset.y.rounded())) { scrollDirty = true }
     let scrolled = scrollDirty
     if w == 0 || h == 0 { return }
+    syncGaps()
     let doc = core.document
     let m = rowMetrics()
     if revealPending {
@@ -677,6 +682,10 @@ final class CodeEditorView: UIScrollView {
     if contentDirty {
       contentDirty = false
       onContentSizeChange?(lastContentSize)
+    }
+    if gapsDirty {
+      gapsDirty = false
+      onGapLayout?(latestFrame.gaps)
     }
     if selectionDirty {
       selectionDirty = false
@@ -726,6 +735,7 @@ final class CodeEditorView: UIScrollView {
     let oldCount = lineSpan(change.removed)
     let newCount = lineSpan(change.inserted)
     heights.replaceLines(first: first, oldCount: oldCount, newCount: newCount)
+    syncGaps()
     keepSpans(first, oldCount, newCount, change)
     cache.shift(first: first, oldCount: oldCount, newCount: newCount)
     ensureEngine().edit(change, points: SyntaxEngine.pointsFor(doc: doc, change: change))
@@ -752,8 +762,42 @@ final class CodeEditorView: UIScrollView {
     text.utf16.reduce(1) { $0 + ($1 == 10 ? 1 : 0) }
   }
 
+  /// Replaces the decorations. `revision` is the one they were computed for, below zero for the current text.
+  func setDecorations(_ items: [Decoration], revision: Int) {
+    if !core.setDecorations(items, revision: revision) { return }
+    let anchor = viewport.anchor()
+    if syncGaps() {
+      viewport.restore(anchor)
+      pushScroll()
+    }
+    selectionViewsDirty = true
+    updateContentSize()
+    setNeedsLayout()
+  }
+
+  /// Pushes the gap rows of a changed decoration set into the height map. True when it pushed.
+  @discardableResult
+  private func syncGaps() -> Bool {
+    let set = core.decorations
+    if set.version == syncedDecorations { return false }
+    syncedDecorations = set.version
+    heights.setGaps(set.gapRows())
+    return true
+  }
+
+  /// True when a point in content view coordinates is in a gap, where taps leave the caret alone.
+  func inGap(contentY: CGFloat) -> Bool {
+    heights.isGapRow(Int((contentY / CGFloat(rowMetrics().rowHeight)).rounded(.down)))
+  }
+
+  /// The gap under `line` in view points from the last frame, or nil.
+  nonisolated func gapRect(line: Int) -> CGRect? {
+    latestFrame.gaps.first { $0.line == line }?.rect
+  }
+
   private func resetDocument() {
     heights = HeightMap(lineCount: core.document.lineCount)
+    syncedDecorations = -1
     viewport.heights = heights
     cache.clear()
     viewport.widestLine = 0
@@ -1178,11 +1222,26 @@ final class CodeEditorView: UIScrollView {
     return CGRect(x: x, y: top, width: CodeEditorView.caretWidth, height: CGFloat(m.rowHeight))
   }
 
+  /// Every gap in view points, sorted by line, the full view width wide.
+  private func gapRects(_ m: RowMetrics) -> [GapRect] {
+    let rows = core.decorations.gapRows()
+    if rows.isEmpty { return [] }
+    var out: [GapRect] = []
+    for line in rows.keys.sorted() {
+      let top = CGFloat(viewport.rowTop(heights.rowStart(line) + heights.rows(line)))
+      let height = CGFloat((rows[line] ?? 0) * m.rowHeight)
+      out.append(GapRect(line: line, rect: CGRect(x: 0, y: top, width: bounds.width, height: height)))
+    }
+    return out
+  }
+
   private func publish(_ first: Int, _ last: Int, _ caretLine: Int, _ m: RowMetrics) {
+    let gaps = gapRects(m)
+    if gaps != latestFrame.gaps { gapsDirty = true }
     let frame = FrameInfo(
       firstLine: first, lastLine: last, caret: caretRect(m, line: caretLine), scrollX: CGFloat(viewport.scrollX),
       scrollY: CGFloat(viewport.scrollY), contentWidth: CGFloat(viewport.contentWidth),
-      contentHeight: CGFloat(viewport.contentHeight))
+      contentHeight: CGFloat(viewport.contentHeight), gaps: gaps)
     frameLock.withLock { $0 = frame }
     let size = CGSize(
       width: CGFloat(viewport.textAreaLeft + viewport.contentWidth + viewport.insetRight),

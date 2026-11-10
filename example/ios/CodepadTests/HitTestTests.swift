@@ -125,4 +125,24 @@ final class HitTestTests: XCTestCase {
     let hit = editor.hitTest(below, with: nil)
     XCTAssertTrue(hit?.isDescendant(of: editor.textInput) ?? false, "hit \(String(describing: hit))")
   }
+
+  func testTapInAGapLeavesTheCaret() {
+    let editor = launch()
+    editor.setInitialText((0..<6).map { "line \($0)" }.joined(separator: "\n"))
+    layout(editor)
+    editor.setDecorations([.gap(line: 1, rows: 2)], revision: -1)
+    draw(editor)
+    guard let g = editor.gapRect(line: 1) else { return XCTFail("no gap rect") }
+    // The machine the editor's recognizer feeds, driven with the text view as its host.
+    let machine = GestureMachine(
+      host: editor.textInput, config: GestureMachine.Config(touchSlop: 8, doubleTapSlop: 40, doubleTapTimeout: 0.3, longPressTimeout: 0.4))
+    editor.core.setSelection(anchor: 3, head: 3)
+    machine.down(x: g.midX, y: g.midY, time: 0)
+    machine.up(x: g.midX, y: g.midY, time: 0.05)
+    XCTAssertEqual(editor.core.selection, Selection(anchor: 3, head: 3))
+    // The row right under the gap is line 2, and a tap there still moves the caret.
+    machine.down(x: 20, y: g.maxY + 2, time: 1)
+    machine.up(x: 20, y: g.maxY + 2, time: 1.05)
+    XCTAssertEqual(editor.core.document.lineAt(editor.core.selection.head), 2)
+  }
 }

@@ -118,4 +118,15 @@ extension SelectionGeometryTests {
     XCTAssertEqual(CodeEditorView.fontName(for: "NoSuchFont"), "Menlo")
     XCTAssertEqual(CodeEditorView.fontName(for: nil), "Menlo")
   }
+
+  func testCaretRectBelowAGapSitsRowsLower() {
+    let editor = launch()
+    editor.setInitialText("abc\ndef\nghi")
+    layout(editor)
+    editor.setDecorations([.gap(line: 0, rows: 2)], revision: -1)
+    draw(editor)
+    let above = editor.textInput.caretRect(for: CPTextPosition(offset: 1))
+    let below = editor.textInput.caretRect(for: CPTextPosition(offset: 5))
+    XCTAssertEqual(below.minY - above.minY, 3 * above.height, accuracy: 0.5)
+  }
 }

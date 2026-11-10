@@ -9,7 +9,9 @@ final class GestureMachineTests: XCTestCase {
     var selected: ClosedRange<Int>? = nil
     var caret = false
 
+    var gap: ClosedRange<CGFloat>? = nil
     func offsetAt(x: CGFloat, y: CGFloat) -> Int { Int(x) }
+    func inGap(x: CGFloat, y: CGFloat) -> Bool { gap?.contains(y) ?? false }
     func insideSelection(_ offset: Int) -> Bool { selected?.contains(offset) ?? false }
     func caretHit(x: CGFloat, y: CGFloat) -> Bool { caret }
     func placeCaret(_ offset: Int) { calls.append("caret \(offset)") }
@@ -29,6 +31,17 @@ final class GestureMachineTests: XCTestCase {
   private func tap(_ m: GestureMachine, _ x: CGFloat, _ y: CGFloat, at time: TimeInterval) {
     m.down(x: x, y: y, time: time)
     m.up(x: x, y: y, time: time + 0.05)
+  }
+
+  func testTapOrLongPressInAGapLeavesTheCaret() {
+    let h = RecordingHost()
+    h.gap = 20...40
+    let m = GestureMachine(host: h, config: config)
+    tap(m, 100, 30, at: 0)
+    m.down(x: 100, y: 30, time: 1)
+    m.longPress()
+    m.up(x: 100, y: 30, time: 1.6)
+    XCTAssertEqual(h.calls, ["timer 0.4", "cancel", "timer 0.4", "cancel"])
   }
 
   func testTapPlacesTheCaret() {
