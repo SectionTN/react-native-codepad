@@ -134,7 +134,7 @@ The docs are also available as plain text in [`llms-full.txt`](https://reactnati
 - [x] 0.1: Android and iOS, fifteen languages, search, themes, the keyboard follower
 - [x] 0.1.3 and 0.1.4: text padding, one font name for both platforms and horizontal scroll in a ScrollView
 - [x] 0.1.6: decorations (underlines, space under a line and line backgrounds)
-- [ ] Languages: PHP and SQL
+- [x] 0.1.7: PHP and SQL language packages
 - [ ] Autocomplete and an LSP client
 - [ ] Code folding and a minimap
 - [ ] Multiple cursors, diagnostics, font ligatures and bidi editing

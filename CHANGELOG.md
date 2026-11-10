@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.7 (2026-11-10)
+
+### Languages
+
+- The new `react-native-codepad-lang-php` package has two languages. `php` highlights web pages: the PHP code between `<?php` and `?>`, and the HTML around it when `react-native-codepad-lang-html` is installed too. `php_only` highlights PHP code without the `<?php` tag. A heredoc such as `<<<HTML` highlights in the language it names.
+- The new `react-native-codepad-lang-sql` package parses the usual MySQL statements, with keywords in any case. It doesn't parse `#` comments, `USE` statements or backslash escapes such as `'It\'s'`. The [languages guide](https://reactnativecodepad.pages.dev/guides/languages/) explains what happens to their colors. With the package installed, Markdown `sql` code blocks highlight too.
+- The `language` command now refuses `php`, `php_only` and `sql` as ids. A custom package built under one of these ids with 0.1.5 or 0.1.6 still works on its own, but the app build fails when the shipped package is installed next to it. Rename its grammar before you build it again.
+
+### Editor
+
+- An injected language whose name comes after its code in the query now highlights. This fixes PHP heredocs, and it turns on Rust's macro injection, so the arguments of `println!`, `vec!` and other macros now highlight as Rust. Files with many macros take longer to parse: on a 5,000-line file with 3,500 macros, the first parse took about 240 ms instead of about 40 ms in the JVM test harness on a laptop.
+
+### Docs
+
+- The languages guide covers the two new packages, the PHP and SQL notes and their library sizes. The README, the site and the agent skill now count seventeen language packages.
+
+The fifteen other language packages move to 0.1.7 with the core, unchanged.
+
 ## 0.1.6 (2026-11-10)
 
 ### Editor
