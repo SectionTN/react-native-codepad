@@ -102,7 +102,8 @@ final class EditorCore: @unchecked Sendable {
     case .underline(var u):
       u.start = min(max(u.start, 0), document.length)
       u.end = min(max(u.end, 0), document.length)
-      return u.start < u.end ? .underline(u) : nil
+      // A thickness of zero or less would never advance the wave.
+      return u.start < u.end && u.thickness > 0 ? .underline(u) : nil
     case .gap(let line, let rows):
       return line >= 0 && line < document.lineCount && rows >= 1 ? d : nil
     case .lineBackground(let line, _):

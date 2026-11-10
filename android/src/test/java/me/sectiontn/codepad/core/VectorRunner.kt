@@ -92,7 +92,7 @@ class VectorRunner(private val case: JSONObject) {
   }
 
   private fun decorationOf(o: JSONObject): Decoration = when (val kind = o.getString("kind")) {
-    "underline" -> Underline(o.getInt("start"), o.getInt("end"), 0, UnderlineStyle.Solid, 1f, 2f)
+    "underline" -> Underline(o.getInt("start"), o.getInt("end"), 0, UnderlineStyle.Solid, o.optDouble("thickness", 1.0).toFloat(), 2f)
     "gap" -> Gap(o.getInt("line"), o.getInt("rows"))
     "lineBackground" -> LineBackground(o.getInt("line"), 0)
     else -> error("unknown decoration kind $kind")

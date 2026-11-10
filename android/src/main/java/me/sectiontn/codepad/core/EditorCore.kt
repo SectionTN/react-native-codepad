@@ -98,7 +98,8 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     is Underline -> {
       val s = d.start.coerceIn(0, document.length)
       val e = d.end.coerceIn(0, document.length)
-      if (s < e) d.copy(start = s, end = e) else null
+      // A thickness of zero or less would never advance the wave.
+      if (s < e && d.thickness > 0f) d.copy(start = s, end = e) else null
     }
     is Gap -> d.takeIf { it.line in 0 until document.lineCount && it.rows >= 1 }
     is LineBackground -> d.takeIf { it.line in 0 until document.lineCount }

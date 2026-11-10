@@ -95,7 +95,8 @@ final class VectorRunner {
   private func decorationOf(_ o: [String: Any]) -> Decoration {
     switch string(o, "kind") {
     case "underline":
-      return .underline(Underline(start: int(o, "start"), end: int(o, "end"), color: 0, style: .solid, thickness: 1, offset: 2))
+      let thickness = (o["thickness"] as? NSNumber)?.doubleValue ?? 1
+      return .underline(Underline(start: int(o, "start"), end: int(o, "end"), color: 0, style: .solid, thickness: thickness, offset: 2))
     case "gap": return .gap(line: int(o, "line"), rows: int(o, "rows"))
     case "lineBackground": return .lineBackground(line: int(o, "line"), color: 0)
     default: fatalError("unknown decoration kind \(string(o, "kind"))")
