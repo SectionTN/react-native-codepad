@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.6 (2026-11-10)
+
+### Editor
+
+- The new `decorations` prop marks code without changing it. An underline covers a range, solid or wavy, in the color you pick. A gap opens empty rows under a line, where your app places its own view, such as an error message. A line background tints a line. The editor keeps each decoration on its text through typing, keyboard suggestions, undo and redo, and the ref methods, on Android and iOS. The [decorations guide](https://reactnativecodepad.pages.dev/guides/decorations/) shows how each one follows an edit.
+- `decorationsRevision` tells the editor which revision a result was computed for. When a checker answers after the user typed more, the editor moves its decorations through the edits made since then, up to the last 256.
+- `onGapLayout` reports where every gap is after a gap appears, moves or goes away, and `getGapRect(line)` returns the rectangle of one gap. Both use the coordinates of `getCursorRect()`, so a note view lines up with its gap.
+
+### Languages
+
+- The `language` command now builds a package whose queries contain `"""#` or `\#`. Before, the first stopped the command after it had already removed the old package, and the second was read as an escape on iOS.
+- The command now refuses an id that is a Java keyword, such as `int`, which used to break the Android build. It also checks every `.c`, `.h` and `.inc` file under `src/`, not only `scanner.c`, and stops with a message when one of them includes a file from outside `src/`. Before, the package was written without that file and failed to build.
+
+### Docs
+
+- The new decorations guide covers underlines, a note under a line, line backgrounds and how each one follows an edit. The reference covers the new props, the event, the method and the `Decoration` and `GapLayoutEvent` types, and the README tables list them too.
+
+The fifteen language packages move to 0.1.6 with the core, unchanged.
+
 ## 0.1.5 (2026-11-10)
 
 ### Languages
