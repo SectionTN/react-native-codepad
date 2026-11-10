@@ -367,7 +367,7 @@ Then pass \`language="${entry.grammars[0]!.name}"\` to \`CodeEditor\`. Theme tok
 
 ${sections.join('\n\n')}
 
-See the [languages guide](https://sectiontn.github.io/react-native-codepad/guides/languages/) for aliases, injections and themes.
+See the [languages guide](https://reactnativecodepad.pages.dev/guides/languages/) for aliases, injections and themes.
 `;
 }
 

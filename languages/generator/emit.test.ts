@@ -11,6 +11,7 @@ import {
   jniName,
   kotlinStringLiteral,
   type PackageIdentity,
+  shippedIdentity,
   swiftRawString,
 } from './emit.ts';
 
@@ -109,4 +110,22 @@ test('the identity decides package.json, notices and the pod source', () => {
   assert.match(podspec, /s\.source\s+= \{ :git => "" \}/);
   assert.match(podspec, /s\.authors\s+= package\["author"\] \|\| "unknown"/);
   assert.match(podspec, /s\.homepage\s+= package\["homepage"\] \|\| "https:\/\/reactnativecodepad/);
+});
+
+test('the shipped README links the docs site', () => {
+  const entry = {
+    id: 'kv_lite',
+    repo: 'r',
+    rev: 'v',
+    grammars: [{ name: 'kv_lite', src: 'src' }],
+  };
+  const { readme } = shippedIdentity({
+    entry,
+    version: '1.2.3',
+    queries: { kv_lite: { highlights: '(x) @y', injections: null, locals: null, indents: null } },
+    grammarLicense: null,
+    nvimRev: 'n',
+  });
+  assert.match(readme, /https:\/\/reactnativecodepad\.pages\.dev\/guides\/languages\//);
+  assert.doesNotMatch(readme, /sectiontn\.github\.io/);
 });

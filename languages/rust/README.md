@@ -58,4 +58,4 @@ Then pass `language="rust"` to `CodeEditor`. Theme token keys this package produ
 - `variable.member`
 - `variable.parameter`
 
-See the [languages guide](https://sectiontn.github.io/react-native-codepad/guides/languages/) for aliases, injections and themes.
+See the [languages guide](https://reactnativecodepad.pages.dev/guides/languages/) for aliases, injections and themes.
