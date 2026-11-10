@@ -12,9 +12,7 @@
     },
     "./package.json": "./package.json"
   },
-  "bin": {
-    "react-native-codepad": "./lib/cli/bin.js"
-  },
+  "bin": "./lib/cli/bin.js",
   "files": [
     "src",
     "lib",

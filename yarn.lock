@@ -18014,6 +18014,8 @@ __metadata:
     react: ">=19"
     react-native: ">=0.81.0"
     react-native-nitro-modules: ^0.37.1
+  bin:
+    react-native-codepad: ./lib/cli/bin.js
   languageName: unknown
   linkType: soft
 
