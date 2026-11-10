@@ -10,6 +10,7 @@
 }
 
 .lineDone,
+.lineShipped,
 .linePlanned {
   position: absolute;
   top: 9px;
@@ -20,6 +21,10 @@
 
 .lineDone {
   background: linear-gradient(90deg, var(--cp-accent), var(--cp-border-strong));
+}
+
+.lineShipped {
+  background: var(--cp-accent);
 }
 
 .linePlanned {
