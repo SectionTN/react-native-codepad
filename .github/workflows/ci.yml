@@ -68,6 +68,22 @@ jobs:
       - name: Run the Swift tests
         run: yarn test:swift
 
+  test-core-sanitizers:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Run the core tests under AddressSanitizer
+        run: swift test --sanitize=address --filter Core
+
+      - name: Run the core tests under ThreadSanitizer
+        run: swift test --sanitize=thread --filter Core
+
   docs:
     runs-on: ubuntu-24.04
 

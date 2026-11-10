@@ -2,6 +2,7 @@
 # Builds the tree-sitter runtime, the JNI binding and every generated grammar, the example's custom
 # package included, into one host library so JUnit can exercise the syntax layer on the JVM.
 set -euo pipefail
+shopt -s nullglob
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/build/host"
@@ -13,6 +14,7 @@ if [ ! -f "$JAVA_HOME/include/jni.h" ]; then
   JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
 fi
 CC="${CC:-cc}"
+CXX="${CXX:-c++}"
 case "$(uname -s)" in
   Darwin) JNI_OS=darwin; JOBS=$(sysctl -n hw.ncpu) ;;
   *) JNI_OS=linux; JOBS=$(nproc) ;;
@@ -62,8 +64,9 @@ JNIEXPORT jlong JNICALL Java_me_sectiontn_codepad_syntax_TreeSitterNative_hostLa
 EOC
 
 # The runtime calls fdopen and dup, which glibc hides under a strict -std=c11 without these macros.
-export CC OBJ ROOT
+export CC CXX OBJ ROOT
 export CFLAGS="-fPIC -std=c11 -w -fvisibility=hidden -DTREE_SITTER_HIDE_SYMBOLS -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE -I$JAVA_HOME/include -I$JAVA_HOME/include/$JNI_OS -I$ROOT/cpp/tree-sitter/lib/include -I$ROOT/cpp/tree-sitter/lib/src"
+export CXXFLAGS="-fPIC -std=c++20 -fvisibility=hidden -DTREE_SITTER_HIDE_SYMBOLS -DPCRE2_CODE_UNIT_WIDTH=16 -I$JAVA_HOME/include -I$JAVA_HOME/include/$JNI_OS -I$ROOT/cpp/tree-sitter/lib/include -I$ROOT/cpp/core/include -I$ROOT/cpp/pcre2/src"
 
 object_for() { echo "$OBJ/$(echo "${1#"$ROOT/"}" | tr '/' '_').o"; }
 
@@ -74,7 +77,11 @@ compile_one() {
   obj="$OBJ/$(echo "${src#"$ROOT/"}" | tr '/' '_').o"
   if [ -f "$obj" ] && [ ! "$src" -nt "$obj" ]; then return; fi
   # shellcheck disable=SC2086
-  "$CC" -c $CFLAGS "$opt" -I"$(dirname "$src")" "$src" -o "$obj"
+  case "$src" in
+    *.cpp) "$CXX" -c $CXXFLAGS "$opt" "$src" -o "$obj" ;;
+    */cpp/pcre2/*) "$CC" -c $CFLAGS -DPCRE2_CODE_UNIT_WIDTH=16 -DHAVE_CONFIG_H "$opt" -I"$(dirname "$src")" "$src" -o "$obj" ;;
+    *) "$CC" -c $CFLAGS "$opt" -I"$(dirname "$src")" "$src" -o "$obj" ;;
+  esac
 }
 export -f compile_one
 
@@ -83,7 +90,8 @@ JOBS_FILE="$OUT/compile.jobs"
 : > "$JOBS_FILE"
 OBJS=()
 for src in "$ROOT/cpp/tree-sitter/lib/src/lib.c" "$ROOT/android/src/main/cpp/treesitter_jni.c" \
-  "$ROOT/android/src/main/cpp/utf16_mirror.c" "$OUT/host_languages.c" "${LANG_C[@]}"; do
+  "$ROOT/android/src/main/cpp/utf16_mirror.c" "$OUT/host_languages.c" "${LANG_C[@]}" \
+  "$ROOT"/cpp/pcre2/src/*.c "$ROOT"/cpp/core/src/*.cpp; do
   echo "-O1 $src" >> "$JOBS_FILE"
   OBJS+=("$(object_for "$src")")
 done
@@ -96,6 +104,6 @@ while IFS= read -r src; do
 done < <(ls -S "${GRAMMAR_SRCS[@]}")
 xargs -P "$JOBS" -L 1 bash -c 'compile_one "$1" "$2"' _ < "$JOBS_FILE"
 
-"$CC" -shared -fPIC "${OBJS[@]}" -o "$OUT/libcodepadhost.so"
+"$CXX" -shared -fPIC "${OBJS[@]}" -o "$OUT/libcodepadhost.so"
 
 echo "built $OUT/libcodepadhost.so with $COUNT grammar(s)"

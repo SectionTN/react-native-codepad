@@ -1,0 +1,2 @@
+PCRE2 10.49, tag pcre2-10.49, commit 6f9d7c1373262c541324a16a358785b33ef116cf.
+The 16-bit library sources only, built with Unicode and without JIT. config.h is config.h.generic with SUPPORT_PCRE2_16, SUPPORT_UNICODE and PCRE2_STATIC defined, pcre2.h is pcre2.h.generic, pcre2_chartables.c is pcre2_chartables.c.dist.

@@ -63,17 +63,39 @@ let package = Package(
       publicHeadersPath: modules.sources.first.map { ($0 as NSString).deletingLastPathComponent + "/tree_sitter" },
       cSettings: modules.searchPaths.map { .headerSearchPath($0) }
     ),
+    // The core and PCRE2 in one target: only the core includes pcre2.h, so PCRE2 needs no public headers.
+    .target(
+      name: "CodepadCore",
+      dependencies: ["CTreeSitter"],
+      path: "cpp",
+      exclude: ["tree-sitter", "pcre2/LICENCE.md", "pcre2/VERSION"],
+      sources: ["core/src", "pcre2/src"],
+      publicHeadersPath: "core/include",
+      cSettings: [
+        .define("PCRE2_CODE_UNIT_WIDTH", to: "16"),
+        .define("HAVE_CONFIG_H"),
+        .headerSearchPath("pcre2/src"),
+      ],
+      cxxSettings: [
+        .define("PCRE2_CODE_UNIT_WIDTH", to: "16"),
+        .define("CODEPAD_TEST_HOOKS"),
+        .headerSearchPath("pcre2/src"),
+      ]
+    ),
     .target(
       name: "Codepad",
-      dependencies: ["CTreeSitter"],
+      dependencies: ["CTreeSitter", "CodepadCore"],
       path: "ios/Codepad",
-      exclude: ["nitro", "syntax/CPTreeSitter.h", "view"]
+      exclude: ["nitro", "syntax/CPTreeSitter.h", "syntax/CPCore.h", "view"]
     ),
     .testTarget(
       name: "CodepadTests",
-      dependencies: ["Codepad", "CodepadHostGrammars", "CodepadHostModules"],
-      path: "tests/swift"
+      dependencies: ["Codepad", "CodepadCore", "CodepadHostGrammars", "CodepadHostModules"],
+      path: "tests/swift",
+      // The core's test-only entry points are declared behind this define.
+      swiftSettings: [.unsafeFlags(["-Xcc", "-DCODEPAD_TEST_HOOKS"])]
     ),
   ],
-  swiftLanguageModes: [.v6]
+  swiftLanguageModes: [.v6],
+  cxxLanguageStandard: .cxx20
 )
