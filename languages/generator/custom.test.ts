@@ -119,6 +119,7 @@ test('rejects ids that cannot name a package', () => {
     /"kv-lite"/,
   );
   rejects(() => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'fun' }), /Kotlin/);
+  rejects(() => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'int' }), /Java/);
   rejects(() => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'python' }), /ships/);
   rejects(
     () => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'markdown_inline' }),
@@ -150,11 +151,19 @@ test('rejects a grammar folder it cannot build', () => {
   const cxx = broken((d) => writeFileSync(path.join(d, 'src/scanner.cc'), ''));
   rejects(() => emitCustomLanguage({ grammarDir: cxx, outDir: out() }), /scanner\.cc/);
   const outside = broken((d) =>
-    writeFileSync(path.join(d, 'src/scanner.c'), '#include "../common/scanner.h"\n'),
+    writeFileSync(path.join(d, 'src/scanner.c'), '#include"../common/scanner.h"\n'),
   );
   rejects(
     () => emitCustomLanguage({ grammarDir: outside, outDir: out() }),
     /\.\.\/common\/scanner\.h/,
+  );
+  const outsideHeader = broken((d) => {
+    writeFileSync(path.join(d, 'src/scanner.c'), '#include "tag.h"\n');
+    writeFileSync(path.join(d, 'src/tag.h'), '#include "../../common/tag.h"\n');
+  });
+  rejects(
+    () => emitCustomLanguage({ grammarDir: outsideHeader, outDir: out() }),
+    /src\/tag\.h includes "\.\.\/\.\.\/common\/tag\.h"/,
   );
   const oldAbi = broken((d) =>
     writeFileSync(

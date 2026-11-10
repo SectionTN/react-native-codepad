@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { captureNames } from './captures.ts';
@@ -32,11 +32,16 @@ export const SHIPPED_IDS: readonly string[] = [
   'yaml',
 ];
 
-const KOTLIN_KEYWORDS = new Set(
-  'as break class continue do else false for fun if in interface is null object package return super this throw true try typealias typeof val var when while'.split(
-    ' ',
-  ),
+// The id is an Android package segment, and autolinking imports it from generated Java.
+const RESERVED = new Set(
+  [
+    'as break class continue do else false for fun if in interface is null object package return super this throw true try typealias typeof val var when while',
+    'abstract assert boolean byte case catch char const default double enum extends final finally float goto implements import instanceof int long native new private protected public short static strictfp switch synchronized throws transient void volatile',
+  ]
+    .join(' ')
+    .split(' '),
 );
+const INCLUDE = /^\s*#\s*include\s*"([^"]+)"/gm;
 const ID = /^[a-z][a-z0-9_]*$/;
 const GENERATED_DIRS = ['android', 'ios', 'queries', 'src', 'grammar'];
 const GUIDE = 'https://reactnativecodepad.pages.dev/guides/custom-languages/';
@@ -102,6 +107,26 @@ function customQuery(file: string, rel: string, injections: boolean): string {
   return result.text;
 }
 
+/** The first quoted include under src that resolves outside it, since the package copies src only. */
+function outsideInclude(src: string, dir = src): { file: string; include: string } | null {
+  for (const name of readdirSync(dir)) {
+    const file = path.join(dir, name);
+    if (statSync(file).isDirectory()) {
+      const found = outsideInclude(src, file);
+      if (found) return found;
+      continue;
+    }
+    if (!/\.(c|h|inc)$/.test(name)) continue;
+    for (const [, include] of readFileSync(file, 'utf8').matchAll(INCLUDE)) {
+      const target = path.relative(src, path.resolve(dir, include!));
+      if (target === '..' || target.startsWith(`..${path.sep}`) || path.isAbsolute(target)) {
+        return { file: path.relative(src, file), include: include! };
+      }
+    }
+  }
+  return null;
+}
+
 /** Clears what an earlier run wrote, and refuses a folder this command did not write. */
 function prepareOut(outDir: string): void {
   if (!existsSync(outDir) || readdirSync(outDir).length === 0) return;
@@ -160,11 +185,12 @@ export function emitCustomLanguage(opts: CustomOptions): CustomResult {
   if (existsSync(path.join(src, 'scanner.cc'))) {
     fail('src/scanner.cc is C++. Only a C scanner, src/scanner.c, is supported.');
   }
-  const outside = /#include\s+"(\.\.\/[^"]+)"/.exec(
-    readIfExists(path.join(src, 'scanner.c')) ?? '',
-  );
-  if (outside)
-    fail(`src/scanner.c includes "${outside[1]}" from outside src/. Move that file into src/.`);
+  const outside = outsideInclude(src);
+  if (outside) {
+    fail(
+      `src/${outside.file} includes "${outside.include}" from outside src/. Move that file into src/.`,
+    );
+  }
   const abi = readAbiRange(path.join(coreRoot, 'cpp/tree-sitter/lib/include/tree_sitter/api.h'));
   const version = parserAbi(parserC);
   if (version < abi.min || version > abi.max) {
@@ -179,8 +205,8 @@ export function emitCustomLanguage(opts: CustomOptions): CustomResult {
       `id "${id}" must start with a lowercase letter and hold only lowercase letters, digits and underscores.`,
     );
   }
-  if (KOTLIN_KEYWORDS.has(id))
-    fail(`id "${id}" is a Kotlin keyword and cannot name the Android package.`);
+  if (RESERVED.has(id))
+    fail(`id "${id}" is a Kotlin or Java keyword and cannot name the Android package.`);
   if (SHIPPED_IDS.includes(id))
     fail(`id "${id}" is a language react-native-codepad ships. Pass another --id.`);
 

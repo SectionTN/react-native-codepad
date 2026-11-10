@@ -24,7 +24,7 @@ my-grammar/
     injections.scm      optional
 ```
 
-The parser must use ABI 13 to 15, which is what tree-sitter 0.26 writes. A scanner must be written in C, and every file it includes must be inside `src/`.
+The parser must use ABI 13 to 15, which is what tree-sitter 0.26 writes. A scanner must be written in C, and every file it includes, directly or through a header, must be inside `src/`.
 
 ## Build the package
 
@@ -47,10 +47,10 @@ Run the command again after you change the grammar or its queries, and after you
 The command stops with a message, and doesn't write anything, when:
 
 - the id doesn't start with a lowercase letter, or holds anything other than lowercase letters, digits and underscores
-- the id is a Kotlin keyword or the id of a language CodePad ships
+- the id is a Kotlin or Java keyword, or the id of a language CodePad ships
 - the grammar has the name of a language CodePad ships, as a fork of one does (rename it in `grammar.js` and generate again)
 - a query uses a predicate the editor can't run, or starts with an `; inherits:` line
-- the scanner is C++ (`scanner.cc`) or includes a file from outside `src/`
+- the scanner is C++ (`scanner.cc`), or a file in `src/` includes one from outside it
 - the output folder exists and the command didn't write it
 
 ## Link it in your app
