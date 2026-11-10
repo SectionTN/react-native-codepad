@@ -4,7 +4,7 @@ import { createRef } from 'react';
 import { CodeEditor } from '../CodeEditor';
 import type { CodeEditorViewProps } from '../specs/CodeEditorView.nitro';
 import { githubLight } from '../themes/githubLight';
-import type { CodeEditorProps, CodeEditorRef } from '../types';
+import type { CodeEditorProps, CodeEditorRef, Decoration } from '../types';
 
 jest.mock('react-native-nitro-modules', () => ({
   getHostComponent: () => 'CodeEditorView',
@@ -321,5 +321,98 @@ describe('CodeEditor', () => {
     await ref.current?.deleteForward();
     expect(native.deleteBackward).toHaveBeenCalledTimes(1);
     expect(native.deleteForward).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes decorations as flat structs with defaults', async () => {
+    const decorations: Decoration[] = [
+      { kind: 'underline', range: { start: 10, end: 14 }, color: '#C8322B' },
+      {
+        kind: 'underline',
+        range: { start: 20, end: 24 },
+        color: '#B8730E',
+        style: 'wavy',
+        thickness: 1.5,
+        offset: 4,
+      },
+      { kind: 'gap', line: 6, rows: 2 },
+      { kind: 'lineBackground', line: 6, color: '#FAE8E6' },
+    ];
+    const props = host(
+      await render(<CodeEditor decorations={decorations} decorationsRevision={7} />),
+    );
+    const neutral = {
+      start: -1,
+      end: -1,
+      line: -1,
+      rows: 0,
+      color: '',
+      style: 'solid',
+      thickness: 0,
+      offset: 0,
+    };
+    expect(props.decorations).toEqual([
+      {
+        ...neutral,
+        kind: 'underline',
+        start: 10,
+        end: 14,
+        color: '#C8322B',
+        thickness: 1,
+        offset: 2,
+      },
+      {
+        ...neutral,
+        kind: 'underline',
+        start: 20,
+        end: 24,
+        color: '#B8730E',
+        style: 'wavy',
+        thickness: 1.5,
+        offset: 4,
+      },
+      { ...neutral, kind: 'gap', line: 6, rows: 2 },
+      { ...neutral, kind: 'lineBackground', line: 6, color: '#FAE8E6' },
+    ]);
+    expect(props.decorationsRevision).toBe(7);
+  });
+
+  it('keeps one decorations array across renders', async () => {
+    const decorations: Decoration[] = [{ kind: 'gap', line: 1, rows: 2 }];
+    const api = await render(<CodeEditor decorations={decorations} />);
+    const first = host(api).decorations;
+    await api.rerender(<CodeEditor decorations={decorations} placeholder="x" />);
+    expect(host(api).decorations).toBe(first);
+    const empty = host(await render(<CodeEditor />));
+    const other = host(await render(<CodeEditor />));
+    expect(empty.decorations).toEqual([]);
+    expect(empty.decorations).toBe(other.decorations);
+    expect(empty.decorationsRevision).toBe(-1);
+  });
+
+  it('wires onGapLayout once a handler was set', async () => {
+    const api = await render(<CodeEditor />);
+    expect(host(api).onGapLayout).toBeUndefined();
+    const handler = jest.fn();
+    await api.rerender(<CodeEditor onGapLayout={handler} />);
+    const wired = host(api).onGapLayout;
+    expect(wired).toBeDefined();
+    await api.rerender(<CodeEditor />);
+    expect(host(api).onGapLayout).toBe(wired);
+    const latest = jest.fn();
+    await api.rerender(<CodeEditor onGapLayout={latest} />);
+    const gaps = [{ line: 2, rect: { x: 0, y: 44, width: 300, height: 44 } }];
+    host(api).onGapLayout.f(gaps);
+    expect(latest).toHaveBeenCalledWith({ gaps });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('getGapRect returns null for no gap', async () => {
+    const ref = createRef<CodeEditorRef>();
+    const props = host(await render(<CodeEditor ref={ref} />));
+    expect(ref.current?.getGapRect(2)).toBeNull();
+    const rect = { x: 0, y: 44, width: 300, height: 44 };
+    props.hybridRef.f({ getGapRect: (line: number) => (line === 2 ? rect : undefined) });
+    expect(ref.current?.getGapRect(1)).toBeNull();
+    expect(ref.current?.getGapRect(2)).toEqual(rect);
   });
 });

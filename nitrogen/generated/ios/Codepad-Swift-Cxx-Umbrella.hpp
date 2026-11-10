@@ -20,6 +20,12 @@ namespace margelo::nitro::codepad { struct NativeChangeEvent; }
 namespace margelo::nitro::codepad { enum class NativeChangeOrigin; }
 // Forward declaration of `NativeContentSize` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeContentSize; }
+// Forward declaration of `NativeDecorationKind` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeDecorationKind; }
+// Forward declaration of `NativeDecoration` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeDecoration; }
+// Forward declaration of `NativeGap` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeGap; }
 // Forward declaration of `NativeInsets` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeInsets; }
 // Forward declaration of `NativePosition` to properly resolve imports.
@@ -40,6 +46,8 @@ namespace margelo::nitro::codepad { enum class NativeSuggestions; }
 namespace margelo::nitro::codepad { struct NativeTheme; }
 // Forward declaration of `NativeTokenStyle` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeTokenStyle; }
+// Forward declaration of `NativeUnderlineStyle` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeUnderlineStyle; }
 // Forward declaration of `NativeVisibleLines` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 
@@ -50,6 +58,9 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 #include "NativeChangeEvent.hpp"
 #include "NativeChangeOrigin.hpp"
 #include "NativeContentSize.hpp"
+#include "NativeDecoration.hpp"
+#include "NativeDecorationKind.hpp"
+#include "NativeGap.hpp"
 #include "NativeInsets.hpp"
 #include "NativePosition.hpp"
 #include "NativeRect.hpp"
@@ -60,6 +71,7 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 #include "NativeSuggestions.hpp"
 #include "NativeTheme.hpp"
 #include "NativeTokenStyle.hpp"
+#include "NativeUnderlineStyle.hpp"
 #include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/Result.hpp>

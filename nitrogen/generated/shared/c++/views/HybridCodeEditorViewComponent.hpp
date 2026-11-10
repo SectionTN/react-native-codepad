@@ -27,6 +27,9 @@
 #include "NativeSelection.hpp"
 #include "NativeChangeEvent.hpp"
 #include "NativeContentSize.hpp"
+#include "NativeDecoration.hpp"
+#include <vector>
+#include "NativeGap.hpp"
 #include <memory>
 #include "HybridCodeEditorViewSpec.hpp"
 
@@ -80,6 +83,9 @@ namespace margelo::nitro::codepad::views {
     nitro::ReactProp<std::optional<std::function<void()>>> onEditorFocus;
     nitro::ReactProp<std::optional<std::function<void()>>> onEditorBlur;
     nitro::ReactProp<std::optional<std::function<void(const NativeContentSize& /* size */)>>> onContentSizeChange;
+    nitro::ReactProp<std::optional<std::vector<NativeDecoration>>> decorations;
+    nitro::ReactProp<std::optional<double>> decorationsRevision;
+    nitro::ReactProp<std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>> onGapLayout;
     nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>> hybridRef;
 
     [[nodiscard]]
@@ -114,6 +120,9 @@ namespace margelo::nitro::codepad::views {
              onEditorFocus.hasSameValue(other.onEditorFocus) &&
              onEditorBlur.hasSameValue(other.onEditorBlur) &&
              onContentSizeChange.hasSameValue(other.onContentSizeChange) &&
+             decorations.hasSameValue(other.decorations) &&
+             decorationsRevision.hasSameValue(other.decorationsRevision) &&
+             onGapLayout.hasSameValue(other.onGapLayout) &&
              hybridRef.hasSameValue(other.hybridRef);
     }
 
@@ -149,6 +158,9 @@ namespace margelo::nitro::codepad::views {
              onEditorFocus.isProvided() ||
              onEditorBlur.isProvided() ||
              onContentSizeChange.isProvided() ||
+             decorations.isProvided() ||
+             decorationsRevision.isProvided() ||
+             onGapLayout.isProvided() ||
              hybridRef.isProvided();
     }
 

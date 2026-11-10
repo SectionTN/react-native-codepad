@@ -278,6 +278,24 @@ using namespace margelo::nitro::codepad::views;
           : !newViewProps.onContentSizeChange.hasSameValue(oldViewProps->onContentSizeChange)) {
       swiftPart.setOnContentSizeChange(newViewProps.onContentSizeChange.get());
     }
+    // decorations: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.decorations.isProvided()
+          : !newViewProps.decorations.hasSameValue(oldViewProps->decorations)) {
+      swiftPart.setDecorations(newViewProps.decorations.get());
+    }
+    // decorationsRevision: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.decorationsRevision.isProvided()
+          : !newViewProps.decorationsRevision.hasSameValue(oldViewProps->decorationsRevision)) {
+      swiftPart.setDecorationsRevision(newViewProps.decorationsRevision.get());
+    }
+    // onGapLayout: optional
+    if (oldViewProps == nullptr
+          ? newViewProps.onGapLayout.isProvided()
+          : !newViewProps.onGapLayout.hasSameValue(oldViewProps->onGapLayout)) {
+      swiftPart.setOnGapLayout(newViewProps.onGapLayout.get());
+    }
 
     // Update hybridRef if it changed
     if (oldViewProps == nullptr

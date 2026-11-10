@@ -40,6 +40,9 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   var onEditorFocus: (() -> Void)? { get set }
   var onEditorBlur: (() -> Void)? { get set }
   var onContentSizeChange: ((_ size: NativeContentSize) -> Void)? { get set }
+  var decorations: [NativeDecoration]? { get set }
+  var decorationsRevision: Double? { get set }
+  var onGapLayout: ((_ gaps: [NativeGap]) -> Void)? { get set }
 
   // Methods
   func getText() throws -> String
@@ -52,6 +55,7 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   func offsetToPosition(offset: Double) throws -> NativePosition
   func positionToOffset(line: Double, column: Double) throws -> Double
   func getCursorRect() throws -> NativeRect?
+  func getGapRect(line: Double) throws -> NativeRect?
   func getVisibleLines() throws -> NativeVisibleLines
   func isFocused() throws -> Bool
   func canUndo() throws -> Bool

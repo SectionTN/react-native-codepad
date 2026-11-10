@@ -50,6 +50,9 @@ namespace margelo::nitro::codepad::views {
     onEditorFocus(nitro::ReactProp<std::optional<std::function<void()>>>::fromRawValue("CodeEditorView", "onEditorFocus", rawProps, sourceProps.onEditorFocus)),
     onEditorBlur(nitro::ReactProp<std::optional<std::function<void()>>>::fromRawValue("CodeEditorView", "onEditorBlur", rawProps, sourceProps.onEditorBlur)),
     onContentSizeChange(nitro::ReactProp<std::optional<std::function<void(const NativeContentSize& /* size */)>>>::fromRawValue("CodeEditorView", "onContentSizeChange", rawProps, sourceProps.onContentSizeChange)),
+    decorations(nitro::ReactProp<std::optional<std::vector<NativeDecoration>>>::fromRawValue("CodeEditorView", "decorations", rawProps, sourceProps.decorations)),
+    decorationsRevision(nitro::ReactProp<std::optional<double>>::fromRawValue("CodeEditorView", "decorationsRevision", rawProps, sourceProps.decorationsRevision)),
+    onGapLayout(nitro::ReactProp<std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>>::fromRawValue("CodeEditorView", "onGapLayout", rawProps, sourceProps.onGapLayout)),
     hybridRef(nitro::ReactProp<std::optional<std::function<void(const std::shared_ptr<HybridCodeEditorViewSpec>& /* ref */)>>>::fromRawValue("CodeEditorView", "hybridRef", rawProps, sourceProps.hybridRef)) { }
 
   bool HybridCodeEditorViewProps::filterObjectKeys(const std::string& propName) {
@@ -84,6 +87,9 @@ namespace margelo::nitro::codepad::views {
       case hashString("onEditorFocus"): return true;
       case hashString("onEditorBlur"): return true;
       case hashString("onContentSizeChange"): return true;
+      case hashString("decorations"): return true;
+      case hashString("decorationsRevision"): return true;
+      case hashString("onGapLayout"): return true;
       case hashString("hybridRef"): return true;
       default: return false;
     }

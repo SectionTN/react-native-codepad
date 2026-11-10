@@ -5,6 +5,8 @@ import type {
   CodeEditorViewProps,
   NativeChangeEvent,
   NativeContentSize,
+  NativeDecoration,
+  NativeGap,
   NativeScrollEvent,
   NativeSearchHit,
   NativeSelection,
@@ -13,7 +15,14 @@ import type {
 } from './specs/CodeEditorView.nitro';
 import CodeEditorViewConfig from './specs/CodeEditorViewConfig';
 import { githubLight } from './themes/githubLight';
-import type { CodeEditorProps, CodeEditorRef, ContentInsets, SearchHit, Theme } from './types';
+import type {
+  CodeEditorProps,
+  CodeEditorRef,
+  ContentInsets,
+  Decoration,
+  SearchHit,
+  Theme,
+} from './types';
 
 const NativeCodeEditor = getHostComponent<CodeEditorViewProps, CodeEditorViewMethods>(
   'CodeEditorView',
@@ -25,6 +34,38 @@ type NativeRef = CodeEditorViewMethods;
 // A prop that turns undefined reaches Nitro as null, which it rejects, so optional props default to unset values.
 // The insets default is one object, so it never crosses to native again on a re-render.
 const NO_INSETS: ContentInsets = {};
+const NO_DECORATIONS: NativeDecoration[] = [];
+
+const UNUSED = {
+  start: -1,
+  end: -1,
+  line: -1,
+  rows: 0,
+  color: '',
+  style: 'solid',
+  thickness: 0,
+  offset: 0,
+} as const;
+
+/** One flat struct per item, the shape the native spec takes, with the underline defaults filled in. */
+export function toNativeDecorations(decorations: Decoration[]): NativeDecoration[] {
+  return decorations.map((d): NativeDecoration => {
+    if (d.kind === 'underline') {
+      return {
+        ...UNUSED,
+        kind: d.kind,
+        start: d.range.start,
+        end: d.range.end,
+        color: d.color,
+        style: d.style ?? 'solid',
+        thickness: d.thickness ?? 1,
+        offset: d.offset ?? 2,
+      };
+    }
+    if (d.kind === 'gap') return { ...UNUSED, kind: d.kind, line: d.line, rows: d.rows };
+    return { ...UNUSED, kind: d.kind, line: d.line, color: d.color };
+  });
+}
 
 // Nitro crosses "no match" as a total of 0.
 const toHit = (hit: NativeSearchHit): SearchHit | null => (hit.total === 0 ? null : hit);
@@ -74,6 +115,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onFocus,
     onBlur,
     onContentSizeChange,
+    decorations,
+    decorationsRevision = -1,
+    onGapLayout,
     ...viewProps
   },
   ref,
@@ -132,6 +176,19 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     () => callback((e: NativeContentSize) => onContentSizeChangeRef.current?.(e)),
     [],
   );
+  const nativeDecorations = useMemo(
+    () => (decorations ? toNativeDecorations(decorations) : NO_DECORATIONS),
+    [decorations],
+  );
+  const onGapLayoutRef = useRef(onGapLayout);
+  onGapLayoutRef.current = onGapLayout;
+  // Native builds the gap list only for a listener; once wired it stays, like onChangeText.
+  const gapsListened = useRef(false);
+  if (onGapLayout) gapsListened.current = true;
+  const onGapLayoutCallback = useMemo(
+    () => callback((gaps: NativeGap[]) => onGapLayoutRef.current?.({ gaps })),
+    [],
+  );
 
   // Until the native view reports in, reads see an empty document, so calling the ref before onReady is safe.
   useImperativeHandle(ref, () => ({
@@ -149,6 +206,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       native.current?.offsetToPosition(offset) ?? { line: 0, column: 0 },
     positionToOffset: (pos) => native.current?.positionToOffset(pos.line, pos.column) ?? 0,
     getCursorRect: () => native.current?.getCursorRect() ?? null,
+    getGapRect: (line) => native.current?.getGapRect(line) ?? null,
     getVisibleLines: () => native.current?.getVisibleLines() ?? { first: 0, last: 0 },
     canUndo: () => native.current?.canUndo() ?? false,
     canRedo: () => native.current?.canRedo() ?? false,
@@ -226,6 +284,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       onEditorFocus={onFocusCallback}
       onEditorBlur={onBlurCallback}
       onContentSizeChange={onContentSizeChangeCallback}
+      decorations={nativeDecorations}
+      decorationsRevision={decorationsRevision}
+      onGapLayout={gapsListened.current ? onGapLayoutCallback : undefined}
       hybridRef={hybridRef}
     />
   );

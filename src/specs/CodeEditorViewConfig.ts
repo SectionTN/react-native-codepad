@@ -35,6 +35,9 @@ export default {
     "onEditorFocus": true,
     "onEditorBlur": true,
     "onContentSizeChange": true,
+    "decorations": true,
+    "decorationsRevision": true,
+    "onGapLayout": true,
     "hybridRef": true
   }
 } as const;

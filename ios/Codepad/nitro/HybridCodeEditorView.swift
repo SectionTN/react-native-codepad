@@ -7,7 +7,7 @@ import UIKit
 final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable {
   private enum Prop: CaseIterable {
     case text, language, theme, font, lineNumbers, softWrap, readOnly, highlightActiveLine, matchBrackets, placeholder
-    case scrollEnabled, contentInsets, textPadding, avoidKeyboard, suggestions, autoFocus, settings
+    case scrollEnabled, contentInsets, textPadding, avoidKeyboard, suggestions, autoFocus, settings, decorations
   }
 
   private let editor: CodeEditorView
@@ -56,6 +56,20 @@ final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable 
   var onEditorFocus: (() -> Void)?
   var onEditorBlur: (() -> Void)?
   var onContentSizeChange: ((NativeContentSize) -> Void)?
+  var decorations: [NativeDecoration]? { didSet { dirty.insert(.decorations) } }
+  var decorationsRevision: Double? { didSet { dirty.insert(.decorations) } }
+  var onGapLayout: ((_ gaps: [NativeGap]) -> Void)? {
+    didSet {
+      let listener = onGapLayout
+      MainActor.assumeIsolated {
+        editor.onGapLayout = listener.map { cb in
+          { gaps in
+            cb(gaps.map { NativeGap(line: Double($0.line), rect: Self.nativeRect($0.rect)) })
+          }
+        }
+      }
+    }
+  }
 
   override init() {
     editor = MainActor.assumeIsolated { CodeEditorView() }
@@ -106,6 +120,7 @@ final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable 
       pendingText = nil
       loaded = true
       editor.setInitialText(text)
+      if decorations != nil { applyDecorations(force: true) }
     case .language: editor.setLanguage(language?.nonEmpty)
     case .theme: editor.setTheme(theme.map(Self.toColors) ?? .default)
     case .font: editor.setFont(family: fontFamily?.nonEmpty, size: fontSize ?? 14, lineHeight: lineHeight ?? 1.4)
@@ -129,7 +144,48 @@ final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable 
         EditorSettings(
           tabSize: Self.int(tabSize ?? 4), insertSpaces: insertSpaces ?? true, autoIndent: autoIndent ?? true,
           autoCloseBrackets: autoCloseBrackets ?? true))
+    case .decorations:
+      applyDecorations(force: false)
     }
+  }
+
+  private var appliedDecorations: [Decoration]?
+  private var appliedRevision = -1
+
+  /// An unchanged list is skipped: applying it again would put mapped offsets back where they were.
+  @MainActor private func applyDecorations(force: Bool) {
+    let items = (decorations ?? []).compactMap(Self.toDecoration)
+    let revision = Self.int(decorationsRevision ?? -1)
+    if !force && items == appliedDecorations && revision == appliedRevision { return }
+    appliedDecorations = items
+    appliedRevision = revision
+    editor.setDecorations(items, revision: revision)
+  }
+
+  // An item whose color does not parse is dropped, like an empty range.
+  private static func toDecoration(_ d: NativeDecoration) -> Decoration? {
+    switch d.kind {
+    case .underline:
+      guard let color = argb(d.color) else { return nil }
+      return .underline(
+        Underline(
+          start: int(d.start), end: int(d.end), color: color, style: d.style == .wavy ? .wavy : .solid,
+          thickness: d.thickness, offset: d.offset))
+    case .gap:
+      return .gap(line: int(d.line), rows: int(d.rows))
+    case .linebackground:
+      guard let color = argb(d.color) else { return nil }
+      return .lineBackground(line: int(d.line), color: color)
+    }
+  }
+
+  private static func argb(_ css: String) -> UInt32? {
+    guard let c = ThemeColors.parse(css: css)?.components, c.count == 4 else { return nil }
+    var out: UInt32 = 0
+    for (i, shift) in [(3, 24), (0, 16), (1, 8), (2, 0)] as [(Int, UInt32)] {
+      out |= UInt32((c[i] * 255).rounded()) << shift
+    }
+    return out
   }
 
   // Sync readers, on the JS thread under the core's read lock
@@ -188,6 +244,14 @@ final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable 
   // Both read the frame the main thread published after its last layout.
   func getCursorRect() throws -> NativeRect? {
     editor.latestFrame.caret.map { NativeRect(x: $0.minX, y: $0.minY, width: $0.width, height: $0.height) }
+  }
+
+  func getGapRect(line: Double) throws -> NativeRect? {
+    editor.gapRect(line: Self.int(line)).map(Self.nativeRect)
+  }
+
+  private static func nativeRect(_ r: CGRect) -> NativeRect {
+    NativeRect(x: r.minX, y: r.minY, width: r.width, height: r.height)
   }
 
   func getVisibleLines() throws -> NativeVisibleLines {

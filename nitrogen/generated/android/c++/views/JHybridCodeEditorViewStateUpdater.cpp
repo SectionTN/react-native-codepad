@@ -203,6 +203,21 @@ void JHybridCodeEditorViewStateUpdater::updateViewProps(jni::alias_ref<jni::JCla
         : !newProps->onContentSizeChange.hasSameValue(oldProps->onContentSizeChange)) {
     hybridView->setOnContentSizeChange(newProps->onContentSizeChange.get());
   }
+  if (oldProps == nullptr
+        ? newProps->decorations.isProvided()
+        : !newProps->decorations.hasSameValue(oldProps->decorations)) {
+    hybridView->setDecorations(newProps->decorations.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->decorationsRevision.isProvided()
+        : !newProps->decorationsRevision.hasSameValue(oldProps->decorationsRevision)) {
+    hybridView->setDecorationsRevision(newProps->decorationsRevision.get());
+  }
+  if (oldProps == nullptr
+        ? newProps->onGapLayout.isProvided()
+        : !newProps->onGapLayout.hasSameValue(oldProps->onGapLayout)) {
+    hybridView->setOnGapLayout(newProps->onGapLayout.get());
+  }
 
   // Update hybridRef if it changed
   if (oldProps == nullptr

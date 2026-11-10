@@ -883,6 +883,98 @@ open class HybridCodeEditorViewSpec_cxx {
       }()
     }
   }
+  
+  public final var decorations: bridge.std__optional_std__vector_NativeDecoration__ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_std__vector_NativeDecoration__ in
+        if let __unwrappedValue = self.__implementation.decorations {
+          return bridge.create_std__optional_std__vector_NativeDecoration__({ () -> bridge.std__vector_NativeDecoration_ in
+            var __vector = bridge.create_std__vector_NativeDecoration_(__unwrappedValue.count)
+            for __item in __unwrappedValue {
+              __vector.push_back(__item)
+            }
+            return __vector
+          }())
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.decorations = { () -> [NativeDecoration]? in
+        if bridge.has_value_std__optional_std__vector_NativeDecoration__(newValue) {
+          let __unwrapped = bridge.get_std__optional_std__vector_NativeDecoration__(newValue)
+          return __unwrapped.map({ __item in __item })
+        } else {
+          return nil
+        }
+      }()
+    }
+  }
+  
+  public final var decorationsRevision: bridge.std__optional_double_ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_double_ in
+        if let __unwrappedValue = self.__implementation.decorationsRevision {
+          return bridge.create_std__optional_double_(__unwrappedValue)
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.decorationsRevision = { () -> Double? in
+        if bridge.has_value_std__optional_double_(newValue) {
+          let __unwrapped = bridge.get_std__optional_double_(newValue)
+          return __unwrapped
+        } else {
+          return nil
+        }
+      }()
+    }
+  }
+  
+  public final var onGapLayout: bridge.std__optional_std__function_void_const_std__vector_NativeGap______gaps______ {
+    @inline(__always)
+    get {
+      return { () -> bridge.std__optional_std__function_void_const_std__vector_NativeGap______gaps______ in
+        if let __unwrappedValue = self.__implementation.onGapLayout {
+          return bridge.create_std__optional_std__function_void_const_std__vector_NativeGap______gaps______({ () -> bridge.Func_void_std__vector_NativeGap_ in
+            let __closureWrapper = Func_void_std__vector_NativeGap_(__unwrappedValue)
+            return bridge.create_Func_void_std__vector_NativeGap_(__closureWrapper.toUnsafe())
+          }())
+        } else {
+          return .init()
+        }
+      }()
+    }
+    @inline(__always)
+    set {
+      self.__implementation.onGapLayout = { () -> ((_ gaps: [NativeGap]) -> Void)? in
+        if bridge.has_value_std__optional_std__function_void_const_std__vector_NativeGap______gaps______(newValue) {
+          let __unwrapped = bridge.get_std__optional_std__function_void_const_std__vector_NativeGap______gaps______(newValue)
+          return { () -> ([NativeGap]) -> Void in
+            let __wrappedFunction = bridge.wrap_Func_void_std__vector_NativeGap_(__unwrapped)
+            return { (__gaps: [NativeGap]) -> Void in
+              __wrappedFunction.call({ () -> bridge.std__vector_NativeGap_ in
+                var __vector = bridge.create_std__vector_NativeGap_(__gaps.count)
+                for __item in __gaps {
+                  __vector.push_back(__item)
+                }
+                return __vector
+              }())
+            }
+          }()
+        } else {
+          return nil
+        }
+      }()
+    }
+  }
 
   // Methods
   @inline(__always)
@@ -997,6 +1089,24 @@ open class HybridCodeEditorViewSpec_cxx {
   public final func getCursorRect() -> bridge.Result_std__optional_NativeRect__ {
     do {
       let __result = try self.__implementation.getCursorRect()
+      let __resultCpp = { () -> bridge.std__optional_NativeRect_ in
+        if let __unwrappedValue = __result {
+          return bridge.create_std__optional_NativeRect_(__unwrappedValue)
+        } else {
+          return .init()
+        }
+      }()
+      return bridge.create_Result_std__optional_NativeRect__(__resultCpp)
+    } catch (let __error) {
+      let __exceptionPtr = __error.toCpp()
+      return bridge.create_Result_std__optional_NativeRect__(__exceptionPtr)
+    }
+  }
+  
+  @inline(__always)
+  public final func getGapRect(line: Double) -> bridge.Result_std__optional_NativeRect__ {
+    do {
+      let __result = try self.__implementation.getGapRect(line: line)
       let __resultCpp = { () -> bridge.std__optional_NativeRect_ in
         if let __unwrappedValue = __result {
           return bridge.create_std__optional_NativeRect_(__unwrappedValue)

@@ -49,7 +49,13 @@ class ThemeColors(
     private val RGB = Regex("""rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([0-9.]+)\s*)?\)""")
 
     /** Accepts #rgb, #rgba, #rrggbb, #rrggbbaa, rgb() and rgba(). Anything else is magenta plus a warning. */
-    fun parseColor(value: String): Int {
+    fun parseColor(value: String): Int = parseColorOrNull(value) ?: run {
+      Log.w(TAG, "cannot parse color '$value', using magenta")
+      0xFFFF00FF.toInt()
+    }
+
+    /** The same forms as [parseColor], null for anything else. */
+    fun parseColorOrNull(value: String): Int? {
       val v = value.trim()
       try {
         if (v.startsWith("#")) {
@@ -73,10 +79,9 @@ class ThemeColors(
           return (Math.round(a * 255) shl 24) or (r shl 16) or (g shl 8) or b
         }
       } catch (e: NumberFormatException) {
-        // fall through to the warning
+        // not a color
       }
-      Log.w(TAG, "cannot parse color '$value', using magenta")
-      return 0xFFFF00FF.toInt()
+      return null
     }
 
     /** GitHub light, used until the theme prop arrives. */

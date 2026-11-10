@@ -74,6 +74,12 @@ namespace margelo::nitro::codepad {
       prototype.registerHybridSetter("onEditorBlur", &HybridCodeEditorViewSpec::setOnEditorBlur);
       prototype.registerHybridGetter("onContentSizeChange", &HybridCodeEditorViewSpec::getOnContentSizeChange);
       prototype.registerHybridSetter("onContentSizeChange", &HybridCodeEditorViewSpec::setOnContentSizeChange);
+      prototype.registerHybridGetter("decorations", &HybridCodeEditorViewSpec::getDecorations);
+      prototype.registerHybridSetter("decorations", &HybridCodeEditorViewSpec::setDecorations);
+      prototype.registerHybridGetter("decorationsRevision", &HybridCodeEditorViewSpec::getDecorationsRevision);
+      prototype.registerHybridSetter("decorationsRevision", &HybridCodeEditorViewSpec::setDecorationsRevision);
+      prototype.registerHybridGetter("onGapLayout", &HybridCodeEditorViewSpec::getOnGapLayout);
+      prototype.registerHybridSetter("onGapLayout", &HybridCodeEditorViewSpec::setOnGapLayout);
       prototype.registerHybridMethod("getText", &HybridCodeEditorViewSpec::getText);
       prototype.registerHybridMethod("getLength", &HybridCodeEditorViewSpec::getLength);
       prototype.registerHybridMethod("getLineCount", &HybridCodeEditorViewSpec::getLineCount);
@@ -84,6 +90,7 @@ namespace margelo::nitro::codepad {
       prototype.registerHybridMethod("offsetToPosition", &HybridCodeEditorViewSpec::offsetToPosition);
       prototype.registerHybridMethod("positionToOffset", &HybridCodeEditorViewSpec::positionToOffset);
       prototype.registerHybridMethod("getCursorRect", &HybridCodeEditorViewSpec::getCursorRect);
+      prototype.registerHybridMethod("getGapRect", &HybridCodeEditorViewSpec::getGapRect);
       prototype.registerHybridMethod("getVisibleLines", &HybridCodeEditorViewSpec::getVisibleLines);
       prototype.registerHybridMethod("isFocused", &HybridCodeEditorViewSpec::isFocused);
       prototype.registerHybridMethod("canUndo", &HybridCodeEditorViewSpec::canUndo);

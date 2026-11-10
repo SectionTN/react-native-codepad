@@ -27,6 +27,10 @@ namespace margelo::nitro::codepad { struct NativeSelection; }
 namespace margelo::nitro::codepad { struct NativeChangeEvent; }
 // Forward declaration of `NativeContentSize` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeContentSize; }
+// Forward declaration of `NativeDecoration` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeDecoration; }
+// Forward declaration of `NativeGap` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeGap; }
 // Forward declaration of `NativePosition` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativePosition; }
 // Forward declaration of `NativeRect` to properly resolve imports.
@@ -50,6 +54,9 @@ namespace margelo::nitro::codepad { enum class NativeCaretDirection; }
 #include "NativeSelection.hpp"
 #include "NativeChangeEvent.hpp"
 #include "NativeContentSize.hpp"
+#include "NativeDecoration.hpp"
+#include <vector>
+#include "NativeGap.hpp"
 #include "NativePosition.hpp"
 #include "NativeRect.hpp"
 #include "NativeVisibleLines.hpp"
@@ -145,6 +152,12 @@ namespace margelo::nitro::codepad {
       virtual void setOnEditorBlur(const std::optional<std::function<void()>>& onEditorBlur) = 0;
       virtual std::optional<std::function<void(const NativeContentSize& /* size */)>> getOnContentSizeChange() = 0;
       virtual void setOnContentSizeChange(const std::optional<std::function<void(const NativeContentSize& /* size */)>>& onContentSizeChange) = 0;
+      virtual std::optional<std::vector<NativeDecoration>> getDecorations() = 0;
+      virtual void setDecorations(const std::optional<std::vector<NativeDecoration>>& decorations) = 0;
+      virtual std::optional<double> getDecorationsRevision() = 0;
+      virtual void setDecorationsRevision(std::optional<double> decorationsRevision) = 0;
+      virtual std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>> getOnGapLayout() = 0;
+      virtual void setOnGapLayout(const std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>& onGapLayout) = 0;
 
     public:
       // Methods
@@ -158,6 +171,7 @@ namespace margelo::nitro::codepad {
       virtual NativePosition offsetToPosition(double offset) = 0;
       virtual double positionToOffset(double line, double column) = 0;
       virtual std::optional<NativeRect> getCursorRect() = 0;
+      virtual std::optional<NativeRect> getGapRect(double line) = 0;
       virtual NativeVisibleLines getVisibleLines() = 0;
       virtual bool isFocused() = 0;
       virtual bool canUndo() = 0;

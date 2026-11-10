@@ -25,10 +25,18 @@ namespace margelo::nitro::codepad { struct NativeChangeEvent; }
 namespace margelo::nitro::codepad { enum class NativeChangeOrigin; }
 // Forward declaration of `NativeContentSize` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeContentSize; }
-// Forward declaration of `NativePosition` to properly resolve imports.
-namespace margelo::nitro::codepad { struct NativePosition; }
+// Forward declaration of `NativeDecoration` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeDecoration; }
+// Forward declaration of `NativeDecorationKind` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeDecorationKind; }
+// Forward declaration of `NativeUnderlineStyle` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeUnderlineStyle; }
+// Forward declaration of `NativeGap` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeGap; }
 // Forward declaration of `NativeRect` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeRect; }
+// Forward declaration of `NativePosition` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativePosition; }
 // Forward declaration of `NativeVisibleLines` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 // Forward declaration of `NativeSearchHit` to properly resolve imports.
@@ -67,10 +75,20 @@ namespace margelo::nitro::codepad { enum class NativeCaretDirection; }
 #include "NativeContentSize.hpp"
 #include "JFunc_void_NativeContentSize.hpp"
 #include "JNativeContentSize.hpp"
-#include "NativePosition.hpp"
-#include "JNativePosition.hpp"
+#include "NativeDecoration.hpp"
+#include <vector>
+#include "JNativeDecoration.hpp"
+#include "NativeDecorationKind.hpp"
+#include "JNativeDecorationKind.hpp"
+#include "NativeUnderlineStyle.hpp"
+#include "JNativeUnderlineStyle.hpp"
+#include "NativeGap.hpp"
+#include "JFunc_void_std__vector_NativeGap_.hpp"
+#include "JNativeGap.hpp"
 #include "NativeRect.hpp"
 #include "JNativeRect.hpp"
+#include "NativePosition.hpp"
+#include "JNativePosition.hpp"
 #include "NativeVisibleLines.hpp"
 #include "JNativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
@@ -447,6 +465,59 @@ namespace margelo::nitro::codepad {
     static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<JFunc_void_NativeContentSize::javaobject> /* onContentSizeChange */)>("setOnContentSizeChange_cxx");
     method(_javaPart, onContentSizeChange.has_value() ? JFunc_void_NativeContentSize_cxx::fromCpp(onContentSizeChange.value()) : nullptr);
   }
+  std::optional<std::vector<NativeDecoration>> JHybridCodeEditorViewSpec::getDecorations() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JArrayClass<JNativeDecoration>>()>("getDecorations");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional([&](auto&& __input) {
+      size_t __size = __input->size();
+      std::vector<NativeDecoration> __vector;
+      __vector.reserve(__size);
+      for (size_t __i = 0; __i < __size; __i++) {
+        auto __element = __input->getElement(__i);
+        __vector.push_back(__element->toCpp());
+      }
+      return __vector;
+    }(__result)) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setDecorations(const std::optional<std::vector<NativeDecoration>>& decorations) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JArrayClass<JNativeDecoration>> /* decorations */)>("setDecorations");
+    method(_javaPart, decorations.has_value() ? [&](auto&& __input) {
+      size_t __size = __input.size();
+      jni::local_ref<jni::JArrayClass<JNativeDecoration>> __array = jni::JArrayClass<JNativeDecoration>::newArray(__size);
+      for (size_t __i = 0; __i < __size; __i++) {
+        const auto& __element = __input[__i];
+        auto __elementJni = JNativeDecoration::fromCpp(__element);
+        __array->setElement(__i, *__elementJni);
+      }
+      return __array;
+    }(decorations.value()) : nullptr);
+  }
+  std::optional<double> JHybridCodeEditorViewSpec::getDecorationsRevision() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<jni::JDouble>()>("getDecorationsRevision");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(__result->value()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setDecorationsRevision(std::optional<double> decorationsRevision) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JDouble> /* decorationsRevision */)>("setDecorationsRevision");
+    method(_javaPart, decorationsRevision.has_value() ? jni::JDouble::valueOf(decorationsRevision.value()) : nullptr);
+  }
+  std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>> JHybridCodeEditorViewSpec::getOnGapLayout() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JFunc_void_std__vector_NativeGap_::javaobject>()>("getOnGapLayout_cxx");
+    auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional([&]() -> std::function<void(const std::vector<NativeGap>& /* gaps */)> {
+      if (__result->isInstanceOf(JFunc_void_std__vector_NativeGap__cxx::javaClassStatic())) [[likely]] {
+        auto downcast = jni::static_ref_cast<JFunc_void_std__vector_NativeGap__cxx::javaobject>(__result);
+        return downcast->cthis()->getFunction();
+      } else {
+        auto __resultRef = jni::make_global(__result);
+        return JNICallable<JFunc_void_std__vector_NativeGap_, void(std::vector<NativeGap>)>(std::move(__resultRef));
+      }
+    }()) : std::nullopt;
+  }
+  void JHybridCodeEditorViewSpec::setOnGapLayout(const std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>& onGapLayout) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<JFunc_void_std__vector_NativeGap_::javaobject> /* onGapLayout */)>("setOnGapLayout_cxx");
+    method(_javaPart, onGapLayout.has_value() ? JFunc_void_std__vector_NativeGap__cxx::fromCpp(onGapLayout.value()) : nullptr);
+  }
 
   // Methods
   std::string JHybridCodeEditorViewSpec::getText() {
@@ -497,6 +568,11 @@ namespace margelo::nitro::codepad {
   std::optional<NativeRect> JHybridCodeEditorViewSpec::getCursorRect() {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JNativeRect>()>("getCursorRect");
     auto __result = method(_javaPart);
+    return __result != nullptr ? std::make_optional(__result->toCpp()) : std::nullopt;
+  }
+  std::optional<NativeRect> JHybridCodeEditorViewSpec::getGapRect(double line) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JNativeRect>(double /* line */)>("getGapRect");
+    auto __result = method(_javaPart, line);
     return __result != nullptr ? std::make_optional(__result->toCpp()) : std::nullopt;
   }
   NativeVisibleLines JHybridCodeEditorViewSpec::getVisibleLines() {

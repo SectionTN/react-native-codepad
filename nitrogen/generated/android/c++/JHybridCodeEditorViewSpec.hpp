@@ -110,6 +110,12 @@ namespace margelo::nitro::codepad {
     void setOnEditorBlur(const std::optional<std::function<void()>>& onEditorBlur) override;
     std::optional<std::function<void(const NativeContentSize& /* size */)>> getOnContentSizeChange() override;
     void setOnContentSizeChange(const std::optional<std::function<void(const NativeContentSize& /* size */)>>& onContentSizeChange) override;
+    std::optional<std::vector<NativeDecoration>> getDecorations() override;
+    void setDecorations(const std::optional<std::vector<NativeDecoration>>& decorations) override;
+    std::optional<double> getDecorationsRevision() override;
+    void setDecorationsRevision(std::optional<double> decorationsRevision) override;
+    std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>> getOnGapLayout() override;
+    void setOnGapLayout(const std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>& onGapLayout) override;
 
   public:
     // Methods
@@ -123,6 +129,7 @@ namespace margelo::nitro::codepad {
     NativePosition offsetToPosition(double offset) override;
     double positionToOffset(double line, double column) override;
     std::optional<NativeRect> getCursorRect() override;
+    std::optional<NativeRect> getGapRect(double line) override;
     NativeVisibleLines getVisibleLines() override;
     bool isFocused() override;
     bool canUndo() override;

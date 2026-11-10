@@ -13,6 +13,8 @@ export type {
   CodeEditorRef,
   ContentInsets,
   ContentSizeEvent,
+  Decoration,
+  GapLayoutEvent,
   Position,
   Range,
   Rect,

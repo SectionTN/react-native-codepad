@@ -18,6 +18,12 @@ namespace margelo::nitro::codepad { struct NativeChangeEvent; }
 namespace margelo::nitro::codepad { enum class NativeChangeOrigin; }
 // Forward declaration of `NativeContentSize` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeContentSize; }
+// Forward declaration of `NativeDecorationKind` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeDecorationKind; }
+// Forward declaration of `NativeDecoration` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeDecoration; }
+// Forward declaration of `NativeGap` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeGap; }
 // Forward declaration of `NativeInsets` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeInsets; }
 // Forward declaration of `NativePosition` to properly resolve imports.
@@ -36,6 +42,8 @@ namespace margelo::nitro::codepad { enum class NativeSuggestions; }
 namespace margelo::nitro::codepad { struct NativeTheme; }
 // Forward declaration of `NativeTokenStyle` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeTokenStyle; }
+// Forward declaration of `NativeUnderlineStyle` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeUnderlineStyle; }
 // Forward declaration of `NativeVisibleLines` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 
@@ -51,6 +59,9 @@ namespace Codepad { class HybridCodepadSpec_cxx; }
 #include "NativeChangeEvent.hpp"
 #include "NativeChangeOrigin.hpp"
 #include "NativeContentSize.hpp"
+#include "NativeDecoration.hpp"
+#include "NativeDecorationKind.hpp"
+#include "NativeGap.hpp"
 #include "NativeInsets.hpp"
 #include "NativePosition.hpp"
 #include "NativeRect.hpp"
@@ -60,6 +71,7 @@ namespace Codepad { class HybridCodepadSpec_cxx; }
 #include "NativeSuggestions.hpp"
 #include "NativeTheme.hpp"
 #include "NativeTokenStyle.hpp"
+#include "NativeUnderlineStyle.hpp"
 #include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/PromiseHolder.hpp>
@@ -412,6 +424,80 @@ namespace margelo::nitro::codepad::bridge::swift {
     return optional.has_value();
   }
   inline std::function<void(const NativeContentSize& /* size */)> get_std__optional_std__function_void_const_NativeContentSize_____size______(const std::optional<std::function<void(const NativeContentSize& /* size */)>>& optional) noexcept {
+    return optional.value();
+  }
+  
+  // pragma MARK: std::vector<NativeDecoration>
+  /**
+   * Specialized version of `std::vector<NativeDecoration>`.
+   */
+  using std__vector_NativeDecoration_ = std::vector<NativeDecoration>;
+  inline std::vector<NativeDecoration> create_std__vector_NativeDecoration_(size_t size) noexcept {
+    std::vector<NativeDecoration> vector;
+    vector.reserve(size);
+    return vector;
+  }
+  
+  // pragma MARK: std::optional<std::vector<NativeDecoration>>
+  /**
+   * Specialized version of `std::optional<std::vector<NativeDecoration>>`.
+   */
+  using std__optional_std__vector_NativeDecoration__ = std::optional<std::vector<NativeDecoration>>;
+  inline std::optional<std::vector<NativeDecoration>> create_std__optional_std__vector_NativeDecoration__(const std::vector<NativeDecoration>& value) noexcept {
+    return std::optional<std::vector<NativeDecoration>>(value);
+  }
+  inline bool has_value_std__optional_std__vector_NativeDecoration__(const std::optional<std::vector<NativeDecoration>>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline std::vector<NativeDecoration> get_std__optional_std__vector_NativeDecoration__(const std::optional<std::vector<NativeDecoration>>& optional) noexcept {
+    return optional.value();
+  }
+  
+  // pragma MARK: std::vector<NativeGap>
+  /**
+   * Specialized version of `std::vector<NativeGap>`.
+   */
+  using std__vector_NativeGap_ = std::vector<NativeGap>;
+  inline std::vector<NativeGap> create_std__vector_NativeGap_(size_t size) noexcept {
+    std::vector<NativeGap> vector;
+    vector.reserve(size);
+    return vector;
+  }
+  
+  // pragma MARK: std::function<void(const std::vector<NativeGap>& /* gaps */)>
+  /**
+   * Specialized version of `std::function<void(const std::vector<NativeGap>&)>`.
+   */
+  using Func_void_std__vector_NativeGap_ = std::function<void(const std::vector<NativeGap>& /* gaps */)>;
+  /**
+   * Wrapper class for a `std::function<void(const std::vector<NativeGap>& / * gaps * /)>`, this can be used from Swift.
+   */
+  class Func_void_std__vector_NativeGap__Wrapper final {
+  public:
+    explicit Func_void_std__vector_NativeGap__Wrapper(std::function<void(const std::vector<NativeGap>& /* gaps */)>&& func): _function(std::make_unique<std::function<void(const std::vector<NativeGap>& /* gaps */)>>(std::move(func))) {}
+    inline void call(std::vector<NativeGap> gaps) const noexcept {
+      _function->operator()(gaps);
+    }
+  private:
+    std::unique_ptr<std::function<void(const std::vector<NativeGap>& /* gaps */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_std__vector_NativeGap_ create_Func_void_std__vector_NativeGap_(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_std__vector_NativeGap__Wrapper wrap_Func_void_std__vector_NativeGap_(Func_void_std__vector_NativeGap_ value) noexcept {
+    return Func_void_std__vector_NativeGap__Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>
+  /**
+   * Specialized version of `std::optional<std::function<void(const std::vector<NativeGap>& / * gaps * /)>>`.
+   */
+  using std__optional_std__function_void_const_std__vector_NativeGap______gaps______ = std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>;
+  inline std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>> create_std__optional_std__function_void_const_std__vector_NativeGap______gaps______(const std::function<void(const std::vector<NativeGap>& /* gaps */)>& value) noexcept {
+    return std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>(value);
+  }
+  inline bool has_value_std__optional_std__function_void_const_std__vector_NativeGap______gaps______(const std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>& optional) noexcept {
+    return optional.has_value();
+  }
+  inline std::function<void(const std::vector<NativeGap>& /* gaps */)> get_std__optional_std__function_void_const_std__vector_NativeGap______gaps______(const std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>& optional) noexcept {
     return optional.value();
   }
   

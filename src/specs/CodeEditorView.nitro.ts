@@ -103,6 +103,28 @@ export interface NativeSearchHit {
   total: number;
 }
 
+export type NativeDecorationKind = 'underline' | 'gap' | 'lineBackground';
+
+export type NativeUnderlineStyle = 'solid' | 'wavy';
+
+// One flat struct per item, since Nitro cannot tell a variant of structs apart. Unused fields hold -1, 0 or "".
+export interface NativeDecoration {
+  kind: NativeDecorationKind;
+  start: number;
+  end: number;
+  line: number;
+  rows: number;
+  color: string;
+  style: NativeUnderlineStyle;
+  thickness: number;
+  offset: number;
+}
+
+export interface NativeGap {
+  line: number;
+  rect: NativeRect;
+}
+
 export interface CodeEditorViewProps extends HybridViewProps {
   initialValue?: string;
   language?: string;
@@ -135,6 +157,10 @@ export interface CodeEditorViewProps extends HybridViewProps {
   onEditorFocus?: () => void;
   onEditorBlur?: () => void;
   onContentSizeChange?: (size: NativeContentSize) => void;
+  decorations?: NativeDecoration[];
+  // Below zero for the current text.
+  decorationsRevision?: number;
+  onGapLayout?: (gaps: NativeGap[]) => void;
 }
 
 export interface CodeEditorViewMethods extends HybridViewMethods {
@@ -148,6 +174,7 @@ export interface CodeEditorViewMethods extends HybridViewMethods {
   offsetToPosition(offset: number): NativePosition;
   positionToOffset(line: number, column: number): number;
   getCursorRect(): NativeRect | undefined;
+  getGapRect(line: number): NativeRect | undefined;
   getVisibleLines(): NativeVisibleLines;
   isFocused(): boolean;
   canUndo(): boolean;

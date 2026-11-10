@@ -41,6 +41,29 @@ export interface Position {
   column: number;
 }
 
+/** Something the app draws over the text. Ranges are UTF-16 offsets, sizes dp, colors CSS strings. */
+export type Decoration =
+  | {
+      kind: 'underline';
+      range: Range;
+      color: string;
+      /** solid by default. */
+      style?: 'solid' | 'wavy';
+      /** 1 by default. */
+      thickness?: number;
+      /** From the baseline to the top of the line, 2 by default. */
+      offset?: number;
+    }
+  /** rows whole rows of empty space under line, for a view the app places from onGapLayout. */
+  | { kind: 'gap'; line: number; rows: number }
+  /** A tint over the line's text rows, drawn above the active line highlight. */
+  | { kind: 'lineBackground'; line: number; color: string };
+
+export interface GapLayoutEvent {
+  /** Every gap, sorted by line, in the same view coordinates as getCursorRect. */
+  gaps: { line: number; rect: Rect }[];
+}
+
 /** View coordinates in dp. */
 export interface Rect {
   x: number;
@@ -146,6 +169,12 @@ export interface CodeEditorProps extends ViewProps {
   onBlur?: () => void;
   /** Fires after a draw whose content size changed, at most once per frame; the first one precedes onReady. */
   onContentSizeChange?: (e: ContentSizeEvent) => void;
+  /** Underlines, gaps under lines and line backgrounds. They follow edits until the next array arrives. */
+  decorations?: Decoration[];
+  /** The revision the decorations were computed for (ChangeEvent.revision, getRevision()); the current text by default. */
+  decorationsRevision?: number;
+  /** Fires after a draw in which a gap appeared, moved or went away, scrolling included. */
+  onGapLayout?: (e: GapLayoutEvent) => void;
 }
 
 export interface CodeEditorRef {
@@ -159,6 +188,8 @@ export interface CodeEditorRef {
   offsetToPosition(offset: number): Position;
   positionToOffset(pos: Position): number;
   getCursorRect(): Rect | null;
+  /** The gap under line from the last frame, in the same coordinates as getCursorRect; null when it has none. */
+  getGapRect(line: number): Rect | null;
   getVisibleLines(): { first: number; last: number };
   canUndo(): boolean;
   canRedo(): boolean;

@@ -271,6 +271,32 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
     set(value) {
       onContentSizeChange = value?.let { it }
     }
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var decorations: Array<NativeDecoration>?
+  
+  @get:DoNotStrip
+  @get:Keep
+  @set:DoNotStrip
+  @set:Keep
+  abstract var decorationsRevision: Double?
+  
+  abstract var onGapLayout: ((gaps: Array<NativeGap>) -> Unit)?
+  
+  private var onGapLayout_cxx: Func_void_std__vector_NativeGap_?
+    @Keep
+    @DoNotStrip
+    get() {
+      return onGapLayout?.let { Func_void_std__vector_NativeGap__java(it) }
+    }
+    @Keep
+    @DoNotStrip
+    set(value) {
+      onGapLayout = value?.let { it }
+    }
 
   // Methods
   @DoNotStrip
@@ -312,6 +338,10 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   @DoNotStrip
   @Keep
   abstract fun getCursorRect(): NativeRect?
+  
+  @DoNotStrip
+  @Keep
+  abstract fun getGapRect(line: Double): NativeRect?
   
   @DoNotStrip
   @Keep

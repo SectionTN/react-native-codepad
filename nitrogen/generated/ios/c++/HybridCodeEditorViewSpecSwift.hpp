@@ -30,10 +30,18 @@ namespace margelo::nitro::codepad { struct NativeChangeEvent; }
 namespace margelo::nitro::codepad { enum class NativeChangeOrigin; }
 // Forward declaration of `NativeContentSize` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeContentSize; }
-// Forward declaration of `NativePosition` to properly resolve imports.
-namespace margelo::nitro::codepad { struct NativePosition; }
+// Forward declaration of `NativeDecoration` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeDecoration; }
+// Forward declaration of `NativeDecorationKind` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeDecorationKind; }
+// Forward declaration of `NativeUnderlineStyle` to properly resolve imports.
+namespace margelo::nitro::codepad { enum class NativeUnderlineStyle; }
+// Forward declaration of `NativeGap` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeGap; }
 // Forward declaration of `NativeRect` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeRect; }
+// Forward declaration of `NativePosition` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativePosition; }
 // Forward declaration of `NativeVisibleLines` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 // Forward declaration of `NativeSearchQuery` to properly resolve imports.
@@ -56,8 +64,13 @@ namespace margelo::nitro::codepad { enum class NativeCaretDirection; }
 #include "NativeChangeEvent.hpp"
 #include "NativeChangeOrigin.hpp"
 #include "NativeContentSize.hpp"
-#include "NativePosition.hpp"
+#include "NativeDecoration.hpp"
+#include <vector>
+#include "NativeDecorationKind.hpp"
+#include "NativeUnderlineStyle.hpp"
+#include "NativeGap.hpp"
 #include "NativeRect.hpp"
+#include "NativePosition.hpp"
 #include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
 #include "NativeSearchQuery.hpp"
@@ -320,6 +333,27 @@ namespace margelo::nitro::codepad {
     inline void setOnContentSizeChange(const std::optional<std::function<void(const NativeContentSize& /* size */)>>& onContentSizeChange) noexcept override {
       _swiftPart.setOnContentSizeChange(onContentSizeChange);
     }
+    inline std::optional<std::vector<NativeDecoration>> getDecorations() noexcept override {
+      auto __result = _swiftPart.getDecorations();
+      return __result;
+    }
+    inline void setDecorations(const std::optional<std::vector<NativeDecoration>>& decorations) noexcept override {
+      _swiftPart.setDecorations(decorations);
+    }
+    inline std::optional<double> getDecorationsRevision() noexcept override {
+      auto __result = _swiftPart.getDecorationsRevision();
+      return __result;
+    }
+    inline void setDecorationsRevision(std::optional<double> decorationsRevision) noexcept override {
+      _swiftPart.setDecorationsRevision(decorationsRevision);
+    }
+    inline std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>> getOnGapLayout() noexcept override {
+      auto __result = _swiftPart.getOnGapLayout();
+      return __result;
+    }
+    inline void setOnGapLayout(const std::optional<std::function<void(const std::vector<NativeGap>& /* gaps */)>>& onGapLayout) noexcept override {
+      _swiftPart.setOnGapLayout(onGapLayout);
+    }
 
   public:
     // Methods
@@ -397,6 +431,14 @@ namespace margelo::nitro::codepad {
     }
     inline std::optional<NativeRect> getCursorRect() override {
       auto __result = _swiftPart.getCursorRect();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline std::optional<NativeRect> getGapRect(double line) override {
+      auto __result = _swiftPart.getGapRect(std::forward<decltype(line)>(line));
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }

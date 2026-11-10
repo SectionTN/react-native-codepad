@@ -1,5 +1,6 @@
 package com.margelo.nitro.codepad
 
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.view.View
 import com.facebook.proguard.annotations.DoNotStrip
@@ -7,12 +8,18 @@ import com.facebook.react.common.assets.ReactFontManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.margelo.nitro.core.Promise
 import me.sectiontn.codepad.core.ChangeOrigin
+import me.sectiontn.codepad.core.Decoration
+import me.sectiontn.codepad.core.Gap
+import me.sectiontn.codepad.core.LineBackground
+import me.sectiontn.codepad.core.Underline
+import me.sectiontn.codepad.core.UnderlineStyle
 import me.sectiontn.codepad.core.EditorCore
 import me.sectiontn.codepad.core.EditorSettings
 import me.sectiontn.codepad.core.SearchQuery
 import me.sectiontn.codepad.core.TextMovement
 import me.sectiontn.codepad.input.KeyCommand
 import me.sectiontn.codepad.view.CodeEditorView
+import me.sectiontn.codepad.view.GapRect
 import me.sectiontn.codepad.view.InputMethodBridge
 import me.sectiontn.codepad.view.ThemeColors
 import me.sectiontn.codepad.view.TokenStyleColors
@@ -41,6 +48,7 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
   private var readySent = false
   private var fontDirty = false
   private var settingsDirty = false
+  private var decorationsDirty = false
 
   override val view: View = editor
 
@@ -50,6 +58,8 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
       if (!loaded && value != null) {
         loaded = true
         editor.setInitialText(value)
+        // Loading the text clears the decorations, so the current ones go back on in afterUpdate.
+        decorationsDirty = decorations != null
       }
     }
 
@@ -218,6 +228,42 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
       settingsDirty = false
       editor.setEditorSettings(EditorSettings((tabSize ?: 4.0).toInt(), insertSpaces ?: true, autoIndent ?: true, autoCloseBrackets ?: true))
     }
+    if (decorationsDirty) {
+      decorationsDirty = false
+      editor.setDecorations(decorations?.mapNotNull(::toDecoration) ?: emptyList(), (decorationsRevision ?: -1.0).toInt())
+    }
+  }
+
+  // The array is memoized in JS, so an equal one means nothing changed; re-applying it would move offsets back.
+  override var decorations: Array<NativeDecoration>? = null
+    set(value) {
+      if (value contentEquals field) return
+      field = value
+      decorationsDirty = true
+    }
+
+  override var decorationsRevision: Double? = null
+
+  override var onGapLayout: ((gaps: Array<NativeGap>) -> Unit)? = null
+    set(value) {
+      field = value
+      editor.onGapLayoutListener = value?.let { cb -> { gaps -> cb(gaps.map(::toNativeGap).toTypedArray()) } }
+    }
+
+  override fun getGapRect(line: Double): NativeRect? = editor.gapRect(line.toInt())?.let(::toNativeRect)
+
+  private fun toNativeRect(r: RectF): NativeRect = NativeRect(r.left.toDouble(), r.top.toDouble(), r.width().toDouble(), r.height().toDouble())
+
+  private fun toNativeGap(g: GapRect): NativeGap = NativeGap(g.line.toDouble(), toNativeRect(g.rect))
+
+  // An item whose color does not parse is dropped, like an empty range.
+  private fun toDecoration(d: NativeDecoration): Decoration? = when (d.kind) {
+    NativeDecorationKind.UNDERLINE -> ThemeColors.parseColorOrNull(d.color)?.let {
+      val style = if (d.style == NativeUnderlineStyle.WAVY) UnderlineStyle.Wavy else UnderlineStyle.Solid
+      Underline(d.start.toInt(), d.end.toInt(), it, style, d.thickness.toFloat(), d.offset.toFloat())
+    }
+    NativeDecorationKind.GAP -> Gap(d.line.toInt(), d.rows.toInt())
+    NativeDecorationKind.LINEBACKGROUND -> ThemeColors.parseColorOrNull(d.color)?.let { LineBackground(d.line.toInt(), it) }
   }
 
   private fun sendReady() {
