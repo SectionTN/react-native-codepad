@@ -48,13 +48,14 @@ The command stops with a message, and doesn't write anything, when:
 
 - the id doesn't start with a lowercase letter, or holds anything other than lowercase letters, digits and underscores
 - the id is a Kotlin keyword or the id of a language CodePad ships
+- the grammar has the name of a language CodePad ships, as a fork of one does (rename it in `grammar.js` and generate again)
 - a query uses a predicate the editor can't run, or starts with an `; inherits:` line
 - the scanner is C++ (`scanner.cc`) or includes a file from outside `src/`
 - the output folder exists and the command didn't write it
 
 ## Link it in your app
 
-In an Expo app, autolinking picks up every package under `modules/`, and you don't add a dependency entry. In a bare React Native app, add the package as a local dependency:
+In an Expo app, autolinking picks up every package under `modules/`, and you don't add a dependency entry. In a bare React Native app, or if autolinking doesn't list the package, add it as a local dependency:
 
 ```json title="package.json"
 {
@@ -82,7 +83,7 @@ Pass the id to the editor:
 
 Each capture in `highlights.scm` takes the theme style of the same name, so `@keyword` paints in `keyword` and `@string.special` falls back to `string`. The [themes guide](/guides/themes/) lists the keys.
 
-The editor runs the `eq?`, `match?`, `any-of?`, `contains?`, `has-parent?` and `has-ancestor?` predicates, with their `not-` and `any-` forms. `lua-match?` and `vim-match?` patterns are converted to `match?`.
+The editor runs `eq?`, `match?` and `contains?` with their `not-` and `any-` forms. It also runs `any-of?`, `has-parent?` and `has-ancestor?` with their `not-` forms. `lua-match?` and `vim-match?` patterns are converted to `match?`.
 
 A highlights query that references a node the grammar doesn't have makes the whole language fall back to plain text. Check each query against a sample file with `tree-sitter query queries/highlights.scm sample.mylang` before you build.
 
