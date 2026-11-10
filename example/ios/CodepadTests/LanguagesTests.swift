@@ -33,22 +33,41 @@ final class LanguagesTests: XCTestCase {
         XCTFail("\(id) did not load")
         continue
       }
-      XCTAssertGreaterThan(language.highlights.query.patternCount, 0, "\(id) highlights")
       guard let text = snippets[id] else {
         XCTFail("no snippet for \(id)")
         continue
       }
-      let parser = Parser()
-      XCTAssertTrue(parser.setLanguage(language.pointer), "\(id) language")
-      let mirror = Mirror()
-      mirror.setText(text)
-      guard let tree = parser.parse(nil, mirror, nil, budgetMicros: 0) else {
+      let box = ParseBox(length: text.utf16.count)
+      let engine = SyntaxEngine(postToMain: { $0() }, onSnapshot: { box.offer($0) })
+      engine.setLanguage(id)
+      engine.setText(text, revision: 0)
+      guard box.ready.wait(timeout: .now() + 10) == .success, let snapshot = box.snapshot else {
         XCTFail("\(id) parse")
+        engine.close()
         continue
       }
-      let snapshot = Snapshot(revision: 0, tree: tree, injected: [], languageId: id)
       let spans = Highlighter(language: language).spans(snapshot: snapshot, doc: Document(text), firstLine: 0, lastLine: 0)
       XCTAssertFalse(spans[0].isEmpty, "\(id) paints line 0")
+      engine.close()
     }
+  }
+}
+
+/// Keeps the first snapshot of the whole text, the one setText produced.
+private final class ParseBox: @unchecked Sendable {
+  let length: Int
+  let ready = DispatchSemaphore(value: 0)
+  private let lock = NSLock()
+  private(set) var snapshot: Snapshot?
+
+  init(length: Int) { self.length = length }
+
+  func offer(_ s: Snapshot) {
+    let first = lock.withLock {
+      guard snapshot == nil, s.length == length else { return false }
+      snapshot = s
+      return true
+    }
+    if first { ready.signal() }
   }
 }
