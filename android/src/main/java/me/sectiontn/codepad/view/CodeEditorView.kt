@@ -107,6 +107,7 @@ class CodeEditorView(context: Context) : View(context) {
   private val viewport = Viewport(heights)
   private val cache = LayoutCache<Entry>(64)
   private val painter = EditorPainter(viewport, { cache[it]?.layout }, paint, gutterPaint, density)
+  private val decorationPainter = DecorationPainter(density)
   private var goalX: Float? = null
   private var movingVertically = false
   private val geometry = object : LineGeometry {
@@ -1222,7 +1223,12 @@ class CodeEditorView(context: Context) : View(context) {
     prepare(firstLine, lastBound, m)
     val caretLine = doc.lineAt(core.selection.head)
     if (highlightActiveLine && core.selection.isEmpty) painter.drawActiveLine(canvas, caretLine, width, height)
+    val decorated = core.decorations.items
+    if (decorated.isNotEmpty()) decorationPainter.drawLineBackgrounds(canvas, decorated, viewport, width, height)
     drawFills(canvas, firstLine, lastBound)
+    if (decorated.isNotEmpty()) {
+      clippedToText(canvas) { decorationPainter.drawUnderlines(canvas, decorated, rowGeometry, firstLine, -m.ascent) }
+    }
     val lastLine = painter.drawText(canvas, doc, firstLine, width, height)
     drawComposing(canvas, firstLine)
     if (lineNumbers) painter.drawGutter(canvas, m, firstLine, lastLine, caretLine, height)

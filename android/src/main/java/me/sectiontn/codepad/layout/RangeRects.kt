@@ -22,10 +22,17 @@ interface RowGeometry {
 
 object RangeRects {
   /**
-   * Calls [out] once per row rect of [start, end) from [firstLine] down to the view bottom. The last row of
-   * every line but the last one gets a space of width so the newline shows; empty spans are skipped.
+   * Calls [out] once per row rect of [start, end) from [firstLine] down to the view bottom. With [padNewline], the
+   * last row of every line but the last one gets a space of width so the newline shows; empty spans are skipped.
    */
-  fun forEach(g: RowGeometry, start: Int, end: Int, firstLine: Int, out: (left: Float, top: Float, right: Float, bottom: Float) -> Unit) {
+  fun forEach(
+    g: RowGeometry,
+    start: Int,
+    end: Int,
+    firstLine: Int,
+    padNewline: Boolean = true,
+    out: (left: Float, top: Float, right: Float, bottom: Float) -> Unit,
+  ) {
     val startLine = g.lineAt(start)
     val endLine = g.lineAt(end)
     if (endLine < firstLine) return
@@ -39,7 +46,7 @@ object RangeRects {
       val to = if (line == endLine) end - ls else g.lineLength(line)
       val lastRow = rows - 1
       g.rowSpans(line, from, to) { row, left, right ->
-        val r = if (line != endLine && row == lastRow) right + g.spaceWidth else right
+        val r = if (padNewline && line != endLine && row == lastRow) right + g.spaceWidth else right
         if (r > left) {
           val y = (top + row * g.rowHeight).toFloat()
           out(g.originX + left, y, g.originX + r, y + g.rowHeight)

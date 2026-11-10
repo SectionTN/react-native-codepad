@@ -66,6 +66,14 @@ class RangeRectsTest {
     )
   }
 
+  // Underlines stop at the text: an empty middle line has nothing to underline.
+  @Test
+  fun noNewlinePadWhenAsked() {
+    val out = ArrayList<List<Float>>()
+    RangeRects.forEach(Fake(listOf("ab", "", "cd")), 1, 6, 0, padNewline = false) { l, t, r, b -> out.add(listOf(l, t, r, b)) }
+    assertEquals(listOf(rect(10, 0, 20, 20), rect(0, 40, 20, 60)), out)
+  }
+
   @Test
   fun rangeEndingAtLineStartPaintsNothingThere() {
     assertEquals(listOf(rect(0, 0, 30, 20)), rects(Fake(listOf("ab", "cd")), 0, 3))
