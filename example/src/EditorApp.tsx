@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
-import { CodeEditor, type CodeEditorRef } from 'react-native-codepad';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import { CodeEditor, type CodeEditorRef, type Decoration, type Rect } from 'react-native-codepad';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomBar } from './chrome/BottomBar';
@@ -12,6 +12,7 @@ import { SettingsSheet } from './chrome/SettingsSheet';
 import { TopBar } from './chrome/TopBar';
 import { chromeBand, schemeFor, topInsetFor } from './chrome/theme';
 import type { FileGroup, MenuItem } from './chrome/types';
+import { buildDemoDecorations } from './decorations';
 import { fileById, GENERATED_FILES, LANGUAGE_NAMES, SAMPLE_FILES, UNTITLED } from './files';
 import { describeSelection } from './selection';
 import { DEFAULT_SETTINGS, type Settings } from './settings';
@@ -27,8 +28,13 @@ type Sheet = 'settings' | 'goToLine' | null;
 
 type Props = { themeId: string; onTheme: (id: string) => void; onNested: () => void };
 
+const NO_DEMO: { items: Decoration[]; revision: number } = { items: [], revision: -1 };
+
 export function EditorApp({ themeId, onTheme, onNested }: Props) {
   const editor = useRef<CodeEditorRef>(null);
+  const [demo, setDemo] = useState<{ items: Decoration[]; revision: number }>(NO_DEMO);
+  const [note, setNote] = useState<Rect | null>(null);
+  const [editorTop, setEditorTop] = useState(0);
   const opened = useRef(0);
   const safe = useSafeAreaInsets();
   const keyboardVisible = useKeyboardState((s) => s.isVisible);
@@ -51,6 +57,23 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
   const file = fileById(fileId);
   const theme = themeById(themeId);
   const scheme = schemeFor(theme);
+
+  // The demo re-sends a fresh array four times a second, as a debounced checker would, tagged with its revision.
+  useEffect(() => {
+    if (!settings.decorations) {
+      setDemo(NO_DEMO);
+      setNote(null);
+      return;
+    }
+    const send = () => {
+      const ed = editor.current;
+      if (ed)
+        setDemo({ items: buildDemoDecorations(ed.getText(), scheme), revision: ed.getRevision() });
+    };
+    send();
+    const timer = setInterval(send, 250);
+    return () => clearInterval(timer);
+  }, [settings.decorations, scheme]);
   // Loaded once per open; the generated files are built here, so the open time covers them.
   const text = useMemo(() => file.load(), [file]);
   // iOS floats its bars over the editor, so the document starts below them and scrolls under.
@@ -195,6 +218,10 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
         <CodeEditor
           key={`${fileId}:${openCount}`}
           ref={editor}
+          onLayout={(e) => setEditorTop(e.nativeEvent.layout.y)}
+          decorations={demo.items}
+          decorationsRevision={demo.revision}
+          onGapLayout={(e) => setNote(e.gaps[0]?.rect ?? null)}
           style={[styles.editor, { marginLeft: safe.left, marginRight: safe.right }]}
           initialValue={text}
           language={settings.highlight ? file.language : undefined}
@@ -224,6 +251,24 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
             setPosition(describeSelection(positionOf(s.anchor), positionOf(s.head)))
           }
         />
+        {note && (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.note,
+              {
+                top: editorTop + note.y,
+                left: safe.left + note.x,
+                width: note.width,
+                height: note.height,
+              },
+            ]}
+          >
+            <Text style={[styles.noteText, { color: scheme === 'dark' ? '#F26B62' : '#C8322B' }]}>
+              A note the app draws in the gap the editor opened under this line.
+            </Text>
+          </View>
+        )}
         <BottomBar
           scheme={scheme}
           editor={editor}
@@ -270,4 +315,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   body: { flex: 1 },
   editor: { flex: 1 },
+  note: { position: 'absolute', justifyContent: 'center', paddingHorizontal: 12 },
+  noteText: { fontSize: 13, lineHeight: 18 },
 });

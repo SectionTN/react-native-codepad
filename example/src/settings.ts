@@ -9,6 +9,7 @@ export type Settings = {
   highlight: boolean;
   jetBrainsMono: boolean;
   readOnly: boolean;
+  decorations: boolean;
   suggestions: Suggestions;
   fontSize: number;
 };
@@ -22,6 +23,7 @@ export const DEFAULT_SETTINGS: Settings = {
   highlight: true,
   jetBrainsMono: false,
   readOnly: false,
+  decorations: false,
   suggestions: 'off',
   fontSize: 14,
 };

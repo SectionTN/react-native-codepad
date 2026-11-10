@@ -10,6 +10,7 @@ export const SWITCHES: [keyof Settings, string][] = [
   ['highlight', 'Syntax highlighting'],
   ['jetBrainsMono', 'JetBrains Mono'],
   ['readOnly', 'Read only'],
+  ['decorations', 'Decorations demo'],
 ];
 
 export const SUGGESTIONS: [Settings['suggestions'], string][] = [
