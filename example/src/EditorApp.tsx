@@ -313,7 +313,8 @@ const styles = StyleSheet.create({
     default: {},
   }) as object,
   screen: { flex: 1 },
-  body: { flex: 1 },
+  // Clips the gap note once its gap scrolls past the editor's edges.
+  body: { flex: 1, overflow: 'hidden' },
   editor: { flex: 1 },
   note: { position: 'absolute', justifyContent: 'center', paddingHorizontal: 12 },
   noteText: { fontSize: 13, lineHeight: 18 },
