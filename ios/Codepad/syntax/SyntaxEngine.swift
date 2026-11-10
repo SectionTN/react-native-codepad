@@ -388,22 +388,19 @@ final class SyntaxEngine: @unchecked Sendable {
     let read: (Node) -> String = { n in mirror.text(n.startUnit, n.endUnit) }
     cursor.exec(compiled.query, root)
     cursor.setUnitRange(from, to)
-    var handled = Set<Int>()
-    while let capture = cursor.nextCapture() {
-      if !handled.insert(capture.matchId).inserted { continue }
+    // Whole matches: a capture walk can hand over a match before its later captures, such as a heredoc's language.
+    while cursor.nextMatch() {
+      let pattern = cursor.matchPatternIndex
       let all = (0..<cursor.matchCaptureCount).map { i -> CaptureNode in
         let c = cursor.matchCapture(i)
         return CaptureNode(captureIndex: c.captureIndex, node: c.node)
       }
-      if !compiled.evaluator.matches(capture.patternIndex, captures: all, text: read) {
-        cursor.removeMatch(capture.matchId)
-        continue
-      }
-      let settings = compiled.evaluator.settings(capture.patternIndex)
+      if !compiled.evaluator.matches(pattern, captures: all, text: read) { continue }
+      let settings = compiled.evaluator.settings(pattern)
       let named = settings["injection.language"] ?? all.first { $0.captureIndex == languageIndex }.map { read($0.node) }
       guard let name = named, let target = LanguageRegistry.resolveInjection(name) else { continue }
       let combined = settings["injection.combined"] != nil
-      let offset = compiled.evaluator.offset(capture.patternIndex)
+      let offset = compiled.evaluator.offset(pattern)
       // The hull spans every captured node, so an edit to a language marker touches the tree.
       var hullStart = Int.max
       var hullEnd = 0
@@ -427,7 +424,7 @@ final class SyntaxEngine: @unchecked Sendable {
           endColumn += offset.endColumn
         }
         if start >= end { continue }
-        if !seen.insert(MatchKey(pattern: capture.patternIndex, start: start, end: end)).inserted { continue }
+        if !seen.insert(MatchKey(pattern: pattern, start: start, end: end)).inserted { continue }
         out.append(
           Match(
             target: target, combined: combined, hullStart: hullStart, hullEnd: hullEnd,

@@ -131,6 +131,9 @@ class QueryCursor : AutoCloseable {
 
   val matchCaptureCount: Int get() = TreeSitterNative.cursorMatchCaptureCount(handle)
 
+  /** The pattern of the match returned by the last nextCapture or nextMatch call. */
+  val matchPatternIndex: Int get() = TreeSitterNative.cursorMatchPatternIndex(handle)
+
   /** The i-th capture of the match returned by the last nextCapture or nextMatch call. */
   fun matchCapture(index: Int, out: Capture) {
     TreeSitterNative.cursorMatchCapture(handle, index, buffer)

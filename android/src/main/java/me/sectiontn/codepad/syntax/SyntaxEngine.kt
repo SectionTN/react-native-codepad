@@ -322,27 +322,23 @@ class SyntaxEngine(
     val read: (TSNodeRef) -> String = { n -> mirror.text(n.startUnit, n.endUnit) }
     cursor.exec(compiled.query, root)
     cursor.setUnitRange(from, to)
-    val capture = Capture()
-    val handled = HashSet<Int>()
-    while (cursor.nextCapture(capture)) {
-      if (!handled.add(capture.matchId)) continue
+    // Whole matches: a capture walk can hand over a match before its later captures, such as a heredoc's language.
+    while (cursor.nextMatch()) {
+      val pattern = cursor.matchPatternIndex
       val all = ArrayList<CaptureNode>(cursor.matchCaptureCount)
       for (i in 0 until cursor.matchCaptureCount) {
         val c = Capture()
         cursor.matchCapture(i, c)
         all.add(CaptureNode(c.captureIndex, c.node))
       }
-      if (!compiled.evaluator.matches(capture.patternIndex, all, read)) {
-        cursor.removeMatch(capture.matchId)
-        continue
-      }
-      val settings = compiled.evaluator.settings(capture.patternIndex)
+      if (!compiled.evaluator.matches(pattern, all, read)) continue
+      val settings = compiled.evaluator.settings(pattern)
       val name = settings["injection.language"]
         ?: all.firstOrNull { it.captureIndex == languageIndex }?.let { read(it.node) }
         ?: continue
       val target = LanguageRegistry.resolveInjection(name) ?: continue
       val combined = settings.containsKey("injection.combined")
-      val offset = compiled.evaluator.offset(capture.patternIndex)
+      val offset = compiled.evaluator.offset(pattern)
       // The hull spans every captured node, so an edit to a language marker touches the tree.
       var hullStart = Int.MAX_VALUE
       var hullEnd = 0
@@ -367,7 +363,7 @@ class SyntaxEngine(
           endColumn += offset.endColumn
         }
         if (start >= end) continue
-        if (!seen.add(MatchKey(capture.patternIndex, start, end))) continue
+        if (!seen.add(MatchKey(pattern, start, end))) continue
         out.add(Match(target, combined, hullStart, hullEnd, intArrayOf(start, end, sp.row, startColumn, ep.row, endColumn), start, end))
       }
     }

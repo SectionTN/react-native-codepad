@@ -78,6 +78,15 @@ final class InjectionReuseTests: XCTestCase {
     engine.close()
   }
 
+  // A PHP heredoc names its language after its body, so a walk by captures sees the match half finished.
+  func testALanguageCapturedAfterItsContentStillInjects() throws {
+    HostLanguages.load("php", "php")
+    let (_, engine) = start("php", "<?php\n$a = <<<HTML\n<b>hi</b>\nHTML;\n")
+    let snapshot = try XCTUnwrap(snapshots.takeParsed())
+    XCTAssertEqual(snapshot.injected.map { $0.language.id }, ["html"])
+    engine.close()
+  }
+
   func testMarkdownParagraphsReuseTheirTreesAndUnknownFencesInjectNothing() throws {
     let text = "# T\n\nfirst para\n\nsecond para\n\n```JS\nlet a = 1;\n```\n\n```ruby\nputs 1\n```\n"
     let core = EditorCore(text)

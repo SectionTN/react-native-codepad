@@ -100,6 +100,17 @@ class InjectionReuseTest {
     engine.close()
   }
 
+  // A PHP heredoc names its language after its body, so a walk by captures sees the match half finished.
+  @Test
+  fun aLanguageCapturedAfterItsContentStillInjects() {
+    HostLanguages.load("php", "php")
+    val (_, engine) = start("php", "<?php\n\$a = <<<HTML\n<b>hi</b>\nHTML;\n")
+    val snapshot = awaitParsed()
+    assertEquals(listOf("html"), snapshot.injected.map { it.language.id })
+    snapshot.close()
+    engine.close()
+  }
+
   @Test
   fun markdownParagraphsReuseTheirTreesAndUnknownFencesInjectNothing() {
     val text = "# T\n\nfirst para\n\nsecond para\n\n```JS\nlet a = 1;\n```\n\n```ruby\nputs 1\n```\n"

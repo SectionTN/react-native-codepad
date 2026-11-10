@@ -455,6 +455,11 @@ jint FN(cursorMatchCaptureCount)(JNIEnv *env, jclass cls, jlong cursor) {
   return (jint) ((Cursor *) (intptr_t) cursor)->match.capture_count;
 }
 
+jint FN(cursorMatchPatternIndex)(JNIEnv *env, jclass cls, jlong cursor) {
+  (void) env; (void) cls;
+  return (jint) ((Cursor *) (intptr_t) cursor)->match.pattern_index;
+}
+
 // out: node[4], capture index of the i-th capture in the last match.
 void FN(cursorMatchCapture)(JNIEnv *env, jclass cls, jlong cursor, jint i, jlongArray out) {
   (void) cls;

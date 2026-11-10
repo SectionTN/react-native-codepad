@@ -333,6 +333,9 @@ final class QueryCursor {
 
   var matchCaptureCount: Int { Int(match.capture_count) }
 
+  /// The pattern of the match returned by the last nextCapture or nextMatch call.
+  var matchPatternIndex: Int { Int(match.pattern_index) }
+
   /// The i-th capture of the match returned by the last nextCapture or nextMatch call.
   func matchCapture(_ index: Int) -> Capture {
     capture(at: index)
