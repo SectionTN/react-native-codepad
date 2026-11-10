@@ -87,7 +87,7 @@ The editor runs `eq?`, `match?` and `contains?` with their `not-` and `any-` for
 
 A highlights query that references a node the grammar doesn't have makes the whole language fall back to plain text. Check each query against a sample file with `tree-sitter query queries/highlights.scm sample.mylang` before you build.
 
-`injections.scm` can hand a range to any installed language. A custom language whose id is `sql`, `bash`, `graphql` or another name CodePad never injects on its own is injected too, for example in a Markdown code block.
+`injections.scm` can hand a range to any installed language. A custom language whose id is `bash`, `graphql`, `cpp` or another name CodePad never injects on its own is injected too, for example in a Markdown code block.
 
 ## Class names
 

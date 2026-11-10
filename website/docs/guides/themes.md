@@ -43,7 +43,7 @@ Colors are `#rrggbb` or `#rrggbbaa`. `selection`, `matchingBracket`, `searchMatc
 
 `tokens` is keyed by tree-sitter capture names such as `keyword`, `keyword.return`, `punctuation.bracket` or `markup.heading.1`. The lookup walks the dotted prefixes from the longest one down and ends at `foreground`, so a theme only needs the root names and can add a leaf wherever it wants a distinction.
 
-The built-in themes cover every capture the fifteen packages produce. A theme from the nvim-treesitter ecosystem ports by renaming its keys: `@keyword.return` becomes `keyword.return`.
+The built-in themes cover every capture the seventeen packages produce. A theme from the nvim-treesitter ecosystem ports by renaming its keys: `@keyword.return` becomes `keyword.return`.
 
 ## A custom theme
 

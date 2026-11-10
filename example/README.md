@@ -14,7 +14,7 @@ The iOS build needs `bundle exec pod install` in `ios/` after a podspec or depen
 
 ## What is in it
 
-- The file picker in the top bar opens the fifteen sample files, three generated files (`10k-lines.js`, `100k-lines.js`, `2k-paragraphs.md`) and an empty one. The status bar reports the time to the first paint after every open.
+- The file picker in the top bar opens the nineteen sample files, three generated files (`10k-lines.js`, `100k-lines.js`, `2k-paragraphs.md`) and an empty one. The status bar reports the time to the first paint after every open.
 - The find bar: literal or regex, case, whole word, replace one or all.
 - The menu: undo, redo, select all, go to line, a search timing, the nested scroll demo, the settings sheet, the theme.
 - The settings sheet: soft wrap, line numbers, active line, bracket matching, auto close, syntax highlighting, read only, suggestions, font size.

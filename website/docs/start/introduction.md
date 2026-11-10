@@ -14,4 +14,4 @@ No WebView, no `TextInput`. CodePad draws its own caret, selection handles and e
 - Keyboards: soft keyboards with composition, the full [hardware key table](/guides/hardware-keyboard/), and a [toolbar API](/reference/methods/#toolbar-input) that drives the same paths from JavaScript.
 - View: a line number gutter, soft wrap or horizontal scroll, scroll to line, the caret rect and the visible lines for toolbars, content insets, and an editor that [follows the keyboard](/guides/keyboard/).
 - Search: literal or regex, case sensitive and whole word options, next and previous, replace one or all, with every match painted.
-- Highlighting: fifteen [language packages](/reference/languages/), injections for fenced blocks, embedded script and style tags and tagged templates, and three themes.
+- Highlighting: seventeen [language packages](/reference/languages/), injections for fenced blocks, embedded script and style tags and tagged templates, and three themes.

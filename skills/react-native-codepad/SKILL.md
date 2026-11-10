@@ -63,7 +63,7 @@ export function Screen() {
 ## Gotchas
 
 - **The editor needs a height**: `flex: 1` in a column or an explicit `height`. It has no intrinsic height to grow into.
-- **Missing language package means plain text**, with one console warning and no error. If highlighting is absent, check the package is installed and the app was rebuilt. `Codepad.availableLanguages()` lists what is linked. Use `markdown`, never `markdown_inline`.
+- **Missing language package means plain text**, with one console warning and no error. If highlighting is absent, check the package is installed and the app was rebuilt. `Codepad.availableLanguages()` lists what is linked. Use `markdown`, never `markdown_inline`. Use `php` for pages and files that start with `<?php`, and `php_only` for PHP without the tag. The HTML in a PHP page needs `react-native-codepad-lang-html` too.
 - **Object props are compared by identity.** A `theme` or `contentInsets` literal in JSX crosses to native on every render. Hoist it to module scope or `useMemo` it. Callback props are wrapped once, so inline arrows are fine.
 - **Style padding is ignored.** Use `contentInsets` (dp on Android, points on iOS) for space inside the scroll area, for example under a floating toolbar.
 - **Keyboard:** pass `avoidKeyboard` so the content follows the keyboard animation; the overlap is added on top of `contentInsets.bottom`. On Android it does nothing under `adjustPan`, where the window pans instead.

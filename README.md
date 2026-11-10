@@ -15,7 +15,7 @@ A native code editor for React Native. It runs its own engine in Kotlin on Andro
 
 ## Features
 
-- Tree-sitter highlighting with one npm package per language, fifteen to pick from
+- Tree-sitter highlighting with one npm package per language, seventeen to pick from
 - Selection handles, the edit menu, undo and redo, auto indent and auto closing brackets
 - Find and replace with literal or regular expression queries and every match painted
 - Hardware keyboards, a toolbar API and three themes keyed by capture name

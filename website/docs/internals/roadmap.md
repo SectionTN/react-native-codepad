@@ -4,7 +4,7 @@ description: Where CodePad stands, what comes before 1.0 and what has no release
 sidebar_position: 3
 ---
 
-CodePad 0.1 is on npm, with the core package and the fifteen language packages released together. This page lists what comes next and what has no release yet.
+CodePad 0.1 is on npm, with the core package and the seventeen language packages released together. This page lists what comes next and what has no release yet.
 
 ## Now
 
@@ -14,11 +14,10 @@ Both editors are complete. Android is tested on the JVM and on an emulator, and 
 
 The work planned before `1.0.0`, in order:
 
-1. Language packages for PHP with the HTML around it, and SQL.
-2. [Autocomplete](https://github.com/SectionTN/react-native-codepad/issues/3) with provider hooks, and an [LSP client](https://github.com/SectionTN/react-native-codepad/issues/6) on top of it.
-3. [Code folding](https://github.com/SectionTN/react-native-codepad/issues/5) and a [minimap](https://github.com/SectionTN/react-native-codepad/issues/7).
-4. [Multiple cursors](https://github.com/SectionTN/react-native-codepad/issues/8), [diagnostics](https://github.com/SectionTN/react-native-codepad/issues/4), [font ligatures](https://github.com/SectionTN/react-native-codepad/issues/9) and [correct bidi editing](https://github.com/SectionTN/react-native-codepad/issues/10). Caret movement is logical for now.
-5. A [web target](https://github.com/SectionTN/react-native-codepad/issues/11).
+1. [Autocomplete](https://github.com/SectionTN/react-native-codepad/issues/3) with provider hooks, and an [LSP client](https://github.com/SectionTN/react-native-codepad/issues/6) on top of it.
+2. [Code folding](https://github.com/SectionTN/react-native-codepad/issues/5) and a [minimap](https://github.com/SectionTN/react-native-codepad/issues/7).
+3. [Multiple cursors](https://github.com/SectionTN/react-native-codepad/issues/8), [diagnostics](https://github.com/SectionTN/react-native-codepad/issues/4), [font ligatures](https://github.com/SectionTN/react-native-codepad/issues/9) and [correct bidi editing](https://github.com/SectionTN/react-native-codepad/issues/10). Caret movement is logical for now.
+4. A [web target](https://github.com/SectionTN/react-native-codepad/issues/11).
 
 `1.0.0` is the first stable release, with this list done on both platforms.
 
