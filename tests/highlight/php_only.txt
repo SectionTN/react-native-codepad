@@ -1,0 +1,13 @@
+// A PHP fragment without the open tag, highlighted with php_only.
+function average(array $grades): float
+{
+    if (count($grades) === 0) {
+        return 0.0;
+    }
+    return array_sum($grades) / count($grades);
+}
+
+# Grades out of 20
+$grades = [12, 15.5, 9, 18];
+$mean = average($grades);
+echo "Average: " . round($mean, 2) . PHP_EOL;
