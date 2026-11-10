@@ -40,16 +40,21 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
   internal fun applyChange(start: Int, end: Int, text: String, origin: ChangeOrigin, typing: Boolean, caretAfter: Boolean): Change {
     val before = selection
     val change = lock.write { document.replace(start, end, text) }
-    val span = EditSpan.of(change, document)
-    if (edits.size == DECORATION_EDIT_LOG) edits.removeFirst()
-    edits.addLast(span)
-    decorations.map(span)
+    mapDecorations(change)
     val after = if (caretAfter) Selection.caret(change.newEnd)
       else Selection(mapOffset(before.anchor, change), mapOffset(before.head, change))
     moveSelection(after, fromEdit = true)
     if (origin == ChangeOrigin.Input || origin == ChangeOrigin.Api) undo.record(change, before, after, typing)
     onChange?.invoke(change, origin)
     return change
+  }
+
+  // Every document change, history included, goes through the log and the set before any listener sees it.
+  private fun mapDecorations(change: Change) {
+    val span = EditSpan.of(change, document)
+    if (edits.size == DECORATION_EDIT_LOG) edits.removeFirst()
+    edits.addLast(span)
+    decorations.map(span)
   }
 
   fun insertText(text: String, origin: ChangeOrigin = ChangeOrigin.Api) {
@@ -212,6 +217,7 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     for (i in group.changes.indices.reversed()) {
       val c = group.changes[i]
       val change = lock.write { document.replace(c.start, c.newEnd, c.removed) }
+      mapDecorations(change)
       onChange?.invoke(change, ChangeOrigin.Undo)
     }
     moveSelection(clamped(group.selectionBefore), fromEdit = true)
@@ -222,6 +228,7 @@ class EditorCore(initialText: String = "", private val clock: () -> Long = Syste
     val group = undo.popRedo() ?: return false
     for (c in group.changes) {
       val change = lock.write { document.replace(c.start, c.end, c.inserted) }
+      mapDecorations(change)
       onChange?.invoke(change, ChangeOrigin.Redo)
     }
     moveSelection(clamped(group.selectionAfter), fromEdit = true)

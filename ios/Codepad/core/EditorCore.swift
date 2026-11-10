@@ -45,10 +45,7 @@ final class EditorCore: @unchecked Sendable {
   func applyChange(_ start: Int, _ end: Int, _ text: String, origin: ChangeOrigin, typing: Bool, caretAfter: Bool) -> Change {
     let before = selection
     let change = lock.write { document.replace(start, end, text) }
-    let span = EditSpan.of(change, document)
-    if edits.count == EditorCore.decorationEditLog { edits.removeFirst() }
-    edits.append(span)
-    decorations.map(span)
+    mapDecorations(change)
     let after =
       caretAfter
       ? Selection.caret(change.newEnd)
@@ -216,11 +213,20 @@ final class EditorCore: @unchecked Sendable {
     applyChange(caret, TextMovement.nextGrapheme(document, caret), "", origin: .input, typing: false, caretAfter: true)
   }
 
+  // Every document change, history included, goes through the log and the set before any listener sees it.
+  private func mapDecorations(_ change: Change) {
+    let span = EditSpan.of(change, document)
+    if edits.count == EditorCore.decorationEditLog { edits.removeFirst() }
+    edits.append(span)
+    decorations.map(span)
+  }
+
   @discardableResult
   func undo() -> Bool {
     guard let group = history.popUndo() else { return false }
     for c in group.changes.reversed() {
       let change = lock.write { document.replace(c.start, c.newEnd, c.removed) }
+      mapDecorations(change)
       onChange?(change, .undo)
     }
     moveSelection(clamped(group.selectionBefore), fromEdit: true)
@@ -232,6 +238,7 @@ final class EditorCore: @unchecked Sendable {
     guard let group = history.popRedo() else { return false }
     for c in group.changes {
       let change = lock.write { document.replace(c.start, c.end, c.inserted) }
+      mapDecorations(change)
       onChange?(change, .redo)
     }
     moveSelection(clamped(group.selectionAfter), fromEdit: true)
