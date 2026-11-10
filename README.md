@@ -20,6 +20,7 @@ A native code editor for React Native. It runs its own engine in Kotlin on Andro
 - Find and replace with literal or regular expression queries and every match painted
 - Hardware keyboards, a toolbar API and three themes keyed by capture name
 - An editor that follows the keyboard animation frame by frame
+- Underlines, line tints and space under a line for your own view, kept on their text through every edit
 - The same engine and the same test vectors on both platforms
 
 ## Installation
@@ -91,6 +92,8 @@ export function Screen() {
 | `contentInsets` | `ContentInsets` | all 0 | The padding inside the scrollable area. Style padding on the view is ignored. |
 | `textPadding` | `number` | `8` | The space between the text and the editor's left and right edges, inside `contentInsets`. |
 | `avoidKeyboard` | `boolean` | `false` | Adds the keyboard overlap to the bottom inset on every frame of the keyboard animation. |
+| `decorations` | `Decoration[]` | undefined | Underlines, gaps under lines and line backgrounds. They follow every edit until you pass a new array. |
+| `decorationsRevision` | `number` | undefined | The revision the decorations were computed for, from `getRevision()`. The editor moves them through the edits made since then. |
 | `onReady` | `() => void` | | Called once after the first draw. Ref methods are valid from here. |
 | `onChange` | `(event) => void` | | Called after every edit with the replaced range, the new text and its origin. |
 | `onChangeText` | `(text) => void` | | Called with the full text after every change. Prefer `onChange` on large documents. |
@@ -98,6 +101,7 @@ export function Screen() {
 | `onFocus`, `onBlur` | `() => void` | | Called when the editor gains or loses focus. |
 | `onScroll` | `(event) => void` | | Called with the scroll offset and the content size, at most once per frame. |
 | `onContentSizeChange` | `(event) => void` | | Called when the content size changes, insets included. |
+| `onGapLayout` | `(event) => void` | | Called with the position of every gap after a gap appears, moves or goes away. |
 
 ### Methods
 
@@ -105,6 +109,7 @@ export function Screen() {
 | --- | --- |
 | `getText()`, `getTextInRange(range)`, `getLine(index)`, `getLength()`, `getLineCount()` | Read the document synchronously on the JS thread. |
 | `getSelection()`, `getRevision()`, `getCursorRect()`, `getVisibleLines()` | Read the selection, the revision, the caret rectangle and the lines on screen. |
+| `getGapRect(line)` | Read the position of the gap under a line, or `null` when the line has none. |
 | `offsetToPosition(offset)`, `positionToOffset(position)` | Convert between UTF-16 offsets and 0-based lines and columns. |
 | `canUndo()`, `canRedo()`, `isFocused()` | Report whether there is an edit to undo or redo and whether the editor has focus. |
 | `setText(text)`, `replaceRange(range, text)`, `insertText(text)` | Change the document. Each resolves once the edit is applied. |
@@ -128,8 +133,8 @@ The docs are also available as plain text in [`llms-full.txt`](https://reactnati
 
 - [x] 0.1: Android and iOS, fifteen languages, search, themes, the keyboard follower
 - [x] 0.1.3 and 0.1.4: text padding, one font name for both platforms and horizontal scroll in a ScrollView
+- [x] 0.1.6: decorations (underlines, space under a line and line backgrounds)
 - [ ] Languages: PHP and SQL
-- [ ] Decorations: underlines, space under a line and line backgrounds
 - [ ] Autocomplete and an LSP client
 - [ ] Code folding and a minimap
 - [ ] Multiple cursors, diagnostics, font ligatures and bidi editing
