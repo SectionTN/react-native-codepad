@@ -108,14 +108,15 @@ A line background tints every row of its line, but not the line's gap:
 const TINT: Decoration[] = [{ kind: 'lineBackground', line: 4, color: '#FAE8E6' }];
 ```
 
-It draws over the active line highlight and under search matches and the selection. The caret's line shows the tint too. Several backgrounds on one line draw in array order.
+It draws over the active line highlight and under search matches and the selection. The caret's line shows the tint too. Give a line one background, since overlapping translucent ones can stack in a different order on Android and iOS.
 
 ## How decorations follow edits
 
 The editor maps the decorations in the same frame as the text, for typing, the keyboard's suggestions, undo and ref methods alike.
 
 - Typing inside an underline extends it. Typing at either edge leaves it as it is.
-- Replacing exactly the underlined text keeps the underline on the new text, so an autocorrected word or a picked suggestion keeps its underline.
+- Replacing exactly the underlined text keeps the underline on the new text. An autocorrected word keeps its underline that way.
+- A keyboard suggestion that only adds letters after the underlined word counts as typing at its edge. The underline stays on the letters that were there.
 - Deleting exactly the underlined text removes the underline, and so does a paste over a larger region.
 - An edit across one edge of an underline keeps the part of the original text that is left.
 - A gap or a line background stays with its line. Typing at the end of the line keeps it, Enter at the very end opens the new line below the gap, and Enter in the middle moves it under the second half.
