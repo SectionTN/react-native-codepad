@@ -1,6 +1,6 @@
 PODS:
-  - Codepad (0.1.2):
-    - Codepad/TreeSitter (= 0.1.2)
+  - Codepad (0.1.4):
+    - Codepad/TreeSitter (= 0.1.4)
     - hermes-engine
     - NitroModules
     - RCTRequired
@@ -24,7 +24,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - Codepad/TreeSitter (0.1.2):
+  - Codepad/TreeSitter (0.1.4):
     - hermes-engine
     - NitroModules
     - RCTRequired
@@ -48,35 +48,37 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - CodepadLangC (0.1.2):
+  - CodepadLangC (0.1.4):
     - Codepad
-  - CodepadLangCss (0.1.2):
+  - CodepadLangCss (0.1.4):
     - Codepad
-  - CodepadLangGo (0.1.2):
+  - CodepadLangGo (0.1.4):
     - Codepad
-  - CodepadLangHtml (0.1.2):
+  - CodepadLangHtml (0.1.4):
     - Codepad
-  - CodepadLangJava (0.1.2):
+  - CodepadLangJava (0.1.4):
     - Codepad
-  - CodepadLangJavascript (0.1.2):
+  - CodepadLangJavascript (0.1.4):
     - Codepad
-  - CodepadLangJson (0.1.2):
+  - CodepadLangJson (0.1.4):
     - Codepad
-  - CodepadLangKotlin (0.1.2):
+  - CodepadLangKotlin (0.1.4):
     - Codepad
-  - CodepadLangMarkdown (0.1.2):
+  - CodepadLangKvLite (1.0.0):
     - Codepad
-  - CodepadLangPython (0.1.2):
+  - CodepadLangMarkdown (0.1.4):
     - Codepad
-  - CodepadLangRust (0.1.2):
+  - CodepadLangPython (0.1.4):
     - Codepad
-  - CodepadLangSwift (0.1.2):
+  - CodepadLangRust (0.1.4):
     - Codepad
-  - CodepadLangTsx (0.1.2):
+  - CodepadLangSwift (0.1.4):
     - Codepad
-  - CodepadLangTypescript (0.1.2):
+  - CodepadLangTsx (0.1.4):
     - Codepad
-  - CodepadLangYaml (0.1.2):
+  - CodepadLangTypescript (0.1.4):
+    - Codepad
+  - CodepadLangYaml (0.1.4):
     - Codepad
   - EXConstants (57.0.22):
     - ExpoModulesCore
@@ -2302,6 +2304,7 @@ DEPENDENCIES:
   - CodepadLangJavascript (from `../../languages/javascript`)
   - CodepadLangJson (from `../../languages/json`)
   - CodepadLangKotlin (from `../../languages/kotlin`)
+  - CodepadLangKvLite (from `../modules/codepad-lang-kv_lite`)
   - CodepadLangMarkdown (from `../../languages/markdown`)
   - CodepadLangPython (from `../../languages/python`)
   - CodepadLangRust (from `../../languages/rust`)
@@ -2424,6 +2427,8 @@ EXTERNAL SOURCES:
     :path: "../../languages/json"
   CodepadLangKotlin:
     :path: "../../languages/kotlin"
+  CodepadLangKvLite:
+    :path: "../modules/codepad-lang-kv_lite"
   CodepadLangMarkdown:
     :path: "../../languages/markdown"
   CodepadLangPython:
@@ -2629,22 +2634,23 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  Codepad: 559e60316595e9a8e016ada1418e61c7b058625c
-  CodepadLangC: 97fce383a438f3fedebd7f95c54babde69d854c3
-  CodepadLangCss: 14a7d906383c27fd91ed8995180a6fcc59a2a445
-  CodepadLangGo: d678169cf55a66f59bc039217bf08f2acecffc55
-  CodepadLangHtml: bf42b6b8df4e6b40b382c015ba565bf7d19f0f08
-  CodepadLangJava: d7a5d840d79a8133d03260e43a2ead6ec2ed7173
-  CodepadLangJavascript: 61e6c14ac1f72bcbe2410e8cc17051d360604408
-  CodepadLangJson: 30e622978940d08fc285520f0bce4154c7a7caa3
-  CodepadLangKotlin: 5f7969705c49d600d250f16c30817e3718a803f5
-  CodepadLangMarkdown: 8ff56ce4b0ffa32521b995adda022fbe9af200d3
-  CodepadLangPython: c2650747e87cd81e2d54673f594f64ffe1121f8c
-  CodepadLangRust: 7b6a38a2c7c07b83b3a5610578181941d649047d
-  CodepadLangSwift: ba3a2a8176c7c5fbc7a7c7b4f85176fb2171679f
-  CodepadLangTsx: f50747232ff034bda304e4cc6a5741b3521e1928
-  CodepadLangTypescript: 59dad4125cd85b92cb2c1b7acdd3ced6288fde04
-  CodepadLangYaml: e743f776217643c2d24f3ed4d17d5ed6ab752be7
+  Codepad: d36b81dc96057f2321b27c544032e90ae378953a
+  CodepadLangC: b287efa550b49416e32ebbc0adda4607de1c5ce0
+  CodepadLangCss: 8844dac22f2f909d09704b3d8ce005c16c45736c
+  CodepadLangGo: c15ead8d597a7ee713cd7fd05a4538b42fc3a8f1
+  CodepadLangHtml: 68a63de5a1abf0020237b289cdf3c59f3eca0f8e
+  CodepadLangJava: 2865fe20e824a8340abc71021f84dc5c704f67f5
+  CodepadLangJavascript: c584aa389638fbf89b3699b810fa1d0e01199c96
+  CodepadLangJson: c126efe08858be2cf6087e0912f882bc0f7d1ef0
+  CodepadLangKotlin: 8cead301a4ea500cf3dd376dc3d72605450ebf7f
+  CodepadLangKvLite: 9253cabc0ae1762339d0d732631ee140a7dbd173
+  CodepadLangMarkdown: cf4c5753dfaecf67c36167fe2316a68413287502
+  CodepadLangPython: d310232ba457c8e6e3316343ff710269c6682e47
+  CodepadLangRust: 650fbf4dfc36f7b272cdbe2c26d263f68d0bf8c1
+  CodepadLangSwift: 57e6a773a78330bc366d990be6774f43d2d33d03
+  CodepadLangTsx: 27ce57f606ad9314a5cf54ab099cae38ecea5b02
+  CodepadLangTypescript: 2a832b072544a571fa86be6e45147ba5bcdda5c9
+  CodepadLangYaml: 2850a185018f6cdab6e2119c25c679a8a16da540
   EXConstants: 8a0eb5e2553569c0e6710b73a8d90d1ce358c153
   Expo: 83ceec8498d39a83bfcdf6ad56118bc6c5c81c72
   ExpoAsset: 2581425f9b581b4fce3c83ffc9f28528d1c4ee68

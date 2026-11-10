@@ -97,6 +97,12 @@ jobs:
       - name: Build package
         run: yarn prepare
 
+      - name: Check the example's custom language package
+        run: |
+          node lib/cli/bin.js language tests/fixtures/kv_lite --out example/modules/codepad-lang-kv_lite
+          git status --porcelain -- example/modules
+          test -z "$(git status --porcelain -- example/modules)"
+
   build-android:
     runs-on: ubuntu-24.04
 

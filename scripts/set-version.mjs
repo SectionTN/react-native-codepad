@@ -36,5 +36,19 @@ for (const id of readdirSync(languages)) {
   for (const grammar of readdirSync(assets)) writeFileSync(join(assets, grammar), `${version}\n`);
 }
 
+// The example's custom packages, written by the language command, pin the core with a caret range.
+const modules = join(root, 'example/modules');
+for (const dir of existsSync(modules) ? readdirSync(modules) : []) {
+  const file = join(modules, dir, 'package.json');
+  if (!existsSync(file)) continue;
+  if (!JSON.parse(readFileSync(file, 'utf8')).codepad?.generated) continue;
+  patchJson(file, (pkg) => {
+    pkg.peerDependencies['react-native-codepad'] = `^${version}`;
+    pkg.codepad.core = version;
+  });
+  const assets = join(modules, dir, 'android/src/main/assets/codepad-languages');
+  for (const grammar of readdirSync(assets)) writeFileSync(join(assets, grammar), `${version}\n`);
+}
+
 // The lockfile records each package's peer pin on the core.
 execFileSync('yarn', ['install'], { cwd: root, stdio: 'inherit' });

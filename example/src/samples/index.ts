@@ -6,6 +6,7 @@ import { html } from './html';
 import { java } from './java';
 import { json } from './json';
 import { kotlin } from './kotlin';
+import { kv_lite } from './kv_lite';
 import { markdown } from './markdown';
 import { python } from './python';
 import { rust } from './rust';
@@ -30,6 +31,7 @@ export const LANGUAGES = [
   'rust',
   'go',
   'yaml',
+  'kv_lite',
 ] as const;
 
 export type LanguageId = (typeof LANGUAGES)[number];
@@ -50,4 +52,5 @@ export const SAMPLES: Record<LanguageId, string> = {
   rust,
   go,
   yaml,
+  kv_lite,
 };

@@ -24,6 +24,7 @@ export const LANGUAGE_NAMES: Record<string, string> = {
   rust: 'Rust',
   go: 'Go',
   yaml: 'YAML',
+  kv_lite: 'KV (custom)',
 };
 
 const SAMPLE_NAMES: [LanguageId, string][] = [
@@ -42,6 +43,7 @@ const SAMPLE_NAMES: [LanguageId, string][] = [
   ['rust', 'main.rs'],
   ['go', 'main.go'],
   ['yaml', 'config.yaml'],
+  ['kv_lite', 'settings.kv'],
 ];
 
 export const SAMPLE_FILES: EditorFile[] = SAMPLE_NAMES.map(([id, name]) => ({

@@ -14,6 +14,7 @@ final class LanguagesTests: XCTestCase {
     "kotlin": "fun main() { val x = 1 }", "swift": "let x = 1 // hi",
     "c": "int main(void) { return 0; }", "rust": "fn main() { let x = 1; }",
     "go": "package main\nfunc main() { x := 1 }", "yaml": "a: 1\nb: [x, y]",
+    "kv_lite": "name = \"x\" # hi",
   ]
 
   func testLinkedLanguagesLoadAndParse() {
@@ -22,8 +23,8 @@ final class LanguagesTests: XCTestCase {
     XCTAssertEqual(
       ids,
       [
-        "c", "css", "go", "html", "java", "javascript", "json", "kotlin", "markdown", "markdown_inline", "python", "rust",
-        "swift", "tsx", "typescript", "yaml",
+        "c", "css", "go", "html", "java", "javascript", "json", "kotlin", "kv_lite", "markdown", "markdown_inline",
+        "python", "rust", "swift", "tsx", "typescript", "yaml",
       ])
     for id in ids {
       guard let language = LanguageRegistry.resolve(id) else {

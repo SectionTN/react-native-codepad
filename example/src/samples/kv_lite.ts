@@ -1,0 +1,16 @@
+export const kv_lite = `# A settings file in kv_lite, the custom language this app builds
+# with npx react-native-codepad language.
+
+app.name = "Codepad example"
+app.version = "0.1.4"
+app.debug = false
+
+editor.font_size = 14
+editor.line_height = 1.45
+editor.tab_size = 2
+editor.soft_wrap = true
+
+sync.enabled = true
+sync.interval_seconds = 300
+sync.endpoint = "https://example.com/sync"
+`;

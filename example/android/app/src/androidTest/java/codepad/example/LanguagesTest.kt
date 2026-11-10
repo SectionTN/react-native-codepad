@@ -26,13 +26,14 @@ class LanguagesTest {
     "kotlin" to "fun main() { val x = 1 }", "swift" to "let x = 1 // hi",
     "c" to "int main(void) { return 0; }", "rust" to "fn main() { let x = 1; }",
     "go" to "package main\nfunc main() { x := 1 }", "yaml" to "a: 1\nb: [x, y]",
+    "kv_lite" to "name = \"x\" # hi",
   )
 
   @Test
   fun linkedLanguagesLoadAndParse() {
     val assets = InstrumentationRegistry.getInstrumentation().targetContext.assets
     val ids = assets.list("codepad-languages")?.sorted() ?: emptyList()
-    assertEquals(16, ids.size)
+    assertEquals(17, ids.size)
     for (id in ids) {
       val language = LanguageRegistry.resolve(id) ?: error("$id did not load")
       assertTrue("$id highlights", language.highlights.query.patternCount > 0)
