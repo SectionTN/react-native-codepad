@@ -6,8 +6,10 @@ enum HostGrammars {
   private static let table: [String: @Sendable () -> UnsafeRawPointer?] = [
     "c": { tree_sitter_c() },
     "css": { tree_sitter_css() },
+    "dtd": { tree_sitter_dtd() },
     "go": { tree_sitter_go() },
     "html": { tree_sitter_html() },
+    "ini": { tree_sitter_ini() },
     "java": { tree_sitter_java() },
     "javascript": { tree_sitter_javascript() },
     "json": { tree_sitter_json() },
@@ -23,6 +25,7 @@ enum HostGrammars {
     "swift": { tree_sitter_swift() },
     "tsx": { tree_sitter_tsx() },
     "typescript": { tree_sitter_typescript() },
+    "xml": { tree_sitter_xml() },
     "yaml": { tree_sitter_yaml() },
   ]
 

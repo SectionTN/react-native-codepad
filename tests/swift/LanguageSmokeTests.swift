@@ -17,6 +17,8 @@ final class LanguageSmokeTests: XCTestCase {
     "kv_lite": "name = \"x\" # hi",
     "php": "<p><?php echo $name; ?></p>", "php_only": "function f($x) { return $x + 1; }",
     "sql": "SELECT id FROM users WHERE id = 1; -- hi",
+    "xml": "<svg width=\"1\"><style>.a { color: red; }</style></svg>", "dtd": "<!ELEMENT note (to, from)>\n",
+    "ini": "[core]\nname = x\n; hi\n",
   ]
 
   func testEveryPackageCompilesItsQueriesAndHighlightsASnippet() throws {
@@ -37,6 +39,7 @@ final class LanguageSmokeTests: XCTestCase {
       XCTAssertFalse(spans[0].isEmpty, "\(grammar) paints line 0")
       if grammar == "markdown" { XCTAssertGreaterThanOrEqual(snapshot.injected.count, 2, "markdown injects inline and the fence") }
       if grammar == "php" { XCTAssertFalse(snapshot.injected.isEmpty, "php injects html around the tags") }
+      if grammar == "xml" { XCTAssertFalse(snapshot.injected.isEmpty, "xml injects css in a style element") }
       engine.close()
     }
     print("LanguageSmokeTests: \(packages.count) grammars")
