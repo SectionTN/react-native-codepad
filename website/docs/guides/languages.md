@@ -78,6 +78,7 @@ A grammar's injection query hands ranges to another language: fenced blocks in M
 A name with no package keeps the host language's colors. A name from nvim-treesitter's list (`cpp`, `bash`, `sh`, `graphql`, `phpdoc`, `text` and the rest) doesn't log a warning, and highlights only when a [custom language](/guides/custom-languages/) with that id is installed. Any other name logs the fallback warning once.
 
 - Injections go one level deep: a JavaScript block inside Markdown highlights, an HTML template inside that block does not. In a PHP page, the HTML highlights but a `<script>` or `<style>` inside it stays plain.
+- In XML, the whole content of a `<script>` or `<style>` element goes to the injected language. Code wrapped in `<![CDATA[ ... ]]>`, as in many SVG files, passes those markers to the JavaScript or CSS parser, and their lines can highlight wrong.
 - `${...}` substitutions inside a tagged template are parsed by the injected language.
 - Injected trees survive edits and reparse only when their own range changed. The [performance guide](/guides/performance/) has the numbers.
 
@@ -106,8 +107,8 @@ An app bundle splits libraries per ABI, so a device downloads one set.
 
 Packages are generated from `languages/grammars.json` in the repository, never written by hand:
 
-1. Add an entry: the id (it must match the nvim-treesitter query directory), the grammar repository and commit, and the grammar directories.
-2. Run `yarn gen:languages <id>`. It fetches the grammar and the queries, translates the predicates and writes the package. Patterns it cannot translate are dropped with a warning each, and `yarn gen:report` lists every predicate per language.
+1. Add an entry: the id (it must match the nvim-treesitter query directory), the grammar repository and commit, and the grammar directories. When the grammar is not MIT, add `license` with its SPDX id. The package then declares both licenses.
+2. Run `yarn gen:languages <id>`. It fetches the grammar and the queries, translates the predicates and writes the package. Patterns it cannot translate are dropped with a warning each, and `yarn gen:report` lists every predicate per language. Then add each new grammar to `tests/swift/HostGrammars.swift`, and give it a one-line snippet in `LanguagePackagesTest.kt`, `tests/swift/LanguageSmokeTests.swift` and the example app's `LanguagesTest.kt` and `LanguagesTests.swift`.
 3. Run `yarn host:treesitter && yarn test:android` to compile the queries against the parser on the JVM.
 4. Delete `~/Library/Caches/org.swift.swiftpm/manifests`, then run `yarn test:swift` to compile the queries on macOS. SwiftPM caches the scan that finds the grammar sources, and without this step the new package fails to link.
 5. Run `yarn test:device -e class codepad.example.LanguagesTest` to load the package through the real view on an emulator.

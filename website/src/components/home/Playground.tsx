@@ -70,7 +70,7 @@ export function Playground() {
       <SectionHeader
         n="02"
         label="highlighting"
-        title="Seventeen languages. Ship only yours."
+        title="Nineteen languages. Ship only yours."
         lead="Every grammar is its own npm package, parsed by tree-sitter. Pick a language and a theme, then hover a capture to see what it paints."
       />
       <div
