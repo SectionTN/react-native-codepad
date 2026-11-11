@@ -27,6 +27,9 @@ export const LANGUAGE_NAMES: Record<string, string> = {
   php: 'PHP',
   php_only: 'PHP (no tags)',
   sql: 'SQL',
+  xml: 'XML',
+  dtd: 'DTD',
+  ini: 'INI',
   kv_lite: 'KV (custom)',
 };
 
@@ -49,6 +52,9 @@ const SAMPLE_NAMES: [LanguageId, string][] = [
   ['php', 'index.php'],
   ['php_only', 'snippet.php'],
   ['sql', 'schema.sql'],
+  ['xml', 'activity_main.xml'],
+  ['dtd', 'note.dtd'],
+  ['ini', 'settings.ini'],
   ['kv_lite', 'settings.kv'],
 ];
 

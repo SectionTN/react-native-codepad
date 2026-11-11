@@ -30,13 +30,15 @@ class LanguagesTest {
     "kv_lite" to "name = \"x\" # hi",
     "php" to "<p><?php echo \$name; ?></p>", "php_only" to "function f(\$x) { return \$x + 1; }",
     "sql" to "SELECT id FROM users WHERE id = 1; -- hi",
+    "xml" to "<svg width=\"1\"><style>.a { color: red; }</style></svg>", "dtd" to "<!ELEMENT note (to, from)>\n",
+    "ini" to "[core]\nname = x\n; hi\n",
   )
 
   @Test
   fun linkedLanguagesLoadAndParse() {
     val assets = InstrumentationRegistry.getInstrumentation().targetContext.assets
     val ids = assets.list("codepad-languages")?.sorted() ?: emptyList()
-    assertEquals(20, ids.size)
+    assertEquals(23, ids.size)
     for (id in ids) {
       val language = LanguageRegistry.resolve(id) ?: error("$id did not load")
       val text = checkNotNull(snippets[id]) { "no snippet for $id" }
