@@ -16,8 +16,10 @@ export class CustomLanguageError extends Error {}
 export const SHIPPED_IDS: readonly string[] = [
   'c',
   'css',
+  'dtd',
   'go',
   'html',
+  'ini',
   'java',
   'javascript',
   'json',
@@ -32,6 +34,7 @@ export const SHIPPED_IDS: readonly string[] = [
   'swift',
   'tsx',
   'typescript',
+  'xml',
   'yaml',
 ];
 

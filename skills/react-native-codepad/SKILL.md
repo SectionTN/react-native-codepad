@@ -21,7 +21,7 @@ The installed package ships its API contract at `node_modules/react-native-codep
 npm install react-native-codepad react-native-nitro-modules react-native-codepad-lang-javascript
 ```
 
-- One `react-native-codepad-lang-<id>` package per highlighted language. Ids: `c`, `css`, `go`, `html`, `java`, `javascript`, `json`, `kotlin`, `markdown`, `php`, `python`, `rust`, `sql`, `swift`, `tsx`, `typescript`, `yaml`. Use the project's package manager.
+- One `react-native-codepad-lang-<id>` package per highlighted language. Ids: `c`, `css`, `go`, `html`, `ini`, `java`, `javascript`, `json`, `kotlin`, `markdown`, `php`, `python`, `rust`, `sql`, `swift`, `tsx`, `typescript`, `xml`, `yaml`. Use the project's package manager.
 - A language without a package: `npx react-native-codepad language <grammar-dir>` builds a private package from a tree-sitter grammar into `modules/`. See https://reactnativecodepad.pages.dev/guides/custom-languages/.
 - iOS deployment target 17.0: `platform :ios, '17.0'` in `ios/Podfile`, or on Expo `["expo-build-properties", { "ios": { "deploymentTarget": "17.0" } }]` in the `app.json` plugins.
 - Rebuild the native app after adding or removing any of these packages: `cd ios && pod install`, then run the app again. On Expo: `npx expo prebuild`, then `npx expo run:ios` or `run:android`. A Metro reload is not enough.
@@ -63,7 +63,7 @@ export function Screen() {
 ## Gotchas
 
 - **The editor needs a height**: `flex: 1` in a column or an explicit `height`. It has no intrinsic height to grow into.
-- **Missing language package means plain text**, with one console warning and no error. If highlighting is absent, check the package is installed and the app was rebuilt. `Codepad.availableLanguages()` lists what is linked. Use `markdown`, never `markdown_inline`. Use `php` for pages and files that start with `<?php`, and `php_only` for PHP without the tag. The HTML in a PHP page needs `react-native-codepad-lang-html` too.
+- **Missing language package means plain text**, with one console warning and no error. If highlighting is absent, check the package is installed and the app was rebuilt. `Codepad.availableLanguages()` lists what is linked. Use `markdown`, never `markdown_inline`. Use `php` for pages and files that start with `<?php`, and `php_only` for PHP without the tag. The HTML in a PHP page needs `react-native-codepad-lang-html` too. Use `xml` for XML files and `dtd` for a standalone DTD, both from `react-native-codepad-lang-xml`.
 - **Object props are compared by identity.** A `theme` or `contentInsets` literal in JSX crosses to native on every render. Hoist it to module scope or `useMemo` it. Callback props are wrapped once, so inline arrows are fine.
 - **Style padding is ignored.** Use `contentInsets` (dp on Android, points on iOS) for space inside the scroll area, for example under a floating toolbar.
 - **Keyboard:** pass `avoidKeyboard` so the content follows the keyboard animation; the overlap is added on top of `contentInsets.bottom`. On Android it does nothing under `adjustPan`, where the window pans instead.

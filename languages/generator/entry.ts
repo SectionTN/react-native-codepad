@@ -5,6 +5,8 @@ export type LanguageEntry = {
   rev: string;
   grammars: GrammarEntry[];
   extraPaths?: string[];
+  /** SPDX id of the grammar's license when it is not MIT. */
+  license?: string;
 };
 
 export function pascal(id: string): string {

@@ -332,7 +332,7 @@ function shippedPackageJson(a: ShippedArgs): string {
         directory: `languages/${entry.id}`,
       },
       author: 'Rayen Sbai <rayensbai2@gmail.com> (https://github.com/SectionTN)',
-      license: 'MIT',
+      license: entry.license ? `MIT AND ${entry.license}` : 'MIT',
       homepage: 'https://github.com/SectionTN/react-native-codepad#readme',
       peerDependencies: { 'react-native-codepad': version },
       publishConfig: { registry: 'https://registry.npmjs.org/' },

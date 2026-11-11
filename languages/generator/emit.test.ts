@@ -15,6 +15,15 @@ import {
   swiftRawString,
 } from './emit.ts';
 
+test('a grammar under another license joins MIT in the package license', () => {
+  const entry = { id: 'ini', repo: 'r', rev: 'x', grammars: [{ name: 'ini', src: 'src' }] };
+  const args = { version: '1.2.3', queries: {}, grammarLicense: null, nvimRev: 'n' };
+  const license = (e: typeof entry & { license?: string }) =>
+    shippedIdentity({ ...args, entry: e }).packageJson.license;
+  assert.equal(license({ ...entry, license: 'Apache-2.0' }), 'MIT AND Apache-2.0');
+  assert.equal(license(entry), 'MIT');
+});
+
 test('jniName escapes underscores in package segments', () => {
   assert.equal(
     jniName(

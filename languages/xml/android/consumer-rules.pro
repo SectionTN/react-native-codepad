@@ -1,0 +1,2 @@
+-keep class me.sectiontn.codepad.lang.xml.XmlLanguage { *; }
+-keep class me.sectiontn.codepad.lang.dtd.DtdLanguage { *; }
