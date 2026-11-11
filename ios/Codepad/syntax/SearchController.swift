@@ -23,7 +23,7 @@ final class SearchController: @unchecked Sendable {
   private let postToMain: @Sendable (@escaping @Sendable () -> Void) -> Void
 
   var onResult: ((_ count: Int, _ millis: Int64) -> Void)?
-  var active: Bool { core.search != nil }
+  var active: Bool { core.searchActive }
 
   private var generation = 0
   private var running: Job?
@@ -79,17 +79,18 @@ final class SearchController: @unchecked Sendable {
 
   private func schedule() {
     cancelRunning()
-    guard let query = core.search?.query else { return }
+    guard let search = core.compiledSearch() else { return }
     generation += 1
     let job = Job(generation: generation)
     running = job
-    let core = self.core
+    // Both taken on the main thread, the only writer, so they belong to the same revision.
+    let text = core.textSnapshot()
+    let revision = core.document.revision
     queue.async { [self] in
-      let (text, revision) = core.read { (core.document.text(), core.document.revision) }
       let started = DispatchTime.now().uptimeNanoseconds
       let result: [Int]
       do {
-        result = try Searcher.find(text, query) { job.cancelled }
+        result = try Searcher.find(text, search) { job.cancelled }.matches
       } catch {
         return
       }

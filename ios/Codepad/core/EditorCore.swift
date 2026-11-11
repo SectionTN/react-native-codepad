@@ -155,98 +155,86 @@ final class EditorCore: @unchecked Sendable {
     }
   }
 
-  private(set) var search: SearchSession?
+  var searchActive: Bool { cp_editor_search_active(document.handle) != 0 }
 
-  var matches: [Int] { search?.matches ?? [] }
-  var matchCount: Int { search?.count ?? 0 }
-
-  /// True while a query is active and its matches belong to an older revision.
-  var searchStale: Bool {
-    guard let s = search else { return false }
-    return s.revision != document.revision
+  /// The matches as start and end pairs, computed on the calling thread when stale.
+  var matches: [Int] {
+    let count = Int(cp_editor_matches(document.handle, nil, 0))
+    if count == 0 { return [] }
+    var out = [Int32](repeating: 0, count: count)
+    cp_editor_matches(document.handle, &out, UInt32(count))
+    return out.map(Int.init)
   }
 
-  /// Compiles first so an invalid regex throws before any state changes. The matches stay stale until ensureMatches or acceptMatches.
+  var matchCount: Int { Int(cp_editor_match_count(document.handle)) }
+
+  /// True while a query is active and its matches belong to an older revision.
+  var searchStale: Bool { cp_editor_search_stale(document.handle) != 0 }
+
+  /// An invalid regex throws before any state changes, except that it clears the search. The matches stay stale
+  /// until something asks for them or acceptMatches lands.
   func setSearch(_ query: SearchQuery) throws {
-    let pattern: NSRegularExpression
-    do {
-      pattern = try Searcher.compile(query)
-    } catch {
-      clearSearch()
-      throw error
+    var flags: Int32 = 0
+    if query.regex { flags |= Int32(CP_SEARCH_REGEX) }
+    if query.caseSensitive { flags |= Int32(CP_SEARCH_CASE) }
+    if query.wholeWord { flags |= Int32(CP_SEARCH_WORD) }
+    var error = [CChar](repeating: 0, count: 512)
+    let units = Array(query.text.utf16)
+    let ok = units.withUnsafeBufferPointer {
+      cp_editor_set_search(document.handle, $0.baseAddress, UInt32($0.count), flags, &error, UInt32(error.count))
     }
-    search = SearchSession(query: query, pattern: pattern)
+    if ok == 0 {
+      let bytes = error.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+      throw SearchError(message: String(decoding: bytes, as: UTF8.self))
+    }
   }
 
   func clearSearch() {
-    search = nil
+    cp_editor_clear_search(document.handle)
   }
 
   /// Computes the matches on the calling thread when they are stale.
   func ensureMatches() {
-    guard let s = search, s.revision != document.revision else { return }
-    // The query compiled in setSearch and nothing cancels here, so find cannot throw.
-    s.matches = (try? Searcher.find(document.text(), s.query)) ?? []
-    s.revision = document.revision
+    cp_editor_matches(document.handle, nil, 0)
+  }
+
+  /// The compiled query for a search worker, or nil without a search.
+  func compiledSearch() -> CompiledSearch? {
+    cp_editor_search_query(document.handle).map(CompiledSearch.init)
+  }
+
+  /// The current text for a worker, unchanged by later edits.
+  func textSnapshot() -> TextSnapshot {
+    TextSnapshot(cp_editor_text(document.handle)!)
   }
 
   /// Stores matches computed elsewhere. False when the document moved on since `revision`.
   func acceptMatches(revision: Int, matches: [Int]) -> Bool {
-    guard let s = search, revision == document.revision else { return false }
-    s.matches = matches
-    s.revision = revision
-    return true
+    let pairs = matches.map { Int32(clamping: $0) }
+    return pairs.withUnsafeBufferPointer {
+      cp_editor_accept_matches(document.handle, Int32(clamping: revision), $0.baseAddress, UInt32($0.count))
+    } != 0
   }
 
-  func findNext() -> SearchHit? {
-    ensureMatches()
-    guard let s = search else { return nil }
-    let index = s.nextIndex(selection)
-    return index < 0 ? nil : selectMatch(s, index)
-  }
+  func findNext() -> SearchHit? { find(forward: true) }
 
-  func findPrevious() -> SearchHit? {
-    ensureMatches()
-    guard let s = search else { return nil }
-    let index = s.previousIndex(selection)
-    return index < 0 ? nil : selectMatch(s, index)
-  }
+  func findPrevious() -> SearchHit? { find(forward: false) }
 
   func replaceCurrent(_ text: String) -> Bool {
-    ensureMatches()
-    guard let s = search else { return false }
-    let current = s.indexOf(selection.range)
-    if current < 0 { return false }
-    applyChange(s.matches[current * 2], s.matches[current * 2 + 1], text, origin: .api, typing: false, caretAfter: true)
-    ensureMatches()
-    if s.count > 0 {
-      var index = s.indexAtOrAfter(selection.min)
-      if index >= s.count { index = 0 }
-      selectMatch(s, index)
-    }
-    return true
+    let units = Array(text.utf16)
+    return units.withUnsafeBufferPointer { cp_editor_replace_current(document.handle, $0.baseAddress, UInt32($0.count)) } != 0
   }
 
   func replaceAll(_ text: String) -> Int {
-    ensureMatches()
-    guard let s = search else { return 0 }
-    let targets = s.matches
-    if targets.isEmpty { return 0 }
-    history.beginGroup()
-    var i = targets.count - 2
-    while i >= 0 {
-      applyChange(targets[i], targets[i + 1], text, origin: .api, typing: false, caretAfter: false)
-      i -= 2
-    }
-    history.endGroup()
-    ensureMatches()
-    return targets.count / 2
+    let units = Array(text.utf16)
+    return Int(units.withUnsafeBufferPointer { cp_editor_replace_all(document.handle, $0.baseAddress, UInt32($0.count)) })
   }
 
-  @discardableResult
-  private func selectMatch(_ s: SearchSession, _ index: Int) -> SearchHit {
-    setSelection(anchor: s.matches[index * 2], head: s.matches[index * 2 + 1])
-    return SearchHit(index: index, total: s.count)
+  private func find(forward: Bool) -> SearchHit? {
+    var index: Int32 = 0
+    var total: Int32 = 0
+    if cp_editor_find(document.handle, forward ? 1 : 0, &index, &total) == 0 { return nil }
+    return SearchHit(index: Int(index), total: Int(total))
   }
 
   @discardableResult

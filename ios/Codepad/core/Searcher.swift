@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(CodepadCore)
+  import CodepadCore
+#endif
+
 /// An invalid pattern. The message is what `setSearch` rejects with.
 struct SearchError: Error, Equatable, Sendable {
   let message: String
@@ -9,50 +13,54 @@ struct SearchError: Error, Equatable, Sendable {
   }
 }
 
+/// A query the core compiled, safe to use from any thread.
+final class CompiledSearch: @unchecked Sendable {
+  let pointer: OpaquePointer
+
+  init(_ pointer: OpaquePointer) {
+    self.pointer = pointer
+  }
+
+  deinit {
+    cp_search_release(pointer)
+  }
+}
+
+/// The document's text at one moment, unchanged by later edits. One thread uses it at a time.
+final class TextSnapshot: @unchecked Sendable {
+  let pointer: OpaquePointer
+
+  init(_ pointer: OpaquePointer) {
+    self.pointer = pointer
+  }
+
+  deinit {
+    cp_text_release(pointer)
+  }
+}
+
 enum Searcher {
-  /// Throws SearchError when the regex is invalid.
-  static func compile(_ q: SearchQuery) throws -> NSRegularExpression {
-    var options: NSRegularExpression.Options = [.anchorsMatchLines]
-    if !q.caseSensitive { options.insert(.caseInsensitive) }
-    let body = q.regex ? q.text : NSRegularExpression.escapedPattern(for: q.text)
-    do {
-      return try NSRegularExpression(pattern: body, options: options)
-    } catch {
-      // NSRegularExpression reports nothing beyond a generic formatting error.
-      throw SearchError(message: "invalid regular expression: \(q.text)")
-    }
+  static let batch = 4096
+
+  struct Result: Equatable {
+    /// Start and end pairs in document order.
+    let matches: [Int]
+    /// The scan stopped where a match attempt hit PCRE2's match limit.
+    let limited: Bool
   }
 
-  /// Packed start and end pairs of the non overlapping matches in document order. Empty matches are skipped.
-  /// Throws CancellationError once `cancel` answers true, between matches and during a long one.
-  static func find(_ text: String, _ q: SearchQuery, cancel: () -> Bool = { false }) throws -> [Int] {
-    if q.text.isEmpty { return [] }
-    let pattern = try compile(q)
-    let subject = text as NSString
-    var out: [Int] = []
-    var cancelled = false
-    pattern.enumerateMatches(in: text, options: [.reportProgress], range: NSRange(location: 0, length: subject.length)) {
-      result, _, stop in
-      if cancel() {
-        cancelled = true
-        stop.pointee = true
-        return
-      }
-      guard let range = result?.range, range.length > 0 else { return }
-      let s = range.location
-      let e = range.location + range.length
-      if !q.wholeWord || isWordBounded(subject, s, e) {
-        out.append(s)
-        out.append(e)
-      }
+  /// Throws CancellationError once `cancel` answers true, which it is asked before each batch of matches.
+  static func find(_ text: TextSnapshot, _ search: CompiledSearch, cancel: () -> Bool = { false }) throws -> Result {
+    var matches: [Int] = []
+    var buffer = [Int32](repeating: 0, count: batch * 2)
+    var from: UInt32 = 0
+    while true {
+      if cancel() { throw CancellationError() }
+      let n = Int(cp_search_find(search.pointer, text.pointer, from, &buffer, UInt32(buffer.count)))
+      if n < 0 { return Result(matches: matches, limited: true) }
+      for i in 0..<n { matches.append(Int(buffer[i])) }
+      if n < buffer.count { return Result(matches: matches, limited: false) }
+      from = UInt32(buffer[n - 1])
     }
-    if cancelled || cancel() { throw CancellationError() }
-    return out
-  }
-
-  private static func isWordBounded(_ text: NSString, _ s: Int, _ e: Int) -> Bool {
-    let before = s == 0 || !TextMovement.isWordChar(text.character(at: s - 1))
-    let after = e >= text.length || !TextMovement.isWordChar(text.character(at: e))
-    return before && after
   }
 }

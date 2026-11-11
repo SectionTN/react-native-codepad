@@ -20,7 +20,7 @@ All of these are exported from `react-native-codepad`. Offsets count UTF-16 code
 | `ContentSizeEvent` | `{ width: number; height: number }` | The size at which nothing scrolls, insets included, in dp. |
 | `CaretDirection` | `'left' \| 'right' \| 'wordLeft' \| 'wordRight' \| 'lineStart' \| 'lineEnd' \| 'documentStart' \| 'documentEnd' \| 'up' \| 'down' \| 'pageUp' \| 'pageDown'` | For `moveCaret()`. |
 | `Suggestions` | `'off' \| 'forceOff' \| 'on'` | For the `suggestions` prop. |
-| `SearchQuery` | `{ text: string; regex?: boolean; caseSensitive?: boolean; wholeWord?: boolean }` | ICU regex on both platforms. The replacement text is literal. |
+| `SearchQuery` | `{ text: string; regex?: boolean; caseSensitive?: boolean; wholeWord?: boolean }` | PCRE2 regex on both platforms. The replacement text is literal. |
 | `SearchHit` | `{ index: number; total: number }` | The 0 based index of the selected match. |
 | `Decoration` | `{ kind: 'underline'; range: Range; color: string; style?: 'solid' \| 'wavy'; thickness?: number; offset?: number } \| { kind: 'gap'; line: number; rows: number } \| { kind: 'lineBackground'; line: number; color: string }` | For the `decorations` prop, with sizes in dp. Underlines default to solid, 1 dp thick and 2 dp below the baseline, and a gap takes `rows` whole rows under its line. |
 | `GapLayoutEvent` | `{ gaps: { line: number; rect: Rect }[] }` | Every gap, sorted by line. |

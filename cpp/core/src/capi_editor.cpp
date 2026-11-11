@@ -7,6 +7,13 @@
 
 struct cp_text {
   codepad::SharedText view;
+  // Built on first use by search, which needs one contiguous subject. A handle belongs to one thread at a time.
+  std::u16string flat;
+  bool flattened = false;
+};
+
+struct cp_search {
+  std::shared_ptr<const codepad::Search> search;
 };
 
 struct cp_editor : codepad::Editor {
@@ -150,6 +157,68 @@ uint32_t cp_editor_decorations(const cp_editor *editor, cp_decoration *out, uint
 }
 
 int32_t cp_editor_decorations_version(const cp_editor *editor) { return editor->decorations.version(); }
+
+int32_t cp_editor_set_search(cp_editor *editor, const cp_unit *query, uint32_t length, int32_t flags, char *error,
+                             uint32_t error_cap) {
+  std::string message;
+  if (editor->set_search(units(query, length), flags, message)) return 1;
+  if (error != nullptr && error_cap > 0) {
+    size_t n = std::min<size_t>(message.size(), error_cap - 1);
+    std::copy_n(message.data(), n, error);
+    error[n] = '\0';
+  }
+  return 0;
+}
+
+void cp_editor_clear_search(cp_editor *editor) { editor->clear_search(); }
+
+int32_t cp_editor_search_active(const cp_editor *editor) { return editor->search_active() ? 1 : 0; }
+
+int32_t cp_editor_search_stale(const cp_editor *editor) { return editor->search_stale() ? 1 : 0; }
+
+int32_t cp_editor_match_count(const cp_editor *editor) { return editor->match_count(); }
+
+uint32_t cp_editor_matches(cp_editor *editor, int32_t *out, uint32_t cap) {
+  const std::vector<int32_t> &matches = editor->matches();
+  if (out != nullptr) std::copy_n(matches.begin(), std::min<size_t>(matches.size(), cap), out);
+  return static_cast<uint32_t>(matches.size());
+}
+
+int32_t cp_editor_find(cp_editor *editor, int32_t forward, int32_t *index, int32_t *total) {
+  int32_t i = 0;
+  int32_t n = 0;
+  if (!editor->find(forward != 0, i, n)) return 0;
+  if (index != nullptr) *index = i;
+  if (total != nullptr) *total = n;
+  return 1;
+}
+
+int32_t cp_editor_replace_current(cp_editor *editor, const cp_unit *text, uint32_t length) {
+  return editor->replace_current(units(text, length)) ? 1 : 0;
+}
+
+int32_t cp_editor_replace_all(cp_editor *editor, const cp_unit *text, uint32_t length) {
+  return editor->replace_all(units(text, length));
+}
+
+int32_t cp_editor_accept_matches(cp_editor *editor, int32_t revision, const int32_t *pairs, uint32_t count) {
+  return editor->accept_matches(revision, pairs, count) ? 1 : 0;
+}
+
+cp_search *cp_editor_search_query(cp_editor *editor) {
+  std::shared_ptr<const codepad::Search> search = editor->search_query();
+  return search ? new cp_search{std::move(search)} : nullptr;
+}
+
+int32_t cp_search_find(const cp_search *search, cp_text *text, uint32_t from, int32_t *out, uint32_t cap) {
+  if (!text->flattened) {
+    text->flat = text->view->string(0, text->view->length());
+    text->flattened = true;
+  }
+  return search->search->find(text->flat, from, out, cap);
+}
+
+void cp_search_release(cp_search *search) { delete search; }
 
 #ifdef CODEPAD_TEST_HOOKS
 uint32_t cp_test_chunk_ends(cp_editor *editor, uint32_t *out, uint32_t cap) {

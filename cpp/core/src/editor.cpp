@@ -349,4 +349,81 @@ BracketPair Editor::bracket_match(const cp_snapshot *snapshot, uint32_t caret) c
   return match_bracket(doc, caret, snapshot);
 }
 
+bool Editor::set_search(std::u16string_view text, int32_t flags, std::string &error) {
+  std::shared_ptr<const Search> compiled = Search::compile(text, flags, error);
+  if (!compiled) {
+    search_.reset();
+    return false;
+  }
+  search_ = SearchSession{std::move(compiled), {}, -1};
+  return true;
+}
+
+void Editor::ensure_matches() {
+  if (!search_ || search_->revision == doc.revision()) return;
+  bool limited = false;
+  search_->matches = search_->search->find_all(doc.text(0, doc.length()), limited);
+  search_->revision = doc.revision();
+}
+
+const std::vector<int32_t> &Editor::matches() {
+  static const std::vector<int32_t> none;
+  ensure_matches();
+  return search_ ? search_->matches : none;
+}
+
+void Editor::select_match(int32_t index) {
+  const std::vector<int32_t> &m = search_->matches;
+  move_selection({m[static_cast<size_t>(index) * 2], m[static_cast<size_t>(index) * 2 + 1]}, false);
+}
+
+bool Editor::find(bool forward, int32_t &index, int32_t &total) {
+  ensure_matches();
+  if (!search_) return false;
+  Selection s = selection();
+  int32_t i = forward ? search_->next_index(s.min(), s.max()) : search_->previous_index(s.min());
+  if (i < 0) return false;
+  select_match(i);
+  index = i;
+  total = search_->count();
+  return true;
+}
+
+bool Editor::replace_current(std::u16string_view text) {
+  ensure_matches();
+  if (!search_) return false;
+  Selection s = selection();
+  int32_t current = search_->index_of(s.min(), s.max());
+  if (current < 0) return false;
+  const std::vector<int32_t> &m = search_->matches;
+  replace(static_cast<uint32_t>(m[static_cast<size_t>(current) * 2]), static_cast<uint32_t>(m[static_cast<size_t>(current) * 2 + 1]),
+          text, CP_ORIGIN_API, false, true);
+  ensure_matches();
+  if (search_->count() > 0) {
+    int32_t i = search_->index_at_or_after(selection().min());
+    select_match(i >= search_->count() ? 0 : i);
+  }
+  return true;
+}
+
+int32_t Editor::replace_all(std::u16string_view text) {
+  ensure_matches();
+  if (!search_ || search_->matches.empty()) return 0;
+  std::vector<int32_t> targets = search_->matches;
+  begin_group();
+  for (size_t i = targets.size(); i >= 2; i -= 2) {
+    replace(static_cast<uint32_t>(targets[i - 2]), static_cast<uint32_t>(targets[i - 1]), text, CP_ORIGIN_API, false, false);
+  }
+  end_group();
+  ensure_matches();
+  return static_cast<int32_t>(targets.size() / 2);
+}
+
+bool Editor::accept_matches(int32_t revision, const int32_t *pairs, uint32_t count) {
+  if (!search_ || revision != doc.revision()) return false;
+  search_->matches.assign(pairs, pairs + count);
+  search_->revision = revision;
+  return true;
+}
+
 }  // namespace codepad

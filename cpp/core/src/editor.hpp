@@ -2,13 +2,18 @@
 
 #include <atomic>
 #include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
 #include <string_view>
+#include <vector>
 
 #include "brackets.hpp"
 #include "codepad.h"
 #include "decorations.hpp"
 #include "document.hpp"
 #include "indenter.hpp"
+#include "search.hpp"
 #include "undo.hpp"
 
 namespace codepad {
@@ -46,7 +51,25 @@ class Editor {
   void set_selection_dirty(bool dirty) { undo_.selection_dirty = dirty; }
   BracketPair bracket_match(const cp_snapshot *snapshot, uint32_t caret) const;
 
+  // False with PCRE2's message in error when the regex does not compile, which also clears the search.
+  bool set_search(std::u16string_view text, int32_t flags, std::string &error);
+  void clear_search() { search_.reset(); }
+  bool search_active() const { return search_.has_value(); }
+  bool search_stale() const { return search_ && search_->revision != doc.revision(); }
+  int32_t match_count() const { return search_ ? search_->count() : 0; }
+  // The matches, computed on the calling thread when stale.
+  const std::vector<int32_t> &matches();
+  // Selects the next match, or the previous one. False without a match.
+  bool find(bool forward, int32_t &index, int32_t &total);
+  bool replace_current(std::u16string_view text);
+  int32_t replace_all(std::u16string_view text);
+  bool accept_matches(int32_t revision, const int32_t *pairs, uint32_t count);
+  std::shared_ptr<const Search> search_query() const { return search_ ? search_->search : nullptr; }
+
  private:
+  void ensure_matches();
+  void select_match(int32_t index);
+
   void type_unit(std::u16string_view unit);
   void newline();
   void tab();
@@ -71,6 +94,7 @@ class Editor {
   std::atomic<int32_t> history_{0};
   // The selection the host last heard about.
   Selection reported_;
+  std::optional<SearchSession> search_;
 };
 
 }  // namespace codepad

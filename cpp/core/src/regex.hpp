@@ -13,12 +13,15 @@ class Regex {
  public:
   // nullptr with the PCRE2 message in error when the pattern does not compile.
   static std::unique_ptr<Regex> compile(std::u16string_view pattern, std::string &error);
+  // The same with pcre2_compile options of the caller's choice.
+  static std::unique_ptr<Regex> compile(std::u16string_view pattern, uint32_t options, std::string &error);
   ~Regex();
   Regex(const Regex &) = delete;
   Regex &operator=(const Regex &) = delete;
 
   // True when the pattern matches anywhere in subject. Safe to call from several threads.
   bool search(std::u16string_view subject) const;
+  const pcre2_real_code_16 *code() const { return code_; }
 
  private:
   explicit Regex(pcre2_real_code_16 *code) : code_(code) {}

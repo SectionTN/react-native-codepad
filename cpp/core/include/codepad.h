@@ -167,6 +167,34 @@ CP_API uint32_t cp_editor_decorations(const cp_editor *editor, cp_decoration *ou
 // Moves whenever the decorations change.
 CP_API int32_t cp_editor_decorations_version(const cp_editor *editor);
 
+// Search, a PCRE2 regex or plain text, in Unicode mode with any newline ending a line. Empty matches are skipped.
+typedef struct cp_search cp_search;
+enum { CP_SEARCH_REGEX = 1, CP_SEARCH_CASE = 2, CP_SEARCH_WORD = 4 };
+// Returns 0 with PCRE2's message in error when the regex does not compile, which also clears the search.
+CP_API int32_t cp_editor_set_search(cp_editor *editor, const cp_unit *query, uint32_t length, int32_t flags,
+                                    char *error, uint32_t error_cap);
+CP_API void cp_editor_clear_search(cp_editor *editor);
+CP_API int32_t cp_editor_search_active(const cp_editor *editor);
+// 1 while a query is active and its matches belong to an older revision.
+CP_API int32_t cp_editor_search_stale(const cp_editor *editor);
+CP_API int32_t cp_editor_match_count(const cp_editor *editor);
+// The matches as start and end pairs, computed on the calling thread when stale. Returns the ints there are.
+CP_API uint32_t cp_editor_matches(cp_editor *editor, int32_t *out, uint32_t cap);
+// Selects the next match, or the previous one when forward is 0. Returns 0 without a match.
+CP_API int32_t cp_editor_find(cp_editor *editor, int32_t forward, int32_t *index, int32_t *total);
+CP_API int32_t cp_editor_replace_current(cp_editor *editor, const cp_unit *text, uint32_t length);
+// Returns how many matches were replaced, as one undo step.
+CP_API int32_t cp_editor_replace_all(cp_editor *editor, const cp_unit *text, uint32_t length);
+// Matches computed off the main thread for revision. count is in ints. Returns 0 when the document moved on.
+CP_API int32_t cp_editor_accept_matches(cp_editor *editor, int32_t revision, const int32_t *pairs, uint32_t count);
+// The compiled query, retained for the caller, or NULL without a search.
+CP_API cp_search *cp_editor_search_query(cp_editor *editor);
+// Any thread. Writes up to cap / 2 match pairs found at or after from and returns the ints written, or -1 when a
+// match attempt hit PCRE2's match limit before any pair was written. A full buffer means more may follow: call
+// again from the end of the last match.
+CP_API int32_t cp_search_find(const cp_search *search, cp_text *text, uint32_t from, int32_t *out, uint32_t cap);
+CP_API void cp_search_release(cp_search *search);
+
 // Capture names interned into small ids shared by every language.
 CP_API int32_t cp_style_id(const char *name);
 // Writes the name NUL terminated when it fits and returns its full length.

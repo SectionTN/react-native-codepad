@@ -5,13 +5,16 @@
 namespace codepad {
 
 std::unique_ptr<Regex> Regex::compile(std::u16string_view pattern, std::string &error) {
+  // Invalid UTF-16 in a document (a lone surrogate) must not stop matching.
+  return compile(pattern, PCRE2_UTF | PCRE2_UCP | PCRE2_ALT_EXTENDED_CLASS | PCRE2_MATCH_INVALID_UTF, error);
+}
+
+std::unique_ptr<Regex> Regex::compile(std::u16string_view pattern, uint32_t options, std::string &error) {
   pcre2_compile_context_16 *context = pcre2_compile_context_create_16(nullptr);
   // Java and ICU end a line at CR, LF, CRLF, NEL, LS and PS. ANY is the closest PCRE2 setting.
   pcre2_set_newline_16(context, PCRE2_NEWLINE_ANY);
   int code = 0;
   PCRE2_SIZE offset = 0;
-  // Invalid UTF-16 in a document (a lone surrogate) must not stop matching.
-  uint32_t options = PCRE2_UTF | PCRE2_UCP | PCRE2_ALT_EXTENDED_CLASS | PCRE2_MATCH_INVALID_UTF;
   pcre2_code_16 *compiled = pcre2_compile_16(reinterpret_cast<PCRE2_SPTR16>(pattern.data()), pattern.size(),
                                              options, &code, &offset, context);
   pcre2_compile_context_free_16(context);

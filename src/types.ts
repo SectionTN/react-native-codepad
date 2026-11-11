@@ -119,7 +119,7 @@ export type Suggestions = 'off' | 'forceOff' | 'on';
 
 export interface SearchQuery {
   text: string;
-  /** Treat text as a regular expression, ICU's dialect on both platforms. Replacement text is always literal. */
+  /** Treat text as a regular expression, PCRE2's dialect on both platforms. Replacement text is always literal. */
   regex?: boolean;
   caseSensitive?: boolean;
   wholeWord?: boolean;
