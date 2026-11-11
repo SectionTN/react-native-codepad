@@ -39,6 +39,7 @@ enum LanguageRegistry {
     "ts": "typescript", "mts": "typescript", "cts": "typescript",
     "py": "python", "python3": "python", "kt": "kotlin", "kts": "kotlin", "rs": "rust", "golang": "go",
     "yml": "yaml", "jsonc": "json", "json5": "json", "htm": "html", "xhtml": "html", "md": "markdown", "h": "c",
+    "svg": "xml", "xsd": "xml", "xsl": "xml", "xslt": "xml", "rng": "xml", "dosini": "ini", "confini": "ini",
     "cpp": "", "c++": "", "cc": "", "hpp": "", "objc": "", "bash": "", "sh": "", "shell": "", "zsh": "",
     "console": "", "text": "", "txt": "", "plain": "", "regex": "", "jsdoc": "", "phpdoc": "", "comment": "", "luap": "",
     "printf": "", "styled": "", "angular": "", "groq": "", "graphql": "", "glimmer": "", "sql": "", "c_sharp": "",

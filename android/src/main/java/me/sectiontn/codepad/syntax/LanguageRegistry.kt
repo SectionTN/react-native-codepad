@@ -22,6 +22,7 @@ object LanguageRegistry {
     "ts" to "typescript", "mts" to "typescript", "cts" to "typescript",
     "py" to "python", "python3" to "python", "kt" to "kotlin", "kts" to "kotlin", "rs" to "rust", "golang" to "go",
     "yml" to "yaml", "jsonc" to "json", "json5" to "json", "htm" to "html", "xhtml" to "html", "md" to "markdown", "h" to "c",
+    "svg" to "xml", "xsd" to "xml", "xsl" to "xml", "xslt" to "xml", "rng" to "xml", "dosini" to "ini", "confini" to "ini",
     "cpp" to "", "c++" to "", "cc" to "", "hpp" to "", "objc" to "", "bash" to "", "sh" to "", "shell" to "", "zsh" to "",
     "console" to "", "text" to "", "txt" to "", "plain" to "", "regex" to "", "jsdoc" to "", "phpdoc" to "", "comment" to "", "luap" to "",
     "printf" to "", "styled" to "", "angular" to "", "groq" to "", "graphql" to "", "glimmer" to "", "sql" to "", "c_sharp" to "",
