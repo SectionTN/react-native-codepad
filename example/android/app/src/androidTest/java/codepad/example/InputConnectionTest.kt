@@ -1,6 +1,7 @@
 package codepad.example
 
 import android.text.InputType
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import me.sectiontn.codepad.core.Range
@@ -87,6 +88,24 @@ class InputConnectionTest {
         before to draw(editor)
       }
       assertFalse(plain.sameAs(composed))
+    }
+  }
+
+  // Unmount can drop a view still in the window with a composition open. Freeing the core right away made the
+  // keyboard's next call and the detach throw on a closed core.
+  @Test
+  fun aViewDroppedMidCompositionKeepsItsCoreUntilItLeavesTheWindow() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        editor.setInitialText("abc")
+        editor.requestFocus()
+        val connection = checkNotNull(editor.onCreateInputConnection(EditorInfo()))
+        connection.setComposingText("xy", 1)
+        editor.close()
+        assertTrue(connection.finishComposingText())
+        (editor.parent as ViewGroup).removeView(editor)
+      }
     }
   }
 }

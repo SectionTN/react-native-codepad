@@ -1206,6 +1206,7 @@ class CodeEditorView(context: Context) : View(context) {
 
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
+    if (dropped) return
     engine()
     if (avoidsKeyboard) startKeyboardTracker()
     if (autoFocusPending) runAutoFocus()
@@ -1227,11 +1228,19 @@ class CodeEditorView(context: Context) : View(context) {
     search = null
     snapshot?.close()
     snapshot = null
+    if (dropped) core.close()
   }
 
-  /** Unmount: frees the core. The view never draws or edits again. */
+  /**
+   * Unmount: the view never draws again. The core is freed once the view is also off the window, since the keyboard
+   * still calls its connection until then.
+   */
   fun close() {
     dropped = true
+    if (!isAttachedToWindow) release()
+  }
+
+  private fun release() {
     engine?.close()
     engine = null
     search?.close()
