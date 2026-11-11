@@ -20,12 +20,19 @@ yarn gen:languages                         # regenerate the language packages
 yarn docs                                  # the docs site with live reload
 ```
 
-The [contributing page](https://sectiontn.github.io/react-native-codepad/internals/contributing/) of the docs site has the full loop: the benches, the keyboard recorder, the host tree-sitter build, iOS, and what every command prints.
+The syntax engine is C++ under `cpp/core`, shared by both platforms, with PCRE2 for regular expressions. Android builds it with CMake into `libcodepad.so`, the pod builds it at -O2 in every configuration, and the Swift package compiles it for `yarn test:swift`. `yarn host:treesitter` compiles the core, tree-sitter and every grammar into one host library for the JVM tests, so run it again after a change under `cpp/`. The address and thread sanitizers check the core on macOS, and CI runs both:
+
+```sh
+swift test --sanitize=address --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
+swift test --sanitize=thread --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
+```
+
+The [contributing page](https://reactnativecodepad.pages.dev/internals/contributing/) of the docs site has the full loop: the benches, the keyboard recorder, the host build, iOS, and what every command prints.
 
 ## Conventions
 
-- Conventional commits with an imperative subject under 72 characters; a body only when the reason is not in the diff. commitlint checks every commit.
-- Biome formats and lints; `yarn format` fixes what it can, and lefthook runs it on staged files.
+- Conventional commits with an imperative subject under 72 characters, and a body only when the reason is not in the diff. commitlint checks every commit.
+- Biome formats and lints. `yarn format` fixes what it can, and lefthook runs it on staged files.
 - Generated files are never edited by hand: everything under `languages/<id>/` comes from `yarn gen:languages`, `nitrogen/generated` and `src/specs/CodeEditorViewConfig.ts` from `yarn nitrogen`, the language packages page of the site from the generator. CI regenerates and fails on a diff.
 - Tests come with the change: a vector in `tests/vectors` or a JUnit case for engine behavior, a jest case for the wrapper, a recording in `tests/ime` or `tests/ime-ios` for a keyboard bug.
 - UTF-16 offsets, half open ranges, 0 based lines and columns, everywhere. Comments are one to three lines and state platform quirks and invariants, nothing else.
@@ -33,7 +40,7 @@ The [contributing page](https://sectiontn.github.io/react-native-codepad/interna
 ## Pull requests
 
 - One change per pull request, with the reason in the description.
-- `yarn lint`, `yarn typecheck`, `yarn test`, `yarn test:android` and `yarn test:swift` pass locally; CI runs them plus the Android and iOS example builds and the docs build.
+- `yarn lint`, `yarn typecheck`, `yarn test`, `yarn test:android` and `yarn test:swift` pass locally. CI runs them plus the Android and iOS example builds and the docs build.
 - A change to the public API updates `src/types.ts`, the reference pages under `website/docs/reference/` (a test fails otherwise) and the README when the quick start is affected.
-- A keyboard or layout change was tried on a device, an emulator or the simulator; say which, with the keyboard for input changes.
+- A keyboard or layout change was tried on a device, an emulator or the simulator. Say which, with the keyboard for input changes.
 - Open an issue first for a change to the API or to the engine's behavior, so the design is agreed before the code.

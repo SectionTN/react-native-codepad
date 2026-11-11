@@ -24,7 +24,7 @@ yarn
 
 ## Android
 
-The Kotlin core, the keyboard protocol and the syntax engine are tested on the JVM, so no device is needed. The syntax tests use a host build of tree-sitter, built once:
+The Kotlin core, the keyboard protocol and the syntax engine are tested on the JVM, so no device is needed. The syntax tests use a host build of the C++ core, tree-sitter and the grammars. Build it once, and again after a change under `cpp/`:
 
 ```sh
 yarn host:treesitter

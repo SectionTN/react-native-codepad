@@ -4,7 +4,7 @@ description: The engine, its layers and threads, the tree-sitter binding and the
 sidebar_position: 1
 ---
 
-The editor engine is written twice, in Kotlin and in Swift, with the same layers, the same names and the same test vectors, and it is bound to React Native through Nitro Views. The TypeScript wrapper, the tree-sitter runtime, the grammars and the vectors are shared.
+The editor engine is written twice, in Kotlin and in Swift, with the same layers, the same names and the same test vectors, and it is bound to React Native through Nitro Views. The TypeScript wrapper, the syntax core in C++, the tree-sitter runtime, the grammars and the vectors are shared.
 
 ## Why an own engine
 
@@ -18,7 +18,7 @@ Under `me.sectiontn.codepad` in `android/src/main/java`:
 | --- | --- | --- |
 | `core` | `Document`, `UndoManager`, `TextMovement`, `Indenter`, `AutoCloser`, `BracketMatcher`, `Searcher`, in pure Kotlin. | nothing |
 | `input` | `ImeSession`, the keyboard protocol, and `KeyCommands`, the hardware key table. | core |
-| `syntax` | `SyntaxEngine` and its thread, the tree-sitter JNI binding, `LanguageRegistry`, `Highlighter`, the per line span cache. | core |
+| `syntax` | `SyntaxEngine` and its thread, `CoreNative`, the JNI binding to the C++ core, `LanguageRegistry`, `Highlighter`, the per line span cache. | core |
 | `layout` | `LineLayout` over `StaticLayout`, `HeightMap`, `LayoutCache`, `Viewport`, `CaretMover`, `GutterMetrics`. | core, syntax |
 | `view` | `CodeEditorView`: drawing, gestures, scrolling, the input connection, handles, the edit menu, the keyboard inset tracker. | every layer before it |
 | `com.margelo.nitro.codepad` | `HybridCodeEditorView` and `HybridCodepad`, the Nitro layer. | view |
@@ -31,7 +31,7 @@ The document is an array of lines, each a growable UTF-16 buffer. `\r\n` and a `
 
 ### `syntax`
 
-One serial thread per editor holds the parser and the live tree. It applies each edit, reparses incrementally, reconciles the injected trees against the ranges tree-sitter reports as changed, and publishes an immutable snapshot to the main thread. The first parse of a large file runs with a time budget and resumes, and an edit during a parse is replayed onto its tree once it finishes.
+The parsing and highlighting live in one C++ core under `cpp/core`, behind a C API that Kotlin calls through JNI and Swift calls directly. One serial thread per editor holds the parser and the live tree. It applies each edit, reparses incrementally, reconciles the injected trees against the ranges tree-sitter reports as changed, and publishes an immutable snapshot to the main thread. The first parse of a large file runs with a time budget and resumes, and an edit during a parse is replayed onto its tree once it finishes.
 
 The main thread queries the published snapshot for the visible lines only and caches the spans per line. A snapshot lists the regions whose structure changed, so the painter re-queries only the visible lines inside those regions. Overlapping captures apply in pattern order and the later pattern takes precedence, which is the rule nvim queries are written for.
 
@@ -51,12 +51,12 @@ The main thread queries the published snapshot for the visible lines only and ca
 | --- | --- | --- |
 | `core` | The same files, lines as `[UInt16]`, the document lock a `pthread_rwlock_t`. | Foundation only. Regular expressions through `NSRegularExpression`. |
 | `input` | `KeyCommands` with the Mac modifiers, `GestureMachine`, `MarkedTextSession` (the `UITextInput` composition logic). | A long press places the caret under the loupe, a triple tap selects the line. |
-| `syntax` | `TreeSitter.swift` over the C API, `SyntaxEngine` on a serial queue, `LanguageRegistry`, `Highlighter`, `SearchController`. | No JNI: the parser reads a `[UInt16]` mirror through a C callback. |
+| `syntax` | `SyntaxEngine` on a serial queue, `LanguageRegistry`, `Highlighter`, `SearchController`. | No JNI: Swift calls the core's C API directly. |
 | `layout` | `LineLayout` over Core Text, `ThemeColors` as `CGColor`s, the rest one to one. | Tests on macOS. |
 | `view` | `CodeEditorView`, a `UIScrollView`. `TextInputView`, the `UITextInput` conformer. The recycled `LineLayer`s, the highlight, cursor and handle views, the gesture recognizer, the edit menu, the keyboard inset tracker and the undo manager bridge. | UIKit, on the main actor, tested by XCTest on the simulator. |
 | `nitro` | `HybridCodeEditorView` and `HybridCodepad`. | Nonisolated for the JS thread's readers. View work hops to the main actor. |
 
-The pure layers compile as a Swift package at the repository root, with the tree-sitter runtime and the nineteen grammars as C targets, so `swift test` runs the vectors, the syntax and layout suites and the keyboard replays on macOS in seconds. The pod compiles the same files plus `view` and `nitro`. Both use the Swift 6 language mode.
+The pure layers compile as a Swift package at the repository root, with the tree-sitter runtime and the nineteen grammars as C targets and the core with PCRE2 as one more target, so `swift test` runs the vectors, the syntax and layout suites and the keyboard replays on macOS in seconds. The pod compiles the same files plus `view` and `nitro`. Both use the Swift 6 language mode.
 
 The view is a `UIScrollView` whose content view conforms to `UITextInput` over UTF-16 offsets, so the system keyboard, dictation, autocorrect and hardware keys talk to the document directly. The visible lines are recycled `CALayer`s drawn through Core Text, keyed by the line's and the snapshot's revision. The selection UI is a `UITextSelectionDisplayInteraction` with the editor's own highlight, cursor and handle views, which is what lets the theme's `selection` and `cursor` apply exactly. The loupe is a `UITextLoupeSession`, the edit menu a `UIEditMenuInteraction`, and `undoManager` a Foundation `UndoManager` subclass over the core's groups. The scroll view's `contentInset` is never used, so `contentInsets`, the keyboard inset, `scrollToLine` and `onContentSizeChange` keep the Android semantics. Keyboard avoidance reads a tracking view pinned to the window's `keyboardLayoutGuide` through its presentation layer on every frame.
 
@@ -72,7 +72,7 @@ The document lock is a `ReentrantReadWriteLock` on Android and a `pthread_rwlock
 
 ## The tree-sitter binding
 
-The runtime is tree-sitter 0.26, vendored into the core library with hidden symbols. A generated `parser.c` is self contained, so language packages never link against the runtime. The binding works in UTF-16: the input is `UTF16LE` and byte offsets are halved at the boundary, so Kotlin and Swift see the offsets JavaScript uses. The parser's read callback reads a native UTF-16 mirror of the document, so a parse never calls back into the JVM. Predicates (`eq?`, `match?`, `any-of?`, `contains?`, `has-parent?`, `has-ancestor?` with their `not-` and `any-` forms) are evaluated in Kotlin and Swift, and `lua-match?` patterns become regular expressions at generation time.
+The runtime is tree-sitter 0.26, vendored into the core library with hidden symbols. A generated `parser.c` is self contained, so language packages never link against the runtime. The binding works in UTF-16: the input is `UTF16LE` and byte offsets are halved at the boundary, so Kotlin and Swift see the offsets JavaScript uses. The parser's read callback reads the core's own UTF-16 copy of the document, so a parse never calls back into the JVM. Predicates (`eq?`, `match?`, `any-of?`, `contains?`, `has-parent?`, `has-ancestor?` with their `not-` and `any-` forms) are evaluated in the core, with `match?` on PCRE2, and `lua-match?` patterns become regular expressions at generation time.
 
 ### Injections and kept trees
 

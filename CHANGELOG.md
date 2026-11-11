@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Editor
+
+- Both platforms now highlight through one syntax engine written in C++, in place of the separate Kotlin and Swift engines. The shipped languages highlight exactly as before: the tests compare the colors of every sample file against a recording of the old engine. On the Android emulator, the example app used 10-14 MB less memory with the 10,000-line benchmark file open, most of it Java heap.
+
+### Languages
+
+- The `match?` predicates in the queries of a custom language package now run on PCRE2 on both platforms, instead of Java regular expressions on Android and ICU on iOS. Most patterns match as before. On Android, `\w` and `\b` now match letters outside ASCII, and `.` no longer matches a vertical tab or a form feed. Both already worked this way on iOS.
+
 ## 0.1.7 (2026-11-10)
 
 ### Languages
