@@ -1,6 +1,9 @@
 package me.sectiontn.codepad.syntax
 
 import java.io.File
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
+import me.sectiontn.codepad.core.Document
 
 /** Registers generated languages with the registry from the host library plus the generated query files. */
 object HostLanguages {
@@ -37,6 +40,24 @@ object HostLanguages {
       val queries = pkg.resolve("queries").listFiles { f -> f.resolve("highlights.scm").exists() } ?: emptyArray()
       queries.sortedBy { it.name }.map { pkg.name to it.name }
     }
+  }
+}
+
+/** The whole text parsed by an engine, injections included. */
+fun parseSnapshot(lang: LoadedLanguage, text: String): Pair<Snapshot, Document> {
+  val doc = Document(text)
+  val snapshots = LinkedBlockingQueue<Snapshot>()
+  val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+  try {
+    engine.setLanguage(lang.id)
+    engine.setText(text, doc.revision)
+    while (true) {
+      val s = checkNotNull(snapshots.poll(10, TimeUnit.SECONDS)) { "${lang.id} never parsed" }
+      if (s.revision == doc.revision && s.length == text.length) return s to doc
+      s.close()
+    }
+  } finally {
+    engine.close()
   }
 }
 

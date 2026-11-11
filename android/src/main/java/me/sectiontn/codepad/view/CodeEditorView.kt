@@ -48,7 +48,6 @@ import me.sectiontn.codepad.syntax.Highlighter
 import me.sectiontn.codepad.syntax.LanguageRegistry
 import me.sectiontn.codepad.syntax.Snapshot
 import me.sectiontn.codepad.syntax.SyntaxEngine
-import me.sectiontn.codepad.syntax.dirtyRuns
 import me.sectiontn.codepad.syntax.shiftSpans
 import org.json.JSONArray
 import org.json.JSONObject
@@ -1270,17 +1269,20 @@ class CodeEditorView(context: Context) : View(context) {
     val consistent = snapshot?.takeIf { it.revision == doc.revision }
     val hl = highlighter
     val revision = if (consistent != null && hl != null) consistent.revision else -1
-    val runs = if (consistent != null && hl != null) {
-      val changed = consistent.changed.takeIf { consistent.basedOn >= 0 && consistent.basedOn == appliedRevision }
-      dirtyRuns(first, last, revision, appliedRevision, changed, doc) { cache[it]?.revision }
-    } else IntArray(0)
+    var runs = IntArray(0)
+    var spans: Array<IntArray> = emptyArray()
+    if (consistent != null && hl != null) {
+      val incremental = consistent.basedOn >= 0 && consistent.basedOn == appliedRevision
+      val entries = IntArray(last - first + 1) { cache[first + it]?.revision ?: Highlighter.NO_ENTRY }
+      val frame = hl.frame(consistent, doc, first, last, appliedRevision, incremental, entries)
+      runs = frame.first
+      spans = frame.second
+    }
     var r = 0
-    var batch: Array<IntArray>? = null
+    // The spans of the run lines arrive in line order, one entry per line.
+    var next = 0
     for (line in first..last) {
-      while (r + 1 < runs.size && runs[r + 1] < line) {
-        r += 2
-        batch = null
-      }
+      while (r + 1 < runs.size && runs[r + 1] < line) r += 2
       val inRun = r + 1 < runs.size && line >= runs[r]
       val entry = cache[line]
       if (!inRun && entry != null) {
@@ -1290,8 +1292,8 @@ class CodeEditorView(context: Context) : View(context) {
       }
       var fresh: IntArray? = null
       if (inRun) {
-        if (batch == null) batch = checkNotNull(hl).spans(checkNotNull(consistent), doc, runs[r], runs[r + 1])
-        fresh = batch[line - runs[r]].takeIf { it.isNotEmpty() }
+        fresh = spans.getOrNull(next)?.takeIf { it.isNotEmpty() }
+        next++
         if (entry != null && entry.spans.contentEquals(fresh)) {
           entry.revision = revision
           continue

@@ -21,7 +21,7 @@ object HostLib {
   /** The grammar's TSLanguage pointer from the host library, failing the test when it was not compiled in. */
   fun language(name: String): Long {
     ensure()
-    val pointer = TreeSitterNative.hostLanguage(name)
+    val pointer = CoreNative.hostLanguage(name)
     assertTrue("$name grammar not in the host library", pointer != 0L)
     return pointer
   }

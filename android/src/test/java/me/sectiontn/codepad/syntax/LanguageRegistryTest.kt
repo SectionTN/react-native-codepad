@@ -25,10 +25,10 @@ class LanguageRegistryTest {
   @Test
   fun anInstalledLanguageBeatsTheAliasTable() {
     assertNull(LanguageRegistry.canonicalInjectionId("graphql"))
-    val base = HostLanguages.javascript()
+    HostLanguages.javascript()
     LanguageRegistry.register(object : LanguageProvider {
       override val id = "graphql"
-      override val languagePointer = base.pointer
+      override val languagePointer = HostLib.javascript()
       override val highlights = "(identifier) @variable"
       override val injections = ""
     })
@@ -38,14 +38,15 @@ class LanguageRegistryTest {
 
   @Test
   fun unknownLanguagesAndBadQueriesResolveToNull() {
-    val base = HostLanguages.javascript()
+    HostLanguages.javascript()
+    val pointer = HostLib.javascript()
     assertNull(LanguageRegistry.resolve("no_such_language"))
     assertNull(LanguageRegistry.resolveInjection("c_sharp"))
     assertTrue(LanguageRegistry.resolveInjection("js") === LanguageRegistry.resolve("javascript"))
     var reads = 0
     LanguageRegistry.register(object : LanguageProvider {
       override val id = "javascript_bad"
-      override val languagePointer: Long get() { reads++; return base.pointer }
+      override val languagePointer: Long get() { reads++; return pointer }
       override val highlights = "(no_such_node) @x"
       override val injections = ""
     })

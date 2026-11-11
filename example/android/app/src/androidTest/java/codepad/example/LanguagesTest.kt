@@ -2,14 +2,14 @@ package codepad.example
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 import me.sectiontn.codepad.core.Document
 import me.sectiontn.codepad.syntax.Highlighter
 import me.sectiontn.codepad.syntax.LanguageRegistry
-import me.sectiontn.codepad.syntax.Mirror
-import me.sectiontn.codepad.syntax.Parser
 import me.sectiontn.codepad.syntax.Snapshot
+import me.sectiontn.codepad.syntax.SyntaxEngine
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,20 +38,22 @@ class LanguagesTest {
     assertEquals(20, ids.size)
     for (id in ids) {
       val language = LanguageRegistry.resolve(id) ?: error("$id did not load")
-      assertTrue("$id highlights", language.highlights.query.patternCount > 0)
       val text = checkNotNull(snippets[id]) { "no snippet for $id" }
-      Parser().use { parser ->
-        assertTrue("$id language", parser.setLanguage(language.pointer))
-        Mirror().use { mirror ->
-          mirror.setText(text)
-          val tree = parser.parse(null, mirror, null, 1_000_000L)
-          assertNotNull("$id parse", tree)
-          val snapshot = Snapshot(0, checkNotNull(tree), emptyList(), id)
-          val spans = Highlighter(language).spans(snapshot, Document(text), 0, 0)
-          assertTrue("$id paints line 0", spans[0].isNotEmpty())
-          snapshot.close()
-        }
+      val snapshots = LinkedBlockingQueue<Snapshot>()
+      val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+      engine.setLanguage(id)
+      engine.setText(text, 0)
+      // setLanguage can publish an empty document snapshot first; wait for the whole text.
+      var snapshot: Snapshot
+      while (true) {
+        snapshot = checkNotNull(snapshots.poll(10, TimeUnit.SECONDS)) { "$id parse" }
+        if (snapshot.length == text.length) break
+        snapshot.close()
       }
+      val spans = Highlighter(language).spans(snapshot, Document(text), 0, 0)
+      assertTrue("$id paints line 0", spans[0].isNotEmpty())
+      snapshot.close()
+      engine.close()
     }
   }
 }

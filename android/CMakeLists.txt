@@ -12,8 +12,7 @@ file(GLOB PCRE2_SOURCES ${PCRE2_DIR}/*.c)
 
 add_library(${PACKAGE_NAME} SHARED
   src/main/cpp/cpp-adapter.cpp
-  src/main/cpp/treesitter_jni.c
-  src/main/cpp/utf16_mirror.c
+  src/main/cpp/core_jni.cpp
   ${TS_DIR}/src/lib.c
   ${CORE_SOURCES}
   ${PCRE2_SOURCES}
@@ -22,8 +21,8 @@ add_library(${PACKAGE_NAME} SHARED
 # Keep the runtime private to libcodepad.so. Language packages carry their own parser tables.
 set_source_files_properties(${TS_DIR}/src/lib.c PROPERTIES COMPILE_OPTIONS
   "-std=c11;-O2;-fvisibility=hidden;-DTREE_SITTER_HIDE_SYMBOLS;-w")
-set_source_files_properties(src/main/cpp/treesitter_jni.c src/main/cpp/utf16_mirror.c PROPERTIES COMPILE_OPTIONS
-  "-std=c11;-O2;-fvisibility=hidden;-DTREE_SITTER_HIDE_SYMBOLS")
+set_source_files_properties(src/main/cpp/core_jni.cpp PROPERTIES COMPILE_OPTIONS
+  "-O2;-fvisibility=hidden;-DTREE_SITTER_HIDE_SYMBOLS")
 # The core and PCRE2 run on every keystroke, so they stay at -O2 in debug builds too, and stay private.
 if(PCRE2_SOURCES)
   set_source_files_properties(${PCRE2_SOURCES} PROPERTIES COMPILE_OPTIONS

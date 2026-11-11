@@ -51,7 +51,7 @@ typedef struct { const char *name; const void *(*fn)(void); } HostLanguage;
 static const HostLanguage LANGUAGES[] = {
 ${TABLE}  { 0, 0 }
 };
-JNIEXPORT jlong JNICALL Java_me_sectiontn_codepad_syntax_TreeSitterNative_hostLanguage(JNIEnv *env, jclass cls, jstring jname) {
+JNIEXPORT jlong JNICALL Java_me_sectiontn_codepad_syntax_CoreNative_hostLanguage(JNIEnv *env, jclass cls, jstring jname) {
   (void) cls;
   const char *name = (*env)->GetStringUTFChars(env, jname, 0);
   jlong result = 0;
@@ -89,8 +89,8 @@ export -f compile_one
 JOBS_FILE="$OUT/compile.jobs"
 : > "$JOBS_FILE"
 OBJS=()
-for src in "$ROOT/cpp/tree-sitter/lib/src/lib.c" "$ROOT/android/src/main/cpp/treesitter_jni.c" \
-  "$ROOT/android/src/main/cpp/utf16_mirror.c" "$OUT/host_languages.c" "${LANG_C[@]}" \
+for src in "$ROOT/cpp/tree-sitter/lib/src/lib.c" "$ROOT/android/src/main/cpp/core_jni.cpp" \
+  "$OUT/host_languages.c" "${LANG_C[@]}" \
   "$ROOT"/cpp/pcre2/src/*.c "$ROOT"/cpp/core/src/*.cpp; do
   echo "-O1 $src" >> "$JOBS_FILE"
   OBJS+=("$(object_for "$src")")

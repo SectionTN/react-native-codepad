@@ -1,9 +1,7 @@
 package me.sectiontn.codepad.syntax
 
-import me.sectiontn.codepad.core.Document
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -20,22 +18,10 @@ class HighlighterTest {
     return null
   }
 
-  private fun parse(lang: LoadedLanguage, text: String): Pair<Snapshot, Document> {
-    val doc = Document(text)
-    val parser = Parser()
-    parser.setLanguage(lang.pointer)
-    val mirror = Mirror()
-    mirror.setText(text)
-    val tree = checkNotNull(parser.parse(null, mirror, null, 0))
-    mirror.close()
-    parser.close()
-    return Snapshot(doc.revision, tree, emptyList(), "javascript") to doc
-  }
-
   @Test
   fun capturesMapToStylesPerLine() {
     val lang = HostLanguages.javascript()
-    val (snapshot, doc) = parse(lang, "const x = 1; // hi\nreturn \"s\";")
+    val (snapshot, doc) = parseSnapshot(lang, "const x = 1; // hi\nreturn \"s\";")
     val spans = Highlighter(lang).spans(snapshot, doc, 0, 1)
     assertEquals(2, spans.size)
     assertEquals("keyword", styleAt(spans[0], 0)?.split('.')?.first())
@@ -49,7 +35,7 @@ class HighlighterTest {
   @Test
   fun predicatesFilterMatches() {
     val lang = HostLanguages.javascript()
-    val (snapshot, doc) = parse(lang, "let FOO = BAR_1 + bar;")
+    val (snapshot, doc) = parseSnapshot(lang, "let FOO = BAR_1 + bar;")
     val spans = Highlighter(lang).spans(snapshot, doc, 0, 0)
     assertEquals("constant", styleAt(spans[0], 4))
     assertEquals("constant", styleAt(spans[0], 10))
@@ -60,7 +46,7 @@ class HighlighterTest {
   @Test
   fun multiLineCapturesAreClippedPerLine() {
     val lang = HostLanguages.javascript()
-    val (snapshot, doc) = parse(lang, "/* a\nb */ x")
+    val (snapshot, doc) = parseSnapshot(lang, "/* a\nb */ x")
     val spans = Highlighter(lang).spans(snapshot, doc, 0, 1)
     assertEquals("comment", styleAt(spans[0], 1))
     assertEquals("comment", styleAt(spans[1], 0))
@@ -72,75 +58,35 @@ class HighlighterTest {
 
   @Test
   fun concealCapturesNeverPaint() {
-    val base = HostLanguages.javascript()
+    HostLanguages.javascript()
     LanguageRegistry.register(object : LanguageProvider {
       override val id = "javascript_conceal"
-      override val languagePointer = base.pointer
+      override val languagePointer = HostLib.javascript()
       override val highlights = "(comment) @conceal\n(number) @number"
       override val injections = ""
     })
     val lang = checkNotNull(LanguageRegistry.resolve("javascript_conceal"))
-    val (snapshot, doc) = parse(lang, "1 // hi")
+    val (snapshot, doc) = parseSnapshot(lang, "1 // hi")
     val spans = Highlighter(lang).spans(snapshot, doc, 0, 0)
     assertEquals("number", styleAt(spans[0], 0))
     assertNull(styleAt(spans[0], 3))
     snapshot.close()
   }
 
-  // The injection is built by hand so its extent is exact: the javascript tree covers "\nlet x = 1;\n" on lines 2 to 4.
+  // The javascript tree covers "\nlet x = 1;\n" on lines 2 to 4.
   @Test
   fun injectionsOnThePaintedEdgeAreStyled() {
     val html = HostLanguages.load("html", "html")
     val js = HostLanguages.javascript()
     val text = "<p>a</p>\n<p>b</p>\n<script>\nlet x = 1;\n</script>\n<p>c</p>"
-    val doc = Document(text)
-    val start = text.indexOf("\nlet")
-    val end = text.indexOf("</script>")
-    Mirror().use { mirror ->
-      mirror.setText(text)
-      val host = Parser().use { p ->
-        p.setLanguage(html.pointer)
-        checkNotNull(p.parse(null, mirror, null, 0))
-      }
-      val sub = Parser().use { p ->
-        p.setLanguage(js.pointer)
-        p.setIncludedRanges(intArrayOf(start, end, 2, 8, 4, 0))
-        checkNotNull(p.parse(null, mirror, null, 0))
-      }
-      val snapshot = Snapshot(0, host, listOf(Injected(js, sub, start, end)), "html")
-      val hl = Highlighter(html)
-      assertEquals("keyword", styleAt(hl.spans(snapshot, doc, 3, 3)[0], 0))
-      assertEquals("keyword", styleAt(hl.spans(snapshot, doc, 2, 3)[1], 0))
-      assertEquals("keyword", styleAt(hl.spans(snapshot, doc, 3, 4)[0], 0))
-      assertEquals(2, hl.spans(snapshot, doc, 0, 1).size)
-      snapshot.close()
-    }
-  }
-
-  // A carried tree keeps the positions of its last parse; painted without its shift, `let` lands four units early.
-  @Test
-  fun carriedTreesPaintAtTheirShiftedPosition() {
-    val html = HostLanguages.load("html", "html")
-    val js = HostLanguages.javascript()
-    val before = "<p>a</p>\n<script>\nlet x = 1;\n</script>\n"
-    val after = "<p>a</p>\n\n\n\n\n<script>\nlet x = 1;\n</script>\n"
-    val start = before.indexOf("\nlet")
-    val end = before.indexOf("</script>")
-    Mirror().use { mirror ->
-      mirror.setText(before)
-      val sub = Parser().use { p ->
-        p.setLanguage(js.pointer)
-        p.setIncludedRanges(intArrayOf(start, end, 1, 8, 3, 0))
-        checkNotNull(p.parse(null, mirror, null, 0))
-      }
-      mirror.setText(after)
-      val host = Parser().use { p ->
-        p.setLanguage(html.pointer)
-        checkNotNull(p.parse(null, mirror, null, 0))
-      }
-      val snapshot = Snapshot(0, host, listOf(Injected(js, sub, start + 4, end + 4, 4)), "html")
-      assertEquals("keyword", styleAt(Highlighter(html).spans(snapshot, Document(after), 6, 6)[0], 0))
-      snapshot.close()
-    }
+    val (snapshot, doc) = parseSnapshot(html, text)
+    assertEquals(listOf(js.id), snapshot.injected.map { it.language.id })
+    assertEquals(text.indexOf("\nlet"), snapshot.injected[0].start)
+    val hl = Highlighter(html)
+    assertEquals("keyword", styleAt(hl.spans(snapshot, doc, 3, 3)[0], 0))
+    assertEquals("keyword", styleAt(hl.spans(snapshot, doc, 2, 3)[1], 0))
+    assertEquals("keyword", styleAt(hl.spans(snapshot, doc, 3, 4)[0], 0))
+    assertEquals(2, hl.spans(snapshot, doc, 0, 1).size)
+    snapshot.close()
   }
 }

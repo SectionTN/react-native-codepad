@@ -53,7 +53,7 @@ class HighlightGoldenTest(private val id: String) {
     var snapshot: Snapshot
     while (true) {
       snapshot = checkNotNull(snapshots.poll(10, TimeUnit.SECONDS)) { "$id never parsed" }
-      if (snapshot.tree.rootNode().endUnit == text.length) break
+      if (snapshot.length == text.length) break
       snapshot.close()
     }
     val doc = Document(text)

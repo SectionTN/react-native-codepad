@@ -2,18 +2,19 @@ package me.sectiontn.codepad.syntax
 
 import android.util.Log
 
-class CompiledQuery(val query: Query, val evaluator: PredicateEvaluator) {
-  val styleIds: IntArray = IntArray(query.captureNames.size) { StyleTable.id(query.captureNames[it]) }
-  val captureIndex: Map<String, Int> = query.captureNames.withIndex().associate { it.value to it.index }
-}
-
-class LoadedLanguage(val id: String, val pointer: Long, val highlights: CompiledQuery, val injections: CompiledQuery?)
+/** A language loaded into the core. The core keeps it for the life of the process. */
+class LoadedLanguage(val id: String, val handle: Long)
 
 object LanguageRegistry {
   private const val TAG = "codepad"
   private val providers = HashMap<String, LanguageProvider>()
   private val cache = HashMap<String, LoadedLanguage?>()
   private val installed = HashMap<String, Boolean>()
+  private val byHandle = HashMap<Long, LoadedLanguage>()
+
+  /** The language a core handle was loaded as. */
+  @Synchronized
+  fun loaded(handle: Long): LoadedLanguage? = byHandle[handle]
 
   // Names nvim queries and fence info strings use for languages we ship under another id. Empty means never inject.
   private val aliases = mapOf(
@@ -59,24 +60,12 @@ object LanguageRegistry {
       Log.w(TAG, "language '$id' is not installed, falling back to plain text")
       return null
     }
-    val pointer = provider.languagePointer
-    val range = TreeSitterNative.runtimeAbiRange()
-    val abi = TreeSitterNative.languageAbiVersion(pointer)
-    if (abi < range[0] || abi > range[1]) {
-      Log.w(TAG, "language '$id' has ABI $abi, runtime supports ${range[0]} to ${range[1]}")
-      return null
-    }
-    val highlights = compile(pointer, provider.highlights, "$id highlights") ?: return null
-    val injections = if (provider.injections.isBlank()) null else compile(pointer, provider.injections, "$id injections")
-    return LoadedLanguage(id, pointer, highlights, injections)
-  }
-
-  private fun compile(pointer: Long, source: String, label: String): CompiledQuery? = try {
-    val query = Query.compile(pointer, source)
-    CompiledQuery(query, PredicateEvaluator(query))
-  } catch (e: QueryException) {
-    Log.w(TAG, "$label query failed to compile: ${e.message}")
-    null
+    val error = arrayOfNulls<String>(1)
+    val injections = if (provider.injections.isBlank()) null else provider.injections.toByteArray(Charsets.UTF_8)
+    val handle = CoreNative.languageLoad(id, provider.languagePointer, provider.highlights.toByteArray(Charsets.UTF_8), injections, error)
+    error[0]?.let { Log.w(TAG, it) }
+    // A broken injections query still loads the language, without injections.
+    return if (handle == 0L) null else LoadedLanguage(id, handle).also { byHandle[handle] = it }
   }
 
   private fun reflect(id: String): LanguageProvider? {

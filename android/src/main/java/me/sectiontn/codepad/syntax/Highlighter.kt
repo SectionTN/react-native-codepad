@@ -2,118 +2,49 @@ package me.sectiontn.codepad.syntax
 
 import me.sectiontn.codepad.core.Document
 
-/** Turns query captures from a snapshot into per line (startColumn, endColumn, styleId) triples. */
-class Highlighter(private val language: LoadedLanguage) {
-  private class Hit(val start: Int, val end: Int, val styleId: Int, val layer: Int, val pattern: Int)
+/** Turns a snapshot into per line (startColumn, endColumn, styleId) triples through the core. */
+open class Highlighter(val language: LoadedLanguage) {
+  // Reused across calls on the main thread, grown when the core asks for more.
+  private var buffer = IntArray(4096)
 
-  fun spans(snapshot: Snapshot, doc: Document, firstLine: Int, lastLine: Int): Array<IntArray> {
-    val rangeStart = doc.lineStart(firstLine)
-    val rangeEnd = doc.lineEnd(lastLine)
-    val hits = ArrayList<Hit>()
-    collect(language.highlights, snapshot.tree, doc, rangeStart, rangeEnd, 0, 0, null, hits)
-    // The list is sorted by start: skip trees ending before the range, stop at the first one starting past it.
-    for ((i, inj) in snapshot.injected.withIndex()) {
-      if (inj.end <= rangeStart) continue
-      if (inj.start >= rangeEnd) break
-      collect(inj.language.highlights, inj.tree, doc, rangeStart, rangeEnd, i + 1, inj.shift, inj.clip, hits)
-    }
-    // Same precedence as nvim: injections paint over the host, then later starts win, then later patterns.
-    hits.sortWith(compareBy<Hit>({ it.layer }, { it.start }, { it.pattern }))
-    val lineCount = lastLine - firstLine + 1
-    val paint = Array(lineCount) { IntArray(doc.lineLength(firstLine + it)) { -1 } }
-    for (h in hits) {
-      val s = maxOf(h.start, rangeStart)
-      val e = minOf(h.end, rangeEnd)
-      if (s >= e) continue
-      var line = doc.lineAt(s)
-      while (line <= lastLine) {
-        val ls = doc.lineStart(line)
-        val from = maxOf(s, ls) - ls
-        val to = minOf(e, doc.lineEnd(line)) - ls
-        val row = paint[line - firstLine]
-        for (c in from until minOf(to, row.size)) row[c] = h.styleId
-        if (e <= doc.lineEnd(line) + 1) break
-        line++
-      }
-    }
-    return Array(lineCount) { encode(paint[it]) }
+  open fun spans(snapshot: Snapshot, doc: Document, firstLine: Int, lastLine: Int): Array<IntArray> {
+    val start = doc.lineStart(firstLine)
+    val count = fill { CoreNative.highlight(snapshot.pointer, firstLine, lastLine, start, it) }
+    val cursor = intArrayOf(0)
+    return lines(lastLine - firstLine + 1, cursor, count)
   }
 
-  /** Queries [start, end) of the document; a tree whose positions lag the document by `shift` is read in its own units. */
-  private fun collect(
-    compiled: CompiledQuery,
-    tree: Tree,
-    doc: Document,
-    start: Int,
-    end: Int,
-    layer: Int,
-    shift: Int,
-    clip: IntArray?,
-    out: MutableList<Hit>,
-  ) {
-    val read: (TSNodeRef) -> String = { n -> doc.text(n.startUnit + shift, n.endUnit + shift) }
-    QueryCursor().use { cursor ->
-      cursor.exec(compiled.query, tree.rootNode())
-      cursor.setUnitRange(maxOf(0, start - shift), end - shift)
-      val capture = Capture()
-      val rejected = HashSet<Int>()
-      val accepted = HashSet<Int>()
-      while (cursor.nextCapture(capture)) {
-        if (capture.matchId in rejected) continue
-        if (capture.matchId !in accepted && compiled.evaluator.hasPredicates(capture.patternIndex)) {
-          val all = ArrayList<CaptureNode>(cursor.matchCaptureCount)
-          for (i in 0 until cursor.matchCaptureCount) {
-            val c = Capture()
-            cursor.matchCapture(i, c)
-            all.add(CaptureNode(c.captureIndex, c.node))
-          }
-          if (!compiled.evaluator.matches(capture.patternIndex, all, read)) {
-            rejected.add(capture.matchId)
-            cursor.removeMatch(capture.matchId)
-            continue
-          }
-          accepted.add(capture.matchId)
-        }
-        val name = compiled.query.captureNames[capture.captureIndex]
-        if (name.startsWith("_") || name in MARKERS) continue
-        val style = if (name == "none") -1 else compiled.styleIds[capture.captureIndex]
-        val s = capture.node.startUnit
-        val e = capture.node.endUnit
-        if (clip == null) {
-          out.add(Hit(s + shift, e + shift, style, layer, capture.patternIndex))
-          continue
-        }
-        // A combined tree only paints its own ranges: a node can span the host text between two of them.
-        var i = 0
-        while (i < clip.size && clip[i] < e) {
-          val a = maxOf(s, clip[i])
-          val b = minOf(e, clip[i + 1])
-          if (a < b) out.add(Hit(a + shift, b + shift, style, layer, capture.patternIndex))
-          i += 2
-        }
-      }
-    }
+  /** One draw's dirty runs, flat inclusive [lo, hi, ...], and the spans of every line in them, in order. */
+  fun frame(snapshot: Snapshot, doc: Document, first: Int, last: Int, applied: Int, useChanged: Boolean, entries: IntArray): Pair<IntArray, Array<IntArray>> {
+    val start = doc.lineStart(first)
+    val count = fill { CoreNative.frame(snapshot.pointer, first, last, start, applied, useChanged, entries, it) }
+    if (count == 0) return IntArray(0) to emptyArray()
+    val runCount = buffer[0]
+    val runs = buffer.copyOfRange(1, 1 + runCount * 2)
+    var lineCount = 0
+    for (r in 0 until runCount) lineCount += runs[r * 2 + 1] - runs[r * 2] + 1
+    return runs to lines(lineCount, intArrayOf(1 + runCount * 2), count)
   }
 
-  private fun encode(row: IntArray): IntArray {
-    val out = ArrayList<Int>()
-    var i = 0
-    while (i < row.size) {
-      val style = row[i]
-      var j = i + 1
-      while (j < row.size && row[j] == style) j++
-      if (style >= 0) {
-        out.add(i)
-        out.add(j)
-        out.add(style)
-      }
-      i = j
-    }
-    return out.toIntArray()
+  private inline fun fill(call: (IntArray) -> Int): Int {
+    val (out, count) = CoreNative.fill(buffer, call)
+    buffer = out
+    return count
   }
 
-  private companion object {
-    // nvim reads spell and conceal as editor hints. They never carry a color.
-    val MARKERS = setOf("spell", "nospell", "conceal")
+  /** Decodes n lines of (count, triples...) from the buffer at cursor[0]. */
+  private fun lines(n: Int, cursor: IntArray, count: Int): Array<IntArray> = Array(n) {
+    var i = cursor[0]
+    if (i >= count) return@Array IntArray(0)
+    val triples = buffer[i]
+    i++
+    val row = buffer.copyOfRange(i, i + triples * 3)
+    cursor[0] = i + triples * 3
+    row
+  }
+
+  companion object {
+    /** No cached layout for a line, as opposed to -1 for a line laid out plain. */
+    const val NO_ENTRY = Int.MIN_VALUE
   }
 }

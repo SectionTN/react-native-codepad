@@ -37,7 +37,7 @@ class SyntaxEngineTest {
   private fun awaitText(): Snapshot {
     while (true) {
       val s = await()
-      if (s.tree.rootNode().endUnit > 0) return s
+      if (s.length > 0) return s
       s.close()
     }
   }
@@ -59,7 +59,7 @@ class SyntaxEngineTest {
     core.replace(4, 5, "value")
     val second = await()
     assertEquals(1, second.revision)
-    assertEquals(14, second.tree.rootNode().endUnit)
+    assertEquals(14, second.length)
     second.close()
     engine.close()
   }
@@ -124,30 +124,16 @@ class SyntaxEngineTest {
       current.release.countDown()
     }
     val snapshot = checkNotNull(published) { "no snapshot while an edit landed between every budget slice" }
-    assertEquals(shape(freshTree(" ".repeat(snapshot.revision) + base)), shape(snapshot.tree))
+    // The incremental result paints exactly like a fresh parse of the same text.
+    val lang = checkNotNull(LanguageRegistry.resolve("javascript"))
+    val (fresh, doc) = parseSnapshot(lang, " ".repeat(snapshot.revision) + base)
+    assertEquals(fresh.length, snapshot.length)
+    val hl = Highlighter(lang)
+    val expected = hl.spans(fresh, doc, 0, doc.lineCount - 1).map { it.toList() }
+    assertEquals(expected, hl.spans(snapshot, doc, 0, doc.lineCount - 1).map { it.toList() })
+    fresh.close()
     snapshot.close()
     engine.close()
-  }
-
-  private fun freshTree(text: String): Tree {
-    val lang = checkNotNull(LanguageRegistry.resolve("javascript"))
-    Mirror().use { mirror ->
-      mirror.setText(text)
-      Parser().use { parser ->
-        parser.setLanguage(lang.pointer)
-        return checkNotNull(parser.parse(null, mirror, null, 0))
-      }
-    }
-  }
-
-  private fun shape(tree: Tree): List<String> {
-    val out = ArrayList<String>()
-    fun walk(n: TSNodeRef) {
-      out.add("${n.type} ${n.startUnit} ${n.endUnit}")
-      for (i in 0 until n.childCount) walk(n.child(i))
-    }
-    walk(tree.rootNode())
-    return out
   }
 
   @Test
@@ -159,7 +145,7 @@ class SyntaxEngineTest {
     engine.setLanguage("javascript")
     engine.setText(text, 1)
     val snapshot = awaitRevision(1)
-    assertEquals("program", snapshot.tree.rootNode().type)
+    assertEquals("javascript", snapshot.languageId)
     assertEquals(1, snapshot.injected.size)
     assertEquals("html", snapshot.injected[0].language.id)
     assertEquals(5, snapshot.injected[0].start)
@@ -185,6 +171,40 @@ class SyntaxEngineTest {
     val switched = await()
     assertEquals("html", switched.languageId)
     switched.close()
+    engine.close()
+  }
+
+  // The core passes fence names as UTF-8, and JNI's modified UTF-8 cannot read a character past U+FFFF.
+  @Test
+  fun aFenceNamePastTheBasicPlaneResolves() {
+    for (grammar in listOf("markdown", "markdown_inline")) HostLanguages.load("markdown", grammar)
+    val id = "js😀"
+    LanguageRegistry.register(object : LanguageProvider {
+      override val id = id
+      override val languagePointer = HostLib.javascript()
+      override val highlights = "(identifier) @variable"
+      override val injections = ""
+    })
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+    engine.setLanguage("markdown")
+    engine.setText("```$id\nlet a = 1;\n```\n", 1)
+    val snapshot = awaitRevision(1)
+    assertEquals(listOf(id), snapshot.injected.map { it.language.id })
+    snapshot.close()
+    engine.close()
+  }
+
+  // The snapshot callback runs inside a native frame, where JNI would swallow a view bug.
+  @Test
+  fun aThrowingSnapshotHandlerFailsTheMainThreadPost() {
+    val caught = LinkedBlockingQueue<Throwable>()
+    val engine = SyntaxEngine(
+      postToMain = { r -> try { r.run() } catch (t: Throwable) { caught.add(t) } },
+      onSnapshot = { it.close(); throw IllegalStateException("view") },
+    )
+    engine.setLanguage("javascript")
+    engine.setText("let a = 1;", 1)
+    assertEquals("view", checkNotNull(caught.poll(5, TimeUnit.SECONDS)).message)
     engine.close()
   }
 

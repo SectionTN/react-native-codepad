@@ -1,16 +1,11 @@
 package me.sectiontn.codepad.syntax
 
-/** Interns capture names into small ints shared by every query so span arrays stay primitive. */
+/** Capture names interned by the core into small ints shared by every language. Names are cached here. */
 object StyleTable {
-  private val ids = HashMap<String, Int>()
-  private val names = ArrayList<String>()
+  private val names = HashMap<Int, String>()
+
+  fun id(name: String): Int = CoreNative.styleId(name)
 
   @Synchronized
-  fun id(name: String): Int = ids.getOrPut(name) {
-    names.add(name)
-    names.size - 1
-  }
-
-  @Synchronized
-  fun name(id: Int): String = names[id]
+  fun name(id: Int): String = names.getOrPut(id) { CoreNative.styleName(id) }
 }

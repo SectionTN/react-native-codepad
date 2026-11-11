@@ -24,7 +24,7 @@ class InjectionReuseTest {
   private fun awaitParsed(): Snapshot {
     while (true) {
       val s = checkNotNull(snapshots.poll(5, TimeUnit.SECONDS))
-      if (s.tree.rootNode().endUnit > 0) return s
+      if (s.length > 0) return s
       s.close()
     }
   }
@@ -257,25 +257,25 @@ class InjectionReuseTest {
     val (core, engine) = start("markdown", text)
     val first = awaitParsed()
     assertEquals(2, first.injected.size)
-    assertEquals(12, first.injected.single { it.language.id == "html" }.tree.includedRanges().size)
+    assertEquals(2, first.injected.single { it.language.id == "html" }.ranges)
     first.close()
     val b = text.indexOf("b\n")
     core.replace(b, b + 1, "bb")
     val second = awaitParsed()
     assertEquals(1, second.injected.count { it.language.id == "html" })
-    assertEquals(12, second.injected.single { it.language.id == "html" }.tree.includedRanges().size)
+    assertEquals(2, second.injected.single { it.language.id == "html" }.ranges)
     assertEquals(1, second.stats.freshInjections + second.stats.reusedInjections)
     assertEquals(1, second.stats.carriedInjections)
     second.close()
     val len = core.document.length
     core.replace(len, len, "\n<div>\nc\n</div>\n")
     val third = awaitParsed()
-    assertEquals(18, third.injected.single { it.language.id == "html" }.tree.includedRanges().size)
+    assertEquals(3, third.injected.single { it.language.id == "html" }.ranges)
     assertEquals(1, third.stats.carriedInjections)
     third.close()
     core.replace(0, text.indexOf("para"), "")
     val fourth = awaitParsed()
-    assertEquals(12, fourth.injected.single { it.language.id == "html" }.tree.includedRanges().size)
+    assertEquals(2, fourth.injected.single { it.language.id == "html" }.ranges)
     assertEquals(2, fourth.injected.size)
     fourth.close()
     engine.close()
