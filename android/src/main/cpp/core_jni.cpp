@@ -274,25 +274,32 @@ struct EditorRef {
 };
 
 // A pending exception (an allocation failure, a throwing test clock) is left for the external call to throw: the
-// trampolines then return at once and make no other JNI call.
+// trampolines then return at once and make no other JNI call. Every call into Kotlin is followed by a check, as JNI
+// requires before the next call.
 void editor_changed(void *ctx, const cp_change *c, const cp_unit *removed, const cp_unit *inserted, int32_t origin) {
   JNIEnv *e = env();
   if (e->ExceptionCheck()) return;
   jstring r = e->NewString(reinterpret_cast<const jchar *>(removed), c->removed_len);
   jstring i = r != nullptr ? e->NewString(reinterpret_cast<const jchar *>(inserted), c->inserted_len) : nullptr;
   if (i != nullptr) e->CallVoidMethod(static_cast<EditorRef *>(ctx)->host, changed_id, c->start, r, i, c->revision, origin);
+  e->ExceptionCheck();
   if (r != nullptr) e->DeleteLocalRef(r);
   if (i != nullptr) e->DeleteLocalRef(i);
 }
 
 void editor_selected(void *ctx, int32_t anchor, int32_t head) {
   JNIEnv *e = env();
-  if (!e->ExceptionCheck()) e->CallVoidMethod(static_cast<EditorRef *>(ctx)->host, selected_id, anchor, head);
+  if (e->ExceptionCheck()) return;
+  e->CallVoidMethod(static_cast<EditorRef *>(ctx)->host, selected_id, anchor, head);
+  e->ExceptionCheck();
 }
 
 int64_t editor_now(void *ctx) {
   JNIEnv *e = env();
-  return e->ExceptionCheck() ? 0 : e->CallLongMethod(static_cast<EditorRef *>(ctx)->host, now_id);
+  if (e->ExceptionCheck()) return 0;
+  jlong now = e->CallLongMethod(static_cast<EditorRef *>(ctx)->host, now_id);
+  e->ExceptionCheck();
+  return now;
 }
 
 cp_editor *ed(jlong v) { return ptr<cp_editor>(v); }
