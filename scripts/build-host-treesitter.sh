@@ -70,15 +70,33 @@ export CXXFLAGS="-fPIC -std=c++20 -fvisibility=hidden -DTREE_SITTER_HIDE_SYMBOLS
 
 object_for() { echo "$OBJ/$(echo "${1#"$ROOT/"}" | tr '/' '_').o"; }
 
-# One object per source, rebuilt only when the source is newer than it.
+# One object per source, rebuilt when the source is newer than it. A C++ object is also rebuilt when a header it
+# included last time is newer, or when it has no record of its headers.
 compile_one() {
   local opt=$1 src=$2
-  local obj
+  local obj dep stale f
   obj="$OBJ/$(echo "${src#"$ROOT/"}" | tr '/' '_').o"
-  if [ -f "$obj" ] && [ ! "$src" -nt "$obj" ]; then return; fi
+  dep="${obj%.o}.d"
+  stale=1
+  if [ -f "$obj" ] && [ ! "$src" -nt "$obj" ]; then
+    stale=0
+    if [[ "$src" == *.cpp ]]; then
+      if [ ! -f "$dep" ]; then
+        stale=1
+      else
+        for f in $(sed -e 's/^[^:]*://' -e 's/\\$//' "$dep"); do
+          if [ "$f" -nt "$obj" ]; then
+            stale=1
+            break
+          fi
+        done
+      fi
+    fi
+  fi
+  [ "$stale" = 1 ] || return 0
   # shellcheck disable=SC2086
   case "$src" in
-    *.cpp) "$CXX" -c $CXXFLAGS "$opt" "$src" -o "$obj" ;;
+    *.cpp) "$CXX" -c $CXXFLAGS "$opt" -MMD -MF "$dep" "$src" -o "$obj" ;;
     */cpp/pcre2/*) "$CC" -c $CFLAGS -DPCRE2_CODE_UNIT_WIDTH=16 -DHAVE_CONFIG_H "$opt" -I"$(dirname "$src")" "$src" -o "$obj" ;;
     *) "$CC" -c $CFLAGS "$opt" -I"$(dirname "$src")" "$src" -o "$obj" ;;
   esac
