@@ -56,4 +56,22 @@ class EditorCoreCallbackTest {
     assertEquals("XbZ", core.document.text())
     core.close()
   }
+
+  // The core reports the selection before the change, so a selection listener that types runs inside the outer edit.
+  @Test
+  fun anEditFromASelectionListenerLeavesTheOuterChange() {
+    val core = EditorCore("abc")
+    core.setSelection(3, 3)
+    var nested = false
+    core.onSelectionChange = {
+      if (!nested) {
+        nested = true
+        core.typeText("Q")
+      }
+    }
+    val change = core.replace(0, 1, "XY")
+    assertEquals(0, change.start)
+    assertEquals("XY", change.inserted)
+    core.close()
+  }
 }

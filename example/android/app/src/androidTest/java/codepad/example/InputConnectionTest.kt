@@ -1,6 +1,7 @@
 package codepad.example
 
 import android.text.InputType
+import android.view.KeyEvent
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -123,7 +124,24 @@ class InputConnectionTest {
         assertFalse(connection.commitText("x", 1))
         assertEquals("", connection.getTextBeforeCursor(10, 0).toString())
         assertFalse(connection.beginBatchEdit())
+        assertFalse(connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A)))
         connection.closeConnection()
+      }
+    }
+  }
+
+  // A view that left the window before the drop frees its core in close(), and its connection must know.
+  @Test
+  fun aViewClosedAfterItLeftTheWindowStopsItsConnection() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        editor.setInitialText("abc")
+        editor.requestFocus()
+        val connection = checkNotNull(editor.onCreateInputConnection(EditorInfo()))
+        (editor.parent as ViewGroup).removeView(editor)
+        editor.close()
+        assertEquals("", connection.getTextBeforeCursor(10, 0).toString())
       }
     }
   }

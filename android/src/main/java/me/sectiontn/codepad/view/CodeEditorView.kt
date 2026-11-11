@@ -1255,6 +1255,7 @@ class CodeEditorView(context: Context) : View(context) {
     snapshot?.close()
     snapshot = null
     core.close()
+    coreReleased = true
   }
 
   override fun onDraw(canvas: Canvas) {

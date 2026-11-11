@@ -77,10 +77,17 @@ class EditorCore(initialText: String = "", clock: (() -> Long)? = null) : AutoCl
   }
 
   // A core call that may run the callbacks: what they threw surfaces here, after the core returned.
-  private inline fun <T> mutate(block: (Long) -> T): T {
-    val result = block(handle())
-    host.rethrow()
-    return result
+  // Each call gets its own change slot, so an edit nested in any listener never fills the outer call's slot.
+  private inline fun <T> mutate(slot: Array<Change?> = arrayOfNulls(1), block: (Long) -> T): T {
+    val outer = changeSlot
+    changeSlot = slot
+    try {
+      val result = block(handle())
+      host.rethrow()
+      return result
+    } finally {
+      changeSlot = outer
+    }
   }
 
   fun replace(start: Int, end: Int, text: String, origin: ChangeOrigin = ChangeOrigin.Api): Change =
@@ -92,13 +99,7 @@ class EditorCore(initialText: String = "", clock: (() -> Long)? = null) : AutoCl
    */
   internal fun applyChange(start: Int, end: Int, text: String, origin: ChangeOrigin, typing: Boolean, caretAfter: Boolean): Change {
     val slot = arrayOfNulls<Change>(1)
-    val outer = changeSlot
-    changeSlot = slot
-    try {
-      mutate { CoreNative.editorReplace(it, start, end, text, origin.ordinal, typing, caretAfter) }
-    } finally {
-      changeSlot = outer
-    }
+    mutate(slot) { CoreNative.editorReplace(it, start, end, text, origin.ordinal, typing, caretAfter) }
     return checkNotNull(slot[0])
   }
 

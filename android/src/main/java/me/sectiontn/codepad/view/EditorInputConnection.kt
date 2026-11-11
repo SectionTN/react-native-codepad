@@ -61,7 +61,7 @@ class EditorInputConnection(private val view: CodeEditorView) : BaseInputConnect
   }
 
   // Dispatched straight to the view, so the key lands before the keyboard's next call reads the text.
-  override fun sendKeyEvent(event: KeyEvent): Boolean = view.dispatchKeyEvent(event)
+  override fun sendKeyEvent(event: KeyEvent): Boolean = live && view.dispatchKeyEvent(event)
 
   override fun performEditorAction(actionCode: Int): Boolean = edit { view.insertNewlineFromIme() }
 
@@ -80,6 +80,7 @@ class EditorInputConnection(private val view: CodeEditorView) : BaseInputConnect
   }
 
   override fun requestCursorUpdates(cursorUpdateMode: Int): Boolean {
+    if (!live) return false
     view.requestCursorUpdates(cursorUpdateMode)
     return true
   }
