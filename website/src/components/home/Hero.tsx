@@ -107,7 +107,7 @@ export function Hero() {
             </div>
             <div>
               <dt className={ui.label}>Highlighting</dt>
-              <dd>tree-sitter, 17 languages</dd>
+              <dd>tree-sitter, 19 languages</dd>
             </div>
             <div>
               <dt className={ui.label}>Binding</dt>

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Languages
+
+- The new `react-native-codepad-lang-xml` package has two languages: `xml` for XML documents such as Android layouts and SVG files, and `dtd` for a standalone DTD file. A `<style>` or `<script>` element in XML highlights as CSS or JavaScript when those packages are installed.
+- The new `react-native-codepad-lang-ini` package highlights INI files. Its grammar expects a newline after every line, the last one included. The [languages guide](https://reactnativecodepad.pages.dev/guides/languages/) lists what else it parses.
+- Markdown code blocks and other injections named `svg`, `xsd`, `xsl`, `xslt` or `rng` now resolve to `xml`, and `dosini` or `confini` to `ini`.
+- The `language` command now refuses `xml`, `dtd` and `ini` as ids. A custom package built under one of these ids with an earlier version still works on its own, but the app build fails when the shipped package is installed next to it. Rename its grammar before you build it again.
+
 ## 0.1.8 (2026-11-11)
 
 ### Editor

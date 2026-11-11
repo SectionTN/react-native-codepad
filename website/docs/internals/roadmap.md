@@ -4,7 +4,7 @@ description: Where CodePad stands, what comes before 1.0 and what has no release
 sidebar_position: 3
 ---
 
-CodePad 0.1 is on npm, with the core package and the seventeen language packages released together. This page lists what comes next and what has no release yet.
+CodePad 0.1 is on npm, with the core package and the nineteen language packages released together. This page lists what comes next and what has no release yet.
 
 ## Now
 
