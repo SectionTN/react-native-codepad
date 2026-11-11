@@ -82,7 +82,7 @@ final class SnapshotQueue: @unchecked Sendable {
     return lock.withLock { items.removeFirst() }
   }
 
-  /// Skips the empty document snapshot setLanguage can publish before setText's one lands.
+  /// Skips the empty document snapshot setLanguage can publish before the attached text lands.
   func takeParsed(_ timeout: TimeInterval = 5) -> Snapshot? {
     while let s = take(timeout) {
       if s.length > 0 { return s }
@@ -109,12 +109,13 @@ func styleAt(_ spans: [Int], _ column: Int) -> String? {
 
 /// The whole text parsed by an engine, injections included.
 func parseSnapshot(_ lang: LoadedLanguage, _ text: String) -> (Snapshot, Document) {
-  let doc = Document(text)
+  let core = EditorCore(text)
+  let doc = core.document
   let q = SnapshotQueue()
   let engine = SyntaxEngine(postToMain: { $0() }, onSnapshot: { q.add($0) })
   defer { engine.close() }
   engine.setLanguage(lang.id)
-  engine.setText(text, revision: doc.revision)
+  engine.attach(core)
   while let s = q.take(10) {
     if s.revision == doc.revision && s.length == text.utf16.count { return (s, doc) }
   }

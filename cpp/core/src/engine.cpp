@@ -15,9 +15,11 @@
 #include <vector>
 
 #include "codepad.h"
+#include "engine.hpp"
 #include "language.hpp"
 #include "snapshot.hpp"
 #include "spans.hpp"
+#include "text.hpp"
 #include "tree.hpp"
 
 namespace codepad {
@@ -131,11 +133,18 @@ struct Engine : std::enable_shared_from_this<Engine> {
   std::atomic<int> cancel{0};
   // Set by the first call after a snapshot, cleared when the next one posts: the difference is the parse latency.
   std::atomic<int64_t> pending_since{0};
+  // Bumped by every attach on the main thread. A snapshot of an older attach never reaches the host.
+  std::atomic<uint64_t> epoch{0};
+  // Snapshots made and not freed yet.
+  std::atomic<int32_t> live_snapshots{0};
+  // Main thread: set by close, after which attaches and edits are ignored since the host may be gone.
+  bool shut = false;
 
   // Worker only from here on.
   bool closed = false;
-  // Shared with the snapshots and a split parse, copied before an edit while any of them holds it.
-  std::shared_ptr<std::u16string> mirror = std::make_shared<std::u16string>();
+  // The latest text and the attach it belongs to. A view never changes, so snapshots share it with no copy.
+  SharedText text = Text::make(u"");
+  uint64_t text_epoch = 0;
   Parser parser{ts_parser_new()};
   const cp_language *language = nullptr;
   Tree tree;
@@ -146,8 +155,8 @@ struct Engine : std::enable_shared_from_this<Engine> {
   int32_t reconciled_revision = -1;
   // New spans of the edits since the last completed pass, shifted like hulls: the diff misses a retyped leaf.
   std::vector<int32_t> dirty;
-  // The text a split parse keeps reading until it finishes, and the edits made since, replayed onto its tree.
-  std::shared_ptr<const std::u16string> frozen;
+  // The view a split parse keeps reading until it finishes, and the edits made since, replayed onto its tree.
+  SharedText frozen;
   std::vector<TSInputEdit> replay;
   int32_t revision = 0;
   std::unordered_map<std::string, const cp_language *> resolved;
@@ -168,7 +177,13 @@ struct Engine : std::enable_shared_from_this<Engine> {
 
   static void run_post(void *arg) {
     std::unique_ptr<Post> post(static_cast<Post *>(arg));
-    post->engine->on_snapshot(post->engine->host.ctx, post->snapshot);
+    Engine &engine = *post->engine;
+    // Parsed before the latest attach: its revision can equal the new document's, so the host must never see it.
+    if (post->snapshot && post->snapshot->epoch != engine.epoch.load()) {
+      engine.release(post->snapshot);
+      return;
+    }
+    engine.on_snapshot(engine.host.ctx, post->snapshot);
   }
 
   void schedule(std::function<void()> fn) {
@@ -197,11 +212,6 @@ struct Engine : std::enable_shared_from_this<Engine> {
     });
   }
 
-  std::u16string &writable() {
-    if (mirror.use_count() > 1) mirror = std::make_shared<std::u16string>(*mirror);
-    return *mirror;
-  }
-
   const cp_language *resolve(const std::string &name) {
     auto it = resolved.find(name);
     if (it != resolved.end()) return it->second;
@@ -223,9 +233,13 @@ struct Engine : std::enable_shared_from_this<Engine> {
     });
   }
 
-  void set_text(std::u16string text, int32_t rev) {
-    submit([this, text = std::move(text), rev]() mutable {
-      mirror = std::make_shared<std::u16string>(std::move(text));
+  // Main thread. Returns the new epoch, 0 once closed.
+  uint64_t attach(SharedText next, int32_t rev) {
+    if (shut) return 0;
+    uint64_t e = epoch.fetch_add(1) + 1;
+    submit([this, next = std::move(next), rev, e]() mutable {
+      text = std::move(next);
+      text_epoch = e;
       revision = rev;
       tree.reset();
       drop_kept();
@@ -233,19 +247,20 @@ struct Engine : std::enable_shared_from_this<Engine> {
       ts_parser_reset(parser.get());
       reparse();
     });
+    return e;
   }
 
-  void edit(int32_t start, int32_t removed, std::u16string inserted, int32_t rev, cp_point s, cp_point oe,
-            cp_point ne) {
+  // Main thread, right after the edit. after is the text it produced.
+  void edit(uint64_t e, int32_t start, int32_t removed, int32_t inserted, int32_t rev, cp_point s, cp_point oe,
+            cp_point ne, SharedText after) {
+    if (shut || e != epoch.load()) return;
     mark_pending();
-    schedule([this, start, removed, inserted = std::move(inserted), rev, s, oe, ne] {
+    schedule([this, start, removed, inserted, rev, s, oe, ne, after = std::move(after)]() mutable {
       if (closed) return;
-      std::u16string &text = writable();
-      auto at = std::min<size_t>(static_cast<size_t>(std::max(start, 0)), text.size());
-      text.replace(at, std::min<size_t>(static_cast<size_t>(std::max(removed, 0)), text.size() - at), inserted);
+      text = std::move(after);
       revision = rev;
       int32_t old_end = start + removed;
-      int32_t new_end = start + static_cast<int32_t>(inserted.size());
+      int32_t new_end = start + inserted;
       TSInputEdit e = input_edit(start, old_end, new_end, s, oe, ne);
       if (frozen) {
         replay.push_back(e);
@@ -296,10 +311,14 @@ struct Engine : std::enable_shared_from_this<Engine> {
   }
 
   void release(cp_snapshot *snapshot) {
-    schedule([snapshot] { delete snapshot; });
+    schedule([this, snapshot] {
+      delete snapshot;
+      live_snapshots.fetch_sub(1);
+    });
   }
 
   void close() {
+    shut = true;
     schedule([this] {
       closed = true;
       tree.reset();
@@ -329,14 +348,14 @@ struct Engine : std::enable_shared_from_this<Engine> {
     replay.clear();
   }
 
-  // Brings a tree parsed from the frozen text to the live one: the replayed edits, then one parse never cut short.
+  // Brings a tree parsed from the frozen view to the latest one: the replayed edits, then one parse never cut short.
   Tree catch_up(Tree parsed) {
     if (!frozen) return parsed;
     frozen.reset();
     for (const TSInputEdit &e : replay) ts_tree_edit(parsed.get(), &e);
     replay.clear();
     // Edits cutting into this parse too could keep every snapshot from landing.
-    return Tree(parse(parser.get(), parsed.get(), *mirror, nullptr, 0, host));
+    return Tree(parse(parser.get(), parsed.get(), *text, nullptr, 0, host));
   }
 
   // The whole text before the first completed pass, else tree-sitter's diff plus the edits' own spans.
@@ -366,14 +385,15 @@ struct Engine : std::enable_shared_from_this<Engine> {
     int32_t content = compiled->capture_index("injection.content");
     if (content < 0) return;
     int32_t language_index = compiled->capture_index("injection.language");
-    TextView text{mirror->data(), static_cast<uint32_t>(mirror->size()), 0};
+    TextView view{text.get(), 0};
+    std::u16string scratch;
     ts_query_cursor_exec(cursor, compiled->query(), root);
     ts_query_cursor_set_byte_range(cursor, bytes(from), bytes(to));
     TSQueryMatch match;
     // Whole matches: a capture walk can hand over a match before its later captures, such as a heredoc's language.
     while (ts_query_cursor_next_match(cursor, &match)) {
       uint32_t pattern = match.pattern_index;
-      if (!compiled->matches(match, text)) continue;
+      if (!compiled->matches(match, view)) continue;
       const auto &settings = compiled->settings(pattern);
       std::string name;
       auto set = settings.find("injection.language");
@@ -383,7 +403,7 @@ struct Engine : std::enable_shared_from_this<Engine> {
         bool found = false;
         for (uint16_t i = 0; i < match.capture_count && !found; i++) {
           if (static_cast<int32_t>(match.captures[i].index) != language_index) continue;
-          name = utf16_to_utf8(text.node(match.captures[i].node));
+          name = utf16_to_utf8(view.node(match.captures[i].node, scratch));
           found = true;
         }
         if (!found) continue;
@@ -524,7 +544,7 @@ struct Engine : std::enable_shared_from_this<Engine> {
           old = it->second.front();
           it->second.pop_front();
         }
-        TSTree *parsed = parse(sub.get(), old ? old->tree.get() : nullptr, *mirror, &cancel, 0, host);
+        TSTree *parsed = parse(sub.get(), old ? old->tree.get() : nullptr, *text, &cancel, 0, host);
         if (!parsed) return cancelled();
         if (changed) collect_hulls(target->highlights->query(), parsed, regions, length, *changed);
         if (old) {
@@ -568,7 +588,7 @@ struct Engine : std::enable_shared_from_this<Engine> {
       Parser sub(ts_parser_new());
       if (!ts_parser_set_language(sub.get(), target->ts)) continue;
       set_included_ranges(sub.get(), flat);
-      TSTree *parsed = parse(sub.get(), same ? old->tree.get() : nullptr, *mirror, &cancel, 0, host);
+      TSTree *parsed = parse(sub.get(), same ? old->tree.get() : nullptr, *text, &cancel, 0, host);
       if (!parsed) return cancelled();
       if (changed) collect_hulls(target->highlights->query(), parsed, regions, length, *changed);
       if (old) {
@@ -605,10 +625,10 @@ struct Engine : std::enable_shared_from_this<Engine> {
     const cp_language *lang = language;
     if (!lang) return;
     if (pending.load() > 0) return;
-    TSTree *parsed = parse(parser.get(), tree.get(), frozen ? *frozen : *mirror, &cancel, budget, host);
+    TSTree *parsed = parse(parser.get(), tree.get(), frozen ? *frozen : *text, &cancel, budget, host);
     if (!parsed) {
       // The parse resumes on the text it started with, whatever the edits that cut in do to the live one.
-      if (!frozen) frozen = mirror;
+      if (!frozen) frozen = text;
       if (!cancel.load()) resume();
       return;
     }
@@ -616,7 +636,7 @@ struct Engine : std::enable_shared_from_this<Engine> {
     const TSTree *live = tree.get();
     Counts counts;
     int32_t based_on = reconciled ? reconciled_revision : -1;
-    auto length = static_cast<int32_t>(mirror->size());
+    auto length = static_cast<int32_t>(text->length());
     std::vector<int32_t> regions = regions_for(live, length);
     // The regions plus the capture hulls of every highlight match they meet, old tree and new: the painter's dirty lines.
     std::optional<std::vector<int32_t>> changed;
@@ -638,7 +658,9 @@ struct Engine : std::enable_shared_from_this<Engine> {
     snapshot->language = lang;
     snapshot->tree = Tree(ts_tree_copy(live));
     snapshot->injected = std::move(*injected);
-    snapshot->text = mirror;
+    snapshot->text = text;
+    snapshot->epoch = text_epoch;
+    live_snapshots.fetch_add(1);
     snapshot->based_on = based_on;
     if (changed) {
       for (int32_t &v : *changed) v = std::clamp(v, 0, length);
@@ -657,7 +679,26 @@ struct Engine : std::enable_shared_from_this<Engine> {
 
 struct cp_engine {
   std::shared_ptr<codepad::Engine> engine;
+  // The text cp_engine_set_text and cp_engine_edit build, on the main thread, for an engine with no editor.
+  codepad::SharedText legacy = codepad::Text::make(u"");
 };
+
+namespace codepad {
+
+std::shared_ptr<Engine> engine_of(cp_engine *engine) { return engine->engine; }
+
+uint64_t engine_attach(Engine &engine, SharedText text, int32_t revision) {
+  return engine.attach(std::move(text), revision);
+}
+
+void engine_edit(Engine &engine, uint64_t epoch, const Change &change, cp_point start, cp_point old_end,
+                 cp_point new_end, SharedText after) {
+  engine.edit(epoch, static_cast<int32_t>(change.start), static_cast<int32_t>(change.removed.size()),
+              static_cast<int32_t>(change.inserted.size()), change.revision, start, old_end, new_end,
+              std::move(after));
+}
+
+}  // namespace codepad
 
 extern "C" cp_engine *cp_engine_new(const cp_host *host, int64_t budget_micros,
                                     void (*on_snapshot)(void *ctx, cp_snapshot *snapshot)) {
@@ -673,15 +714,22 @@ extern "C" void cp_engine_set_language(cp_engine *engine, const cp_language *lan
 }
 
 extern "C" void cp_engine_set_text(cp_engine *engine, const cp_unit *text, uint32_t length, int32_t revision) {
-  engine->engine->set_text(std::u16string(reinterpret_cast<const char16_t *>(text), length), revision);
+  engine->legacy = codepad::Text::make({reinterpret_cast<const char16_t *>(text), length});
+  engine->engine->attach(engine->legacy, revision);
 }
 
 extern "C" void cp_engine_edit(cp_engine *engine, uint32_t start, uint32_t removed, const cp_unit *inserted,
                                uint32_t inserted_len, int32_t revision, cp_point start_point, cp_point old_end,
                                cp_point new_end) {
-  engine->engine->edit(static_cast<int32_t>(start), static_cast<int32_t>(removed),
-                       std::u16string(reinterpret_cast<const char16_t *>(inserted), inserted_len), revision,
-                       start_point, old_end, new_end);
+  uint32_t length = engine->legacy->length();
+  uint32_t s = std::min(start, length);
+  uint32_t e = s + std::min(removed, length - s);
+  uint32_t copied = 0;
+  std::u16string_view units{reinterpret_cast<const char16_t *>(inserted), inserted_len};
+  engine->legacy = engine->legacy->replace(s, e, units, copied);
+  codepad::Engine &core = *engine->engine;
+  core.edit(core.epoch.load(), static_cast<int32_t>(s), static_cast<int32_t>(e - s),
+            static_cast<int32_t>(inserted_len), revision, start_point, old_end, new_end, engine->legacy);
 }
 
 extern "C" void cp_engine_release(cp_engine *engine, cp_snapshot *snapshot) {
@@ -713,7 +761,7 @@ extern "C" const int32_t *cp_snapshot_changed(const cp_snapshot *snapshot) { ret
 extern "C" const cp_language *cp_snapshot_language(const cp_snapshot *snapshot) { return snapshot->language; }
 
 extern "C" uint32_t cp_snapshot_length(const cp_snapshot *snapshot) {
-  return snapshot->text ? static_cast<uint32_t>(snapshot->text->size()) : 0;
+  return snapshot->text ? snapshot->text->length() : 0;
 }
 
 extern "C" uint32_t cp_snapshot_injected_count(const cp_snapshot *snapshot) {
@@ -736,4 +784,6 @@ extern "C" uint32_t cp_test_tree_string(const cp_snapshot *snapshot, char *out, 
   if (text.size() < cap) std::copy(text.c_str(), text.c_str() + text.size() + 1, out);
   return static_cast<uint32_t>(text.size());
 }
+
+extern "C" int32_t cp_test_live_snapshots(const cp_engine *engine) { return engine->engine->live_snapshots.load(); }
 #endif

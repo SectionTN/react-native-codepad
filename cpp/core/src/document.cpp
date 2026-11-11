@@ -81,6 +81,15 @@ Document::Pending Document::prepare(uint32_t start, uint32_t end, std::u16string
   for (size_t i = 0; i < units.size(); i++) {
     if (units[i] == u'\n') p.fresh_starts.push_back(s + static_cast<uint32_t>(i) + 1);
   }
+  auto inserted_len = static_cast<uint32_t>(units.size());
+  p.start_point = {p.first_line, static_cast<int32_t>(s - starts_[p.first_line])};
+  p.old_end_point = {p.last_line, static_cast<int32_t>(e - starts_[p.last_line])};
+  if (p.fresh_starts.empty()) {
+    p.new_end_point = {p.first_line, p.start_point.column + static_cast<int32_t>(inserted_len)};
+  } else {
+    p.new_end_point = {p.first_line + static_cast<int32_t>(p.fresh_starts.size()),
+                       static_cast<int32_t>(s + inserted_len - p.fresh_starts.back())};
+  }
   return p;
 }
 

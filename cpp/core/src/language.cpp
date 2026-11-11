@@ -9,13 +9,19 @@
 
 namespace codepad {
 
-std::u16string_view TextView::node(TSNode n) const {
+std::u16string_view TextView::node(TSNode n, std::u16string &scratch) const {
   // Tree-sitter counts bytes of UTF-16 text, two per unit. A stale tree can reach past the text: clamp.
+  int64_t length = text->length();
   int64_t start = static_cast<int64_t>(ts_node_start_byte(n) / 2) + shift;
   int64_t end = static_cast<int64_t>(ts_node_end_byte(n) / 2) + shift;
   start = std::clamp<int64_t>(start, 0, length);
   end = std::clamp<int64_t>(end, start, length);
-  return {data + start, static_cast<size_t>(end - start)};
+  auto s = static_cast<uint32_t>(start);
+  auto size = static_cast<size_t>(end - start);
+  std::u16string_view run = text->read(s);
+  if (size <= run.size()) return run.substr(0, size);
+  scratch = text->string(s, static_cast<uint32_t>(end));
+  return scratch;
 }
 
 std::unique_ptr<CompiledQuery> CompiledQuery::compile(const TSLanguage *language, std::string_view source,
@@ -134,12 +140,15 @@ bool CompiledQuery::matches(const TSQueryMatch &match, const TextView &text) con
 
 bool CompiledQuery::holds(const Predicate &p, const TSQueryMatch &match, const TextView &text) const {
   if (p.capture < 0) return true;
+  // Two buffers: the other capture's text stays alive while each node is read.
+  std::u16string expected_scratch;
+  std::u16string scratch;
   std::optional<std::u16string_view> expected;
   if (p.kind == Predicate::Kind::Eq) {
     if (p.other >= 0) {
       for (uint16_t i = 0; i < match.capture_count; i++) {
         if (static_cast<int32_t>(match.captures[i].index) == p.other) {
-          expected = text.node(match.captures[i].node);
+          expected = text.node(match.captures[i].node, expected_scratch);
           break;
         }
       }
@@ -150,15 +159,15 @@ bool CompiledQuery::holds(const Predicate &p, const TSQueryMatch &match, const T
   auto test = [&](TSNode n) {
     switch (p.kind) {
       case Predicate::Kind::Eq:
-        return expected.has_value() && text.node(n) == *expected;
+        return expected.has_value() && text.node(n, scratch) == *expected;
       case Predicate::Kind::Match:
-        return p.regex != nullptr && p.regex->search(text.node(n));
+        return p.regex != nullptr && p.regex->search(text.node(n, scratch));
       case Predicate::Kind::AnyOf: {
-        std::u16string_view t = text.node(n);
+        std::u16string_view t = text.node(n, scratch);
         return std::any_of(p.strings.begin(), p.strings.end(), [&](const std::u16string &s) { return t == s; });
       }
       case Predicate::Kind::Contains: {
-        std::u16string_view t = text.node(n);
+        std::u16string_view t = text.node(n, scratch);
         return std::any_of(p.strings.begin(), p.strings.end(),
                            [&](const std::u16string &s) { return t.find(s) != std::u16string_view::npos; });
       }
@@ -263,7 +272,8 @@ extern "C" int32_t cp_test_predicate(const cp_language *language, const char *qu
                                                  source_len * 2, TSInputEncodingUTF16LE);
   TSQueryCursor *cursor = ts_query_cursor_new();
   ts_query_cursor_exec(cursor, compiled->query(), ts_tree_root_node(tree));
-  codepad::TextView text{reinterpret_cast<const char16_t *>(source), source_len, 0};
+  codepad::SharedText source_text = codepad::Text::make({reinterpret_cast<const char16_t *>(source), source_len});
+  codepad::TextView text{source_text.get(), 0};
   int32_t count = 0;
   TSQueryMatch match;
   while (ts_query_cursor_next_match(cursor, &match)) {

@@ -104,7 +104,7 @@ final class CodeEditorView: UIScrollView {
   private var pendingLine = -1
   private var pendingRevision = -1
   private var highlighter: Highlighter?
-  private var engine: SyntaxEngine?
+  private(set) var engine: SyntaxEngine?
   private var heights: HeightMap
   private let viewport: Viewport
   private let cache = LayoutCache<Entry>(capacity: 64)
@@ -186,7 +186,7 @@ final class CodeEditorView: UIScrollView {
     next.settings = settings
     coreLock.withLock { $0 = next }
     wire(next)
-    ensureEngine().setText(value, revision: next.document.revision)
+    if let engine { engine.attach(next) } else { _ = ensureEngine() }
     // The new document starts at revision 0 like the old one, so a kept snapshot would pass the revision check.
     snapshot = nil
     resetDocument()
@@ -739,7 +739,6 @@ final class CodeEditorView: UIScrollView {
     syncGaps()
     keepSpans(first, oldCount, newCount, change)
     cache.shift(first: first, oldCount: oldCount, newCount: newCount)
-    ensureEngine().edit(change, points: SyntaxEngine.pointsFor(doc: doc, change: change))
     search?.onChange(change)
     if updateGutter() { relayout() } else { viewport.clamp() }
     if origin != .api { revealPending = true }
@@ -854,7 +853,7 @@ final class CodeEditorView: UIScrollView {
       onSnapshot: { [weak self] snapshot in MainActor.assumeIsolated { self?.onSnapshot(snapshot) } })
     engine = created
     created.setLanguage(languageId)
-    created.setText(core.document.text(), revision: core.document.revision)
+    created.attach(core)
     return created
   }
 

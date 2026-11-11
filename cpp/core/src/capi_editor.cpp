@@ -146,6 +146,10 @@ int32_t cp_editor_bracket_match(const cp_editor *editor, const cp_snapshot *snap
   return 1;
 }
 
+void cp_editor_attach(cp_editor *editor, cp_engine *engine) {
+  editor->attach(engine != nullptr ? codepad::engine_of(engine) : nullptr);
+}
+
 int32_t cp_editor_set_decorations(cp_editor *editor, const cp_decoration *items, uint32_t count, int32_t revision) {
   return editor->decorations.set(items, count, revision, editor->doc) ? 1 : 0;
 }
@@ -231,6 +235,14 @@ uint32_t cp_test_chunk_ends(cp_editor *editor, uint32_t *out, uint32_t cap) {
 uint32_t cp_test_units_copied(cp_editor *editor) { return editor->doc.take_copied(); }
 
 void cp_test_set_chunk_limits(uint32_t max, uint32_t min) { codepad::set_chunk_limits(max, min); }
+
+void cp_test_hold_write(cp_editor *editor, int32_t hold) {
+  if (hold != 0) {
+    editor->doc.mutex().lock();
+  } else {
+    editor->doc.mutex().unlock();
+  }
+}
 #endif
 
 }  // extern "C"

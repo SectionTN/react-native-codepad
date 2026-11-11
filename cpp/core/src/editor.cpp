@@ -65,6 +65,15 @@ void Editor::notify(const Change &change, int32_t origin) {
                   reinterpret_cast<const cp_unit *>(change.inserted.data()), origin);
 }
 
+void Editor::attach(std::shared_ptr<Engine> engine) {
+  engine_ = std::move(engine);
+  epoch_ = engine_ ? engine_attach(*engine_, doc.view(), doc.revision()) : 0;
+}
+
+void Editor::forward(const Document::Pending &p) {
+  if (engine_) engine_edit(*engine_, epoch_, p.change, p.start_point, p.old_end_point, p.new_end_point, doc.view());
+}
+
 void Editor::move_selection(Selection next, bool from_edit) {
   if (next != selection()) store(next);
   if (next == reported_) return;
@@ -83,6 +92,7 @@ Change Editor::replace(uint32_t start, uint32_t end, std::u16string_view text, i
     doc.commit(p);
     store(after);
   }
+  forward(p);
   decorations.edited(p.change, doc);
   move_selection(after, true);
   if (origin == CP_ORIGIN_INPUT || origin == CP_ORIGIN_API) {
@@ -100,6 +110,7 @@ void Editor::replay(uint32_t start, uint32_t end, const std::u16string &text, in
     doc.commit(p);
     store(mapped(selection(), p.change));
   }
+  forward(p);
   decorations.edited(p.change, doc);
   notify(p.change, origin);
 }

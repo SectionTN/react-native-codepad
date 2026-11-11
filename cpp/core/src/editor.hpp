@@ -12,6 +12,7 @@
 #include "codepad.h"
 #include "decorations.hpp"
 #include "document.hpp"
+#include "engine.hpp"
 #include "indenter.hpp"
 #include "search.hpp"
 #include "undo.hpp"
@@ -50,6 +51,8 @@ class Editor {
   bool selection_dirty() const { return undo_.selection_dirty; }
   void set_selection_dirty(bool dirty) { undo_.selection_dirty = dirty; }
   BracketPair bracket_match(const cp_snapshot *snapshot, uint32_t caret) const;
+  // The engine parses the current text and hears every later edit. nullptr detaches.
+  void attach(std::shared_ptr<Engine> engine);
 
   // False with PCRE2's message in error when the regex does not compile, which also clears the search.
   bool set_search(std::u16string_view text, int32_t flags, std::string &error);
@@ -86,6 +89,8 @@ class Editor {
   Selection clamped(Selection s) const;
   void sync_history();
   void notify(const Change &change, int32_t origin);
+  // Hands a committed edit to the attached engine, before any host callback can edit again.
+  void forward(const Document::Pending &p);
   int64_t now() const;
 
   cp_editor_host host_{};
@@ -95,6 +100,8 @@ class Editor {
   // The selection the host last heard about.
   Selection reported_;
   std::optional<SearchSession> search_;
+  std::shared_ptr<Engine> engine_;
+  uint64_t epoch_ = 0;
 };
 
 }  // namespace codepad

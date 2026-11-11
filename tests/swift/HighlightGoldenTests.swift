@@ -32,9 +32,10 @@ final class HighlightGoldenTests: XCTestCase {
       let id = String(file.dropLast(4))
       let text = try String(contentsOf: Self.dir.appendingPathComponent(file), encoding: .utf8)
       let snapshots = SnapshotQueue()
+      let core = EditorCore(text)
       let engine = SyntaxEngine(postToMain: { $0() }, onSnapshot: { snapshots.add($0) })
       engine.setLanguage(id)
-      engine.setText(text, revision: 0)
+      engine.attach(core)
       var snapshot: Snapshot?
       while let s = snapshots.take(10) {
         if s.length == text.utf16.count {
@@ -43,7 +44,7 @@ final class HighlightGoldenTests: XCTestCase {
         }
       }
       let parsed = try XCTUnwrap(snapshot, "\(id) never parsed")
-      let doc = Document(text)
+      let doc = core.document
       let lang = try XCTUnwrap(LanguageRegistry.resolve(id))
       let actual = render(Highlighter(language: lang).spans(snapshot: parsed, doc: doc, firstLine: 0, lastLine: doc.lineCount - 1))
       engine.close()

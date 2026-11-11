@@ -126,8 +126,8 @@ extern "C" uint32_t cp_test_dirty_runs(const cp_unit *text, uint32_t length, uin
                                        int32_t first_line, int32_t last_line, int32_t revision, int32_t applied,
                                        const int32_t *changed, int32_t changed_len, const int32_t *entry_revisions,
                                        int32_t *out, uint32_t cap) {
-  std::u16string source(reinterpret_cast<const char16_t *>(text), length);
-  codepad::Lines lines = codepad::scan_lines(source, first_line_start, last_line - first_line + 1);
+  codepad::SharedText source = codepad::Text::make({reinterpret_cast<const char16_t *>(text), length});
+  codepad::Lines lines = codepad::scan_lines(*source, first_line_start, last_line - first_line + 1);
   std::vector<int32_t> runs =
       codepad::dirty_runs(lines, first_line, revision, applied, changed, changed_len, entry_revisions);
   std::vector<int32_t> ints{static_cast<int32_t>(runs.size() / 2)};

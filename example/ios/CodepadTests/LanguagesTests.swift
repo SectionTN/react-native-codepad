@@ -40,22 +40,24 @@ final class LanguagesTests: XCTestCase {
         continue
       }
       let box = ParseBox(length: text.utf16.count)
+      let core = EditorCore(text)
       let engine = SyntaxEngine(postToMain: { $0() }, onSnapshot: { box.offer($0) })
       engine.setLanguage(id)
-      engine.setText(text, revision: 0)
+      engine.attach(core)
       guard box.ready.wait(timeout: .now() + 10) == .success, let snapshot = box.snapshot else {
         XCTFail("\(id) parse")
         engine.close()
         continue
       }
-      let spans = Highlighter(language: language).spans(snapshot: snapshot, doc: Document(text), firstLine: 0, lastLine: 0)
+      let spans = Highlighter(language: language).spans(
+        snapshot: snapshot, doc: core.document, firstLine: 0, lastLine: 0)
       XCTAssertFalse(spans[0].isEmpty, "\(id) paints line 0")
       engine.close()
     }
   }
 }
 
-/// Keeps the first snapshot of the whole text, the one setText produced.
+/// Keeps the first snapshot of the whole text, the one attach produced.
 private final class ParseBox: @unchecked Sendable {
   let length: Int
   let ready = DispatchSemaphore(value: 0)

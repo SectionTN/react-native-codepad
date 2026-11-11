@@ -65,15 +65,23 @@ size_t Lines::at(int32_t offset) const {
   return it == start.begin() ? 0 : static_cast<size_t>(it - start.begin()) - 1;
 }
 
-Lines scan_lines(const std::u16string &text, uint32_t first_line_start, int32_t count) {
+Lines scan_lines(const Text &text, uint32_t first_line_start, int32_t count) {
   Lines lines;
-  auto n = static_cast<int32_t>(text.size());
-  int32_t pos = std::min(static_cast<int32_t>(first_line_start), n);
+  uint32_t n = text.length();
+  uint32_t pos = std::min(first_line_start, n);
   for (int32_t k = 0; k < count; k++) {
-    int32_t stop = pos;
-    while (stop < n && text[static_cast<size_t>(stop)] != u'\n') stop++;
-    lines.start.push_back(pos);
-    lines.length.push_back(stop - pos);
+    uint32_t stop = pos;
+    while (stop < n) {
+      std::u16string_view run = text.read(stop);
+      size_t at = run.find(u'\n');
+      if (at != std::u16string_view::npos) {
+        stop += static_cast<uint32_t>(at);
+        break;
+      }
+      stop += static_cast<uint32_t>(run.size());
+    }
+    lines.start.push_back(static_cast<int32_t>(pos));
+    lines.length.push_back(static_cast<int32_t>(stop - pos));
     pos = std::min(stop + 1, n);
   }
   return lines;
@@ -83,18 +91,17 @@ void highlight(const cp_snapshot &snapshot, const Lines &lines, size_t first, si
   if (count == 0) return;
   int32_t range_start = lines.start[first];
   int32_t range_end = lines.end(first + count - 1);
-  const std::u16string &text = *snapshot.text;
-  auto length = static_cast<uint32_t>(text.size());
+  const Text *text = snapshot.text.get();
   std::vector<Hit> hits;
-  collect(*snapshot.language->highlights, snapshot.tree.get(), TextView{text.data(), length, 0}, range_start, range_end,
-          0, 0, {}, hits);
+  collect(*snapshot.language->highlights, snapshot.tree.get(), TextView{text, 0}, range_start, range_end, 0, 0, {},
+          hits);
   // Injections are sorted by start: skip trees ending before the range, stop at the first one starting past it.
   for (size_t i = 0; i < snapshot.injected.size(); i++) {
     const InjectedTree &inj = snapshot.injected[i];
     if (inj.end <= range_start) continue;
     if (inj.start >= range_end) break;
-    collect(*inj.language->highlights, inj.tree.get(), TextView{text.data(), length, inj.shift}, range_start,
-            range_end, static_cast<int32_t>(i) + 1, inj.shift, inj.clip, hits);
+    collect(*inj.language->highlights, inj.tree.get(), TextView{text, inj.shift}, range_start, range_end,
+            static_cast<int32_t>(i) + 1, inj.shift, inj.clip, hits);
   }
   std::stable_sort(hits.begin(), hits.end(), [](const Hit &a, const Hit &b) {
     if (a.layer != b.layer) return a.layer < b.layer;

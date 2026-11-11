@@ -33,16 +33,11 @@ final class InjectionReuseTests: XCTestCase {
     return SyntaxEngine(postToMain: { $0() }, onSnapshot: { q.add($0) })
   }
 
-  private func wire(_ core: EditorCore, _ engine: SyntaxEngine) {
-    core.onChange = { change, _ in engine.edit(change, points: SyntaxEngine.pointsFor(doc: core.document, change: change)) }
-  }
-
   private func start(_ language: String, _ text: String) -> (EditorCore, SyntaxEngine) {
     let core = EditorCore(text)
     let engine = engine()
-    wire(core, engine)
     engine.setLanguage(language)
-    engine.setText(text, revision: 0)
+    engine.attach(core)
     return (core, engine)
   }
 
@@ -105,9 +100,8 @@ final class InjectionReuseTests: XCTestCase {
     let text = "# T\n\nfirst para\n\nsecond para\n\n```JS\nlet a = 1;\n```\n\n```ruby\nputs 1\n```\n"
     let core = EditorCore(text)
     let engine = engine()
-    wire(core, engine)
     engine.setLanguage("markdown")
-    engine.setText(text, revision: 0)
+    engine.attach(core)
     let first = try XCTUnwrap(snapshots.takeParsed())
     let fresh = first.stats.freshInjections
     XCTAssertGreaterThanOrEqual(fresh, 3, "inline nodes and the js fence")
@@ -263,9 +257,8 @@ final class InjectionReuseTests: XCTestCase {
     let text = "# T\n\nfirst para\n\nsecond para\n\n```slow\n\(code)\n```\n"
     let core = EditorCore(text)
     let engine = engine()
-    wire(core, engine)
     engine.setLanguage("markdown")
-    engine.setText(text, revision: 0)
+    engine.attach(core)
     XCTAssertEqual(slow.reached.wait(timeout: .now() + 5), .success)
     let second = (text as NSString).range(of: "second").location
     core.replace(second, second, "the ")

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "codepad.h"
+#include "text.hpp"
 
 namespace codepad {
 
@@ -107,8 +108,8 @@ inline void match_hulls(TSQueryCursor *cursor, const TSQuery *query, TSNode root
   }
 }
 
-// One parse over UTF-16 text. NULL when the flag or the budget stopped it: call again to resume, or reset.
-TSTree *parse(TSParser *parser, const TSTree *old_tree, const std::u16string &text, const std::atomic<int> *flag,
+// One parse, read chunk by chunk. NULL when the flag or the budget stopped it: call again to resume, or reset.
+TSTree *parse(TSParser *parser, const TSTree *old_tree, const Text &text, const std::atomic<int> *flag,
               int64_t budget_micros, const cp_host &host);
 
 }  // namespace codepad

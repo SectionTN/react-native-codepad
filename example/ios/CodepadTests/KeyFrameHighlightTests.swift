@@ -83,4 +83,33 @@ final class KeyFrameHighlightTests: XCTestCase {
     XCTAssertGreaterThan(redPixels(draw(editor), rows: 60), 0, "the number painted after the snapshot")
     XCTAssertGreaterThan(before, 0, "the number kept its color in the frame before the snapshot")
   }
+
+  // Both documents start at revision 0: the old text's snapshot, posted before setInitialText, would pass the
+  // revision check and paint the old number's color inside the new text's string.
+  func testSnapshotFromBeforeSetInitialTextNeverPaints() throws {
+    let editor = launch()
+    let number = TokenStyle(color: ThemeColors.color(255, 0, 0), bold: false, italic: false)
+    editor.setTheme(ThemeColors.default.withTokens(["number": number]))
+    editor.setLanguage("python")
+    editor.setInitialText("x = 1\n")
+    let queue = try XCTUnwrap(editor.engine).queue
+    queue.sync {}
+    // The old snapshot waits in the main queue, and the held worker cannot parse the new text yet.
+    let started = DispatchSemaphore(value: 0)
+    let release = DispatchSemaphore(value: 0)
+    queue.async {
+      started.signal()
+      release.wait()
+    }
+    started.wait()
+    editor.setInitialText("{\"ab\": \"cd\"}\n")
+    spin(until: { editor.snapshotRevision >= 0 }, timeout: 0.3)
+    let image = draw(editor)
+    release.signal()
+    let red = redPixels(image, rows: 22)
+    if red > 0 { savePNG(image, "stale-initial-text") }
+    XCTAssertEqual(red, 0, "the old text's number color painted over the new text")
+    waitForSnapshot(editor)
+    XCTAssertEqual(redPixels(draw(editor), rows: 22), 0, "the new text has no number")
+  }
 }

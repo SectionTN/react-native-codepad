@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "language.hpp"
+#include "text.hpp"
 #include "tree.hpp"
 
 namespace codepad {
@@ -28,7 +29,9 @@ struct cp_snapshot {
   const cp_language *language = nullptr;
   codepad::Tree tree;
   std::vector<codepad::InjectedTree> injected;  // sorted by start
-  std::shared_ptr<const std::u16string> text;
+  codepad::SharedText text;
+  // The attach it was parsed for: a snapshot from before the latest attach is dropped before the host sees it.
+  uint64_t epoch = 0;
   int32_t based_on = -1;
   std::vector<int32_t> changed;
   int32_t latency_ms = 0;

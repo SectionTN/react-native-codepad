@@ -17,7 +17,7 @@ struct Lines {
   size_t at(int32_t offset) const;
 };
 
-Lines scan_lines(const std::u16string &text, uint32_t first_line_start, int32_t count);
+Lines scan_lines(const Text &text, uint32_t first_line_start, int32_t count);
 
 // Appends, for each scanned line from first to first + count - 1, its triple count then its
 // (startColumn, endColumn, styleId) triples. Same precedence as nvim: injections paint over the host,

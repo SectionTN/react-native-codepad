@@ -38,6 +38,10 @@ class Document {
     int32_t first_line = 0;
     int32_t last_line = 0;
     std::vector<uint32_t> fresh_starts;
+    // The edit's start, old end and new end as tree-sitter points, in units.
+    cp_point start_point{};
+    cp_point old_end_point{};
+    cp_point new_end_point{};
   };
 
   uint32_t length() const { return text_->length(); }

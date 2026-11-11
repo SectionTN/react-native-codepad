@@ -9,15 +9,12 @@ struct ParseContext {
   const cp_host *host;
 };
 
+// Hands tree-sitter the rest of one chunk. No chunk but the last ends on a high surrogate.
 const char *read_text(void *payload, uint32_t byte_index, TSPoint, uint32_t *bytes_read) {
-  auto *text = static_cast<const std::u16string *>(payload);
-  uint32_t total = bytes(static_cast<int64_t>(text->size()));
-  if (byte_index >= total) {
-    *bytes_read = 0;
-    return "";
-  }
-  *bytes_read = total - byte_index;
-  return reinterpret_cast<const char *>(text->data()) + byte_index;
+  const auto *text = static_cast<const Text *>(payload);
+  std::u16string_view run = text->read(byte_index / 2);
+  *bytes_read = bytes(static_cast<int64_t>(run.size()));
+  return run.empty() ? "" : reinterpret_cast<const char *>(run.data());
 }
 
 bool progress(TSParseState *state) {
@@ -28,10 +25,10 @@ bool progress(TSParseState *state) {
 
 }  // namespace
 
-TSTree *parse(TSParser *parser, const TSTree *old_tree, const std::u16string &text, const std::atomic<int> *flag,
+TSTree *parse(TSParser *parser, const TSTree *old_tree, const Text &text, const std::atomic<int> *flag,
               int64_t budget_micros, const cp_host &host) {
   TSInput input;
-  input.payload = const_cast<std::u16string *>(&text);
+  input.payload = const_cast<Text *>(&text);
   input.read = read_text;
   input.encoding = TSInputEncodingUTF16LE;
   input.decode = nullptr;

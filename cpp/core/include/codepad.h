@@ -158,6 +158,9 @@ CP_API int32_t cp_editor_history(const cp_editor *editor);
 // document: every bracket counts. Otherwise brackets in strings and comments are skipped.
 CP_API int32_t cp_editor_bracket_match(const cp_editor *editor, const cp_snapshot *snapshot, uint32_t caret,
                                        int32_t out[2]);
+// Main thread. The engine parses the editor's current text, then every later edit, reading the document's own
+// chunks with no copy. NULL detaches. A snapshot parsed before the latest attach never reaches on_snapshot.
+CP_API void cp_editor_attach(cp_editor *editor, cp_engine *engine);
 // revision is the document revision the items were computed for, below zero for the current one. Returns 0
 // when the edits since then are no longer known, which keeps the current set.
 CP_API int32_t cp_editor_set_decorations(cp_editor *editor, const cp_decoration *items, uint32_t count,
@@ -207,6 +210,7 @@ CP_API cp_engine *cp_engine_new(const cp_host *host, int64_t budget_micros,
                                 void (*on_snapshot)(void *ctx, cp_snapshot *snapshot));
 // NULL clears the language. A snapshot still in flight keeps the language it was parsed with.
 CP_API void cp_engine_set_language(cp_engine *engine, const cp_language *language);
+// The text path for an engine with no editor attached, kept until Android attaches its editor.
 CP_API void cp_engine_set_text(cp_engine *engine, const cp_unit *text, uint32_t length, int32_t revision);
 // Points are in UTF-16 units, as the platform document computes them.
 CP_API void cp_engine_edit(cp_engine *engine, uint32_t start, uint32_t removed, const cp_unit *inserted,
@@ -288,6 +292,10 @@ CP_API uint32_t cp_test_chunk_ends(cp_editor *editor, uint32_t *out, uint32_t ca
 CP_API uint32_t cp_test_units_copied(cp_editor *editor);
 // Chunk size limits for later edits and new documents. 0, 0 restores the defaults.
 CP_API void cp_test_set_chunk_limits(uint32_t max, uint32_t min);
+// Takes the document's exclusive lock, or releases it, on the calling thread.
+CP_API void cp_test_hold_write(cp_editor *editor, int32_t hold);
+// Snapshots the engine made that are not freed yet.
+CP_API int32_t cp_test_live_snapshots(const cp_engine *engine);
 #endif
 
 #ifdef __cplusplus

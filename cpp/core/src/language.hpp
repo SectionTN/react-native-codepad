@@ -10,15 +10,16 @@
 #include <vector>
 
 #include "regex.hpp"
+#include "text.hpp"
 
 namespace codepad {
 
 // The text node predicates read: a carried tree's own positions lag the text by shift units.
 struct TextView {
-  const char16_t *data = nullptr;
-  uint32_t length = 0;
+  const Text *text = nullptr;
   int32_t shift = 0;
-  std::u16string_view node(TSNode n) const;
+  // A node inside one chunk is read in place. One spanning chunks is copied into scratch.
+  std::u16string_view node(TSNode n, std::u16string &scratch) const;
 };
 
 struct Predicate {

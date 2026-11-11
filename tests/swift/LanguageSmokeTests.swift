@@ -33,8 +33,8 @@ final class LanguageSmokeTests: XCTestCase {
       let snapshots = SnapshotQueue()
       let engine = SyntaxEngine(postToMain: { $0() }, onSnapshot: { snapshots.add($0) })
       engine.setLanguage(grammar)
-      engine.setText(text, revision: 1)
-      let snapshot = try XCTUnwrap(snapshots.takeRevision(1, 10), "\(grammar) never parsed")
+      engine.attach(core)
+      let snapshot = try XCTUnwrap(snapshots.takeParsed(10), "\(grammar) never parsed")
       let spans = Highlighter(language: lang).spans(snapshot: snapshot, doc: core.document, firstLine: 0, lastLine: 0)
       XCTAssertFalse(spans[0].isEmpty, "\(grammar) paints line 0")
       if grammar == "markdown" { XCTAssertGreaterThanOrEqual(snapshot.injected.count, 2, "markdown injects inline and the fence") }
