@@ -9,7 +9,9 @@ cd "$root/example/android"
 adb install -r app/build/outputs/apk/debugOptimized/app-debugOptimized.apk
 adb install -r app/build/outputs/apk/androidTest/debugOptimized/app-debugOptimized-androidTest.apk
 log=$(mktemp)
-trap 'rm -f "$log"' EXIT
+# The debug switch turns on the draw guard: a document read during a draw throws.
+adb shell settings put global codepad_debug 1
+trap 'rm -f "$log"; adb shell settings put global codepad_debug 0' EXIT
 adb shell am instrument -w -r "$@" me.sectiontn.codepad.example.test/androidx.test.runner.AndroidJUnitRunner | tee "$log"
 grep -q 'INSTRUMENTATION_CODE: -1' "$log" &&
   ! grep -Eq 'INSTRUMENTATION_STATUS_CODE: -[12]' "$log" &&

@@ -1,6 +1,7 @@
 package codepad.example
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.util.concurrent.CountDownLatch
 import me.sectiontn.codepad.view.ThemeColors
 import me.sectiontn.codepad.view.TokenStyleColors
 import org.junit.Assert.assertEquals
@@ -84,6 +85,34 @@ class KeyFrameHighlightTest {
       Thread.sleep(300)
       assertTrue("the number painted after the snapshot", redPixels(onMain { draw(editor) }, 80) > 0)
       assertTrue("the number kept its color in the frame before the snapshot", redPixels(before, 80) > 0)
+    }
+  }
+
+  // Both documents start at revision 0: the old text's snapshot, posted before setInitialText, would pass the
+  // revision check and paint the old number's color inside the new text's string.
+  @Test
+  fun snapshotFromBeforeSetInitialTextNeverPaints() {
+    launch().use { s ->
+      val editor = s.editor()
+      val number = TokenStyleColors(0xFFFF0000.toInt(), false, false)
+      val release = CountDownLatch(1)
+      onMain {
+        editor.setTheme(ThemeColors.default.withTokens(mapOf("number" to number)))
+        editor.setLanguage("python")
+        editor.setInitialText("x = 1\n")
+        layout(editor)
+        // The old snapshot waits in the main queue, and the held worker cannot parse the new text yet.
+        val worker = checkNotNull(editor.engine).executor
+        worker.submit {}.get()
+        worker.execute { release.await() }
+        editor.setInitialText("{\"ab\": \"cd\"}\n")
+      }
+      Thread.sleep(300)
+      val image = onMain { draw(editor) }
+      release.countDown()
+      assertEquals("the old text's number color painted over the new text", 0, redPixels(image, 80))
+      Thread.sleep(300)
+      assertEquals("the new text has no number", 0, redPixels(onMain { draw(editor) }, 80))
     }
   }
 }

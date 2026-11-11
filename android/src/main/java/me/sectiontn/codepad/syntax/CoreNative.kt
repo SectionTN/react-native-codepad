@@ -68,6 +68,10 @@ internal object CoreNative {
   @JvmStatic external fun editorText(editor: Long): Long
   @JvmStatic external fun textRelease(text: Long)
   @JvmStatic external fun searchFind(search: Long, text: Long, from: Int, out: IntArray): Int
+  @JvmStatic external fun editorFrame(
+    editor: Long, snapshot: Long, first: Int, last: Int, applied: Int, useChanged: Boolean, entries: IntArray, out: IntArray,
+    text: CharArray, textLength: IntArray,
+  ): Int
 
   @JvmStatic external fun abiRange(): IntArray
   @JvmStatic external fun languageLoad(id: String, pointer: Long, highlights: ByteArray, injections: ByteArray?, error: Array<String?>): Long

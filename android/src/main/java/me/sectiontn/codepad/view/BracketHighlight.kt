@@ -13,10 +13,8 @@ class BracketHighlight(private val core: EditorCore) {
   private var keySnapshot = -1
   private var keyEnabled = false
 
-  /** A [snapshot] at the document revision skips brackets in strings and comments. Without one every bracket counts. */
-  fun pair(snapshot: Snapshot?): IntArray? {
-    val revision = core.document.revision
-    val head = core.selection.head
+  /** A [snapshot] at [revision], the document's, skips brackets in strings and comments. Without one every bracket counts. */
+  fun pair(snapshot: Snapshot?, revision: Int, head: Int): IntArray? {
     val snapshotRevision = snapshot?.revision ?: -1
     if (revision == keyRevision && head == keyHead && snapshotRevision == keySnapshot && enabled == keyEnabled) return cached
     keyRevision = revision

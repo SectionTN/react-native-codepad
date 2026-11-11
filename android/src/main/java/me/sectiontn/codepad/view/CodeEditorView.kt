@@ -26,7 +26,9 @@ import me.sectiontn.codepad.core.Change
 import me.sectiontn.codepad.core.ChangeOrigin
 import me.sectiontn.codepad.core.Decoration
 import me.sectiontn.codepad.core.EditorCore
+import me.sectiontn.codepad.core.EditorFrame
 import me.sectiontn.codepad.core.EditorSettings
+import me.sectiontn.codepad.core.FrameReader
 import me.sectiontn.codepad.core.Range
 import me.sectiontn.codepad.core.SearchQuery
 import me.sectiontn.codepad.core.Selection
@@ -44,6 +46,7 @@ import me.sectiontn.codepad.layout.LineLayout
 import me.sectiontn.codepad.layout.RowGeometry
 import me.sectiontn.codepad.layout.RowMetrics
 import me.sectiontn.codepad.layout.Viewport
+import me.sectiontn.codepad.syntax.CoreNative
 import me.sectiontn.codepad.syntax.Highlighter
 import me.sectiontn.codepad.syntax.LanguageRegistry
 import me.sectiontn.codepad.syntax.Snapshot
@@ -101,11 +104,16 @@ class CodeEditorView(context: Context) : View(context) {
   private var pendingLine = -1
   private var pendingRevision = -1
   private var highlighter: Highlighter? = null
-  private var engine: SyntaxEngine? = null
+  // Read by the instrumented tests, which hold its worker.
+  var engine: SyntaxEngine? = null
+    private set
 
   private var heights = HeightMap(1)
   private val viewport = Viewport(heights)
   private val cache = LayoutCache<Entry>(64)
+  private val frameReader = FrameReader()
+  // The frame of the draw in progress: from the frame call to the end of publish, every read comes from it.
+  private var drawFrame: EditorFrame? = null
   private val painter = EditorPainter(viewport, { cache[it]?.layout }, paint, gutterPaint, density)
   private val decorationPainter = DecorationPainter(density)
   private var goalX: Float? = null
@@ -126,9 +134,9 @@ class CodeEditorView(context: Context) : View(context) {
     override val spaceWidth: Float get() = rowMetrics().spaceWidth
     override val viewHeight: Int get() = height
     override val originX: Float get() = viewport.viewX(0f)
-    override fun lineAt(offset: Int): Int = core.document.lineAt(offset)
-    override fun lineStart(line: Int): Int = core.document.lineStart(line)
-    override fun lineLength(line: Int): Int = core.document.lineLength(line)
+    override fun lineAt(offset: Int): Int = docLineAt(offset)
+    override fun lineStart(line: Int): Int = docLineStart(line)
+    override fun lineLength(line: Int): Int = docLineLength(line)
     override fun lineTop(line: Int): Int = viewport.lineTop(line)
     override fun rowCount(line: Int): Int = cache[line]?.layout?.rowCount ?: 0
     override fun rowSpans(line: Int, from: Int, to: Int, out: (row: Int, left: Float, right: Float) -> Unit) {
@@ -667,10 +675,22 @@ class CodeEditorView(context: Context) : View(context) {
 
   private fun dp(value: Float): Int = Math.round(value * density)
 
+  // Line reads for the geometry: from the frame while a draw runs, else one core call. Neither goes through the
+  // document's checked members.
+  private fun docLineAt(offset: Int): Int = drawFrame?.lineAt(offset) ?: CoreNative.docLineAt(core.document.handle, offset)
+
+  private fun docLineStart(line: Int): Int = drawFrame?.lineStart(line) ?: CoreNative.docLineStart(core.document.handle, line)
+
+  private fun docLineLength(line: Int): Int = drawFrame?.lineLength(line) ?: core.document.handle.let { h ->
+    CoreNative.docLineEnd(h, line) - CoreNative.docLineStart(h, line)
+  }
+
   /** Lays out one line plain, for hit tests and reveals on lines outside the drawn range. */
   private fun layoutLine(line: Int): Entry {
-    val spans = keptSpans(line)
-    val layout = LineLayout(core.document.line(line), spans, paint, theme, viewport.wrapWidth, core.settings.tabSize, rowMetrics())
+    val frame = drawFrame
+    val spans = keptSpans(line, frame?.revision ?: core.document.revision)
+    val text = frame?.text(line) ?: core.document.lineOutsideFrame(line)
+    val layout = LineLayout(text, spans, paint, theme, viewport.wrapWidth, core.settings.tabSize, rowMetrics())
     val entry = Entry(layout, spans, -1)
     cache.put(line, entry)
     viewport.measured(line, layout.rowCount)
@@ -731,14 +751,14 @@ class CodeEditorView(context: Context) : View(context) {
 
   /** View coordinates of the bottom of the caret row at [offset]. False when that line is not laid out. */
   private fun anchorAt(offset: Int, m: RowMetrics): Boolean {
-    val line = core.document.lineAt(offset)
+    val line = docLineAt(offset)
     val entry = cache[line] ?: return false
     anchorTo(line, offset, entry, m)
     return true
   }
 
   private fun anchorTo(line: Int, offset: Int, entry: Entry, m: RowMetrics) {
-    val col = offset - core.document.lineStart(line)
+    val col = offset - docLineStart(line)
     val row = entry.layout.rowOf(col)
     anchorX = viewport.viewX(entry.layout.caretX(col))
     anchorY = (viewport.lineTop(line) + (row + 1) * m.rowHeight).toFloat()
@@ -1229,32 +1249,38 @@ class CodeEditorView(context: Context) : View(context) {
     canvas.drawColor(theme.background)
     if (width == 0 || height == 0) return
     syncGaps()
-    val doc = core.document
     val m = rowMetrics()
     if (revealPending) {
       revealPending = false
       revealSelection()
     }
     val firstLine = viewport.firstVisibleLine()
-    val lastBound = minOf(doc.lineCount - 1, firstLine + height / m.rowHeight + 1)
-    prepare(firstLine, lastBound, m)
-    val caretLine = doc.lineAt(core.selection.head)
-    if (highlightActiveLine && core.selection.isEmpty) painter.drawActiveLine(canvas, caretLine, width, height)
+    val lastBound = minOf(heights.lineCount - 1, firstLine + height / m.rowHeight + 1)
+    // One core call for the whole draw. Until publish returns, every read comes from it.
+    val f = readFrame(firstLine, lastBound)
+    drawFrame = f
+    if (debugSwitch()) core.document.drawingThread = Thread.currentThread()
+    prepare(f, m)
+    val caretLine = f.caretLine
+    val caretOnly = f.anchor == f.head
+    if (highlightActiveLine && caretOnly) painter.drawActiveLine(canvas, caretLine, width, height)
     val decorated = core.decorations.items
     if (decorated.isNotEmpty()) decorationPainter.drawLineBackgrounds(canvas, decorated, viewport, width, height)
-    drawFills(canvas, firstLine, lastBound)
+    drawFills(canvas, f, firstLine, lastBound)
     if (decorated.isNotEmpty()) {
       clippedToText(canvas) { decorationPainter.drawUnderlines(canvas, decorated, rowGeometry, firstLine, -m.ascent) }
     }
-    val lastLine = painter.drawText(canvas, doc, firstLine, width, height)
+    val lastLine = painter.drawText(canvas, f.lineCount, firstLine, width, height)
     drawComposing(canvas, firstLine)
     if (lineNumbers) painter.drawGutter(canvas, m, firstLine, lastLine, caretLine, height)
-    if (isFocused && caretVisible && core.selection.isEmpty) caretRect(m, caretLine)?.let { painter.drawCaret(canvas, it, height) }
+    if (isFocused && caretVisible && caretOnly) caretRect(m, caretLine)?.let { painter.drawCaret(canvas, it, height) }
     placeHandles(m)
     handles.draw(canvas)
-    placeholder?.let { if (doc.length == 0) painter.drawPlaceholder(canvas, m, it) }
+    placeholder?.let { if (f.length == 0) painter.drawPlaceholder(canvas, m, it) }
     if (scroller.draw(canvas, width, height)) postInvalidateOnAnimation()
     publish(firstLine, lastLine, caretLine, m)
+    core.document.drawingThread = null
+    drawFrame = null
     flushIme(m)
     if (scrollDirty) {
       scrollDirty = false
@@ -1282,45 +1308,45 @@ class CodeEditorView(context: Context) : View(context) {
    * Builds missing layouts for [first, last] with one highlight query per run of dirty lines: when the snapshot follows
    * the one last applied, only the lines its regions meet; otherwise every line not at its revision.
    */
-  private fun prepare(first: Int, last: Int, m: RowMetrics) {
-    val doc = core.document
-    val consistent = snapshot?.takeIf { it.revision == doc.revision }
-    val hl = highlighter
-    val revision = if (consistent != null && hl != null) consistent.revision else -1
-    var runs = IntArray(0)
-    var spans: Array<IntArray> = emptyArray()
-    if (consistent != null && hl != null) {
-      val incremental = consistent.basedOn >= 0 && consistent.basedOn == appliedRevision
-      val entries = IntArray(last - first + 1) { cache[first + it]?.revision ?: Highlighter.NO_ENTRY }
-      val frame = hl.frame(consistent, doc, first, last, appliedRevision, incremental, entries)
-      runs = frame.first
-      spans = frame.second
-    }
+  private fun readFrame(first: Int, last: Int): EditorFrame {
+    val usable = if (highlighter != null) snapshot else null
+    val entries = IntArray(last - first + 1) { cache[first + it]?.revision ?: EditorFrame.NO_ENTRY }
+    val incremental = usable != null && usable.basedOn >= 0 && usable.basedOn == appliedRevision
+    return frameReader.read(core, usable?.pointer ?: 0L, first, last, appliedRevision, incremental, entries)
+  }
+
+  private fun prepare(frame: EditorFrame, m: RowMetrics) {
+    // The core paints from the snapshot only when it is at the frame's revision. Otherwise its runs are the lines
+    // with no layout, and those take the spans keepSpans kept.
+    val consistent = highlighter != null && snapshot?.revision == frame.revision
+    val revision = if (consistent) frame.revision else -1
+    val runs = frame.runs
     var r = 0
-    // The spans of the run lines arrive in line order, one entry per line.
+    // The spans and text of the run lines arrive in line order, one entry per line.
     var next = 0
-    for (line in first..last) {
+    for (line in frame.first..frame.last) {
       while (r + 1 < runs.size && runs[r + 1] < line) r += 2
       val inRun = r + 1 < runs.size && line >= runs[r]
       val entry = cache[line]
-      if (!inRun && entry != null) {
-        // A clean line keeps its layout and takes the revision without a query.
-        if (revision >= 0) entry.revision = revision
+      if (!inRun) {
+        // A clean line keeps its layout and takes the revision without a query. Every line without one is in a run.
+        if (entry != null && revision >= 0) entry.revision = revision
         continue
       }
-      var fresh: IntArray? = null
-      if (inRun) {
-        fresh = spans.getOrNull(next)?.takeIf { it.isNotEmpty() }
-        next++
+      val lineSpans = frame.spans.getOrNull(next)
+      next++
+      val fresh: IntArray?
+      if (consistent) {
+        fresh = lineSpans?.takeIf { it.isNotEmpty() }
         if (entry != null && entry.spans.contentEquals(fresh)) {
           entry.revision = revision
           continue
         }
       } else {
-        fresh = keptSpans(line)
+        fresh = keptSpans(line, frame.revision)
       }
-      val layout = LineLayout(doc.line(line), fresh, paint, theme, viewport.wrapWidth, core.settings.tabSize, m)
-      cache.put(line, Entry(layout, fresh, if (inRun) revision else -1))
+      val layout = LineLayout(frame.text(line) ?: "", fresh, paint, theme, viewport.wrapWidth, core.settings.tabSize, m)
+      cache.put(line, Entry(layout, fresh, if (consistent) revision else -1))
       viewport.measured(line, layout.rowCount)
       if (!viewport.wrap) viewport.widestLine = maxOf(viewport.widestLine, Math.round(layout.width()))
     }
@@ -1331,9 +1357,9 @@ class CodeEditorView(context: Context) : View(context) {
     }
   }
 
-  /** The spans [keepSpans] kept for a line of the current revision, or null. */
-  private fun keptSpans(line: Int): IntArray? = when {
-    pendingRevision != core.document.revision -> null
+  /** The spans [keepSpans] kept for a line of [revision], the current one, or null. */
+  private fun keptSpans(line: Int, revision: Int): IntArray? = when {
+    pendingRevision != revision -> null
     line == pendingLine -> pendingSpans
     line == pendingLine + 1 -> pendingTail
     else -> null
@@ -1361,17 +1387,16 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   /** Fills under the text in this order: search matches, bracket pair, selection. */
-  private fun drawFills(canvas: Canvas, firstLine: Int, lastLine: Int) {
+  private fun drawFills(canvas: Canvas, frame: EditorFrame, firstLine: Int, lastLine: Int) {
     canvas.save()
     canvas.clipRect(viewport.textAreaLeft, 0, width, height)
-    val doc = core.document
     search?.takeIf { it.active }?.let {
-      val window = Range(doc.lineStart(firstLine), doc.lineEnd(lastLine))
+      val window = Range(docLineStart(firstLine), docLineStart(lastLine + 1) - 1)
       val active = core.selection.range.takeIf { r -> !r.isEmpty }
       decorations.drawMatches(canvas, rowGeometry, it.matchesForPaint(), active, firstLine, window, theme.searchMatch, theme.searchMatchActive)
     }
-    val consistent = snapshot?.takeIf { it.revision == doc.revision }
-    brackets.pair(consistent)?.let {
+    val consistent = snapshot?.takeIf { it.revision == frame.revision }
+    brackets.pair(consistent, frame.revision, frame.head)?.let {
       decorations.drawBrackets(canvas, rowGeometry, it, firstLine, theme.matchingBracket)
     }
     val sel = core.selection
@@ -1393,7 +1418,7 @@ class CodeEditorView(context: Context) : View(context) {
     canvas.restore()
   }
 
-  private fun caretRect(m: RowMetrics, line: Int): RectF? = painter.caretRect(m, line, core.selection.head - core.document.lineStart(line))
+  private fun caretRect(m: RowMetrics, line: Int): RectF? = painter.caretRect(m, line, core.selection.head - docLineStart(line))
 
   /** Every gap in view dp, sorted by line, the full view width wide. */
   private fun gapRects(m: RowMetrics): List<GapRect> {

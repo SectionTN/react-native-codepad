@@ -559,12 +559,33 @@ FN(searchRelease)(JNIEnv *, jclass, jlong search) -> void { cp_search_release(pt
 FN(editorText)(JNIEnv *, jclass, jlong editor) -> jlong { return handle(cp_editor_text(ed(editor))); }
 FN(textRelease)(JNIEnv *, jclass, jlong text) -> void { cp_text_release(ptr<cp_text>(text)); }
 
-// A worker call: no Kotlin runs inside, so the output array can stay critical. -1 means the match limit was hit.
+// A worker call that can scan for long, so the matches go through a native buffer instead of a critical array.
+// -1 means the match limit was hit.
 FN(searchFind)(JNIEnv *e, jclass, jlong search, jlong text, jint from, jintArray out) -> jint {
   jsize cap = e->GetArrayLength(out);
-  auto *buffer = static_cast<jint *>(e->GetPrimitiveArrayCritical(out, nullptr));
-  int32_t n = cp_search_find(ptr<cp_search>(search), ptr<cp_text>(text), at(from), reinterpret_cast<int32_t *>(buffer),
-                             static_cast<uint32_t>(cap));
-  e->ReleasePrimitiveArrayCritical(out, buffer, 0);
+  std::vector<int32_t> buffer(static_cast<size_t>(cap));
+  int32_t n = cp_search_find(ptr<cp_search>(search), ptr<cp_text>(text), at(from), buffer.data(), static_cast<uint32_t>(cap));
+  if (n > 0) e->SetIntArrayRegion(out, 0, n, reinterpret_cast<const jint *>(buffer.data()));
   return n;
+}
+
+// Main thread, once per draw. No Kotlin runs inside, so both outputs stay critical. text_len[0] gets the units needed.
+FN(editorFrame)(JNIEnv *e, jclass, jlong editor, jlong snapshot, jint first, jint last, jint applied,
+                jboolean use_changed, jintArray entries, jintArray out, jcharArray text, jintArray text_len) -> jint {
+  jsize n = e->GetArrayLength(entries);
+  std::vector<int32_t> revisions(static_cast<size_t>(n));
+  if (n > 0) e->GetIntArrayRegion(entries, 0, n, reinterpret_cast<jint *>(revisions.data()));
+  jsize cap = e->GetArrayLength(out);
+  jsize text_cap = e->GetArrayLength(text);
+  uint32_t units = 0;
+  auto *o = static_cast<jint *>(e->GetPrimitiveArrayCritical(out, nullptr));
+  auto *t = static_cast<jchar *>(e->GetPrimitiveArrayCritical(text, nullptr));
+  uint32_t needed = cp_editor_frame(ed(editor), ptr<cp_snapshot>(snapshot), first, last, applied, use_changed ? 1 : 0,
+                                    revisions.data(), reinterpret_cast<int32_t *>(o), static_cast<uint32_t>(cap),
+                                    reinterpret_cast<cp_unit *>(t), static_cast<uint32_t>(text_cap), &units);
+  e->ReleasePrimitiveArrayCritical(text, t, 0);
+  e->ReleasePrimitiveArrayCritical(out, o, 0);
+  auto length = static_cast<jint>(units);
+  e->SetIntArrayRegion(text_len, 0, 1, &length);
+  return static_cast<jint>(needed);
 }

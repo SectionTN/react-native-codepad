@@ -4,7 +4,6 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.text.TextPaint
-import me.sectiontn.codepad.core.Document
 import me.sectiontn.codepad.layout.LineLayout
 import me.sectiontn.codepad.layout.RowMetrics
 import me.sectiontn.codepad.layout.Viewport
@@ -29,12 +28,12 @@ internal class EditorPainter(
   }
 
   /** Returns the last line drawn. */
-  fun drawText(canvas: Canvas, doc: Document, firstLine: Int, width: Int, height: Int): Int {
+  fun drawText(canvas: Canvas, lineCount: Int, firstLine: Int, width: Int, height: Int): Int {
     var lastLine = firstLine
     canvas.save()
     canvas.clipRect(viewport.textAreaLeft, 0, width, height)
     var line = firstLine
-    while (line < doc.lineCount) {
+    while (line < lineCount) {
       val top = viewport.lineTop(line)
       if (top >= height) break
       val layout = layoutOf(line) ?: break

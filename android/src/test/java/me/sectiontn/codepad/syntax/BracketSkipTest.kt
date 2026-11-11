@@ -30,11 +30,11 @@ class BracketSkipTest {
   fun pairIsCachedUntilTheCaretMoves() {
     val (snapshot, core) = parseCore(HostLanguages.javascript(), "(a)")
     val highlight = BracketHighlight(core)
-    val first = highlight.pair(snapshot)
+    val first = highlight.pair(snapshot, core.document.revision, core.selection.head)
     assertArrayEquals(intArrayOf(0, 2), first)
-    assertSame(first, highlight.pair(snapshot))
+    assertSame(first, highlight.pair(snapshot, core.document.revision, core.selection.head))
     core.setSelection(1, 1)
-    assertNotSame(first, highlight.pair(snapshot))
+    assertNotSame(first, highlight.pair(snapshot, core.document.revision, core.selection.head))
     snapshot.close()
   }
 }

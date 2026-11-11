@@ -12,7 +12,7 @@ class SyntaxEngine(
   postToMain: (Runnable) -> Unit,
   onSnapshot: (Snapshot) -> Unit,
   budgetMicros: Long = 50_000L,
-  private val executor: ExecutorService = Executors.newSingleThreadExecutor { r -> Thread(r, "codepad-syntax").apply { isDaemon = true } },
+  val executor: ExecutorService = Executors.newSingleThreadExecutor { r -> Thread(r, "codepad-syntax").apply { isDaemon = true } },
 ) : AutoCloseable {
   private lateinit var handle: EngineHandle
   private var attached: EditorCore? = null
