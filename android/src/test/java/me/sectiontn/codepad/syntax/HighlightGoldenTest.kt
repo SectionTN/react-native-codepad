@@ -4,6 +4,7 @@ import java.io.File
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import me.sectiontn.codepad.core.Document
+import me.sectiontn.codepad.core.EditorCore
 import org.junit.Assert.assertEquals
 import org.junit.BeforeClass
 import org.junit.Test
@@ -48,7 +49,8 @@ class HighlightGoldenTest(private val id: String) {
     val snapshots = LinkedBlockingQueue<Snapshot>()
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
     engine.setLanguage(id)
-    engine.setText(text, 0)
+    val core = EditorCore(text)
+    engine.attach(core)
     // setLanguage can publish an empty document snapshot first; wait for the whole text.
     var snapshot: Snapshot
     while (true) {
@@ -56,7 +58,7 @@ class HighlightGoldenTest(private val id: String) {
       if (snapshot.length == text.length) break
       snapshot.close()
     }
-    val doc = Document(text)
+    val doc = core.document
     val lang = checkNotNull(LanguageRegistry.resolve(id))
     val actual = render(doc, Highlighter(lang).spans(snapshot, doc, 0, doc.lineCount - 1))
     snapshot.close()

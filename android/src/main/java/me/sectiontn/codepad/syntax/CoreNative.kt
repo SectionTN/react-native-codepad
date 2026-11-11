@@ -7,8 +7,67 @@ import java.util.concurrent.RejectedExecutionException
 /** The core's C API through core_jni.cpp. Offsets are UTF-16 units; handles are native pointers as Long. */
 internal object CoreNative {
   init {
-    if (System.getProperty("codepad.hostLib") == null) System.loadLibrary("codepad")
+    // JVM tests run on the host build of the core, which yarn host:treesitter writes.
+    val host = System.getProperty("codepad.hostLib")
+    if (host == null) {
+      System.loadLibrary("codepad")
+    } else {
+      check(java.io.File(host).exists()) { "$host is missing: run yarn host:treesitter" }
+      System.load(host)
+    }
   }
+
+  @JvmStatic external fun editorNew(host: Any, text: String, clock: Boolean, refOut: LongArray): Long
+  @JvmStatic external fun editorFree(editor: Long, ref: Long)
+  @JvmStatic external fun lockShared(editor: Long)
+  @JvmStatic external fun unlockShared(editor: Long)
+  @JvmStatic external fun docLength(editor: Long): Int
+  @JvmStatic external fun docRevision(editor: Long): Int
+  @JvmStatic external fun docLineCount(editor: Long): Int
+  @JvmStatic external fun docLineStart(editor: Long, line: Int): Int
+  @JvmStatic external fun docLineEnd(editor: Long, line: Int): Int
+  @JvmStatic external fun docLineAt(editor: Long, offset: Int): Int
+  @JvmStatic external fun docUnitAt(editor: Long, offset: Int): Char
+  @JvmStatic external fun docText(editor: Long, start: Int, end: Int): String
+  @JvmStatic external fun docPosition(editor: Long, offset: Int): Long
+  @JvmStatic external fun docOffset(editor: Long, line: Int, column: Int): Int
+  @JvmStatic external fun docGrapheme(editor: Long, offset: Int, forward: Boolean): Int
+  @JvmStatic external fun editorSettings(editor: Long, tabSize: Int, spaces: Boolean, indent: Boolean, close: Boolean)
+  @JvmStatic external fun editorReplace(editor: Long, start: Int, end: Int, text: String, origin: Int, typing: Boolean, caretAfter: Boolean)
+  @JvmStatic external fun editorSetText(editor: Long, text: String, keepHistory: Boolean)
+  @JvmStatic external fun editorInsert(editor: Long, text: String, origin: Int)
+  @JvmStatic external fun editorType(editor: Long, text: String)
+  @JvmStatic external fun editorCommand(editor: Long, command: Int): Boolean
+  @JvmStatic external fun editorSetSelection(editor: Long, anchor: Int, head: Int)
+  @JvmStatic external fun editorMove(editor: Long, unit: Int, forward: Boolean, extend: Boolean)
+  @JvmStatic external fun editorSelectWordAt(editor: Long, offset: Int)
+  @JvmStatic external fun editorDeletesPair(editor: Long, caret: Int): Boolean
+  @JvmStatic external fun editorBeginGroup(editor: Long)
+  @JvmStatic external fun editorEndGroup(editor: Long)
+  @JvmStatic external fun editorSelectionDirty(editor: Long): Boolean
+  @JvmStatic external fun editorSetSelectionDirty(editor: Long, dirty: Boolean)
+  @JvmStatic external fun editorSelection(editor: Long): Long
+  @JvmStatic external fun editorHistory(editor: Long): Int
+  @JvmStatic external fun editorBracketMatch(editor: Long, snapshot: Long, caret: Int, out: IntArray): Boolean
+  @JvmStatic external fun editorSetDecorations(editor: Long, items: IntArray, revision: Int): Boolean
+  @JvmStatic external fun editorDecorations(editor: Long): IntArray
+  @JvmStatic external fun editorDecorationsVersion(editor: Long): Int
+  @JvmStatic external fun editorAttach(editor: Long, engine: Long)
+  @JvmStatic external fun editorSetSearch(editor: Long, query: String, flags: Int, error: Array<String?>): Boolean
+  @JvmStatic external fun editorClearSearch(editor: Long)
+  @JvmStatic external fun editorSearchActive(editor: Long): Boolean
+  @JvmStatic external fun editorSearchStale(editor: Long): Boolean
+  @JvmStatic external fun editorMatchCount(editor: Long): Int
+  @JvmStatic external fun editorMatches(editor: Long): IntArray
+  @JvmStatic external fun editorFind(editor: Long, forward: Boolean, out: IntArray): Boolean
+  @JvmStatic external fun editorReplaceCurrent(editor: Long, text: String): Boolean
+  @JvmStatic external fun editorReplaceAll(editor: Long, text: String): Int
+  @JvmStatic external fun editorAcceptMatches(editor: Long, revision: Int, pairs: IntArray): Boolean
+  @JvmStatic external fun editorSearchQuery(editor: Long): Long
+  @JvmStatic external fun searchRelease(search: Long)
+  @JvmStatic external fun editorText(editor: Long): Long
+  @JvmStatic external fun textRelease(text: Long)
+  @JvmStatic external fun searchFind(search: Long, text: Long, from: Int, out: IntArray): Int
 
   @JvmStatic external fun abiRange(): IntArray
   @JvmStatic external fun languageLoad(id: String, pointer: Long, highlights: ByteArray, injections: ByteArray?, error: Array<String?>): Long

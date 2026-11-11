@@ -4,6 +4,7 @@ import java.util.concurrent.CancellationException
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import me.sectiontn.codepad.core.Change
 import me.sectiontn.codepad.core.EditorCore
 import me.sectiontn.codepad.core.SearchQuery
@@ -25,7 +26,7 @@ class SearchController(
   }
 
   var onResult: ((count: Int, millis: Long) -> Unit)? = null
-  val active: Boolean get() = core.search != null
+  val active: Boolean get() = core.searchActive
 
   private var generation = 0
   private var running: Job? = null
@@ -64,7 +65,8 @@ class SearchController(
     closed = true
     cancelRunning()
     runContinuations()
-    (executor as? ExecutorService)?.shutdownNow()
+    // Jobs that never ran are all cancelled: running them here only frees their handles.
+    (executor as? ExecutorService)?.shutdownNow()?.forEach { it.run() }
   }
 
   private fun cancelRunning() {
@@ -74,19 +76,33 @@ class SearchController(
 
   private fun schedule() {
     cancelRunning()
-    val query = core.search?.query ?: return
+    val search = core.compiledSearch()
+    if (search == 0L) return
     val job = Job(++generation)
     running = job
-    executor.execute {
-      val (text, revision) = core.read { core.document.text() to core.document.revision }
-      val started = System.nanoTime()
-      val result = try {
-        Searcher.find(text, query) { job.cancelled }
-      } catch (e: CancellationException) {
-        return@execute
+    // Both taken on the main thread, the only writer, so they belong to the same revision.
+    val text = core.textSnapshot()
+    val revision = core.document.revision
+    val work = Runnable {
+      try {
+        val started = System.nanoTime()
+        val result = try {
+          Searcher.find(text, search) { job.cancelled }.matches
+        } catch (e: CancellationException) {
+          return@Runnable
+        }
+        val millis = (System.nanoTime() - started) / 1_000_000
+        postToMain(Runnable { deliver(job, revision, result, millis) })
+      } finally {
+        Searcher.release(search)
+        Searcher.releaseText(text)
       }
-      val millis = (System.nanoTime() - started) / 1_000_000
-      postToMain(Runnable { deliver(job, revision, result, millis) })
+    }
+    try {
+      executor.execute(work)
+    } catch (e: RejectedExecutionException) {
+      job.cancelled = true
+      work.run()
     }
   }
 

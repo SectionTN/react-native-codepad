@@ -24,7 +24,7 @@ class SyntaxEngineTest {
 
   private fun await(): Snapshot = checkNotNull(snapshots.poll(5, TimeUnit.SECONDS))
 
-  // The setLanguage snapshot carries the previous revision; wait for the one setText produced.
+  // The setLanguage snapshot carries the previous revision. Wait for the one the edit produced.
   private fun awaitRevision(revision: Int): Snapshot {
     while (true) {
       val s = await()
@@ -33,7 +33,7 @@ class SyntaxEngineTest {
     }
   }
 
-  // setLanguage can parse the still empty mirror and publish revision 0 before setText runs; skip that snapshot.
+  // setLanguage can parse the empty text and publish revision 0 before attach runs. Skip that snapshot.
   private fun awaitText(): Snapshot {
     while (true) {
       val s = await()
@@ -46,9 +46,8 @@ class SyntaxEngineTest {
   fun publishesSnapshotsForTextAndEdits() {
     val core = EditorCore("let a = 1;")
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
-    engine.setText(core.document.text(), core.document.revision)
+    engine.attach(core)
     val first = awaitText()
     assertEquals(0, first.revision)
     val lang = checkNotNull(LanguageRegistry.resolve("javascript"))
@@ -68,9 +67,8 @@ class SyntaxEngineTest {
   fun burstsOfEditsCoalesceIntoTheLatestRevision() {
     val core = EditorCore("")
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
-    engine.setText("", 0)
+    engine.attach(core)
     await().close()
     for (i in 0 until 200) core.typeText("x")
     var last: Snapshot? = null
@@ -101,9 +99,8 @@ class SyntaxEngineTest {
     val core = EditorCore(base)
     val executor = Executors.newSingleThreadExecutor()
     val engine = SyntaxEngine({ it.run() }, { snapshots.add(it) }, budgetMicros = 1, executor = executor)
-    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
-    engine.setText(base, core.document.revision)
+    engine.attach(core)
     var current = hold(executor)
     current.started.await()
     var published: Snapshot? = null
@@ -143,16 +140,16 @@ class SyntaxEngineTest {
     val text = "html`<b>x</b>`; /ab+/"
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
     engine.setLanguage("javascript")
-    engine.setText(text, 1)
-    val snapshot = awaitRevision(1)
+    val core = EditorCore(text).also(engine::attach)
+    val snapshot = awaitText()
     assertEquals("javascript", snapshot.languageId)
     assertEquals(1, snapshot.injected.size)
     assertEquals("html", snapshot.injected[0].language.id)
     assertEquals(5, snapshot.injected[0].start)
     assertEquals(text.indexOf("`;"), snapshot.injected[0].end)
     snapshot.close()
-    engine.setText("html``", 2)
-    val empty = awaitRevision(2)
+    core.setText("html``")
+    val empty = awaitRevision(core.document.revision)
     assertEquals("an empty template string injects nothing", 0, empty.injected.size)
     empty.close()
     engine.close()
@@ -163,8 +160,8 @@ class SyntaxEngineTest {
     HostLanguages.load("html", "html")
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
     engine.setLanguage("javascript")
-    engine.setText("let a = 1;", 1)
-    val snapshot = awaitRevision(1)
+    engine.attach(EditorCore("let a = 1;"))
+    val snapshot = awaitText()
     assertEquals("javascript", snapshot.languageId)
     snapshot.close()
     engine.setLanguage("html")
@@ -187,8 +184,8 @@ class SyntaxEngineTest {
     })
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
     engine.setLanguage("markdown")
-    engine.setText("```$id\nlet a = 1;\n```\n", 1)
-    val snapshot = awaitRevision(1)
+    engine.attach(EditorCore("```$id\nlet a = 1;\n```\n"))
+    val snapshot = awaitText()
     assertEquals(listOf(id), snapshot.injected.map { it.language.id })
     snapshot.close()
     engine.close()
@@ -203,7 +200,7 @@ class SyntaxEngineTest {
       onSnapshot = { it.close(); throw IllegalStateException("view") },
     )
     engine.setLanguage("javascript")
-    engine.setText("let a = 1;", 1)
+    engine.attach(EditorCore("let a = 1;"))
     assertEquals("view", checkNotNull(caught.poll(5, TimeUnit.SECONDS)).message)
     engine.close()
   }
@@ -213,10 +210,10 @@ class SyntaxEngineTest {
   fun releaseDoesNotThrowAfterClose() {
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
     engine.setLanguage("javascript")
-    engine.setText("let a = 1;", 1)
-    val first = awaitRevision(1)
-    engine.setText("let b = 2;", 2)
-    val second = awaitRevision(2)
+    val core = EditorCore("let a = 1;").also(engine::attach)
+    val first = awaitText()
+    core.setText("let b = 2;")
+    val second = awaitRevision(core.document.revision)
     engine.release(first)
     engine.close()
     engine.release(second)
@@ -231,7 +228,7 @@ class SyntaxEngineTest {
     }
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) }, budgetMicros = 1L, executor = executor)
     engine.setLanguage("javascript")
-    engine.setText((0 until 20000).joinToString("\n") { "const v$it = f($it) + g(\"$it\");" }, 1)
+    engine.attach(EditorCore((0 until 20000).joinToString("\n") { "const v$it = f($it) + g(\"$it\");" }))
     engine.close()
     assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS))
     assertEquals(null, thrown.get())
@@ -243,9 +240,8 @@ class SyntaxEngineTest {
     val text = "function f() {\n  return 1;\n}\nlet g = 2;\n"
     val core = EditorCore(text)
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
-    engine.setText(text, 0)
+    engine.attach(core)
     val first = awaitText()
     assertEquals(-1, first.basedOn)
     first.close()
@@ -263,9 +259,8 @@ class SyntaxEngineTest {
   fun aChangedValueKindCoversTheDeclaratorName() {
     val core = EditorCore("const f =\n  function() {};\n")
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
-    engine.setText(core.document.text(), 0)
+    engine.attach(core)
     awaitText().close()
     core.replace(12, 25, "1")
     val snapshot = awaitRevision(1)
@@ -281,9 +276,8 @@ class SyntaxEngineTest {
     val core = EditorCore(text)
     val executor = Executors.newSingleThreadExecutor()
     val engine = SyntaxEngine({ it.run() }, { snapshots.add(it) }, executor = executor)
-    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("javascript")
-    engine.setText(text, 0)
+    engine.attach(core)
     awaitText().close()
     val started = CountDownLatch(1)
     val release = CountDownLatch(1)
@@ -310,9 +304,8 @@ class SyntaxEngineTest {
     HostLanguages.load("json", "json")
     val core = EditorCore("{\"a\": 1,\n \"b\": 2}\n")
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("json")
-    engine.setText(core.document.text(), 0)
+    engine.attach(core)
     awaitText().close()
     core.replace(15, 16, "3")
     val snapshot = awaitRevision(1)

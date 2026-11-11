@@ -4,7 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
-import me.sectiontn.codepad.core.Document
+import me.sectiontn.codepad.core.EditorCore
 import me.sectiontn.codepad.syntax.Highlighter
 import me.sectiontn.codepad.syntax.LanguageProvider
 import me.sectiontn.codepad.syntax.LanguageRegistry
@@ -43,7 +43,7 @@ class LanguagesTest {
       val language = LanguageRegistry.resolve(id) ?: error("$id did not load")
       val text = checkNotNull(snippets[id]) { "no snippet for $id" }
       parse(id, text) { snapshot ->
-        val spans = Highlighter(language).spans(snapshot, Document(text), 0, 0)
+        val spans = Highlighter(language).spans(snapshot, EditorCore(text).document, 0, 0)
         assertTrue("$id paints line 0", spans[0].isNotEmpty())
       }
     }
@@ -65,7 +65,7 @@ class LanguagesTest {
     val snapshots = LinkedBlockingQueue<Snapshot>()
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
     engine.setLanguage(id)
-    engine.setText(text, 0)
+    engine.attach(EditorCore(text))
     // setLanguage can publish an empty document snapshot first; wait for the whole text.
     var snapshot: Snapshot
     while (true) {

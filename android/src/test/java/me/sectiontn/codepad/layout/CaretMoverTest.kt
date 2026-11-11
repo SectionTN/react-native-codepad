@@ -1,6 +1,7 @@
 package me.sectiontn.codepad.layout
 
 import me.sectiontn.codepad.core.Document
+import me.sectiontn.codepad.core.EditorCore
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -18,7 +19,7 @@ class CaretMoverTest {
 
   @Test
   fun downKeepsTheGoalColumnAcrossShortLines() {
-    val doc = Document("abcdef\nxy\nlonger line")
+    val doc = EditorCore("abcdef\nxy\nlonger line").document
     val g = Mono(doc, 100)
     val first = CaretMover.move(doc, g, 4, 1, null)
     assertEquals(doc.lineStart(1) + 2, first.offset)
@@ -30,7 +31,7 @@ class CaretMoverTest {
 
   @Test
   fun upAndDownCrossWrappedRows() {
-    val doc = Document("abcdefgh\nij")
+    val doc = EditorCore("abcdefgh\nij").document
     val g = Mono(doc, 4)
     assertEquals(5, CaretMover.move(doc, g, 1, 1, null).offset)
     assertEquals(doc.lineStart(1) + 1, CaretMover.move(doc, g, 5, 1, null).offset)
@@ -40,7 +41,7 @@ class CaretMoverTest {
 
   @Test
   fun pagesMoveSeveralRows() {
-    val doc = Document("a\nb\nc\nd\ne")
+    val doc = EditorCore("a\nb\nc\nd\ne").document
     val g = Mono(doc, 100)
     assertEquals(doc.lineStart(3), CaretMover.move(doc, g, 0, 3, null).offset)
     assertEquals(doc.lineStart(1), CaretMover.move(doc, g, doc.lineStart(3), -2, null).offset)
@@ -48,7 +49,7 @@ class CaretMoverTest {
 
   @Test
   fun pastTheEndsClampsToTheDocument() {
-    val doc = Document("ab\ncd")
+    val doc = EditorCore("ab\ncd").document
     val g = Mono(doc, 100)
     assertEquals(0, CaretMover.move(doc, g, 1, -1, null).offset)
     assertEquals(doc.length, CaretMover.move(doc, g, 1, 5, null).offset)

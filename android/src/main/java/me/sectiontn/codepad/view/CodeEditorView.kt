@@ -165,6 +165,7 @@ class CodeEditorView(context: Context) : View(context) {
   private var magnifier: Magnifier? = null
   private var caretVisible = true
   private var selectionDirty = false
+  private var dropped = false
   private var contentDirty = false
   private var lastContentWidth = -1f
   private var lastContentHeight = -1f
@@ -242,9 +243,12 @@ class CodeEditorView(context: Context) : View(context) {
 
   fun setInitialText(value: String) {
     val settings = core.settings
+    val old = core
     core = EditorCore(value).also { it.settings = settings }
     wire(core)
-    engine().setText(value, core.document.revision)
+    val existing = engine
+    if (existing != null) existing.attach(core) else engine()
+    old.close()
     // The new document starts at revision 0 like the old one, so a kept snapshot would pass the revision check.
     snapshot?.let { engine?.release(it) ?: it.close() }
     snapshot = null
@@ -548,7 +552,6 @@ class CodeEditorView(context: Context) : View(context) {
     syncGaps()
     keepSpans(first, oldCount, newCount, change)
     cache.shift(first, oldCount, newCount)
-    engine().edit(change, SyntaxEngine.pointsFor(doc, change))
     search?.onChange(change)
     if (updateGutter()) relayout() else viewport.clamp()
     hideInsertionHandle()
@@ -639,7 +642,7 @@ class CodeEditorView(context: Context) : View(context) {
   ).also {
     engine = it
     it.setLanguage(languageId)
-    it.setText(core.document.text(), core.document.revision)
+    it.attach(core)
   }
 
   private fun onSnapshot(next: Snapshot) {
@@ -1206,7 +1209,20 @@ class CodeEditorView(context: Context) : View(context) {
     snapshot = null
   }
 
+  /** Unmount: frees the core. The view never draws or edits again. */
+  fun close() {
+    dropped = true
+    engine?.close()
+    engine = null
+    search?.close()
+    search = null
+    snapshot?.close()
+    snapshot = null
+    core.close()
+  }
+
   override fun onDraw(canvas: Canvas) {
+    if (dropped) return
     drawStart = SystemClock.uptimeMillis()
     // React Native parents leave clipChildren off, so an unclipped drawColor would cover siblings.
     canvas.clipRect(0, 0, width, height)
@@ -1355,7 +1371,7 @@ class CodeEditorView(context: Context) : View(context) {
       decorations.drawMatches(canvas, rowGeometry, it.matchesForPaint(), active, firstLine, window, theme.searchMatch, theme.searchMatchActive)
     }
     val consistent = snapshot?.takeIf { it.revision == doc.revision }
-    brackets.pair(consistent, highlighter)?.let {
+    brackets.pair(consistent)?.let {
       decorations.drawBrackets(canvas, rowGeometry, it, firstLine, theme.matchingBracket)
     }
     val sel = core.selection

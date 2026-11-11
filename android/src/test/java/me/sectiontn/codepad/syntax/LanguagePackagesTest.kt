@@ -15,7 +15,7 @@ class LanguagePackagesTest {
     val deadline = System.nanoTime() + 10_000_000_000L
     while (System.nanoTime() < deadline) {
       val s = snapshots.poll(1, TimeUnit.SECONDS) ?: continue
-      if (s.revision == revision) return s
+      if (s.revision == revision && s.length > 0) return s
       s.close()
     }
     error("$grammar never parsed")
@@ -53,8 +53,8 @@ class LanguagePackagesTest {
       val core = EditorCore(text)
       val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
       engine.setLanguage(grammar)
-      engine.setText(text, 1)
-      val snapshot = awaitRevision(1, grammar)
+      engine.attach(core)
+      val snapshot = awaitRevision(0, grammar)
       val spans = Highlighter(lang).spans(snapshot, core.document, 0, 0)
       assertTrue("$grammar paints line 0", spans[0].isNotEmpty())
       if (grammar == "markdown") assertTrue("markdown injects inline and the fence", snapshot.injected.size >= 2)

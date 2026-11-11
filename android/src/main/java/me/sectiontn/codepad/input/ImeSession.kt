@@ -1,6 +1,5 @@
 package me.sectiontn.codepad.input
 
-import me.sectiontn.codepad.core.AutoCloser
 import me.sectiontn.codepad.core.Change
 import me.sectiontn.codepad.core.ChangeOrigin
 import me.sectiontn.codepad.core.EditorCore
@@ -76,7 +75,7 @@ class ImeSession(private val core: EditorCore) {
     val a = minOf(sel.min, composing?.start ?: sel.min)
     val b = maxOf(sel.max, composing?.end ?: sel.max)
     val single = before == 1 && after == 0 && sel.isEmpty && composing == null
-    if (single && core.settings.autoCloseBrackets && AutoCloser.deletesPair(doc, a)) {
+    if (single && core.settings.autoCloseBrackets && core.deletesPair(a)) {
       core.inputReplace(a - 1, a + 1, "")
       return@mutate
     }
@@ -163,13 +162,13 @@ class ImeSession(private val core: EditorCore) {
   /** Deletes [b, end) then [start, a) as one undo step and shifts the composing range past the gap before it. */
   private fun deleteAround(start: Int, a: Int, b: Int, end: Int, typing: Boolean) {
     val both = start < a && end > b
-    if (both) core.undo.beginGroup(core.selection)
+    if (both) core.undo.beginGroup()
     if (end > b) core.inputReplace(b, end, "")
     if (start < a) {
       core.inputReplace(start, a, "", typing)
       composing = composing?.let { Range(it.start - (a - start), it.end - (a - start)) }
     }
-    if (both) core.undo.endGroup(core.selection)
+    if (both) core.undo.endGroup()
   }
 
   private fun pairEndsAt(index: Int): Boolean =
@@ -202,7 +201,7 @@ class ImeSession(private val core: EditorCore) {
   private fun beginComposition() {
     if (groupOpen) return
     groupOpen = true
-    core.undo.beginGroup(core.selection)
+    core.undo.beginGroup()
   }
 
   private fun endComposition() {
@@ -213,7 +212,7 @@ class ImeSession(private val core: EditorCore) {
   private fun closeGroup() {
     if (!groupOpen) return
     groupOpen = false
-    core.undo.endGroup(core.selection)
+    core.undo.endGroup()
   }
 
   private inline fun mutate(block: () -> Unit): Boolean {

@@ -3,383 +3,221 @@ package me.sectiontn.codepad.core
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
+import me.sectiontn.codepad.syntax.CoreNative
 
-class EditorCore(initialText: String = "", private val clock: () -> Long = System::currentTimeMillis) {
-  val document = Document(initialText)
-  val lock = ReentrantReadWriteLock()
-  val undo = UndoManager(clock)
+/**
+ * The editing state behind one editor, kept in the core: document, selection, history, decorations and search. Only
+ * the main thread mutates it. Other threads read under [read]. [close] frees the core, on unmount or when a new core
+ * replaces this one, since minSdk 24 has no Cleaner.
+ */
+class EditorCore(initialText: String = "", clock: (() -> Long)? = null) : AutoCloseable {
+  private val host = EditorHost(clock)
+  private val ref = LongArray(1)
+  // Read held by every read {} and taken for write by close, so a reader never sees the handle freed under it.
+  private val life = ReentrantReadWriteLock()
+  @Volatile private var native: Long = CoreNative.editorNew(host, initialText, clock != null, ref)
+
+  val document = Document(this)
+  val undo = UndoManager(this)
+  val decorations = DecorationSet(this)
+
   var settings = EditorSettings()
-
-  // Written on the main thread, read on the JS thread without the lock.
-  @Volatile
-  var selection: Selection = Selection(0, 0)
-    private set
+    set(value) {
+      field = value
+      CoreNative.editorSettings(handle(), value.tabSize, value.insertSpaces, value.autoIndent, value.autoCloseBrackets)
+    }
 
   var onChange: ((Change, ChangeOrigin) -> Unit)? = null
   var onSelectionChange: ((Selection) -> Unit)? = null
 
-  val decorations = DecorationSet()
-  private val edits = ArrayDeque<EditSpan>()
+  // The change the last edit reported, so the edit methods can return it.
+  private var lastChange: Change? = null
 
-  // A decoration set computed before this revision belongs to text setText replaced.
-  private var decorationsFloor = 0
+  init {
+    host.onChange = { change, origin ->
+      lastChange = change
+      onChange?.invoke(change, origin)
+    }
+    host.onSelection = { onSelectionChange?.invoke(it) }
+    settings = settings
+  }
 
-  val canUndo: Boolean get() = undo.canUndo
-  val canRedo: Boolean get() = undo.canRedo
+  /** Any thread. */
+  val selection: Selection
+    get() {
+      val packed = CoreNative.editorSelection(handle())
+      return Selection((packed shr 32).toInt(), packed.toInt())
+    }
 
-  /** Synchronous reads from the JS thread. Writers take the lock only inside Document.replace. */
-  fun <T> read(block: () -> T): T = lock.read(block)
+  val canUndo: Boolean get() = CoreNative.editorHistory(handle()) and 1 != 0
+  val canRedo: Boolean get() = CoreNative.editorHistory(handle()) and 2 != 0
+
+  internal fun handle(): Long {
+    val h = native
+    check(h != 0L) { "the editor core is closed" }
+    return h
+  }
+
+  /** Synchronous reads from another thread. Writers hold the lock only while the core swaps the text. */
+  fun <T> read(block: () -> T): T = life.read {
+    val h = handle()
+    CoreNative.lockShared(h)
+    try {
+      block()
+    } finally {
+      CoreNative.unlockShared(h)
+    }
+  }
+
+  override fun close() = life.write {
+    val h = native
+    if (h == 0L) return@write
+    native = 0L
+    CoreNative.editorFree(h, ref[0])
+  }
+
+  // A core call that may run the callbacks: what they threw surfaces here, after the core returned.
+  private inline fun <T> mutate(block: (Long) -> T): T {
+    val result = block(handle())
+    host.rethrow()
+    return result
+  }
 
   fun replace(start: Int, end: Int, text: String, origin: ChangeOrigin = ChangeOrigin.Api): Change =
     applyChange(start, end, text, origin, typing = false, caretAfter = false)
 
   /**
-   * Every mutation goes through here. [typing] marks single key input that may coalesce in the undo
-   * history. [caretAfter] puts a collapsed caret after the inserted text instead of mapping the selection.
+   * Every mutation goes through here. [typing] marks single key input that may coalesce in the history.
+   * [caretAfter] puts a collapsed caret after the inserted text instead of mapping the selection.
    */
   internal fun applyChange(start: Int, end: Int, text: String, origin: ChangeOrigin, typing: Boolean, caretAfter: Boolean): Change {
-    val before = selection
-    val change = lock.write { document.replace(start, end, text) }
-    mapDecorations(change)
-    val after = if (caretAfter) Selection.caret(change.newEnd)
-      else Selection(mapOffset(before.anchor, change), mapOffset(before.head, change))
-    moveSelection(after, fromEdit = true)
-    if (origin == ChangeOrigin.Input || origin == ChangeOrigin.Api) undo.record(change, before, after, typing)
-    onChange?.invoke(change, origin)
-    return change
+    lastChange = null
+    mutate { CoreNative.editorReplace(it, start, end, text, origin.ordinal, typing, caretAfter) }
+    return checkNotNull(lastChange)
   }
 
-  // Every document change, history included, goes through the log and the set before any listener sees it.
-  private fun mapDecorations(change: Change) {
-    val span = EditSpan.of(change, document)
-    if (edits.size == DECORATION_EDIT_LOG) edits.removeFirst()
-    edits.addLast(span)
-    decorations.map(span)
-  }
+  fun insertText(text: String, origin: ChangeOrigin = ChangeOrigin.Api) =
+    mutate { CoreNative.editorInsert(it, text, origin.ordinal) }
 
-  fun insertText(text: String, origin: ChangeOrigin = ChangeOrigin.Api) {
-    applyChange(selection.min, selection.max, text, origin, typing = false, caretAfter = true)
-  }
-
-  /** An IME edit. The selection maps through the change like any edit; single char deletes coalesce like typed backspaces. */
+  /** A keyboard edit. The selection maps through the change like any edit. Single unit deletes coalesce like typed backspaces. */
   fun inputReplace(start: Int, end: Int, text: String, typing: Boolean = false): Change =
     applyChange(start, end, text, ChangeOrigin.Input, typing, caretAfter = false)
 
-  fun setText(text: String, keepHistory: Boolean = false) {
-    applyChange(0, document.length, text, ChangeOrigin.Api, typing = false, caretAfter = false)
-    moveSelection(Selection(0, 0), fromEdit = true)
-    if (!keepHistory) undo.clear()
-    decorations.clear()
-    edits.clear()
-    decorationsFloor = document.revision
-  }
+  fun setText(text: String, keepHistory: Boolean = false) = mutate { CoreNative.editorSetText(it, text, keepHistory) }
 
   /**
-   * Replaces the decorations. [revision] is the document revision they were computed for, below zero for the
-   * current one. False when the edits since then are no longer known, which keeps the current set.
+   * Replaces the decorations. [revision] is the document revision they were computed for, below zero for the current
+   * one. False when the edits since then are no longer known, which keeps the current set.
    */
-  fun setDecorations(items: List<Decoration>, revision: Int): Boolean {
-    var list = items
-    if (revision in 0 until document.revision) {
-      if (revision < decorationsFloor) return false
-      if ((edits.firstOrNull()?.revision ?: Int.MAX_VALUE) > revision + 1) return false
-      list = items.mapNotNull { item ->
-        var d: Decoration? = item
-        for (span in edits) if (span.revision > revision) d = d?.let { DecorationSet.mapOne(it, span) }
-        d
-      }
-    }
-    decorations.replace(list.mapNotNull(::fitted))
-    return true
+  fun setDecorations(items: List<Decoration>, revision: Int): Boolean = decorations.replace(items, revision)
+
+  /** One code point at a time, through auto close and auto indent. */
+  fun typeText(text: String) = mutate { CoreNative.editorType(it, text) }
+
+  fun insertNewline() = command(CMD_NEWLINE)
+  fun tab() = command(CMD_TAB)
+  fun shiftTab() = command(CMD_SHIFT_TAB)
+  fun indent() = command(CMD_INDENT)
+  fun outdent() = command(CMD_OUTDENT)
+  fun backspace() = command(CMD_BACKSPACE)
+  fun delete() = command(CMD_DELETE)
+  fun undo(): Boolean = command(CMD_UNDO)
+  fun redo(): Boolean = command(CMD_REDO)
+  fun selectAll() = command(CMD_SELECT_ALL)
+
+  fun setSelection(anchor: Int, head: Int) = mutate { CoreNative.editorSetSelection(it, anchor, head) }
+
+  fun move(unit: TextMovement.Unit, forward: Boolean, extend: Boolean) =
+    mutate { CoreNative.editorMove(it, unit.ordinal, forward, extend) }
+
+  fun selectWordAt(offset: Int) = mutate { CoreNative.editorSelectWordAt(it, offset) }
+
+  /** True when a backspace at [caret] removes an auto closed pair. */
+  fun deletesPair(caret: Int): Boolean = CoreNative.editorDeletesPair(handle(), caret)
+
+  /** The bracket at the caret and its partner. A snapshot at the document revision skips strings and comments. */
+  fun bracketMatch(snapshot: Long): IntArray? {
+    val out = IntArray(2)
+    return if (CoreNative.editorBracketMatch(handle(), snapshot, selection.head, out)) out else null
   }
-
-  /** Clamps an underline to the document. Null for an empty range, a line outside it or a gap without rows. */
-  private fun fitted(d: Decoration): Decoration? = when (d) {
-    is Underline -> {
-      val s = d.start.coerceIn(0, document.length)
-      val e = d.end.coerceIn(0, document.length)
-      // A thickness of zero or less would never advance the wave.
-      if (s < e && d.thickness > 0f) d.copy(start = s, end = e) else null
-    }
-    is Gap -> d.takeIf { it.line in 0 until document.lineCount && it.rows >= 1 }
-    is LineBackground -> d.takeIf { it.line in 0 until document.lineCount }
-  }
-
-  fun typeText(text: String) {
-    var i = 0
-    while (i < text.length) {
-      val unit = String(Character.toChars(text.codePointAt(i)))
-      typeUnit(unit)
-      i += unit.length
-    }
-  }
-
-  /** One unit of user input, a code point or an IME commit. */
-  internal fun typeUnit(s: String) {
-    if (s == "\n") {
-      insertNewline()
-      return
-    }
-    if (s.length == 1) {
-      when (val action = AutoCloser.actionFor(document, selection, s[0], settings)) {
-        is AutoCloser.Action.SkipCloser -> {
-          moveSelection(Selection.caret(selection.head + 1))
-          return
-        }
-        is AutoCloser.Action.InsertPair -> {
-          val start = selection.min
-          applyChange(start, selection.max, action.text, ChangeOrigin.Input, typing = false, caretAfter = false)
-          moveSelection(Selection.caret(start + 1), fromEdit = true)
-          undo.amendSelectionAfter(selection)
-          return
-        }
-        is AutoCloser.Action.Wrap -> {
-          val min = selection.min
-          val max = selection.max
-          undo.beginGroup(selection)
-          applyChange(max, max, action.close.toString(), ChangeOrigin.Input, typing = false, caretAfter = false)
-          applyChange(min, min, action.open.toString(), ChangeOrigin.Input, typing = false, caretAfter = false)
-          moveSelection(Selection(min + 1, max + 1), fromEdit = true)
-          undo.endGroup(selection)
-          return
-        }
-        AutoCloser.Action.None -> {}
-      }
-    }
-    applyChange(selection.min, selection.max, s, ChangeOrigin.Input, typing = s.codePointCount(0, s.length) == 1, caretAfter = true)
-  }
-
-  fun insertNewline() {
-    val start = selection.min
-    val nl = Indenter.newline(document, start, selection.max, settings)
-    applyChange(start, selection.max, nl.text, ChangeOrigin.Input, typing = false, caretAfter = false)
-    moveSelection(Selection.caret(start + nl.caretOffset), fromEdit = true)
-    undo.amendSelectionAfter(selection)
-  }
-
-  fun tab() {
-    if (document.lineAt(selection.min) != document.lineAt(selection.max)) {
-      indent()
-    } else {
-      applyChange(selection.min, selection.max, Indenter.unit(settings), ChangeOrigin.Input, typing = false, caretAfter = true)
-    }
-  }
-
-  fun shiftTab() = outdent()
-
-  fun indent() {
-    val unit = Indenter.unit(settings)
-    undo.beginGroup(selection)
-    for (line in Indenter.selectedLines(document, selection)) {
-      val start = document.lineStart(line)
-      applyChange(start, start, unit, ChangeOrigin.Input, typing = false, caretAfter = false)
-    }
-    undo.endGroup(selection)
-  }
-
-  fun outdent() {
-    undo.beginGroup(selection)
-    for (line in Indenter.selectedLines(document, selection)) {
-      val n = Indenter.outdentCount(document.line(line), settings)
-      if (n == 0) continue
-      val start = document.lineStart(line)
-      applyChange(start, start + n, "", ChangeOrigin.Input, typing = false, caretAfter = false)
-    }
-    undo.endGroup(selection)
-  }
-
-  fun backspace() {
-    if (!selection.isEmpty) {
-      applyChange(selection.min, selection.max, "", ChangeOrigin.Input, typing = false, caretAfter = true)
-      return
-    }
-    val caret = selection.head
-    if (caret == 0) return
-    if (settings.autoCloseBrackets && AutoCloser.deletesPair(document, caret)) {
-      applyChange(caret - 1, caret + 1, "", ChangeOrigin.Input, typing = false, caretAfter = true)
-      return
-    }
-    val from = TextMovement.prevGrapheme(document, caret)
-    applyChange(from, caret, "", ChangeOrigin.Input, typing = caret - from == 1, caretAfter = true)
-  }
-
-  fun delete() {
-    if (!selection.isEmpty) {
-      applyChange(selection.min, selection.max, "", ChangeOrigin.Input, typing = false, caretAfter = true)
-      return
-    }
-    val caret = selection.head
-    if (caret >= document.length) return
-    applyChange(caret, TextMovement.nextGrapheme(document, caret), "", ChangeOrigin.Input, typing = false, caretAfter = true)
-  }
-
-  fun undo(): Boolean {
-    val group = undo.popUndo() ?: return false
-    for (i in group.changes.indices.reversed()) {
-      val c = group.changes[i]
-      val change = lock.write { document.replace(c.start, c.newEnd, c.removed) }
-      mapDecorations(change)
-      onChange?.invoke(change, ChangeOrigin.Undo)
-    }
-    moveSelection(clamped(group.selectionBefore), fromEdit = true)
-    return true
-  }
-
-  fun redo(): Boolean {
-    val group = undo.popRedo() ?: return false
-    for (c in group.changes) {
-      val change = lock.write { document.replace(c.start, c.end, c.inserted) }
-      mapDecorations(change)
-      onChange?.invoke(change, ChangeOrigin.Redo)
-    }
-    moveSelection(clamped(group.selectionAfter), fromEdit = true)
-    return true
-  }
-
-  fun setSelection(anchor: Int, head: Int) = moveSelection(clamped(Selection(anchor, head)))
-
-  fun selectAll() = moveSelection(Selection(0, document.length))
-
-  fun move(unit: TextMovement.Unit, forward: Boolean, extend: Boolean) {
-    val doc = document
-    val collapsing = !extend && !selection.isEmpty && unit == TextMovement.Unit.Char
-    val from = if (collapsing) (if (forward) selection.max else selection.min) else selection.head
-    val target = when (unit) {
-      TextMovement.Unit.Char -> when {
-        collapsing -> from
-        forward -> TextMovement.nextGrapheme(doc, from)
-        else -> TextMovement.prevGrapheme(doc, from)
-      }
-      TextMovement.Unit.Word -> if (forward) TextMovement.nextWordEnd(doc, from) else TextMovement.prevWordStart(doc, from)
-      TextMovement.Unit.LineStart -> doc.lineStart(doc.lineAt(from))
-      TextMovement.Unit.LineEnd -> doc.lineEnd(doc.lineAt(from))
-      TextMovement.Unit.DocStart -> 0
-      TextMovement.Unit.DocEnd -> doc.length
-    }
-    moveSelection(if (extend) Selection(selection.anchor, target) else Selection.caret(target))
-  }
-
-  fun selectWordAt(offset: Int) {
-    val r = TextMovement.wordRangeAt(document, offset)
-    moveSelection(Selection(r.start, r.end))
-  }
-
-  fun bracketMatch(skip: ((Int) -> Boolean)?): IntArray? = BracketMatcher.match(document, selection.head, skip)
 
   data class SearchHit(val index: Int, val total: Int)
 
-  var search: SearchSession? = null
-    private set
+  val searchActive: Boolean get() = CoreNative.editorSearchActive(handle())
 
-  val matches: IntArray get() = search?.matches ?: SearchSession.EMPTY
-  val matchCount: Int get() = search?.count ?: 0
+  /** The matches as start and end pairs, computed on the calling thread when stale. */
+  val matches: IntArray get() = CoreNative.editorMatches(handle())
+  val matchCount: Int get() = CoreNative.editorMatchCount(handle())
 
   /** True while a query is active and its matches belong to an older revision. */
-  val searchStale: Boolean get() = search?.let { it.revision != document.revision } ?: false
+  val searchStale: Boolean get() = CoreNative.editorSearchStale(handle())
 
-  /** Compiles first so an invalid regex throws before any state changes. The matches stay stale until ensureMatches or acceptMatches. */
+  /** An invalid regex throws IllegalArgumentException with PCRE2's message and clears the search. */
   fun setSearch(query: SearchQuery) {
-    val pattern = try {
-      Searcher.compile(query)
-    } catch (e: IllegalArgumentException) {
-      clearSearch()
-      throw e
+    var flags = 0
+    if (query.regex) flags = flags or SEARCH_REGEX
+    if (query.caseSensitive) flags = flags or SEARCH_CASE
+    if (query.wholeWord) flags = flags or SEARCH_WORD
+    val error = arrayOfNulls<String>(1)
+    if (!CoreNative.editorSetSearch(handle(), query.text, flags, error)) {
+      throw IllegalArgumentException(error[0] ?: "invalid regex")
     }
-    search = SearchSession(query, pattern)
   }
 
-  fun clearSearch() {
-    search = null
-  }
+  fun clearSearch() = CoreNative.editorClearSearch(handle())
 
   /** Computes the matches on the calling thread when they are stale. */
   fun ensureMatches() {
-    val s = search ?: return
-    if (s.revision == document.revision) return
-    s.matches = Searcher.find(document.text(), s.query)
-    s.revision = document.revision
+    CoreNative.editorMatches(handle())
   }
 
-  /** Stores matches computed elsewhere; false when the document moved on since [revision]. */
-  fun acceptMatches(revision: Int, matches: IntArray): Boolean {
-    val s = search ?: return false
-    if (revision != document.revision) return false
-    s.matches = matches
-    s.revision = revision
-    return true
+  /** The compiled query for a worker, 0 without a search. The caller releases it with [Searcher.release]. */
+  fun compiledSearch(): Long = CoreNative.editorSearchQuery(handle())
+
+  /** The current text for a worker, unchanged by later edits. The caller releases it with [Searcher.releaseText]. */
+  fun textSnapshot(): Long = CoreNative.editorText(handle())
+
+  /** Stores matches computed elsewhere. False when the document moved on since [revision]. */
+  fun acceptMatches(revision: Int, matches: IntArray): Boolean = CoreNative.editorAcceptMatches(handle(), revision, matches)
+
+  fun findNext(): SearchHit? = find(true)
+
+  fun findPrevious(): SearchHit? = find(false)
+
+  fun replaceCurrent(text: String): Boolean = mutate { CoreNative.editorReplaceCurrent(it, text) }
+
+  fun replaceAll(text: String): Int = mutate { CoreNative.editorReplaceAll(it, text) }
+
+  /** Attaches the syntax engine, 0 to detach. A closed core has nothing to detach. */
+  internal fun attach(engine: Long) {
+    val h = native
+    if (h != 0L) CoreNative.editorAttach(h, engine)
   }
 
-  fun findNext(): SearchHit? {
-    ensureMatches()
-    val s = search ?: return null
-    val index = s.nextIndex(selection)
-    return if (index < 0) null else selectMatch(s, index)
+  private fun find(forward: Boolean): SearchHit? {
+    val out = IntArray(2)
+    val found = mutate { CoreNative.editorFind(it, forward, out) }
+    return if (found) SearchHit(out[0], out[1]) else null
   }
 
-  fun findPrevious(): SearchHit? {
-    ensureMatches()
-    val s = search ?: return null
-    val index = s.previousIndex(selection)
-    return if (index < 0) null else selectMatch(s, index)
-  }
+  private fun command(command: Int): Boolean = mutate { CoreNative.editorCommand(it, command) }
 
-  fun replaceCurrent(text: String): Boolean {
-    ensureMatches()
-    val s = search ?: return false
-    val current = s.indexOf(selection.range)
-    if (current < 0) return false
-    applyChange(s.matches[current * 2], s.matches[current * 2 + 1], text, ChangeOrigin.Api, typing = false, caretAfter = true)
-    ensureMatches()
-    if (s.count > 0) {
-      var index = s.indexAtOrAfter(selection.min)
-      if (index >= s.count) index = 0
-      selectMatch(s, index)
-    }
-    return true
-  }
+  private companion object {
+    // CP_CMD_*.
+    const val CMD_NEWLINE = 0
+    const val CMD_TAB = 1
+    const val CMD_SHIFT_TAB = 2
+    const val CMD_INDENT = 3
+    const val CMD_OUTDENT = 4
+    const val CMD_BACKSPACE = 5
+    const val CMD_DELETE = 6
+    const val CMD_UNDO = 7
+    const val CMD_REDO = 8
+    const val CMD_SELECT_ALL = 9
 
-  fun replaceAll(text: String): Int {
-    ensureMatches()
-    val s = search ?: return 0
-    val targets = s.matches
-    if (targets.isEmpty()) return 0
-    undo.beginGroup(selection)
-    var i = targets.size - 2
-    while (i >= 0) {
-      applyChange(targets[i], targets[i + 1], text, ChangeOrigin.Api, typing = false, caretAfter = false)
-      i -= 2
-    }
-    undo.endGroup(selection)
-    ensureMatches()
-    return targets.size / 2
-  }
-
-  private fun selectMatch(s: SearchSession, index: Int): SearchHit {
-    moveSelection(Selection(s.matches[index * 2], s.matches[index * 2 + 1]))
-    return SearchHit(index, s.count)
-  }
-
-  private fun clamped(s: Selection): Selection {
-    val max = document.length
-    return Selection(s.anchor.coerceIn(0, max), s.head.coerceIn(0, max))
-  }
-
-  private fun moveSelection(next: Selection, fromEdit: Boolean = false) {
-    if (next == selection) return
-    if (!fromEdit) undo.selectionDirty = true
-    selection = next
-    onSelectionChange?.invoke(next)
-  }
-
-  companion object {
-    const val DECORATION_EDIT_LOG = 256
-
-    /** Maps an offset through a change. A caret sitting exactly at a pure insertion follows the insert. */
-    fun mapOffset(offset: Int, c: Change): Int = when {
-      offset < c.start -> offset
-      offset == c.start -> if (c.removed.isEmpty()) c.newEnd else offset
-      offset >= c.end -> offset + c.delta
-      else -> c.newEnd
-    }
+    // CP_SEARCH_*.
+    const val SEARCH_REGEX = 1
+    const val SEARCH_CASE = 2
+    const val SEARCH_WORD = 4
   }
 }

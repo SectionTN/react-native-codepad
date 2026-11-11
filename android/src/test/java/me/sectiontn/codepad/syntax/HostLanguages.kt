@@ -4,6 +4,7 @@ import java.io.File
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import me.sectiontn.codepad.core.Document
+import me.sectiontn.codepad.core.EditorCore
 
 /** Registers generated languages with the registry from the host library plus the generated query files. */
 object HostLanguages {
@@ -44,16 +45,20 @@ object HostLanguages {
 }
 
 /** The whole text parsed by an engine, injections included. */
-fun parseSnapshot(lang: LoadedLanguage, text: String): Pair<Snapshot, Document> {
-  val doc = Document(text)
+fun parseSnapshot(lang: LoadedLanguage, text: String): Pair<Snapshot, Document> =
+  parseCore(lang, text).let { (snapshot, core) -> snapshot to core.document }
+
+/** [parseSnapshot] with the core that holds the text, for calls that take a snapshot. */
+fun parseCore(lang: LoadedLanguage, text: String): Pair<Snapshot, EditorCore> {
+  val core = EditorCore(text)
   val snapshots = LinkedBlockingQueue<Snapshot>()
   val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
   try {
     engine.setLanguage(lang.id)
-    engine.setText(text, doc.revision)
+    engine.attach(core)
     while (true) {
       val s = checkNotNull(snapshots.poll(10, TimeUnit.SECONDS)) { "${lang.id} never parsed" }
-      if (s.revision == doc.revision && s.length == text.length) return s to doc
+      if (s.revision == core.document.revision && s.length == text.length) return s to core
       s.close()
     }
   } finally {

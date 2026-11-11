@@ -220,6 +220,8 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
 
   override var onContentSizeChange: ((NativeContentSize) -> Unit)? = null
 
+  override fun onDropView() = editor.close()
+
   override fun afterUpdate() {
     if (fontDirty) {
       fontDirty = false

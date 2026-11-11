@@ -54,7 +54,7 @@ class VectorRunner(private val case: JSONObject) {
       "shiftTab" -> core.shiftTab()
       "indent" -> core.indent()
       "outdent" -> core.outdent()
-      "bracketMatch" -> lastResult = core.bracketMatch(null)
+      "bracketMatch" -> lastResult = core.bracketMatch(0L)
       "search" -> try {
         core.setSearch(SearchQuery(op.getString("text"), op.optBoolean("regex", false), op.optBoolean("caseSensitive", false), op.optBoolean("wholeWord", false)))
         core.ensureMatches()

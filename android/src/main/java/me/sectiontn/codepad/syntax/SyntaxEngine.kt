@@ -2,11 +2,7 @@ package me.sectiontn.codepad.syntax
 
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import me.sectiontn.codepad.core.Change
-import me.sectiontn.codepad.core.Document
-
-/** A tree-sitter point in UTF-16 units. */
-class Point(val row: Int, val column: Int)
+import me.sectiontn.codepad.core.EditorCore
 
 /**
  * One parse engine per editor, run by the shared C++ core on this object's single thread. Edits arrive in
@@ -18,9 +14,8 @@ class SyntaxEngine(
   budgetMicros: Long = 50_000L,
   private val executor: ExecutorService = Executors.newSingleThreadExecutor { r -> Thread(r, "codepad-syntax").apply { isDaemon = true } },
 ) : AutoCloseable {
-  class EditPoints(val start: Point, val oldEnd: Point, val newEnd: Point)
-
   private lateinit var handle: EngineHandle
+  private var attached: EditorCore? = null
 
   init {
     val host = CoreHost(executor, postToMain) { pointer ->
@@ -30,39 +25,31 @@ class SyntaxEngine(
     handle = EngineHandle(CoreNative.engineNew(host, budgetMicros))
   }
 
+  /** Test access to the core engine. */
+  internal val pointer: Long get() = handle.pointer
+
   fun setLanguage(id: String?) {
     val language = id?.let { LanguageRegistry.resolve(it) }
     val engine = handle.pointer
     if (engine != 0L) CoreNative.engineSetLanguage(engine, language?.handle ?: 0L)
   }
 
-  fun setText(text: String, revision: Int) {
+  /**
+   * Main thread. The engine parses the core's current text, then every edit the core makes, and drops the
+   * snapshots of the previous attach. Null detaches.
+   */
+  fun attach(core: EditorCore?) {
+    attached?.attach(0L)
+    attached = core
     val engine = handle.pointer
-    if (engine != 0L) CoreNative.engineSetText(engine, text, revision)
-  }
-
-  fun edit(change: Change, points: EditPoints) {
-    val engine = handle.pointer
-    if (engine == 0L) return
-    val p = intArrayOf(points.start.row, points.start.column, points.oldEnd.row, points.oldEnd.column, points.newEnd.row, points.newEnd.column)
-    CoreNative.engineEdit(engine, change.start, change.removed.length, change.inserted, change.revision, p)
+    if (core != null && engine != 0L) core.attach(engine)
   }
 
   /** Frees a snapshot the view replaced on the worker, so the main thread never frees the trees. */
   fun release(snapshot: Snapshot) = snapshot.close()
 
-  override fun close() = handle.close()
-
-  companion object {
-    /** Call right after a change was applied: the start is unchanged, the old end comes from the removed text. */
-    fun pointsFor(doc: Document, change: Change): EditPoints {
-      val start = doc.offsetToPosition(change.start)
-      val newEnd = doc.offsetToPosition(change.newEnd)
-      val removed = change.removed
-      val lastBreak = removed.lastIndexOf('\n')
-      val oldEnd = if (lastBreak < 0) Point(start.line, start.column + removed.length)
-        else Point(start.line + removed.count { it == '\n' }, removed.length - lastBreak - 1)
-      return EditPoints(Point(start.line, start.column), oldEnd, Point(newEnd.line, newEnd.column))
-    }
+  override fun close() {
+    attach(null)
+    handle.close()
   }
 }

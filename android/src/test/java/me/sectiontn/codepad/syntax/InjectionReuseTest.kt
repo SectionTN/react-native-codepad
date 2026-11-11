@@ -20,7 +20,7 @@ class InjectionReuseTest {
     }
   }
 
-  // setLanguage can publish an empty document snapshot before setText does; skip it.
+  // setLanguage can publish an empty document snapshot before attach does. Skip it.
   private fun awaitParsed(): Snapshot {
     while (true) {
       val s = checkNotNull(snapshots.poll(5, TimeUnit.SECONDS))
@@ -40,9 +40,8 @@ class InjectionReuseTest {
   private fun start(language: String, text: String): Pair<EditorCore, SyntaxEngine> {
     val core = EditorCore(text)
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage(language)
-    engine.setText(text, 0)
+    engine.attach(core)
     return core to engine
   }
 
@@ -132,9 +131,8 @@ class InjectionReuseTest {
     val text = "# T\n\nfirst para\n\nsecond para\n\n```JS\nlet a = 1;\n```\n\n```ruby\nputs 1\n```\n"
     val core = EditorCore(text)
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("markdown")
-    engine.setText(text, 0)
+    engine.attach(core)
     val first = awaitParsed()
     val fresh = first.stats.freshInjections
     assertTrue("inline nodes and the js fence, got $fresh", fresh >= 3)
@@ -317,9 +315,8 @@ class InjectionReuseTest {
     val text = "# T\n\nfirst para\n\nsecond para\n\n```slow\n$code\n```\n"
     val core = EditorCore(text)
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    core.onChange = { change, _ -> engine.edit(change, SyntaxEngine.pointsFor(core.document, change)) }
     engine.setLanguage("markdown")
-    engine.setText(text, 0)
+    engine.attach(core)
     assertTrue(reached.await(5, TimeUnit.SECONDS))
     core.replace(text.indexOf("second"), text.indexOf("second"), "the ")
     gate.countDown()

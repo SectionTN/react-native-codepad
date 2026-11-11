@@ -288,3 +288,283 @@ FN(shiftSpans)(JNIEnv *e, jclass, jintArray spans, jint start, jint removed, jin
     return cp_shift_spans(in.data(), static_cast<uint32_t>(n), start, removed, inserted, b, cap);
   });
 }
+
+// The editor. Its callbacks run on the calling thread inside the core call, after the lock is released. The Kotlin
+// host catches what they throw and rethrows once the call returns, so no exception is pending in core code.
+namespace {
+
+jmethodID changed_id = nullptr;
+jmethodID selected_id = nullptr;
+jmethodID now_id = nullptr;
+
+struct EditorRef {
+  jobject host;
+};
+
+// A pending exception (an allocation failure, a throwing test clock) is left for the external call to throw: the
+// trampolines then return at once and make no other JNI call.
+void editor_changed(void *ctx, const cp_change *c, const cp_unit *removed, const cp_unit *inserted, int32_t origin) {
+  JNIEnv *e = env();
+  if (e->ExceptionCheck()) return;
+  jstring r = e->NewString(reinterpret_cast<const jchar *>(removed), c->removed_len);
+  jstring i = r != nullptr ? e->NewString(reinterpret_cast<const jchar *>(inserted), c->inserted_len) : nullptr;
+  if (i != nullptr) e->CallVoidMethod(static_cast<EditorRef *>(ctx)->host, changed_id, c->start, r, i, c->revision, origin);
+  if (r != nullptr) e->DeleteLocalRef(r);
+  if (i != nullptr) e->DeleteLocalRef(i);
+}
+
+void editor_selected(void *ctx, int32_t anchor, int32_t head) {
+  JNIEnv *e = env();
+  if (!e->ExceptionCheck()) e->CallVoidMethod(static_cast<EditorRef *>(ctx)->host, selected_id, anchor, head);
+}
+
+int64_t editor_now(void *ctx) {
+  JNIEnv *e = env();
+  return e->ExceptionCheck() ? 0 : e->CallLongMethod(static_cast<EditorRef *>(ctx)->host, now_id);
+}
+
+cp_editor *ed(jlong v) { return ptr<cp_editor>(v); }
+
+std::u16string chars(JNIEnv *e, jstring s) { return s ? units(e, s) : std::u16string(); }
+
+const cp_unit *units_of(const std::u16string &s) { return reinterpret_cast<const cp_unit *>(s.data()); }
+
+uint32_t count_of(const std::u16string &s) { return static_cast<uint32_t>(s.size()); }
+
+uint32_t at(jint v) { return static_cast<uint32_t>(v < 0 ? 0 : v); }
+
+jstring copy_text(JNIEnv *e, const cp_editor *editor, uint32_t start, uint32_t end) {
+  uint32_t n = cp_doc_copy(editor, start, end, nullptr, 0);
+  std::u16string out(n, u'\0');
+  if (n > 0) cp_doc_copy(editor, start, end, reinterpret_cast<cp_unit *>(out.data()), n);
+  return e->NewString(reinterpret_cast<const jchar *>(out.data()), static_cast<jsize>(n));
+}
+
+jintArray int_array(JNIEnv *e, const int32_t *values, uint32_t n) {
+  jintArray out = e->NewIntArray(static_cast<jsize>(n));
+  if (n > 0) e->SetIntArrayRegion(out, 0, static_cast<jsize>(n), reinterpret_cast<const jint *>(values));
+  return out;
+}
+
+}  // namespace
+
+FN(editorNew)(JNIEnv *e, jclass, jobject host, jstring text, jboolean clock, jlongArray ref_out) -> jlong {
+  if (vm == nullptr) e->GetJavaVM(&vm);
+  if (changed_id == nullptr) {
+    jclass cls = e->GetObjectClass(host);
+    changed_id = e->GetMethodID(cls, "changed", "(ILjava/lang/String;Ljava/lang/String;II)V");
+    selected_id = e->GetMethodID(cls, "selected", "(II)V");
+    now_id = e->GetMethodID(cls, "now", "()J");
+    e->DeleteLocalRef(cls);
+  }
+  auto *ref = new EditorRef{e->NewGlobalRef(host)};
+  cp_editor_host h{};
+  h.ctx = ref;
+  h.now_millis = clock ? editor_now : nullptr;
+  h.on_change = editor_changed;
+  h.on_selection = editor_selected;
+  std::u16string s = chars(e, text);
+  jlong refs[1] = {handle(ref)};
+  e->SetLongArrayRegion(ref_out, 0, 1, refs);
+  return handle(cp_editor_new(&h, units_of(s), count_of(s)));
+}
+
+FN(editorFree)(JNIEnv *e, jclass, jlong editor, jlong ref) -> void {
+  cp_editor_free(ed(editor));
+  auto *r = ptr<EditorRef>(ref);
+  e->DeleteGlobalRef(r->host);
+  delete r;
+}
+
+FN(lockShared)(JNIEnv *, jclass, jlong editor) -> void { cp_editor_lock_shared(ed(editor)); }
+FN(unlockShared)(JNIEnv *, jclass, jlong editor) -> void { cp_editor_unlock_shared(ed(editor)); }
+FN(docLength)(JNIEnv *, jclass, jlong editor) -> jint { return static_cast<jint>(cp_doc_length(ed(editor))); }
+FN(docRevision)(JNIEnv *, jclass, jlong editor) -> jint { return cp_doc_revision(ed(editor)); }
+FN(docLineCount)(JNIEnv *, jclass, jlong editor) -> jint { return cp_doc_line_count(ed(editor)); }
+
+FN(docLineStart)(JNIEnv *, jclass, jlong editor, jint line) -> jint {
+  return static_cast<jint>(cp_doc_line_start(ed(editor), line));
+}
+
+FN(docLineEnd)(JNIEnv *, jclass, jlong editor, jint line) -> jint {
+  return static_cast<jint>(cp_doc_line_end(ed(editor), line));
+}
+
+FN(docLineAt)(JNIEnv *, jclass, jlong editor, jint offset) -> jint { return cp_doc_line_at(ed(editor), at(offset)); }
+
+FN(docUnitAt)(JNIEnv *, jclass, jlong editor, jint offset) -> jchar {
+  return static_cast<jchar>(cp_doc_unit_at(ed(editor), at(offset)));
+}
+
+FN(docText)(JNIEnv *e, jclass, jlong editor, jint start, jint end) -> jstring {
+  return copy_text(e, ed(editor), at(start), at(end));
+}
+
+FN(docPosition)(JNIEnv *, jclass, jlong editor, jint offset) -> jlong {
+  cp_point p = cp_doc_position(ed(editor), at(offset));
+  return (static_cast<jlong>(p.line) << 32) | static_cast<uint32_t>(p.column);
+}
+
+FN(docOffset)(JNIEnv *, jclass, jlong editor, jint line, jint column) -> jint {
+  return static_cast<jint>(cp_doc_offset(ed(editor), line, column));
+}
+
+FN(docGrapheme)(JNIEnv *, jclass, jlong editor, jint offset, jboolean forward) -> jint {
+  return static_cast<jint>(cp_doc_grapheme(ed(editor), at(offset), forward ? 1 : 0));
+}
+
+FN(editorSettings)(JNIEnv *, jclass, jlong editor, jint tab, jboolean spaces, jboolean indent, jboolean close)
+    -> void {
+  cp_settings s{tab, spaces ? 1 : 0, indent ? 1 : 0, close ? 1 : 0};
+  cp_editor_set_settings(ed(editor), &s);
+}
+
+FN(editorReplace)(JNIEnv *e, jclass, jlong editor, jint start, jint end, jstring text, jint origin, jboolean typing,
+                  jboolean caret_after) -> void {
+  std::u16string s = chars(e, text);
+  cp_editor_replace(ed(editor), at(start), at(end), units_of(s), count_of(s), origin, typing ? 1 : 0, caret_after ? 1 : 0);
+}
+
+FN(editorSetText)(JNIEnv *e, jclass, jlong editor, jstring text, jboolean keep_history) -> void {
+  std::u16string s = chars(e, text);
+  cp_editor_set_text(ed(editor), units_of(s), count_of(s), keep_history ? 1 : 0);
+}
+
+FN(editorInsert)(JNIEnv *e, jclass, jlong editor, jstring text, jint origin) -> void {
+  std::u16string s = chars(e, text);
+  cp_editor_insert(ed(editor), units_of(s), count_of(s), origin);
+}
+
+FN(editorType)(JNIEnv *e, jclass, jlong editor, jstring text) -> void {
+  std::u16string s = chars(e, text);
+  cp_editor_type(ed(editor), units_of(s), count_of(s));
+}
+
+FN(editorCommand)(JNIEnv *, jclass, jlong editor, jint command) -> jboolean {
+  return cp_editor_command(ed(editor), command) != 0;
+}
+
+FN(editorSetSelection)(JNIEnv *, jclass, jlong editor, jint anchor, jint head) -> void {
+  cp_editor_set_selection(ed(editor), anchor, head);
+}
+
+FN(editorMove)(JNIEnv *, jclass, jlong editor, jint unit, jboolean forward, jboolean extend) -> void {
+  cp_editor_move(ed(editor), unit, forward ? 1 : 0, extend ? 1 : 0);
+}
+
+FN(editorSelectWordAt)(JNIEnv *, jclass, jlong editor, jint offset) -> void {
+  cp_editor_select_word_at(ed(editor), at(offset));
+}
+
+FN(editorDeletesPair)(JNIEnv *, jclass, jlong editor, jint caret) -> jboolean {
+  return cp_editor_deletes_pair(ed(editor), at(caret)) != 0;
+}
+
+FN(editorBeginGroup)(JNIEnv *, jclass, jlong editor) -> void { cp_editor_begin_group(ed(editor)); }
+FN(editorEndGroup)(JNIEnv *, jclass, jlong editor) -> void { cp_editor_end_group(ed(editor)); }
+
+FN(editorSelectionDirty)(JNIEnv *, jclass, jlong editor) -> jboolean {
+  return cp_editor_selection_dirty(ed(editor)) != 0;
+}
+
+FN(editorSetSelectionDirty)(JNIEnv *, jclass, jlong editor, jboolean dirty) -> void {
+  cp_editor_set_selection_dirty(ed(editor), dirty ? 1 : 0);
+}
+
+FN(editorSelection)(JNIEnv *, jclass, jlong editor) -> jlong { return cp_editor_selection(ed(editor)); }
+FN(editorHistory)(JNIEnv *, jclass, jlong editor) -> jint { return cp_editor_history(ed(editor)); }
+
+FN(editorBracketMatch)(JNIEnv *e, jclass, jlong editor, jlong snapshot, jint caret, jintArray out) -> jboolean {
+  int32_t pair[2] = {0, 0};
+  if (cp_editor_bracket_match(ed(editor), ptr<cp_snapshot>(snapshot), at(caret), pair) == 0) return JNI_FALSE;
+  e->SetIntArrayRegion(out, 0, 2, reinterpret_cast<const jint *>(pair));
+  return JNI_TRUE;
+}
+
+// items: kind, a, b, payload per decoration.
+FN(editorSetDecorations)(JNIEnv *e, jclass, jlong editor, jintArray items, jint revision) -> jboolean {
+  jsize n = e->GetArrayLength(items);
+  std::vector<cp_decoration> list(static_cast<size_t>(n / 4));
+  if (!list.empty()) e->GetIntArrayRegion(items, 0, n / 4 * 4, reinterpret_cast<jint *>(list.data()));
+  return cp_editor_set_decorations(ed(editor), list.data(), static_cast<uint32_t>(list.size()), revision) != 0;
+}
+
+FN(editorDecorations)(JNIEnv *e, jclass, jlong editor) -> jintArray {
+  uint32_t n = cp_editor_decorations(ed(editor), nullptr, 0);
+  std::vector<cp_decoration> list(n);
+  if (n > 0) cp_editor_decorations(ed(editor), list.data(), n);
+  return int_array(e, reinterpret_cast<const int32_t *>(list.data()), n * 4);
+}
+
+FN(editorDecorationsVersion)(JNIEnv *, jclass, jlong editor) -> jint {
+  return cp_editor_decorations_version(ed(editor));
+}
+
+FN(editorAttach)(JNIEnv *, jclass, jlong editor, jlong engine) -> void {
+  cp_editor_attach(ed(editor), ptr<cp_engine>(engine));
+}
+
+FN(editorSetSearch)(JNIEnv *e, jclass, jlong editor, jstring query, jint flags, jobjectArray error) -> jboolean {
+  std::u16string q = chars(e, query);
+  char message[512] = {0};
+  if (cp_editor_set_search(ed(editor), units_of(q), count_of(q), flags, message, sizeof(message)) != 0) return JNI_TRUE;
+  jstring m = java_string(e, message);
+  e->SetObjectArrayElement(error, 0, m);
+  e->DeleteLocalRef(m);
+  return JNI_FALSE;
+}
+
+FN(editorClearSearch)(JNIEnv *, jclass, jlong editor) -> void { cp_editor_clear_search(ed(editor)); }
+
+FN(editorSearchActive)(JNIEnv *, jclass, jlong editor) -> jboolean {
+  return cp_editor_search_active(ed(editor)) != 0;
+}
+
+FN(editorSearchStale)(JNIEnv *, jclass, jlong editor) -> jboolean { return cp_editor_search_stale(ed(editor)) != 0; }
+FN(editorMatchCount)(JNIEnv *, jclass, jlong editor) -> jint { return cp_editor_match_count(ed(editor)); }
+
+FN(editorMatches)(JNIEnv *e, jclass, jlong editor) -> jintArray {
+  uint32_t n = cp_editor_matches(ed(editor), nullptr, 0);
+  std::vector<int32_t> out(n);
+  if (n > 0) cp_editor_matches(ed(editor), out.data(), n);
+  return int_array(e, out.data(), n);
+}
+
+FN(editorFind)(JNIEnv *e, jclass, jlong editor, jboolean forward, jintArray out) -> jboolean {
+  int32_t hit[2] = {0, 0};
+  if (cp_editor_find(ed(editor), forward ? 1 : 0, &hit[0], &hit[1]) == 0) return JNI_FALSE;
+  e->SetIntArrayRegion(out, 0, 2, reinterpret_cast<const jint *>(hit));
+  return JNI_TRUE;
+}
+
+FN(editorReplaceCurrent)(JNIEnv *e, jclass, jlong editor, jstring text) -> jboolean {
+  std::u16string s = chars(e, text);
+  return cp_editor_replace_current(ed(editor), units_of(s), count_of(s)) != 0;
+}
+
+FN(editorReplaceAll)(JNIEnv *e, jclass, jlong editor, jstring text) -> jint {
+  std::u16string s = chars(e, text);
+  return cp_editor_replace_all(ed(editor), units_of(s), count_of(s));
+}
+
+FN(editorAcceptMatches)(JNIEnv *e, jclass, jlong editor, jint revision, jintArray pairs) -> jboolean {
+  jsize n = e->GetArrayLength(pairs);
+  std::vector<int32_t> in(static_cast<size_t>(n));
+  if (n > 0) e->GetIntArrayRegion(pairs, 0, n, reinterpret_cast<jint *>(in.data()));
+  return cp_editor_accept_matches(ed(editor), revision, in.data(), static_cast<uint32_t>(n)) != 0;
+}
+
+FN(editorSearchQuery)(JNIEnv *, jclass, jlong editor) -> jlong { return handle(cp_editor_search_query(ed(editor))); }
+FN(searchRelease)(JNIEnv *, jclass, jlong search) -> void { cp_search_release(ptr<cp_search>(search)); }
+FN(editorText)(JNIEnv *, jclass, jlong editor) -> jlong { return handle(cp_editor_text(ed(editor))); }
+FN(textRelease)(JNIEnv *, jclass, jlong text) -> void { cp_text_release(ptr<cp_text>(text)); }
+
+// A worker call: no Kotlin runs inside, so the output array can stay critical. -1 means the match limit was hit.
+FN(searchFind)(JNIEnv *e, jclass, jlong search, jlong text, jint from, jintArray out) -> jint {
+  jsize cap = e->GetArrayLength(out);
+  auto *buffer = static_cast<jint *>(e->GetPrimitiveArrayCritical(out, nullptr));
+  int32_t n = cp_search_find(ptr<cp_search>(search), ptr<cp_text>(text), at(from), reinterpret_cast<int32_t *>(buffer),
+                             static_cast<uint32_t>(cap));
+  e->ReleasePrimitiveArrayCritical(out, buffer, 0);
+  return n;
+}

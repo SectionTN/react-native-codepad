@@ -1,142 +1,40 @@
 package me.sectiontn.codepad.core
 
-class Document(initialText: String = "") {
-  private val lines = ArrayList<StringBuilder>()
-  private var lineStarts = IntArray(0)
+import me.sectiontn.codepad.syntax.CoreNative
 
-  var length: Int = 0
-    private set
-  var revision: Int = 0
-    private set
+/**
+ * The core's document: lines of UTF-16 units joined by `\n`, so every offset is the index JavaScript strings use.
+ * Edits go through [EditorCore]. The main thread reads freely, other threads inside [EditorCore.read].
+ */
+class Document internal constructor(private val core: EditorCore) {
+  internal val handle: Long get() = core.handle()
 
-  init {
-    val text = normalizeNewlines(initialText)
-    var from = 0
-    // Exact capacity and no substring copies: the default builder adds 16 spare chars to every line.
-    while (true) {
-      val nl = text.indexOf('\n', from)
-      if (nl < 0) {
-        lines.add(StringBuilder(text.length - from).append(text, from, text.length))
-        break
-      }
-      lines.add(StringBuilder(nl - from).append(text, from, nl))
-      from = nl + 1
-    }
-    length = text.length
-    rebuildStarts(0)
-  }
+  val length: Int get() = CoreNative.docLength(handle)
+  val revision: Int get() = CoreNative.docRevision(handle)
+  val lineCount: Int get() = CoreNative.docLineCount(handle)
 
-  val lineCount: Int get() = lines.size
+  fun line(index: Int): CharSequence = if (index in 0 until lineCount) text(lineStart(index), lineEnd(index)) else ""
 
-  fun line(index: Int): CharSequence = if (index in 0 until lines.size) lines[index] else ""
+  fun lineLength(index: Int): Int = lineEnd(index) - lineStart(index)
 
-  fun lineLength(index: Int): Int = if (index in 0 until lines.size) lines[index].length else 0
+  /** Start offset of line [index]. `index == lineCount` yields `length + 1` so the prefix sums stay uniform. */
+  fun lineStart(index: Int): Int = CoreNative.docLineStart(handle, index)
 
-  /** Start offset of line [index]. index == lineCount yields length + 1 so the prefix sums stay uniform. */
-  fun lineStart(index: Int): Int = lineStarts[index.coerceIn(0, lines.size)]
+  fun lineEnd(index: Int): Int = CoreNative.docLineEnd(handle, index)
 
-  fun lineEnd(index: Int): Int = lineStart(index) + lineLength(index)
-
-  fun lineAt(offset: Int): Int {
-    val o = offset.coerceIn(0, length)
-    var lo = 0
-    var hi = lines.size - 1
-    while (lo < hi) {
-      val mid = (lo + hi + 1) ushr 1
-      if (lineStarts[mid] <= o) lo = mid else hi = mid - 1
-    }
-    return lo
-  }
+  fun lineAt(offset: Int): Int = CoreNative.docLineAt(handle, offset)
 
   fun offsetToPosition(offset: Int): Position {
-    val o = offset.coerceIn(0, length)
-    val line = lineAt(o)
-    return Position(line, o - lineStart(line))
+    val packed = CoreNative.docPosition(handle, offset)
+    return Position((packed shr 32).toInt(), packed.toInt())
   }
 
-  fun positionToOffset(line: Int, column: Int): Int {
-    val l = line.coerceIn(0, lines.size - 1)
-    val c = column.coerceIn(0, lines[l].length)
-    return lineStart(l) + c
-  }
+  fun positionToOffset(line: Int, column: Int): Int = CoreNative.docOffset(handle, line, column)
 
-  /** Character at [offset]. Line breaks read as '\n'. The caller guarantees 0 <= offset < length. */
-  fun charAt(offset: Int): Char {
-    val line = lineAt(offset)
-    val col = offset - lineStart(line)
-    val sb = lines[line]
-    return if (col < sb.length) sb[col] else '\n'
-  }
+  /** The unit at [offset], clamped into the document. A line end reads as the newline unit. */
+  fun charAt(offset: Int): Char = CoreNative.docUnitAt(handle, offset)
 
   fun text(): String = text(0, length)
 
-  fun text(start: Int, end: Int): String {
-    val (s, e) = clamp(start, end)
-    if (s == e) return ""
-    val sl = lineAt(s)
-    val el = lineAt(e)
-    val sb = StringBuilder(e - s)
-    for (line in sl..el) {
-      val from = if (line == sl) s - lineStart(sl) else 0
-      val to = if (line == el) e - lineStart(el) else lines[line].length
-      sb.append(lines[line], from, to)
-      if (line != el) sb.append('\n')
-    }
-    return sb.toString()
-  }
-
-  fun replace(start: Int, end: Int, text: String): Change {
-    val (s, e) = clamp(start, end)
-    val inserted = normalizeNewlines(text)
-    val removed = text(s, e)
-    val sl = lineAt(s)
-    val sc = s - lineStart(sl)
-    val el = lineAt(e)
-    val ec = e - lineStart(el)
-    val prefix = lines[sl].substring(0, sc)
-    val suffix = lines[el].substring(ec)
-    val parts = inserted.split('\n')
-    val fresh = ArrayList<StringBuilder>(parts.size)
-    if (parts.size == 1) {
-      fresh.add(StringBuilder(prefix).append(parts[0]).append(suffix))
-    } else {
-      fresh.add(StringBuilder(prefix).append(parts[0]))
-      // Exact capacity: the default adds 16 spare chars per line, which is a third of a typical line.
-      for (i in 1 until parts.size - 1) fresh.add(StringBuilder(parts[i].length).append(parts[i]))
-      fresh.add(StringBuilder(parts[parts.size - 1]).append(suffix))
-    }
-    lines.subList(sl, el + 1).clear()
-    lines.addAll(sl, fresh)
-    length += inserted.length - removed.length
-    // Line sl keeps its start; the rest is rebuilt here, under the writer's lock, so no reader ever mutates the table.
-    rebuildStarts(sl + 1)
-    revision++
-    return Change(s, removed, inserted, revision)
-  }
-
-  private fun clamp(start: Int, end: Int): Pair<Int, Int> {
-    val s = start.coerceIn(0, length)
-    val e = end.coerceIn(0, length)
-    return if (s <= e) s to e else e to s
-  }
-
-  /** Prefix sums of the line lengths plus their newlines, one entry per line and the sentinel at [lineCount]. */
-  private fun rebuildStarts(from: Int) {
-    val count = lines.size + 1
-    if (lineStarts.size < count) lineStarts = lineStarts.copyOf(maxOf(count, lineStarts.size * 2))
-    var i = from
-    if (i == 0) {
-      lineStarts[0] = 0
-      i = 1
-    }
-    while (i < count) {
-      lineStarts[i] = lineStarts[i - 1] + lines[i - 1].length + 1
-      i++
-    }
-  }
-
-  companion object {
-    fun normalizeNewlines(text: String): String =
-      if (text.indexOf('\r') < 0) text else text.replace("\r\n", "\n").replace('\r', '\n')
-  }
+  fun text(start: Int, end: Int): String = CoreNative.docText(handle, start, end)
 }
