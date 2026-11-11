@@ -93,7 +93,7 @@ If you build the key row with a React Native `ScrollView`, set `keyboardShouldPe
 | Undo, Redo | `undo()`, `redo()`, enabled from `canUndo()` and `canRedo()` read in `onChange` |
 | Hide | `blur()` |
 
-`typeText()` and `deleteBackward()` take the keyboard path: auto close, the indenter, typing coalesced in the undo history, origin `input`, and no-ops under `readOnly`. `insertText()` is the raw path. The example's key row is in the repository under `example/src/components/AccessoryBar.tsx`, and `BottomBar.tsx` next to it pins it to the keyboard.
+`typeText()` and `deleteBackward()` take the keyboard path: auto close, the indenter, typing coalesced in the undo history, origin `input`, and no-ops under `readOnly`. `insertText()` is the raw path. The example's key row is in the repository under `example/src/chrome/KeyRow.ios.tsx` and `KeyRow.android.tsx`, and `BottomBar.tsx` next to them pins it to the keyboard.
 
 ## Suggestions and focus
 
