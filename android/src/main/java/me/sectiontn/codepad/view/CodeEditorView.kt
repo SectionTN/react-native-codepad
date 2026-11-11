@@ -666,8 +666,9 @@ class CodeEditorView(context: Context) : View(context) {
 
   /** Lays out one line plain, for hit tests and reveals on lines outside the drawn range. */
   private fun layoutLine(line: Int): Entry {
-    val layout = LineLayout(core.document.line(line), null, paint, theme, viewport.wrapWidth, core.settings.tabSize, rowMetrics())
-    val entry = Entry(layout, null, -1)
+    val spans = keptSpans(line)
+    val layout = LineLayout(core.document.line(line), spans, paint, theme, viewport.wrapWidth, core.settings.tabSize, rowMetrics())
+    val entry = Entry(layout, spans, -1)
     cache.put(line, entry)
     viewport.measured(line, layout.rowCount)
     if (!viewport.wrap) viewport.widestLine = maxOf(viewport.widestLine, Math.round(layout.width()))
@@ -1299,10 +1300,8 @@ class CodeEditorView(context: Context) : View(context) {
           entry.revision = revision
           continue
         }
-      } else if (line == pendingLine && pendingRevision == doc.revision) {
-        fresh = pendingSpans
-      } else if (line == pendingLine + 1 && pendingRevision == doc.revision) {
-        fresh = pendingTail
+      } else {
+        fresh = keptSpans(line)
       }
       val layout = LineLayout(doc.line(line), fresh, paint, theme, viewport.wrapWidth, core.settings.tabSize, m)
       cache.put(line, Entry(layout, fresh, if (inRun) revision else -1))
@@ -1314,6 +1313,14 @@ class CodeEditorView(context: Context) : View(context) {
       pendingSpans = null
       pendingTail = null
     }
+  }
+
+  /** The spans [keepSpans] kept for a line of the current revision, or null. */
+  private fun keptSpans(line: Int): IntArray? = when {
+    pendingRevision != core.document.revision -> null
+    line == pendingLine -> pendingSpans
+    line == pendingLine + 1 -> pendingTail
+    else -> null
   }
 
   /** The edited line's previous spans moved along a change that stays inside it, or split by a typed newline. */

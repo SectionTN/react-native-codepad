@@ -77,7 +77,8 @@ class KeyFrameHighlightTest {
       Thread.sleep(300)
       assertTrue("the number painted", redPixels(onMain { draw(editor) }, 80) > 0)
       val before = onMain {
-        editor.core.replace(6, 6, "\n")
+        editor.core.setSelection(6, 6)
+        editor.typeText("\n")
         draw(editor)
       }
       Thread.sleep(300)

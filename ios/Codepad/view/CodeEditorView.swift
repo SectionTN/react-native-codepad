@@ -899,7 +899,8 @@ final class CodeEditorView: UIScrollView {
   /// Lays out one line plain, for hit tests and reveals on lines outside the drawn range.
   @discardableResult
   private func layoutLine(_ line: Int) -> Entry {
-    let entry = Entry(id: takeEntryId(), layout: makeLayout(line, spans: nil, rowMetrics()), spans: nil, revision: -1)
+    let spans = keptSpans(line)
+    let entry = Entry(id: takeEntryId(), layout: makeLayout(line, spans: spans, rowMetrics()), spans: spans, revision: -1)
     cache.put(line, entry)
     let scrollBefore = viewport.scrollY
     measured(line, entry.layout)
@@ -1000,10 +1001,8 @@ final class CodeEditorView: UIScrollView {
           entry.revision = revision
           continue
         }
-      } else if line == pendingLine, pendingRevision == doc.revision {
-        fresh = pendingSpans
-      } else if line == pendingLine + 1, pendingRevision == doc.revision {
-        fresh = pendingTail
+      } else {
+        fresh = keptSpans(line)
       }
       let layout = makeLayout(line, spans: fresh, m)
       cache.put(line, Entry(id: takeEntryId(), layout: layout, spans: fresh, revision: inRun ? revision : -1))
@@ -1014,6 +1013,14 @@ final class CodeEditorView: UIScrollView {
       pendingSpans = nil
       pendingTail = nil
     }
+  }
+
+  /// The spans keepSpans kept for a line of the current revision, or nil.
+  private func keptSpans(_ line: Int) -> [Int]? {
+    guard pendingRevision == core.document.revision else { return nil }
+    if line == pendingLine { return pendingSpans }
+    if line == pendingLine + 1 { return pendingTail }
+    return nil
   }
 
   /// The edited line's previous spans moved along a change that stays inside it, or split by a typed newline.
