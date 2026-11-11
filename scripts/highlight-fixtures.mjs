@@ -25,6 +25,9 @@ const ids = [
   'php',
   'php_only',
   'sql',
+  'xml',
+  'dtd',
+  'ini',
   'kv_lite',
 ];
 

@@ -90,7 +90,7 @@ final class CoreHighlightTests: XCTestCase {
 
   func testEverySampleMatchesItsGolden() throws {
     let files = try FileManager.default.contentsOfDirectory(atPath: Self.highlightDir.path).filter { $0.hasSuffix(".txt") }.sorted()
-    XCTAssertEqual(files.count, 19)
+    XCTAssertEqual(files.count, 22)
     for file in files {
       let id = String(file.dropLast(4))
       let text = try String(contentsOf: Self.highlightDir.appendingPathComponent(file), encoding: .utf8)
