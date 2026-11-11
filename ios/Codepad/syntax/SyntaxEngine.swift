@@ -107,6 +107,9 @@ final class SyntaxEngine: @unchecked Sendable {
 
   func close() { handle.close() }
 
+  // The host is retained by the core until close, so an engine dropped without close must close itself.
+  deinit { handle.close() }
+
   private static func point(_ p: Point) -> cp_point { cp_point(line: Int32(p.row), column: Int32(p.column)) }
 
   /// Call right after a change was applied: the start is unchanged, the old end comes from the removed text.

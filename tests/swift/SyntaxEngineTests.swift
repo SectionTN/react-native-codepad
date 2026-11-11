@@ -38,6 +38,21 @@ final class SyntaxEngineTests: XCTestCase {
     engine.close()
   }
 
+  // A view that gets its props and unmounts without entering a window never calls close.
+  func testDroppingAnEngineWithoutCloseFreesItsCore() {
+    final class Token: Sendable {}
+    weak var token: Token?
+    do {
+      let held = Token()
+      token = held
+      let engine = SyntaxEngine(postToMain: { $0() }, onSnapshot: { _ in _ = held })
+      engine.setText("let a = 1;", revision: 0)
+    }
+    let deadline = Date().addingTimeInterval(5)
+    while token != nil && Date() < deadline { Thread.sleep(forTimeInterval: 0.01) }
+    XCTAssertNil(token)
+  }
+
   func testBurstsOfEditsCoalesceIntoTheLatestRevision() throws {
     let core = EditorCore("")
     let engine = engine()
