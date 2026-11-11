@@ -41,6 +41,8 @@ final class TextSnapshot: @unchecked Sendable {
 
 enum Searcher {
   static let batch = 4096
+  /// How long one core call may scan, so a cancel lands within it.
+  static let budgetMs: UInt32 = 8
 
   struct Result: Equatable {
     /// Start and end pairs in document order.
@@ -49,18 +51,16 @@ enum Searcher {
     let limited: Bool
   }
 
-  /// Throws CancellationError once `cancel` answers true, which it is asked before each batch of matches.
+  /// Throws CancellationError once `cancel` answers true, which it is asked before each call into the core.
   static func find(_ text: TextSnapshot, _ search: CompiledSearch, cancel: () -> Bool = { false }) throws -> Result {
     var matches: [Int] = []
     var buffer = [Int32](repeating: 0, count: batch * 2)
-    var from: UInt32 = 0
-    while true {
+    var scan = cp_search_scan(next: 0, limited: 0, budget_ms: budgetMs)
+    while scan.next >= 0 {
       if cancel() { throw CancellationError() }
-      let n = Int(cp_search_find(search.pointer, text.pointer, from, &buffer, UInt32(buffer.count)))
-      if n < 0 { return Result(matches: matches, limited: true) }
+      let n = Int(cp_search_find(search.pointer, text.pointer, &scan, &buffer, UInt32(buffer.count)))
       for i in 0..<n { matches.append(Int(buffer[i])) }
-      if n < buffer.count { return Result(matches: matches, limited: false) }
-      from = UInt32(buffer[n - 1])
     }
+    return Result(matches: matches, limited: scan.limited != 0)
   }
 }

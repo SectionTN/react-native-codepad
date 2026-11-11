@@ -67,7 +67,7 @@ internal object CoreNative {
   @JvmStatic external fun searchRelease(search: Long)
   @JvmStatic external fun editorText(editor: Long): Long
   @JvmStatic external fun textRelease(text: Long)
-  @JvmStatic external fun searchFind(search: Long, text: Long, from: Int, out: IntArray): Int
+  @JvmStatic external fun searchFind(search: Long, text: Long, scan: IntArray, out: IntArray): Int
   @JvmStatic external fun editorFrame(
     editor: Long, snapshot: Long, first: Int, last: Int, applied: Int, useChanged: Boolean, entries: IntArray, out: IntArray,
     text: CharArray, textLength: IntArray,

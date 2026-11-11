@@ -539,12 +539,18 @@ FN(editorText)(JNIEnv *, jclass, jlong editor) -> jlong { return handle(cp_edito
 FN(textRelease)(JNIEnv *, jclass, jlong text) -> void { cp_text_release(ptr<cp_text>(text)); }
 
 // A worker call that can scan for long, so the matches go through a native buffer instead of a critical array.
-// -1 means the match limit was hit.
-FN(searchFind)(JNIEnv *e, jclass, jlong search, jlong text, jint from, jintArray out) -> jint {
+// scan holds next, limited and budget_ms, and gets next and limited back.
+FN(searchFind)(JNIEnv *e, jclass, jlong search, jlong text, jintArray scan, jintArray out) -> jint {
+  jint state[3];
+  e->GetIntArrayRegion(scan, 0, 3, state);
+  cp_search_scan s{state[0], state[1], static_cast<uint32_t>(state[2])};
   jsize cap = e->GetArrayLength(out);
   std::vector<int32_t> buffer(static_cast<size_t>(cap));
-  int32_t n = cp_search_find(ptr<cp_search>(search), ptr<cp_text>(text), at(from), buffer.data(), static_cast<uint32_t>(cap));
+  int32_t n = cp_search_find(ptr<cp_search>(search), ptr<cp_text>(text), &s, buffer.data(), static_cast<uint32_t>(cap));
   if (n > 0) e->SetIntArrayRegion(out, 0, n, reinterpret_cast<const jint *>(buffer.data()));
+  state[0] = s.next;
+  state[1] = s.limited;
+  e->SetIntArrayRegion(scan, 0, 2, state);
   return n;
 }
 

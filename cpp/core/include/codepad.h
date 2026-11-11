@@ -192,10 +192,17 @@ CP_API int32_t cp_editor_replace_all(cp_editor *editor, const cp_unit *text, uin
 CP_API int32_t cp_editor_accept_matches(cp_editor *editor, int32_t revision, const int32_t *pairs, uint32_t count);
 // The compiled query, retained for the caller, or NULL without a search.
 CP_API cp_search *cp_editor_search_query(cp_editor *editor);
-// Any thread. Writes up to cap / 2 match pairs found at or after from and returns the ints written, or -1 when a
-// match attempt hit PCRE2's match limit before any pair was written. A full buffer means more may follow: call
-// again from the end of the last match.
-CP_API int32_t cp_search_find(const cp_search *search, cp_text *text, uint32_t from, int32_t *out, uint32_t cap);
+// One scan of a query over a text, carried across cp_search_find calls. Start with next 0, or the offset to scan
+// from, and budget_ms as how long one call may run (0 runs to the end).
+typedef struct cp_search_scan {
+  int32_t next;
+  int32_t limited;
+  uint32_t budget_ms;
+} cp_search_scan;
+// Any thread. Writes up to cap / 2 match pairs from scan->next on, returns the ints written and moves next to where
+// the next call resumes, or to -1 at the end of the text. limited is set when a match attempt hit PCRE2's match
+// limit, which ends the scan. A call stops once its budget is spent, so the caller can check for a cancel.
+CP_API int32_t cp_search_find(const cp_search *search, cp_text *text, cp_search_scan *scan, int32_t *out, uint32_t cap);
 CP_API void cp_search_release(cp_search *search);
 
 // Capture names interned into small ids shared by every language.

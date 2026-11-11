@@ -6,6 +6,7 @@
 #include <string_view>
 #include <vector>
 
+#include "codepad.h"
 #include "regex.hpp"
 
 namespace codepad {
@@ -16,14 +17,20 @@ class Search {
   // flags are CP_SEARCH_*. nullptr with PCRE2's message in error when a regex does not compile.
   static std::shared_ptr<const Search> compile(std::u16string_view text, int32_t flags, std::string &error);
 
-  // Writes up to cap / 2 non overlapping, non empty match pairs found at or after from. Returns the ints written,
-  // or -1 when a match attempt hit PCRE2's match limit before any pair was written.
-  int32_t find(std::u16string_view subject, uint32_t from, int32_t *out, uint32_t cap) const;
+  // True when text holds no lone surrogate, so a scan can skip PCRE2's UTF check on every match call.
+  static bool well_formed(std::u16string_view text);
+
+  // Writes up to cap / 2 non overlapping, non empty match pairs from scan.next on and advances scan as
+  // cp_search_find describes. Returns the ints written. well_formed is what Search::well_formed says of subject.
+  int32_t find(std::u16string_view subject, bool well_formed, cp_search_scan &scan, int32_t *out, uint32_t cap) const;
   // Every match. limited is set when the scan stopped at the match limit.
   std::vector<int32_t> find_all(std::u16string_view subject, bool &limited) const;
 
  private:
-  std::unique_ptr<Regex> regex_;
+  // With invalid UTF allowed, PCRE2 checks the rest of the subject on every call, so only text with a lone
+  // surrogate goes through tolerant_.
+  std::unique_ptr<Regex> strict_;
+  std::unique_ptr<Regex> tolerant_;
   bool whole_word_ = false;
 };
 

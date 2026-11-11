@@ -10,6 +10,7 @@ struct cp_text {
   // Built on first use by search, which needs one contiguous subject. A handle belongs to one thread at a time.
   std::u16string flat;
   bool flattened = false;
+  bool well_formed = false;
 };
 
 struct cp_search {
@@ -210,12 +211,13 @@ cp_search *cp_editor_search_query(cp_editor *editor) {
   return search ? new cp_search{std::move(search)} : nullptr;
 }
 
-int32_t cp_search_find(const cp_search *search, cp_text *text, uint32_t from, int32_t *out, uint32_t cap) {
+int32_t cp_search_find(const cp_search *search, cp_text *text, cp_search_scan *scan, int32_t *out, uint32_t cap) {
   if (!text->flattened) {
     text->flat = text->view->string(0, text->view->length());
+    text->well_formed = codepad::Search::well_formed(text->flat);
     text->flattened = true;
   }
-  return search->search->find(text->flat, from, out, cap);
+  return search->search->find(text->flat, text->well_formed, *scan, out, cap);
 }
 
 void cp_search_release(cp_search *search) { delete search; }
