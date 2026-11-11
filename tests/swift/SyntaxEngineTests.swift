@@ -1,3 +1,4 @@
+import CodepadCore
 import Foundation
 import XCTest
 
@@ -14,6 +15,13 @@ final class SyntaxEngineTests: XCTestCase {
   private func engine() -> SyntaxEngine {
     let q = snapshots
     return SyntaxEngine(postToMain: { $0() }, onSnapshot: { q.add($0) })
+  }
+
+  private func treeString(_ snapshot: Snapshot) -> String {
+    let length = cp_test_tree_string(snapshot.pointer, nil, 0)
+    var buffer = [CChar](repeating: 0, count: Int(length) + 1)
+    _ = cp_test_tree_string(snapshot.pointer, &buffer, UInt32(buffer.count))
+    return String(decoding: buffer.prefix(Int(length)).map { UInt8(bitPattern: $0) }, as: UTF8.self)
   }
 
   private func wire(_ core: EditorCore, _ engine: SyntaxEngine) {
@@ -113,6 +121,9 @@ final class SyntaxEngineTests: XCTestCase {
     let lang = try XCTUnwrap(LanguageRegistry.resolve("javascript"))
     let (fresh, doc) = parseSnapshot(lang, String(repeating: " ", count: snapshot.revision) + base)
     XCTAssertEqual(snapshot.length, fresh.length)
+    let tree = treeString(snapshot)
+    XCTAssertTrue(tree.hasPrefix("(program"))
+    XCTAssertEqual(tree, treeString(fresh))
     let hl = Highlighter(language: lang)
     XCTAssertEqual(
       hl.spans(snapshot: snapshot, doc: doc, firstLine: 0, lastLine: doc.lineCount - 1),

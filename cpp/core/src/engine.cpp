@@ -726,3 +726,14 @@ extern "C" void cp_snapshot_injected_get(const cp_snapshot *snapshot, uint32_t i
   free(ts_tree_included_ranges(inj.tree.get(), &ranges));
   *out = cp_injected_info{inj.language, inj.start, inj.end, inj.shift, ranges};
 }
+
+#ifdef CODEPAD_TEST_HOOKS
+extern "C" uint32_t cp_test_tree_string(const cp_snapshot *snapshot, char *out, uint32_t cap) {
+  if (!snapshot->tree) return 0;
+  char *s = ts_node_string(ts_tree_root_node(snapshot->tree.get()));
+  std::string text(s);
+  free(s);
+  if (text.size() < cap) std::copy(text.c_str(), text.c_str() + text.size() + 1, out);
+  return static_cast<uint32_t>(text.size());
+}
+#endif

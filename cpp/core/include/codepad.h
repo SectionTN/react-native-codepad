@@ -124,6 +124,8 @@ CP_API uint32_t cp_test_dirty_runs(const cp_unit *text, uint32_t length, uint32_
                                    const int32_t *changed, int32_t changed_len, const int32_t *entry_revisions,
                                    int32_t *out, uint32_t cap);
 CP_API uint32_t cp_test_coalesce(const int32_t *pairs, uint32_t count, int32_t *out, uint32_t cap);
+// The snapshot's host tree as an S-expression, written NUL terminated when it fits. Returns its full length.
+CP_API uint32_t cp_test_tree_string(const cp_snapshot *snapshot, char *out, uint32_t cap);
 #endif
 
 #ifdef __cplusplus
