@@ -11,6 +11,7 @@
     "grammar",
     "queries",
     "*.podspec",
+    "THIRD_PARTY_NOTICES.md",
     "!android/build",
     "!android/.cxx"
   ],

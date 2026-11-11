@@ -322,6 +322,7 @@ function shippedPackageJson(a: ShippedArgs): string {
         'grammar',
         'queries',
         '*.podspec',
+        'THIRD_PARTY_NOTICES.md',
         '!android/build',
         '!android/.cxx',
       ],
