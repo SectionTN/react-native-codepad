@@ -24,7 +24,7 @@ The syntax engine is C++ under `cpp/core`, shared by both platforms, with PCRE2 
 
 ```sh
 swift test --sanitize=address --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
-swift test --sanitize=thread --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
+TSAN_OPTIONS=suppressions=$PWD/tests/swift/tsan-suppressions.txt swift test --sanitize=thread --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
 ```
 
 The [contributing page](https://reactnativecodepad.pages.dev/internals/contributing/) of the docs site has the full loop: the benches, the keyboard recorder, the host build, iOS, and what every command prints.

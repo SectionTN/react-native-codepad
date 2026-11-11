@@ -82,6 +82,8 @@ jobs:
         run: swift test --sanitize=address --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
 
       - name: Run the core tests under ThreadSanitizer
+        env:
+          TSAN_OPTIONS: suppressions=${{ github.workspace }}/tests/swift/tsan-suppressions.txt
         run: swift test --sanitize=thread --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
 
   docs:

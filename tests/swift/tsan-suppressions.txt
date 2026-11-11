@@ -1,0 +1,2 @@
+# tree-sitter reads ref_count without an atomic op only in ts_assert, next to its atomic decrement.
+race:ts_subtree_release
