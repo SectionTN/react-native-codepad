@@ -25,6 +25,8 @@ void UndoManager::begin_group(Selection selection) {
 }
 
 void UndoManager::end_group(Selection selection) {
+  // An end without a begin is ignored, so the nesting count never goes negative.
+  if (depth_ == 0) return;
   depth_--;
   if (depth_ > 0 || !open_) return;
   std::unique_ptr<Group> group = std::move(open_);

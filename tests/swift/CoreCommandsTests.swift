@@ -1,3 +1,4 @@
+import CodepadCore
 import XCTest
 
 @testable import Codepad
@@ -36,5 +37,25 @@ final class CoreCommandsTests: XCTestCase {
     XCTAssertFalse(CoreCommands.run(core, .cut))
     XCTAssertFalse(CoreCommands.run(core, .paste))
     XCTAssertEqual(core.document.text(), "x")
+  }
+
+  // A negative tab size arrives from JavaScript unchecked. Indenting must not abort the process.
+  func testANegativeTabSizeIndentsByOneSpace() {
+    let core = EditorCore("a")
+    core.settings = EditorSettings(tabSize: -4, insertSpaces: true)
+    core.indent()
+    XCTAssertEqual(core.document.text(), " a")
+  }
+
+  // An extra end of group must not shift the nesting, so a later group still undoes as one step.
+  func testAnUnbalancedEndGroupKeepsTheNextGroupWhole() {
+    let core = EditorCore("abc")
+    cp_editor_end_group(core.document.handle)
+    cp_editor_begin_group(core.document.handle)
+    _ = core.replace(0, 0, "x")
+    _ = core.replace(4, 4, "y")
+    cp_editor_end_group(core.document.handle)
+    _ = core.undo()
+    XCTAssertEqual(core.document.text(), "abc")
   }
 }

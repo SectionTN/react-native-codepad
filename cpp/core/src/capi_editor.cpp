@@ -89,7 +89,9 @@ uint32_t cp_doc_grapheme(const cp_editor *editor, uint32_t offset, int32_t forwa
 cp_text *cp_editor_text(cp_editor *editor) { return new cp_text{editor->doc.view()}; }
 
 void cp_editor_set_settings(cp_editor *editor, const cp_settings *s) {
-  editor->settings = codepad::Settings{s->tab_size, s->insert_spaces != 0, s->auto_indent != 0, s->auto_close != 0};
+  // Any int arrives from JavaScript, and indent builds a string of tab_size spaces.
+  int32_t tab = std::clamp<int32_t>(s->tab_size, 1, 64);
+  editor->settings = codepad::Settings{tab, s->insert_spaces != 0, s->auto_indent != 0, s->auto_close != 0};
 }
 
 void cp_editor_replace(cp_editor *editor, uint32_t start, uint32_t end, const cp_unit *text, uint32_t length,
