@@ -43,6 +43,7 @@
     "build:cli": "node scripts/build-cli.mjs",
     "gen:languages": "node languages/generator/cli.ts gen",
     "gen:report": "node languages/generator/cli.ts report",
+    "gen:unicode": "node scripts/gen-unicode.mjs",
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "tsc",

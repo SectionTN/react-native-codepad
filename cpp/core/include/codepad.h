@@ -126,6 +126,11 @@ CP_API uint32_t cp_test_dirty_runs(const cp_unit *text, uint32_t length, uint32_
 CP_API uint32_t cp_test_coalesce(const int32_t *pairs, uint32_t count, int32_t *out, uint32_t cap);
 // The snapshot's host tree as an S-expression, written NUL terminated when it fits. Returns its full length.
 CP_API uint32_t cp_test_tree_string(const cp_snapshot *snapshot, char *out, uint32_t cap);
+// Every extended grapheme cluster boundary in text, 0 and length included. Returns the count.
+CP_API uint32_t cp_test_grapheme_breaks(const cp_unit *text, uint32_t length, uint32_t *out, uint32_t cap);
+// The same boundaries found by stepping back from length, so in descending order.
+CP_API uint32_t cp_test_grapheme_breaks_backward(const cp_unit *text, uint32_t length, uint32_t *out, uint32_t cap);
+CP_API int32_t cp_test_white_space(uint32_t code_point);
 #endif
 
 #ifdef __cplusplus

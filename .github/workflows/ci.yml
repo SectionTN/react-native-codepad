@@ -42,6 +42,11 @@ jobs:
           yarn gen:languages
           git diff --exit-code -- languages website/docs/reference/languages.md
 
+      - name: Check generated Unicode tables
+        run: |
+          yarn gen:unicode
+          git diff --exit-code -- cpp/core/src/unicode_tables.cpp
+
   test:
     runs-on: ubuntu-24.04
 
