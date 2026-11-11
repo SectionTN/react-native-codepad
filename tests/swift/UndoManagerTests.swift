@@ -4,12 +4,10 @@ import XCTest
 
 final class UndoManagerTests: XCTestCase {
   func testHistoryKeepsAtMostAThousandGroups() {
-    let undo = Codepad.UndoManager(clock: { 0 })
-    for i in 0..<1001 {
-      let change = Change(start: i, removed: "", inserted: "\n", revision: i + 1)
-      undo.record(change, before: Selection.caret(i), after: Selection.caret(i + 1), typing: false)
-    }
-    for _ in 0..<1000 { XCTAssertNotNil(undo.popUndo()) }
-    XCTAssertNil(undo.popUndo())
+    let core = EditorCore("", clock: { 0 })
+    for i in 0..<1001 { core.replace(i, i, "\n") }
+    for _ in 0..<1000 { XCTAssertTrue(core.undo()) }
+    XCTAssertFalse(core.undo())
+    XCTAssertEqual(core.document.length, 1)
   }
 }

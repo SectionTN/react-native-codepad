@@ -92,11 +92,80 @@ CP_API cp_unit cp_doc_unit_at(const cp_editor *editor, uint32_t offset);
 CP_API uint32_t cp_doc_copy(const cp_editor *editor, uint32_t start, uint32_t end, cp_unit *out, uint32_t cap);
 CP_API cp_point cp_doc_position(const cp_editor *editor, uint32_t offset);
 CP_API uint32_t cp_doc_offset(const cp_editor *editor, int32_t line, int32_t column);
+// The grapheme boundary after offset, or before it when forward is 0. A line break is a grapheme of its own.
+CP_API uint32_t cp_doc_grapheme(const cp_editor *editor, uint32_t offset, int32_t forward);
 // The current text, retained for the caller.
 CP_API cp_text *cp_editor_text(cp_editor *editor);
-// Takes the exclusive lock itself. text is normalized like cp_editor_new's.
-CP_API void cp_doc_replace(cp_editor *editor, uint32_t start, uint32_t end, const cp_unit *text, uint32_t length,
-                           cp_change *out);
+
+// Editing, on the main thread unless marked. Text is normalized like cp_editor_new's.
+enum { CP_ORIGIN_INPUT, CP_ORIGIN_API, CP_ORIGIN_UNDO, CP_ORIGIN_REDO };
+enum { CP_MOVE_CHAR, CP_MOVE_WORD, CP_MOVE_LINE_START, CP_MOVE_LINE_END, CP_MOVE_DOC_START, CP_MOVE_DOC_END };
+enum {
+  CP_CMD_NEWLINE,
+  CP_CMD_TAB,
+  CP_CMD_SHIFT_TAB,
+  CP_CMD_INDENT,
+  CP_CMD_OUTDENT,
+  CP_CMD_BACKSPACE,
+  CP_CMD_DELETE,
+  CP_CMD_UNDO,
+  CP_CMD_REDO,
+  CP_CMD_SELECT_ALL
+};
+typedef struct {
+  int32_t tab_size;
+  int32_t insert_spaces;
+  int32_t auto_indent;
+  int32_t auto_close;
+} cp_settings;
+// Underline: a start, b end. Gap: a line, b rows. Line background: a line. payload is the platform's index.
+enum { CP_DECORATION_UNDERLINE, CP_DECORATION_GAP, CP_DECORATION_LINE_BACKGROUND };
+typedef struct {
+  int32_t kind;
+  int32_t a;
+  int32_t b;
+  int32_t payload;
+} cp_decoration;
+
+CP_API void cp_editor_set_settings(cp_editor *editor, const cp_settings *settings);
+// typing marks single key input that may coalesce in the history. caret_after puts a collapsed caret after
+// the inserted text instead of mapping the selection through the edit.
+CP_API void cp_editor_replace(cp_editor *editor, uint32_t start, uint32_t end, const cp_unit *text, uint32_t length,
+                              int32_t origin, int32_t typing, int32_t caret_after);
+CP_API void cp_editor_set_text(cp_editor *editor, const cp_unit *text, uint32_t length, int32_t keep_history);
+// Replaces the selection and leaves the caret after the text.
+CP_API void cp_editor_insert(cp_editor *editor, const cp_unit *text, uint32_t length, int32_t origin);
+// One code point at a time, through auto close and auto indent.
+CP_API void cp_editor_type(cp_editor *editor, const cp_unit *text, uint32_t length);
+// Returns 1 when undo or redo did something.
+CP_API int32_t cp_editor_command(cp_editor *editor, int32_t command);
+CP_API void cp_editor_set_selection(cp_editor *editor, int32_t anchor, int32_t head);
+CP_API void cp_editor_move(cp_editor *editor, int32_t unit, int32_t forward, int32_t extend);
+CP_API void cp_editor_select_word_at(cp_editor *editor, uint32_t offset);
+// 1 when a backspace at caret sits between an empty pair the auto closer removes together.
+CP_API int32_t cp_editor_deletes_pair(const cp_editor *editor, uint32_t caret);
+// Several edits as one undo step. Groups nest.
+CP_API void cp_editor_begin_group(cp_editor *editor);
+CP_API void cp_editor_end_group(cp_editor *editor);
+// 1 when the selection moved for a reason other than an edit, so the next typed unit starts a new undo step.
+CP_API int32_t cp_editor_selection_dirty(const cp_editor *editor);
+CP_API void cp_editor_set_selection_dirty(cp_editor *editor, int32_t dirty);
+// Any thread: anchor in the high 32 bits, head in the low ones.
+CP_API int64_t cp_editor_selection(const cp_editor *editor);
+// Any thread: bit 0 can undo, bit 1 can redo.
+CP_API int32_t cp_editor_history(const cp_editor *editor);
+// The bracket at caret and its partner, 1 when found. snapshot NULL or at another revision than the
+// document: every bracket counts. Otherwise brackets in strings and comments are skipped.
+CP_API int32_t cp_editor_bracket_match(const cp_editor *editor, const cp_snapshot *snapshot, uint32_t caret,
+                                       int32_t out[2]);
+// revision is the document revision the items were computed for, below zero for the current one. Returns 0
+// when the edits since then are no longer known, which keeps the current set.
+CP_API int32_t cp_editor_set_decorations(cp_editor *editor, const cp_decoration *items, uint32_t count,
+                                         int32_t revision);
+// Copies up to cap items and returns the count.
+CP_API uint32_t cp_editor_decorations(const cp_editor *editor, cp_decoration *out, uint32_t cap);
+// Moves whenever the decorations change.
+CP_API int32_t cp_editor_decorations_version(const cp_editor *editor);
 
 // Capture names interned into small ids shared by every language.
 CP_API int32_t cp_style_id(const char *name);

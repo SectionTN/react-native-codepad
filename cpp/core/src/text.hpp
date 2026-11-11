@@ -17,13 +17,13 @@ ChunkLimits chunk_limits();
 // 0, 0 restores the defaults.
 void set_chunk_limits(uint32_t max, uint32_t min);
 
-class TextView;
-using SharedText = std::shared_ptr<const TextView>;
+class Text;
+using SharedText = std::shared_ptr<const Text>;
 
 // Immutable UTF-16 text in shared chunks. An edit builds a new view that shares every chunk it does not touch,
 // so a view never changes under a reader on another thread. No chunk but the last ends on a high surrogate,
 // because tree-sitter reads a surrogate split across two reads as two code points.
-class TextView {
+class Text {
  public:
   static SharedText make(std::u16string_view text);
 
@@ -42,7 +42,7 @@ class TextView {
   uint32_t chunk_end(size_t i) const { return starts_[i + 1]; }
 
  private:
-  TextView() = default;
+  Text() = default;
   size_t index(uint32_t offset) const;
   void append(std::u16string_view units, ChunkLimits limits);
   void push(std::shared_ptr<const std::u16string> chunk);

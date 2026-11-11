@@ -5,13 +5,17 @@ import Foundation
 #endif
 
 /// The core's document: lines of UTF-16 units joined by `\n`, so every offset is the index JavaScript strings use.
+/// Edits go through `EditorCore`.
 final class Document {
   let handle: OpaquePointer
+  // Whatever the host's callbacks reach through their context, kept alive as long as the core.
+  private let context: AnyObject?
 
-  init(_ initialText: String = "") {
-    var host = cp_editor_host()
+  init(_ initialText: String = "", host: cp_editor_host = cp_editor_host(), context: AnyObject? = nil) {
+    var host = host
     let units = Array(initialText.utf16)
     handle = units.withUnsafeBufferPointer { cp_editor_new(&host, $0.baseAddress, UInt32($0.count)) }
+    self.context = context
   }
 
   deinit {
@@ -69,30 +73,19 @@ final class Document {
     String(decoding: units(start, end), as: UTF16.self)
   }
 
-  @discardableResult
-  func replace(_ start: Int, _ end: Int, _ text: String) -> Change {
-    let removed = self.text(start, end)
-    let s = min(max(0, min(start, end)), length)
-    var change = cp_change()
-    let units = Array(text.utf16)
-    units.withUnsafeBufferPointer {
-      cp_doc_replace(handle, Document.unsigned(start), Document.unsigned(end), $0.baseAddress, UInt32($0.count), &change)
-    }
-    let inserted = self.text(s, s + Int(change.inserted_len))
-    return Change(start: s, removed: removed, inserted: inserted, revision: Int(change.revision))
-  }
-
   private func units(_ start: Int, _ end: Int) -> [UInt16] {
     let s = Document.unsigned(start)
     let e = Document.unsigned(end)
     let count = Int(cp_doc_copy(handle, s, e, nil, 0))
+    // An empty array initialized in place writes its count into the shared empty storage, a race between readers.
+    if count == 0 { return [] }
     return [UInt16](unsafeUninitializedCapacity: count) { buffer, initialized in
       cp_doc_copy(handle, s, e, buffer.baseAddress, UInt32(count))
       initialized = count
     }
   }
 
-  private static func unsigned(_ offset: Int) -> UInt32 {
+  static func unsigned(_ offset: Int) -> UInt32 {
     UInt32(clamping: max(0, offset))
   }
 }

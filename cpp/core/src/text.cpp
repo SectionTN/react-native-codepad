@@ -36,30 +36,30 @@ void set_chunk_limits(uint32_t max, uint32_t min) {
   override_max.store(max, std::memory_order_relaxed);
 }
 
-SharedText TextView::make(std::u16string_view text) {
-  std::shared_ptr<TextView> view(new TextView());
+SharedText Text::make(std::u16string_view text) {
+  std::shared_ptr<Text> view(new Text());
   view->append(text, chunk_limits());
   return view;
 }
 
-size_t TextView::index(uint32_t offset) const {
+size_t Text::index(uint32_t offset) const {
   auto it = std::upper_bound(starts_.begin(), starts_.end() - 1, offset);
   size_t i = static_cast<size_t>(it - starts_.begin()) - 1;
   return std::min(i, chunks_.size() - 1);
 }
 
-std::u16string_view TextView::read(uint32_t offset) const {
+std::u16string_view Text::read(uint32_t offset) const {
   if (offset >= length()) return {};
   size_t i = index(offset);
   return std::u16string_view(*chunks_[i]).substr(offset - starts_[i]);
 }
 
-char16_t TextView::unit_at(uint32_t offset) const {
+char16_t Text::unit_at(uint32_t offset) const {
   size_t i = index(offset);
   return (*chunks_[i])[offset - starts_[i]];
 }
 
-void TextView::copy(uint32_t start, uint32_t end, char16_t *out) const {
+void Text::copy(uint32_t start, uint32_t end, char16_t *out) const {
   if (start >= end) return;
   size_t i = index(start);
   while (start < end) {
@@ -73,18 +73,18 @@ void TextView::copy(uint32_t start, uint32_t end, char16_t *out) const {
   }
 }
 
-std::u16string TextView::string(uint32_t start, uint32_t end) const {
+std::u16string Text::string(uint32_t start, uint32_t end) const {
   std::u16string out(end - start, u'\0');
   copy(start, end, out.data());
   return out;
 }
 
-void TextView::push(std::shared_ptr<const std::u16string> chunk) {
+void Text::push(std::shared_ptr<const std::u16string> chunk) {
   starts_.push_back(starts_.back() + static_cast<uint32_t>(chunk->size()));
   chunks_.push_back(std::move(chunk));
 }
 
-void TextView::append(std::u16string_view units, ChunkLimits limits) {
+void Text::append(std::u16string_view units, ChunkLimits limits) {
   size_t target = std::max<uint32_t>(1, limits.max / 2);
   size_t from = 0;
   while (units.size() - from > limits.max) {
@@ -96,9 +96,9 @@ void TextView::append(std::u16string_view units, ChunkLimits limits) {
   if (from < units.size()) push(std::make_shared<const std::u16string>(units.substr(from)));
 }
 
-SharedText TextView::replace(uint32_t start, uint32_t end, std::u16string_view inserted, uint32_t &copied) const {
+SharedText Text::replace(uint32_t start, uint32_t end, std::u16string_view inserted, uint32_t &copied) const {
   ChunkLimits limits = chunk_limits();
-  std::shared_ptr<TextView> next(new TextView());
+  std::shared_ptr<Text> next(new Text());
   if (chunks_.empty()) {
     next->append(inserted, limits);
     return next;

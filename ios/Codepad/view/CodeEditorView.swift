@@ -1151,7 +1151,7 @@ final class CodeEditorView: UIScrollView {
       d.setActiveLine(nil)
     }
     let consistent = snapshot.flatMap { $0.revision == core.document.revision ? $0 : nil }
-    if let pair = brackets.pair(snapshot: consistent, highlighter: highlighter) {
+    if let pair = brackets.pair(snapshot: consistent) {
       let path = CGMutablePath()
       for offset in [pair.0, pair.1] {
         Decorations.addRects(path, geometry, start: offset, end: offset + 1, firstLine: first)

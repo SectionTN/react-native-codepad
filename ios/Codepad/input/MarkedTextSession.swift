@@ -145,7 +145,7 @@ final class MarkedTextSession {
   private func beginComposition() {
     if groupOpen { return }
     groupOpen = true
-    core.history.beginGroup(core.selection)
+    core.history.beginGroup()
   }
 
   private func endComposition() {
@@ -156,7 +156,7 @@ final class MarkedTextSession {
   private func closeGroup() {
     if !groupOpen { return }
     groupOpen = false
-    core.history.endGroup(core.selection)
+    core.history.endGroup()
   }
 
   private func clamp(_ v: Int, _ lo: Int, _ hi: Int) -> Int {

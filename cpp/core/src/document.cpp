@@ -22,7 +22,7 @@ std::u16string normalize_newlines(std::u16string_view text) {
 
 Document::Document(std::u16string_view text) {
   std::u16string normalized = normalize_newlines(text);
-  text_ = TextView::make(normalized);
+  text_ = Text::make(normalized);
   starts_.push_back(0);
   for (size_t i = 0; i < normalized.size(); i++) {
     if (normalized[i] == u'\n') starts_.push_back(static_cast<uint32_t>(i + 1));
@@ -68,29 +68,40 @@ uint32_t Document::offset(int32_t line, int32_t column) const {
   return starts_[l] + static_cast<uint32_t>(c);
 }
 
-Document::Edit Document::replace(uint32_t start, uint32_t end, std::u16string_view inserted) {
+Document::Pending Document::prepare(uint32_t start, uint32_t end, std::u16string_view inserted) {
   uint32_t s = std::min(start, length());
   uint32_t e = std::min(end, length());
   if (s > e) std::swap(s, e);
-  Edit edit{s, text_->string(s, e), normalize_newlines(inserted), 0};
-  SharedText next = text_->replace(s, e, edit.inserted, copied_);
-  int32_t first = line_at(s);
-  int32_t last = line_at(e);
-  std::vector<uint32_t> fresh;
-  for (size_t i = 0; i < edit.inserted.size(); i++) {
-    if (edit.inserted[i] == u'\n') fresh.push_back(s + static_cast<uint32_t>(i) + 1);
+  Pending p;
+  p.change = Change{s, text_->string(s, e), normalize_newlines(inserted), 0};
+  p.text = text_->replace(s, e, p.change.inserted, copied_);
+  p.first_line = line_at(s);
+  p.last_line = line_at(e);
+  const std::u16string &units = p.change.inserted;
+  for (size_t i = 0; i < units.size(); i++) {
+    if (units[i] == u'\n') p.fresh_starts.push_back(s + static_cast<uint32_t>(i) + 1);
   }
-  int64_t delta = static_cast<int64_t>(edit.inserted.size()) - static_cast<int64_t>(e - s);
+  return p;
+}
+
+void Document::commit(Pending &p) {
+  int64_t delta = p.change.delta();
+  text_ = std::move(p.text);
+  auto from = starts_.begin() + p.first_line + 1;
+  from = starts_.erase(from, from + (p.last_line - p.first_line));
+  from = starts_.insert(from, p.fresh_starts.begin(), p.fresh_starts.end());
+  from += static_cast<ptrdiff_t>(p.fresh_starts.size());
+  for (auto it = from; it != starts_.end(); ++it) *it = static_cast<uint32_t>(*it + delta);
+  p.change.revision = ++revision_;
+}
+
+Change Document::replace(uint32_t start, uint32_t end, std::u16string_view inserted) {
+  Pending p = prepare(start, end, inserted);
   {
     std::unique_lock lock(mutex_);
-    text_ = std::move(next);
-    auto from = starts_.begin() + first + 1;
-    from = starts_.erase(from, from + (last - first));
-    from = starts_.insert(from, fresh.begin(), fresh.end()) + static_cast<ptrdiff_t>(fresh.size());
-    for (auto it = from; it != starts_.end(); ++it) *it = static_cast<uint32_t>(*it + delta);
-    edit.revision = ++revision_;
+    commit(p);
   }
-  return edit;
+  return std::move(p.change);
 }
 
 uint32_t Document::take_copied() {

@@ -62,7 +62,7 @@ final class VectorRunner {
     case "shiftTab": core.shiftTab()
     case "indent": core.indent()
     case "outdent": core.outdent()
-    case "bracketMatch": lastResult = core.bracketMatch(skip: nil)
+    case "bracketMatch": lastResult = core.bracketMatch(snapshot: nil)
     case "search":
       do {
         try core.setSearch(

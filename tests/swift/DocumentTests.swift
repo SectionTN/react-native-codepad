@@ -66,15 +66,15 @@ final class DocumentTests: XCTestCase {
     cp_test_set_chunk_limits(4, 2)
     defer { cp_test_set_chunk_limits(0, 0) }
     let emoji = "\u{1F600}"
-    let cumulative = Document("abcdefgh")
+    let cumulative = EditorCore("abcdefgh")
     var expected = Array("abcdefgh".utf16)
     for at in 0...8 {
-      let single = Document("abcdefgh")
+      let single = EditorCore("abcdefgh")
       single.replace(at, at, emoji)
       cumulative.replace(at * 3, at * 3, emoji)
       expected.insert(contentsOf: emoji.utf16, at: at * 3)
-      XCTAssertEqual(Array(cumulative.text().utf16), expected)
-      for doc in [single, cumulative] {
+      XCTAssertEqual(Array(cumulative.document.text().utf16), expected)
+      for doc in [single.document, cumulative.document] {
         let units = Array(doc.text().utf16)
         for end in chunkEnds(doc).dropLast() {
           XCTAssertFalse(UTF16.isLeadSurrogate(units[Int(end) - 1]), "chunk ends at \(end) in \(units.count) units")
@@ -84,11 +84,12 @@ final class DocumentTests: XCTestCase {
   }
 
   func testEditOfASharedViewClonesOneChunk() throws {
-    let doc = Document(String(repeating: "abcdefghi\n", count: 20_000))
+    let core = EditorCore(String(repeating: "abcdefghi\n", count: 20_000))
+    let doc = core.document
     _ = cp_test_units_copied(doc.handle)
     let view = try XCTUnwrap(cp_editor_text(doc.handle))
     defer { cp_text_release(view) }
-    doc.replace(0, 0, "x")
+    core.replace(0, 0, "x")
     XCTAssertLessThanOrEqual(cp_test_units_copied(doc.handle), 16384)
     XCTAssertEqual(cp_text_length(view), 200_000)
     var head = [UInt16](repeating: 0, count: 3)
