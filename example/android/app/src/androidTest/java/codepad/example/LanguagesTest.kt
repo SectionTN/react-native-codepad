@@ -6,6 +6,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import me.sectiontn.codepad.core.Document
 import me.sectiontn.codepad.syntax.Highlighter
+import me.sectiontn.codepad.syntax.LanguageProvider
 import me.sectiontn.codepad.syntax.LanguageRegistry
 import me.sectiontn.codepad.syntax.Snapshot
 import me.sectiontn.codepad.syntax.SyntaxEngine
@@ -39,21 +40,39 @@ class LanguagesTest {
     for (id in ids) {
       val language = LanguageRegistry.resolve(id) ?: error("$id did not load")
       val text = checkNotNull(snippets[id]) { "no snippet for $id" }
-      val snapshots = LinkedBlockingQueue<Snapshot>()
-      val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-      engine.setLanguage(id)
-      engine.setText(text, 0)
-      // setLanguage can publish an empty document snapshot first; wait for the whole text.
-      var snapshot: Snapshot
-      while (true) {
-        snapshot = checkNotNull(snapshots.poll(10, TimeUnit.SECONDS)) { "$id parse" }
-        if (snapshot.length == text.length) break
-        snapshot.close()
+      parse(id, text) { snapshot ->
+        val spans = Highlighter(language).spans(snapshot, Document(text), 0, 0)
+        assertTrue("$id paints line 0", spans[0].isNotEmpty())
       }
-      val spans = Highlighter(language).spans(snapshot, Document(text), 0, 0)
-      assertTrue("$id paints line 0", spans[0].isNotEmpty())
-      snapshot.close()
-      engine.close()
     }
+  }
+
+  // A provider that throws while the core resolves a fence must leave the syntax worker running.
+  @Test
+  fun aProviderThatThrowsInjectsNothing() {
+    LanguageRegistry.register(object : LanguageProvider {
+      override val id = "broken"
+      override val languagePointer: Long get() = throw UnsatisfiedLinkError("no libbroken")
+      override val highlights = ""
+      override val injections = ""
+    })
+    parse("markdown", "```broken\nlet a = 1;\n```\n") { assertEquals(0, it.injected.size) }
+  }
+
+  private fun parse(id: String, text: String, check: (Snapshot) -> Unit) {
+    val snapshots = LinkedBlockingQueue<Snapshot>()
+    val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
+    engine.setLanguage(id)
+    engine.setText(text, 0)
+    // setLanguage can publish an empty document snapshot first; wait for the whole text.
+    var snapshot: Snapshot
+    while (true) {
+      snapshot = checkNotNull(snapshots.poll(10, TimeUnit.SECONDS)) { "$id parse" }
+      if (snapshot.length == text.length) break
+      snapshot.close()
+    }
+    check(snapshot)
+    snapshot.close()
+    engine.close()
   }
 }

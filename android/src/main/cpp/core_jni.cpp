@@ -33,9 +33,11 @@ JNIEnv *env() {
   return e;
 }
 
-// A callback must not leave an exception pending in core code. ExceptionDescribe logs it and clears it.
+// A callback must not leave an exception pending in core code. ART's ExceptionDescribe logs it but keeps it pending.
 void clear(JNIEnv *e) {
-  if (e->ExceptionCheck()) e->ExceptionDescribe();
+  if (!e->ExceptionCheck()) return;
+  e->ExceptionDescribe();
+  e->ExceptionClear();
 }
 
 // The core's strings are UTF-8. NewStringUTF reads modified UTF-8, and CheckJNI aborts on a 4-byte sequence.
