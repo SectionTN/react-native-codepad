@@ -7,8 +7,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(TS_DIR ${CMAKE_SOURCE_DIR}/../cpp/tree-sitter/lib)
 set(CORE_DIR ${CMAKE_SOURCE_DIR}/../cpp/core)
 set(PCRE2_DIR ${CMAKE_SOURCE_DIR}/../cpp/pcre2/src)
-file(GLOB CORE_SOURCES ${CORE_DIR}/src/*.cpp)
-file(GLOB PCRE2_SOURCES ${PCRE2_DIR}/*.c)
+file(GLOB CORE_SOURCES CONFIGURE_DEPENDS ${CORE_DIR}/src/*.cpp)
+file(GLOB PCRE2_SOURCES CONFIGURE_DEPENDS ${PCRE2_DIR}/*.c)
 
 add_library(${PACKAGE_NAME} SHARED
   src/main/cpp/cpp-adapter.cpp
