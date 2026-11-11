@@ -1,6 +1,6 @@
 {
   "name": "react-native-codepad-lang-css",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "tree-sitter Css grammar and highlight queries for react-native-codepad",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -30,7 +30,7 @@
   "license": "MIT",
   "homepage": "https://github.com/SectionTN/react-native-codepad#readme",
   "peerDependencies": {
-    "react-native-codepad": "0.1.8"
+    "react-native-codepad": "0.1.9"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
