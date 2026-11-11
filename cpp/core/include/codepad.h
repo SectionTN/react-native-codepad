@@ -44,6 +44,60 @@ CP_API cp_language *cp_language_load(const char *id, const void *ts_language, co
                                      char *error, uint32_t error_cap);
 CP_API const char *cp_language_id(const cp_language *language);
 
+// An immutable view of a document's text, cheap to take and safe to read from any thread.
+typedef struct cp_text cp_text;
+// Returns a new handle on the same text, which the caller releases.
+CP_API cp_text *cp_text_retain(const cp_text *text);
+CP_API void cp_text_release(cp_text *text);
+CP_API uint32_t cp_text_length(const cp_text *text);
+// Copies [start, end), clamped to the text, and returns its full length.
+CP_API uint32_t cp_text_copy(const cp_text *text, uint32_t start, uint32_t end, cp_unit *out, uint32_t cap);
+
+// One editor: the document and, later, everything that edits it. Only the main thread writes to it.
+typedef struct cp_editor cp_editor;
+typedef struct {
+  int32_t start;
+  int32_t removed_len;
+  int32_t inserted_len;
+  int32_t revision;
+} cp_change;
+
+// Callbacks may be NULL. Both run on the writing thread after the document lock is released.
+typedef struct cp_editor_host {
+  void *ctx;
+  int64_t (*now_millis)(void *ctx);
+  // removed and inserted are valid during the call only.
+  void (*on_change)(void *ctx, const cp_change *change, const cp_unit *removed, const cp_unit *inserted,
+                    int32_t origin);
+  void (*on_selection)(void *ctx, int32_t anchor, int32_t head);
+} cp_editor_host;
+
+// \r\n and a lone \r in text become \n.
+CP_API cp_editor *cp_editor_new(const cp_editor_host *host, const cp_unit *text, uint32_t length);
+CP_API void cp_editor_free(cp_editor *editor);
+
+// The reads below run on the main thread, or on any thread between these two calls.
+CP_API void cp_editor_lock_shared(cp_editor *editor);
+CP_API void cp_editor_unlock_shared(cp_editor *editor);
+CP_API uint32_t cp_doc_length(const cp_editor *editor);
+CP_API int32_t cp_doc_revision(const cp_editor *editor);
+CP_API int32_t cp_doc_line_count(const cp_editor *editor);
+// Clamped to [0, line_count]. line_count gives length + 1, so starts are uniform prefix sums.
+CP_API uint32_t cp_doc_line_start(const cp_editor *editor, int32_t line);
+CP_API uint32_t cp_doc_line_end(const cp_editor *editor, int32_t line);
+CP_API int32_t cp_doc_line_at(const cp_editor *editor, uint32_t offset);
+// A line end, and any offset at or past the length, reads as \n.
+CP_API cp_unit cp_doc_unit_at(const cp_editor *editor, uint32_t offset);
+// Copies [start, end), clamped and ordered, and returns its full length.
+CP_API uint32_t cp_doc_copy(const cp_editor *editor, uint32_t start, uint32_t end, cp_unit *out, uint32_t cap);
+CP_API cp_point cp_doc_position(const cp_editor *editor, uint32_t offset);
+CP_API uint32_t cp_doc_offset(const cp_editor *editor, int32_t line, int32_t column);
+// The current text, retained for the caller.
+CP_API cp_text *cp_editor_text(cp_editor *editor);
+// Takes the exclusive lock itself. text is normalized like cp_editor_new's.
+CP_API void cp_doc_replace(cp_editor *editor, uint32_t start, uint32_t end, const cp_unit *text, uint32_t length,
+                           cp_change *out);
+
 // Capture names interned into small ids shared by every language.
 CP_API int32_t cp_style_id(const char *name);
 // Writes the name NUL terminated when it fits and returns its full length.
@@ -131,6 +185,12 @@ CP_API uint32_t cp_test_grapheme_breaks(const cp_unit *text, uint32_t length, ui
 // The same boundaries found by stepping back from length, so in descending order.
 CP_API uint32_t cp_test_grapheme_breaks_backward(const cp_unit *text, uint32_t length, uint32_t *out, uint32_t cap);
 CP_API int32_t cp_test_white_space(uint32_t code_point);
+// The end offset of every chunk of the editor's text. Returns the chunk count.
+CP_API uint32_t cp_test_chunk_ends(cp_editor *editor, uint32_t *out, uint32_t cap);
+// Units copied out of existing chunks since the last call.
+CP_API uint32_t cp_test_units_copied(cp_editor *editor);
+// Chunk size limits for later edits and new documents. 0, 0 restores the defaults.
+CP_API void cp_test_set_chunk_limits(uint32_t max, uint32_t min);
 #endif
 
 #ifdef __cplusplus

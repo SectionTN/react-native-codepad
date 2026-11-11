@@ -1,10 +1,13 @@
 import Foundation
 
+#if canImport(CodepadCore)
+  import CodepadCore
+#endif
+
 /// The editing state behind one editor: document, selection, history and settings. Only the main thread
 /// mutates it; other threads read under `read`.
 final class EditorCore: @unchecked Sendable {
   let document: Document
-  let lock = ReadWriteLock()
   let history: UndoManager
   var settings = EditorSettings()
 
@@ -31,7 +34,9 @@ final class EditorCore: @unchecked Sendable {
 
   /// Synchronous reads from the JS thread. Writers take the lock only inside Document.replace.
   func read<T>(_ body: () throws -> T) rethrows -> T {
-    try lock.read(body)
+    cp_editor_lock_shared(document.handle)
+    defer { cp_editor_unlock_shared(document.handle) }
+    return try body()
   }
 
   @discardableResult
@@ -44,7 +49,7 @@ final class EditorCore: @unchecked Sendable {
   @discardableResult
   func applyChange(_ start: Int, _ end: Int, _ text: String, origin: ChangeOrigin, typing: Bool, caretAfter: Bool) -> Change {
     let before = selection
-    let change = lock.write { document.replace(start, end, text) }
+    let change = document.replace(start, end, text)
     mapDecorations(change)
     let after =
       caretAfter
@@ -226,7 +231,7 @@ final class EditorCore: @unchecked Sendable {
   func undo() -> Bool {
     guard let group = history.popUndo() else { return false }
     for c in group.changes.reversed() {
-      let change = lock.write { document.replace(c.start, c.newEnd, c.removed) }
+      let change = document.replace(c.start, c.newEnd, c.removed)
       mapDecorations(change)
       onChange?(change, .undo)
     }
@@ -238,7 +243,7 @@ final class EditorCore: @unchecked Sendable {
   func redo() -> Bool {
     guard let group = history.popRedo() else { return false }
     for c in group.changes {
-      let change = lock.write { document.replace(c.start, c.end, c.inserted) }
+      let change = document.replace(c.start, c.end, c.inserted)
       mapDecorations(change)
       onChange?(change, .redo)
     }

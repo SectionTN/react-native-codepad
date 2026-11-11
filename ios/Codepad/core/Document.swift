@@ -1,32 +1,29 @@
 import Foundation
 
-/// Lines of UTF-16 units without terminators, so every offset is the index JavaScript strings use.
-final class Document {
-  private var lines: [[UInt16]] = []
-  private var lineStarts: [Int] = []
+#if canImport(CodepadCore)
+  import CodepadCore
+#endif
 
-  private(set) var length = 0
-  private(set) var revision = 0
+/// The core's document: lines of UTF-16 units joined by `\n`, so every offset is the index JavaScript strings use.
+final class Document {
+  let handle: OpaquePointer
 
   init(_ initialText: String = "") {
-    let text = Array(Document.normalizeNewlines(initialText).utf16)
-    var from = 0
-    while true {
-      guard let nl = text[from...].firstIndex(of: 10) else {
-        lines.append(Array(text[from...]))
-        break
-      }
-      lines.append(Array(text[from..<nl]))
-      from = nl + 1
-    }
-    length = text.count
-    rebuildStarts(from: 0)
+    var host = cp_editor_host()
+    let units = Array(initialText.utf16)
+    handle = units.withUnsafeBufferPointer { cp_editor_new(&host, $0.baseAddress, UInt32($0.count)) }
   }
 
-  var lineCount: Int { lines.count }
+  deinit {
+    cp_editor_free(handle)
+  }
+
+  var length: Int { Int(cp_doc_length(handle)) }
+  var revision: Int { Int(cp_doc_revision(handle)) }
+  var lineCount: Int { Int(cp_doc_line_count(handle)) }
 
   func line(_ index: Int) -> [UInt16] {
-    index >= 0 && index < lines.count ? lines[index] : []
+    index >= 0 && index < lineCount ? units(lineStart(index), lineEnd(index)) : []
   }
 
   func lineString(_ index: Int) -> String {
@@ -34,48 +31,34 @@ final class Document {
   }
 
   func lineLength(_ index: Int) -> Int {
-    index >= 0 && index < lines.count ? lines[index].count : 0
+    lineEnd(index) - lineStart(index)
   }
 
   /// Start offset of line `index`. `index == lineCount` yields `length + 1` so the prefix sums stay uniform.
   func lineStart(_ index: Int) -> Int {
-    lineStarts[max(0, min(index, lines.count))]
+    Int(cp_doc_line_start(handle, Int32(clamping: index)))
   }
 
   func lineEnd(_ index: Int) -> Int {
-    lineStart(index) + lineLength(index)
+    Int(cp_doc_line_end(handle, Int32(clamping: index)))
   }
 
   func lineAt(_ offset: Int) -> Int {
-    let o = max(0, min(offset, length))
-    var lo = 0
-    var hi = lines.count - 1
-    while lo < hi {
-      let mid = (lo + hi + 1) >> 1
-      if lineStarts[mid] <= o { lo = mid } else { hi = mid - 1 }
-    }
-    return lo
+    Int(cp_doc_line_at(handle, Document.unsigned(offset)))
   }
 
   func offsetToPosition(_ offset: Int) -> Position {
-    let o = max(0, min(offset, length))
-    let line = lineAt(o)
-    return Position(line: line, column: o - lineStart(line))
+    let p = cp_doc_position(handle, Document.unsigned(offset))
+    return Position(line: Int(p.line), column: Int(p.column))
   }
 
   func positionToOffset(line: Int, column: Int) -> Int {
-    let l = max(0, min(line, lines.count - 1))
-    let c = max(0, min(column, lines[l].count))
-    return lineStart(l) + c
+    Int(cp_doc_offset(handle, Int32(clamping: line), Int32(clamping: column)))
   }
 
   /// The unit at `offset`, clamped into the document. A line end reads as the newline unit.
   func unit(at offset: Int) -> UInt16 {
-    let o = max(0, min(offset, length))
-    let line = lineAt(o)
-    let col = o - lineStart(line)
-    let units = lines[line]
-    return col < units.count ? units[col] : 10
+    cp_doc_unit_at(handle, Document.unsigned(offset))
   }
 
   func text() -> String {
@@ -83,100 +66,33 @@ final class Document {
   }
 
   func text(_ start: Int, _ end: Int) -> String {
-    let (s, e) = clamp(start, end)
-    if s == e { return "" }
-    let sl = lineAt(s)
-    let el = lineAt(e)
-    var out = [UInt16]()
-    out.reserveCapacity(e - s)
-    for line in sl...el {
-      let from = line == sl ? s - lineStart(sl) : 0
-      let to = line == el ? e - lineStart(el) : lines[line].count
-      out.append(contentsOf: lines[line][from..<to])
-      if line != el { out.append(10) }
-    }
-    return String(decoding: out, as: UTF16.self)
+    String(decoding: units(start, end), as: UTF16.self)
   }
 
   @discardableResult
   func replace(_ start: Int, _ end: Int, _ text: String) -> Change {
-    let (s, e) = clamp(start, end)
-    let inserted = Document.normalizeNewlines(text)
-    let removed = self.text(s, e)
-    let sl = lineAt(s)
-    let sc = s - lineStart(sl)
-    let el = lineAt(e)
-    let ec = e - lineStart(el)
-    let prefix = lines[sl][..<sc]
-    let suffix = lines[el][ec...]
-    let parts = inserted.utf16.split(separator: 10, omittingEmptySubsequences: false)
-    var fresh = [[UInt16]]()
-    fresh.reserveCapacity(parts.count)
-    if parts.count == 1 {
-      var only = Array(prefix)
-      only.append(contentsOf: parts[0])
-      only.append(contentsOf: suffix)
-      fresh.append(only)
-    } else {
-      var first = Array(prefix)
-      first.append(contentsOf: parts[0])
-      fresh.append(first)
-      for i in 1..<(parts.count - 1) { fresh.append(Array(parts[i])) }
-      var last = Array(parts[parts.count - 1])
-      last.append(contentsOf: suffix)
-      fresh.append(last)
+    let removed = self.text(start, end)
+    let s = min(max(0, min(start, end)), length)
+    var change = cp_change()
+    let units = Array(text.utf16)
+    units.withUnsafeBufferPointer {
+      cp_doc_replace(handle, Document.unsigned(start), Document.unsigned(end), $0.baseAddress, UInt32($0.count), &change)
     }
-    lines.replaceSubrange(sl...el, with: fresh)
-    length += inserted.utf16.count - (e - s)
-    // Line sl keeps its start; the rest is rebuilt here, under the writer's lock, so no reader ever mutates the table.
-    rebuildStarts(from: sl + 1)
-    revision += 1
-    return Change(start: s, removed: removed, inserted: inserted, revision: revision)
+    let inserted = self.text(s, s + Int(change.inserted_len))
+    return Change(start: s, removed: removed, inserted: inserted, revision: Int(change.revision))
   }
 
-  private func clamp(_ start: Int, _ end: Int) -> (Int, Int) {
-    let s = max(0, min(start, length))
-    let e = max(0, min(end, length))
-    return s <= e ? (s, e) : (e, s)
-  }
-
-  /// Prefix sums of the line lengths plus their newlines, one entry per line and the sentinel at `lineCount`.
-  private func rebuildStarts(from: Int) {
-    let count = lines.count + 1
-    if lineStarts.count < count {
-      lineStarts.reserveCapacity(max(count, lineStarts.count * 2))
-      lineStarts.append(contentsOf: repeatElement(0, count: count - lineStarts.count))
-    }
-    var i = from
-    if i == 0 {
-      lineStarts[0] = 0
-      i = 1
-    }
-    while i < count {
-      lineStarts[i] = lineStarts[i - 1] + lines[i - 1].count + 1
-      i += 1
+  private func units(_ start: Int, _ end: Int) -> [UInt16] {
+    let s = Document.unsigned(start)
+    let e = Document.unsigned(end)
+    let count = Int(cp_doc_copy(handle, s, e, nil, 0))
+    return [UInt16](unsafeUninitializedCapacity: count) { buffer, initialized in
+      cp_doc_copy(handle, s, e, buffer.baseAddress, UInt32(count))
+      initialized = count
     }
   }
 
-  /// `\r\n` and a lone `\r` become `\n`, on the units so a `\r\n` grapheme never hides the `\r`.
-  static func normalizeNewlines(_ text: String) -> String {
-    guard text.utf16.contains(13) else { return text }
-    var out = [UInt16]()
-    out.reserveCapacity(text.utf16.count)
-    var afterCR = false
-    for u in text.utf16 {
-      if u == 13 {
-        out.append(10)
-        afterCR = true
-        continue
-      }
-      if u == 10 && afterCR {
-        afterCR = false
-        continue
-      }
-      afterCR = false
-      out.append(u)
-    }
-    return String(decoding: out, as: UTF16.self)
+  private static func unsigned(_ offset: Int) -> UInt32 {
+    UInt32(clamping: max(0, offset))
   }
 }

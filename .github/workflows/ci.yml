@@ -83,13 +83,18 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Run the core tests under AddressSanitizer
-        run: swift test --sanitize=address --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
+      - name: Run the Swift tests under AddressSanitizer
+        run: swift test --sanitize=address
 
-      - name: Run the core tests under ThreadSanitizer
+      - name: Run the Swift tests on 4-unit text chunks under AddressSanitizer
+        env:
+          CODEPAD_TINY_CHUNKS: '1'
+        run: swift test --sanitize=address
+
+      - name: Run the Swift tests under ThreadSanitizer
         env:
           TSAN_OPTIONS: suppressions=${{ github.workspace }}/tests/swift/tsan-suppressions.txt
-        run: swift test --sanitize=thread --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
+        run: swift test --sanitize=thread
 
   docs:
     runs-on: ubuntu-24.04
