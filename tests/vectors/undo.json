@@ -79,6 +79,9 @@
     ] },
     { "name": "backspace with a selection deletes it", "text": "abcd", "ops": [
       { "op": "setSelection", "anchor": 1, "head": 3 }, { "op": "backspace" }
-    ], "expect": { "text": "ad", "selection": { "anchor": 1, "head": 1 } } }
+    ], "expect": { "text": "ad", "selection": { "anchor": 1, "head": 1 } } },
+    { "name": "backspace removes a whole ZWJ family", "pending": "core", "text": "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67", "ops": [
+      { "op": "setSelection", "anchor": 8, "head": 8 }, { "op": "backspace" }
+    ], "expect": { "text": "", "selection": { "anchor": 0, "head": 0 } } }
   ]
 }

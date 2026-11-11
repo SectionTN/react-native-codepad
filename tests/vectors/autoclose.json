@@ -20,6 +20,8 @@
     { "name": "backtick pair", "text": "", "ops": [{ "op": "type", "text": "`" }], "expect": { "text": "``", "selection": { "anchor": 1, "head": 1 } } },
     { "name": "typing through a pair", "text": "", "ops": [{ "op": "type", "text": "(" }, { "op": "type", "text": "x" }, { "op": "type", "text": ")" }], "expect": { "text": "(x)", "selection": { "anchor": 3, "head": 3 }, "revision": 2 } },
     { "name": "undo after a pair insert restores the empty document", "text": "", "ops": [{ "op": "type", "text": "(" }, { "op": "undo" }], "expect": { "text": "", "selection": { "anchor": 0, "head": 0 } } },
-    { "name": "redo after a pair insert restores the caret between the pair", "text": "", "ops": [{ "op": "type", "text": "(" }, { "op": "undo" }, { "op": "redo" }], "expect": { "text": "()", "selection": { "anchor": 1, "head": 1 } } }
+    { "name": "redo after a pair insert restores the caret between the pair", "text": "", "ops": [{ "op": "type", "text": "(" }, { "op": "undo" }, { "op": "redo" }], "expect": { "text": "()", "selection": { "anchor": 1, "head": 1 } } },
+    { "name": "opener before a no-break space inserts the pair", "text": "\u00A0", "ops": [{ "op": "type", "text": "(" }], "expect": { "text": "()\u00A0", "selection": { "anchor": 1, "head": 1 } } },
+    { "name": "opener before a next line character inserts the pair", "pending": "core", "text": "\u0085", "ops": [{ "op": "type", "text": "(" }], "expect": { "text": "()\u0085", "selection": { "anchor": 1, "head": 1 } } }
   ]
 }

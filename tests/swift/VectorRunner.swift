@@ -25,6 +25,11 @@ final class VectorRunner {
   }
 
   func run() {
+    // A pending case pins behavior the engine does not have yet.
+    if let pending = testCase["pending"] as? String, !pending.isEmpty {
+      print("pending (\(pending)): \(testCase["name"] as? String ?? "")")
+      return
+    }
     let ops = testCase["ops"] as? [[String: Any]] ?? []
     for (i, op) in ops.enumerated() {
       lastResult = nil

@@ -19,6 +19,11 @@ class VectorRunner(private val case: JSONObject) {
   }
 
   fun run() {
+    // A pending case pins behavior the engine does not have yet.
+    case.optString("pending").takeIf { it.isNotEmpty() }?.let {
+      println("pending (${it}): ${case.optString("name")}")
+      return
+    }
     val ops = case.optJSONArray("ops") ?: JSONArray()
     for (i in 0 until ops.length()) {
       val op = ops.getJSONObject(i)

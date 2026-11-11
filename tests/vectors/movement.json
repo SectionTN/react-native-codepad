@@ -68,6 +68,34 @@
     { "name": "select word on punctuation and empty lines", "text": "a.b\n", "ops": [
       { "op": "selectWord", "offset": 1, "expect": { "selection": { "anchor": 1, "head": 2 } } },
       { "op": "selectWord", "offset": 4, "expect": { "selection": { "anchor": 4, "head": 4 } } }
+    ] },
+    { "name": "char movement steps over a ZWJ family", "pending": "core", "text": "a\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67b", "ops": [
+      { "op": "setSelection", "anchor": 1, "head": 1 },
+      { "op": "move", "unit": "char", "dir": 1, "expect": { "selection": { "anchor": 9, "head": 9 } } },
+      { "op": "move", "unit": "char", "dir": -1, "expect": { "selection": { "anchor": 1, "head": 1 } } }
+    ] },
+    { "name": "char movement steps over each flag", "pending": "core", "text": "\uD83C\uDDF9\uD83C\uDDF3\uD83C\uDDEB\uD83C\uDDF7", "ops": [
+      { "op": "move", "unit": "char", "dir": 1, "expect": { "selection": { "anchor": 4, "head": 4 } } },
+      { "op": "move", "unit": "char", "dir": 1, "expect": { "selection": { "anchor": 8, "head": 8 } } },
+      { "op": "move", "unit": "char", "dir": -1, "expect": { "selection": { "anchor": 4, "head": 4 } } }
+    ] },
+    { "name": "char movement keeps Hangul jamo together", "text": "\u1100\u1161\u11A8x", "ops": [
+      { "op": "move", "unit": "char", "dir": 1, "expect": { "selection": { "anchor": 3, "head": 3 } } }
+    ] },
+    { "name": "char movement keeps two combining marks", "text": "a\u0301\u0327x", "ops": [
+      { "op": "move", "unit": "char", "dir": 1, "expect": { "selection": { "anchor": 3, "head": 3 } } }
+    ] },
+    { "name": "word movement skips a no-break space", "text": "foo\u00A0bar", "ops": [
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 3, "head": 3 } } },
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 7, "head": 7 } } }
+    ] },
+    { "name": "word movement skips a next line character", "pending": "core", "text": "foo\u0085bar", "ops": [
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 3, "head": 3 } } },
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 7, "head": 7 } } }
+    ] },
+    { "name": "word movement stops at an information separator", "pending": "core", "text": "foo\u001Fbar", "ops": [
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 3, "head": 3 } } },
+      { "op": "move", "unit": "word", "dir": 1, "expect": { "selection": { "anchor": 4, "head": 4 } } }
     ] }
   ]
 }
