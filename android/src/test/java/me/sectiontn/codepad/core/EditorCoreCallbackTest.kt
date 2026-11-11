@@ -38,4 +38,22 @@ class EditorCoreCallbackTest {
     assertEquals(Selection(2, 2), core.selection)
     core.close()
   }
+
+  // A listener that edits again must not change what the outer edit returns.
+  @Test
+  fun aNestedEditInAListenerLeavesTheOuterChange() {
+    val core = EditorCore("abc")
+    var nested = false
+    core.onChange = { _, _ ->
+      if (!nested) {
+        nested = true
+        core.replace(2, 3, "Z")
+      }
+    }
+    val change = core.replace(0, 1, "X")
+    assertEquals(0, change.start)
+    assertEquals("X", change.inserted)
+    assertEquals("XbZ", core.document.text())
+    core.close()
+  }
 }

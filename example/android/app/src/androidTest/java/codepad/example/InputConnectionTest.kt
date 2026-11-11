@@ -108,4 +108,23 @@ class InputConnectionTest {
       }
     }
   }
+
+  // A keyboard call queued before the dropped view left the window runs after its core was freed.
+  @Test
+  fun aKeyboardCallAfterTheCoreIsFreedDoesNothing() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        editor.setInitialText("abc")
+        editor.requestFocus()
+        val connection = checkNotNull(editor.onCreateInputConnection(EditorInfo()))
+        editor.close()
+        (editor.parent as ViewGroup).removeView(editor)
+        assertFalse(connection.commitText("x", 1))
+        assertEquals("", connection.getTextBeforeCursor(10, 0).toString())
+        assertFalse(connection.beginBatchEdit())
+        connection.closeConnection()
+      }
+    }
+  }
 }

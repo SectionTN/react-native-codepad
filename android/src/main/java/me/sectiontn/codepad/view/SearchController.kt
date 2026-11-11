@@ -75,6 +75,8 @@ class SearchController(
   }
 
   private fun schedule() {
+    // An edit from a continuation that close() runs would queue a search nobody cancels.
+    if (closed) return
     cancelRunning()
     val search = core.compiledSearch()
     if (search == 0L) return

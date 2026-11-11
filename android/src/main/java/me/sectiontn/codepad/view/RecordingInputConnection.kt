@@ -99,7 +99,8 @@ class RecordingInputConnection(target: InputConnection, private val view: CodeEd
   private fun log(call: String, args: JSONArray, result: Any?, hasResult: Boolean, extra: JSONObject?) {
     val line = JSONObject().put("t", SystemClock.uptimeMillis() - opened).put("call", call).put("args", args)
     if (hasResult) line.put("ret", encode(result))
-    line.put("after", view.imeState())
+    // A call that arrives after a dropped view freed its core has no state to record.
+    if (!view.coreReleased) line.put("after", view.imeState())
     if (extra != null) for (key in extra.keys()) line.put(key, extra.get(key))
     Log.i(DebugSwitch.TAG, line.toString())
   }

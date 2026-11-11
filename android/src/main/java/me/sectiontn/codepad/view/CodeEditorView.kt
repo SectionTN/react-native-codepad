@@ -174,6 +174,10 @@ class CodeEditorView(context: Context) : View(context) {
   private var caretVisible = true
   private var selectionDirty = false
   private var dropped = false
+
+  // True once release() freed the core of a dropped view, so its input connection stops calling it.
+  internal var coreReleased = false
+    private set
   private var contentDirty = false
   private var lastContentWidth = -1f
   private var lastContentHeight = -1f
@@ -1228,7 +1232,10 @@ class CodeEditorView(context: Context) : View(context) {
     search = null
     snapshot?.close()
     snapshot = null
-    if (dropped) core.close()
+    if (dropped) {
+      core.close()
+      coreReleased = true
+    }
   }
 
   /**

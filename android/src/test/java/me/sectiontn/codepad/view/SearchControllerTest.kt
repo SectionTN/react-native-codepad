@@ -16,6 +16,8 @@ class SearchControllerTest {
     override fun execute(command: Runnable) {
       queue.add(command)
     }
+    val size: Int get() = queue.size
+
     fun runAll() {
       while (queue.isNotEmpty()) queue.removeFirst().run()
     }
@@ -109,5 +111,16 @@ class SearchControllerTest {
   fun anInvalidRegexThrowsAndClears() {
     assertThrows(IllegalArgumentException::class.java) { controller.setQuery(SearchQuery("(", regex = true)) }
     assertFalse(controller.active)
+  }
+
+  // A continuation that edits while the controller closes must not queue a search nobody cancels.
+  @Test
+  fun aContinuationRunByCloseSchedulesNoSearch() {
+    core.onChange = { change, _ -> controller.onChange(change) }
+    controller.setQuery(SearchQuery("ab"))
+    controller.whenFresh { core.replace(0, 0, "x") }
+    val queued = executor.size
+    controller.close()
+    assertEquals(queued, executor.size)
   }
 }

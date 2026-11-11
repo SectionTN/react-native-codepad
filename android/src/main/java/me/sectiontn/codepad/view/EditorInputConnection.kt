@@ -13,6 +13,9 @@ import me.sectiontn.codepad.input.ImeSession
 class EditorInputConnection(private val view: CodeEditorView) : BaseInputConnection(view, false) {
   private val session: ImeSession get() = view.ime
 
+  // False once a dropped view freed its core. A keyboard call queued before the detach can still arrive.
+  private val live: Boolean get() = !view.coreReleased
+
   override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean =
     edit { session.commitText(text?.toString() ?: "", newCursorPosition) }
 
@@ -35,21 +38,23 @@ class EditorInputConnection(private val view: CodeEditorView) : BaseInputConnect
 
   override fun setSelection(start: Int, end: Int): Boolean = edit { session.setSelection(start, end) }
 
-  override fun getTextBeforeCursor(n: Int, flags: Int): CharSequence = session.textBeforeCursor(n)
+  override fun getTextBeforeCursor(n: Int, flags: Int): CharSequence = if (live) session.textBeforeCursor(n) else ""
 
-  override fun getTextAfterCursor(n: Int, flags: Int): CharSequence = session.textAfterCursor(n)
+  override fun getTextAfterCursor(n: Int, flags: Int): CharSequence = if (live) session.textAfterCursor(n) else ""
 
-  override fun getSelectedText(flags: Int): CharSequence? = session.selectedText()
+  override fun getSelectedText(flags: Int): CharSequence? = if (live) session.selectedText() else null
 
   @RequiresApi(Build.VERSION_CODES.S)
   override fun getSurroundingText(beforeLength: Int, afterLength: Int, flags: Int): SurroundingText {
+    if (!live) return SurroundingText("", 0, 0, 0)
     val w = session.window(beforeLength, afterLength)
     return SurroundingText(w.text, w.selStart, w.selEnd, w.offset)
   }
 
-  override fun beginBatchEdit(): Boolean = session.beginBatchEdit()
+  override fun beginBatchEdit(): Boolean = live && session.beginBatchEdit()
 
   override fun endBatchEdit(): Boolean {
+    if (!live) return false
     val more = session.endBatchEdit()
     if (!more) view.onImeBatchEnded()
     return more
@@ -61,6 +66,7 @@ class EditorInputConnection(private val view: CodeEditorView) : BaseInputConnect
   override fun performEditorAction(actionCode: Int): Boolean = edit { view.insertNewlineFromIme() }
 
   override fun performContextMenuAction(id: Int): Boolean {
+    if (!live) return false
     when (id) {
       android.R.id.selectAll -> view.selectAll()
       android.R.id.cut -> view.cut()
@@ -82,6 +88,7 @@ class EditorInputConnection(private val view: CodeEditorView) : BaseInputConnect
   override fun requestCursorUpdates(cursorUpdateMode: Int, cursorUpdateFilter: Int): Boolean = requestCursorUpdates(cursorUpdateMode)
 
   override fun getCursorCapsMode(reqModes: Int): Int {
+    if (!live) return 0
     val w = session.window(CAPS_WINDOW, 0)
     return TextUtils.getCapsMode(w.text, w.selStart, reqModes)
   }
@@ -89,11 +96,12 @@ class EditorInputConnection(private val view: CodeEditorView) : BaseInputConnect
   override fun clearMetaKeyStates(states: Int): Boolean = true
 
   override fun closeConnection() {
-    session.reset()
+    if (live) session.reset()
     super.closeConnection()
   }
 
   private fun edit(block: () -> Boolean): Boolean {
+    if (!live) return false
     view.markInputTime()
     return view.inputWork(block)
   }

@@ -30,27 +30,27 @@ class EditorCore(initialText: String = "", clock: (() -> Long)? = null) : AutoCl
   var onChange: ((Change, ChangeOrigin) -> Unit)? = null
   var onSelectionChange: ((Selection) -> Unit)? = null
 
-  // The change the last edit reported, so the edit methods can return it.
-  private var lastChange: Change? = null
+  // The first change the edit in progress reported, so it can return it. A nested edit from a listener gets its own.
+  private var changeSlot: Array<Change?>? = null
 
   init {
     host.onChange = { change, origin ->
-      lastChange = change
+      changeSlot?.let { if (it[0] == null) it[0] = change }
       onChange?.invoke(change, origin)
     }
     host.onSelection = { onSelectionChange?.invoke(it) }
     settings = settings
   }
 
-  /** Any thread. */
+  /** Any thread. The life lock keeps the editor from being freed during the read. */
   val selection: Selection
-    get() {
+    get() = life.read {
       val packed = CoreNative.editorSelection(handle())
-      return Selection((packed shr 32).toInt(), packed.toInt())
+      Selection((packed shr 32).toInt(), packed.toInt())
     }
 
-  val canUndo: Boolean get() = CoreNative.editorHistory(handle()) and 1 != 0
-  val canRedo: Boolean get() = CoreNative.editorHistory(handle()) and 2 != 0
+  val canUndo: Boolean get() = life.read { CoreNative.editorHistory(handle()) and 1 != 0 }
+  val canRedo: Boolean get() = life.read { CoreNative.editorHistory(handle()) and 2 != 0 }
 
   internal fun handle(): Long {
     val h = native
@@ -91,9 +91,15 @@ class EditorCore(initialText: String = "", clock: (() -> Long)? = null) : AutoCl
    * [caretAfter] puts a collapsed caret after the inserted text instead of mapping the selection.
    */
   internal fun applyChange(start: Int, end: Int, text: String, origin: ChangeOrigin, typing: Boolean, caretAfter: Boolean): Change {
-    lastChange = null
-    mutate { CoreNative.editorReplace(it, start, end, text, origin.ordinal, typing, caretAfter) }
-    return checkNotNull(lastChange)
+    val slot = arrayOfNulls<Change>(1)
+    val outer = changeSlot
+    changeSlot = slot
+    try {
+      mutate { CoreNative.editorReplace(it, start, end, text, origin.ordinal, typing, caretAfter) }
+    } finally {
+      changeSlot = outer
+    }
+    return checkNotNull(slot[0])
   }
 
   fun insertText(text: String, origin: ChangeOrigin = ChangeOrigin.Api) =
