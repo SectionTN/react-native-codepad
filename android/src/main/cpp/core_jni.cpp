@@ -199,23 +199,6 @@ FN(engineSetLanguage)(JNIEnv *, jclass, jlong engine, jlong language) -> void {
   cp_engine_set_language(ptr<cp_engine>(engine), ptr<const cp_language>(language));
 }
 
-FN(engineSetText)(JNIEnv *e, jclass, jlong engine, jstring text, jint revision) -> void {
-  std::u16string t = units(e, text);
-  cp_engine_set_text(ptr<cp_engine>(engine), reinterpret_cast<const cp_unit *>(t.data()), static_cast<uint32_t>(t.size()),
-                     revision);
-}
-
-// points: start line, start column, old end line, old end column, new end line, new end column.
-FN(engineEdit)(JNIEnv *e, jclass, jlong engine, jint start, jint removed, jstring inserted, jint revision,
-               jintArray points) -> void {
-  std::u16string t = units(e, inserted);
-  jint p[6];
-  e->GetIntArrayRegion(points, 0, 6, p);
-  cp_engine_edit(ptr<cp_engine>(engine), static_cast<uint32_t>(start), static_cast<uint32_t>(removed),
-                 reinterpret_cast<const cp_unit *>(t.data()), static_cast<uint32_t>(t.size()), revision,
-                 cp_point{p[0], p[1]}, cp_point{p[2], p[3]}, cp_point{p[4], p[5]});
-}
-
 FN(engineRelease)(JNIEnv *, jclass, jlong engine, jlong snapshot) -> void {
   cp_engine_release(ptr<cp_engine>(engine), ptr<cp_snapshot>(snapshot));
 }
@@ -266,17 +249,6 @@ FN(injectedGet)(JNIEnv *e, jclass, jlong snapshot, jint index, jintArray out) ->
 FN(highlight)(JNIEnv *e, jclass, jlong snapshot, jint first, jint last, jint start, jintArray out) -> jint {
   return fill(e, out, [&](int32_t *b, uint32_t cap) {
     return cp_highlight(ptr<cp_snapshot>(snapshot), first, last, static_cast<uint32_t>(start), b, cap);
-  });
-}
-
-FN(frame)(JNIEnv *e, jclass, jlong snapshot, jint first, jint last, jint start, jint applied, jboolean use_changed,
-          jintArray entries, jintArray out) -> jint {
-  jsize n = e->GetArrayLength(entries);
-  std::vector<int32_t> revisions(static_cast<size_t>(n));
-  e->GetIntArrayRegion(entries, 0, n, reinterpret_cast<jint *>(revisions.data()));
-  return fill(e, out, [&](int32_t *b, uint32_t cap) {
-    return cp_frame(ptr<cp_snapshot>(snapshot), first, last, static_cast<uint32_t>(start), applied, use_changed ? 1 : 0,
-                    revisions.data(), b, cap);
   });
 }
 

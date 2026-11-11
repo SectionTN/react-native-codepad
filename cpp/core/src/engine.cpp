@@ -679,8 +679,6 @@ struct Engine : std::enable_shared_from_this<Engine> {
 
 struct cp_engine {
   std::shared_ptr<codepad::Engine> engine;
-  // The text cp_engine_set_text and cp_engine_edit build, on the main thread, for an engine with no editor.
-  codepad::SharedText legacy = codepad::Text::make(u"");
 };
 
 namespace codepad {
@@ -711,25 +709,6 @@ extern "C" cp_engine *cp_engine_new(const cp_host *host, int64_t budget_micros,
 
 extern "C" void cp_engine_set_language(cp_engine *engine, const cp_language *language) {
   engine->engine->set_language(language);
-}
-
-extern "C" void cp_engine_set_text(cp_engine *engine, const cp_unit *text, uint32_t length, int32_t revision) {
-  engine->legacy = codepad::Text::make({reinterpret_cast<const char16_t *>(text), length});
-  engine->engine->attach(engine->legacy, revision);
-}
-
-extern "C" void cp_engine_edit(cp_engine *engine, uint32_t start, uint32_t removed, const cp_unit *inserted,
-                               uint32_t inserted_len, int32_t revision, cp_point start_point, cp_point old_end,
-                               cp_point new_end) {
-  uint32_t length = engine->legacy->length();
-  uint32_t s = std::min(start, length);
-  uint32_t e = s + std::min(removed, length - s);
-  uint32_t copied = 0;
-  std::u16string_view units{reinterpret_cast<const char16_t *>(inserted), inserted_len};
-  engine->legacy = engine->legacy->replace(s, e, units, copied);
-  codepad::Engine &core = *engine->engine;
-  core.edit(core.epoch.load(), static_cast<int32_t>(s), static_cast<int32_t>(e - s),
-            static_cast<int32_t>(inserted_len), revision, start_point, old_end, new_end, engine->legacy);
 }
 
 extern "C" void cp_engine_release(cp_engine *engine, cp_snapshot *snapshot) {

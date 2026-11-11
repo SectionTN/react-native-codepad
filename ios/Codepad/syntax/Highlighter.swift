@@ -19,26 +19,6 @@ class Highlighter: @unchecked Sendable {
     return lines(lastLine - firstLine + 1, &i, count)
   }
 
-  /// One draw's dirty runs, flat inclusive [lo, hi, ...], and the spans of every line in them, in order.
-  func frame(
-    snapshot: Snapshot, doc: Document, first: Int, last: Int, applied: Int, useChanged: Bool, entries: [Int32]
-  ) -> (runs: [Int], spans: [[Int]]) {
-    let start = UInt32(doc.lineStart(first))
-    let count = entries.withUnsafeBufferPointer { e in
-      fill {
-        cp_frame(
-          snapshot.pointer, Int32(first), Int32(last), start, Int32(applied), useChanged ? 1 : 0, e.baseAddress, $0, $1)
-      }
-    }
-    guard count > 0 else { return ([], []) }
-    let runCount = Int(buffer[0])
-    let runs = (0..<runCount * 2).map { Int(buffer[1 + $0]) }
-    var lineCount = 0
-    for r in 0..<runCount { lineCount += runs[r * 2 + 1] - runs[r * 2] + 1 }
-    var i = 1 + runCount * 2
-    return (runs, lines(lineCount, &i, count))
-  }
-
   /// Calls a core entry point that writes ints, growing the buffer once when it is short.
   private func fill(_ call: (UnsafeMutablePointer<Int32>?, UInt32) -> UInt32) -> Int {
     var needed = buffer.withUnsafeMutableBufferPointer { call($0.baseAddress, UInt32($0.count)) }

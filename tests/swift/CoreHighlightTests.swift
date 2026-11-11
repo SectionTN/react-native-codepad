@@ -44,7 +44,10 @@ final class CoreHighlightTests: XCTestCase {
     let engine = cp_engine_new(&h, 50_000, TestHost.onSnapshot)!
     cp_engine_set_language(engine, Self.languages[id]!)
     let units = Array(text.utf16)
-    cp_engine_set_text(engine, units, UInt32(units.count), 0)
+    var editorHost = cp_editor_host()
+    let editor = cp_editor_new(&editorHost, units, UInt32(units.count))!
+    defer { cp_editor_free(editor) }
+    cp_editor_attach(editor, engine)
     host.drain()
     host.pump()
     var all = host.takeSnapshots()
@@ -101,35 +104,6 @@ final class CoreHighlightTests: XCTestCase {
       XCTAssertEqual(render(ints, firstLine: 0, lines: lines), expected, id)
       cp_engine_release(nil, s)
     }
-  }
-
-  func testFrameMatchesHighlightPerRun() {
-    let text = String(repeating: "const value = call(a, \"s\", [1, 2]); // note\n", count: 40)
-    let s = snapshot("javascript", text)
-    // Lines with no entry or an older one are all dirty, so the frame finds one run over every line.
-    let entries = (0..<40).map { $0 % 2 == 0 ? Int32(-5) : Int32(CP_NO_ENTRY) }
-    let lineLength = "const value = call(a, \"s\", [1, 2]); // note\n".utf16.count
-    let frame = entries.withUnsafeBufferPointer { e in fill { cp_frame(s, 0, 39, 0, 0, 0, e.baseAddress, $0, $1) } }
-    let runs = Int(frame[0])
-    XCTAssertEqual(runs, 1)
-    XCTAssertEqual(Array(frame[1...2]), [0, 39])
-    let plain = fill { cp_highlight(s, 0, 39, 0, $0, $1) }
-    XCTAssertEqual(Array(frame[3...]), plain)
-    let tail = fill { cp_highlight(s, 10, 12, UInt32(10 * lineLength), $0, $1) }
-    XCTAssertEqual(render(tail, firstLine: 10, lines: 3), render(Array(plain), firstLine: 0, lines: 40)
-      .split(separator: "\n").filter { $0.hasPrefix("10 ") || $0.hasPrefix("11 ") || $0.hasPrefix("12 ") }
-      .joined(separator: "\n") + "\n")
-    cp_engine_release(nil, s)
-  }
-
-  func testFrameSkipsLinesAlreadyAtTheSnapshotRevision() {
-    let text = "let a = 1;\nlet b = 2;\nlet c = 3;\n"
-    let s = snapshot("javascript", text)
-    let entries: [Int32] = [0, Int32(CP_NO_ENTRY), 0, Int32(CP_NO_ENTRY)]
-    let frame = entries.withUnsafeBufferPointer { e in fill { cp_frame(s, 0, 3, 0, 0, 0, e.baseAddress, $0, $1) } }
-    XCTAssertEqual(Array(frame[0...4]), [2, 1, 1, 3, 3])
-    XCTAssertEqual(Array(frame[5...]), fill { cp_highlight(s, 1, 1, 11, $0, $1) } + fill { cp_highlight(s, 3, 3, 33, $0, $1) })
-    cp_engine_release(nil, s)
   }
 
   func testShortBufferWritesNothingAndReportsTheSize() {

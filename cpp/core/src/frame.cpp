@@ -95,28 +95,6 @@ extern "C" uint32_t cp_highlight(const cp_snapshot *snapshot, int32_t first_line
   return deliver(ints, out, cap);
 }
 
-extern "C" uint32_t cp_frame(const cp_snapshot *snapshot, int32_t first_line, int32_t last_line,
-                             uint32_t first_line_start, int32_t applied_revision, int32_t use_changed,
-                             const int32_t *entry_revisions, int32_t *out, uint32_t cap) {
-  int32_t count = last_line - first_line + 1;
-  if (!snapshot || !snapshot->text || count <= 0) return 0;
-  codepad::Lines lines = codepad::scan_lines(*snapshot->text, first_line_start, count);
-  const int32_t *changed = use_changed ? snapshot->changed.data() : nullptr;
-  int32_t changed_len = use_changed ? static_cast<int32_t>(snapshot->changed.size()) : -1;
-  std::vector<int32_t> runs = codepad::dirty_runs(lines, first_line, snapshot->revision, applied_revision, changed,
-                                                  changed_len, entry_revisions);
-  std::vector<int32_t> ints;
-  ints.push_back(static_cast<int32_t>(runs.size() / 2));
-  ints.insert(ints.end(), runs.begin(), runs.end());
-  // One highlight query per run, as before: a run's lines share the query's cursor walk.
-  for (size_t r = 0; r + 1 < runs.size(); r += 2) {
-    auto lo = static_cast<size_t>(runs[r] - first_line);
-    auto hi = static_cast<size_t>(runs[r + 1] - first_line);
-    codepad::highlight(*snapshot, lines, lo, hi - lo + 1, ints);
-  }
-  return deliver(ints, out, cap);
-}
-
 extern "C" uint32_t cp_editor_frame(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
                                     int32_t last_line, int32_t applied_revision, int32_t use_changed,
                                     const int32_t *entry_revisions, int32_t *out, uint32_t cap, cp_unit *text_out,

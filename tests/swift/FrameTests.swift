@@ -68,12 +68,41 @@ final class FrameTests: XCTestCase {
         core: core, snapshot: snapshot, first: first, last: last, applied: applied, useChanged: useChanged,
         entries: entries)
       try checkReads(painted, core, first, last, step)
-      let legacy = highlighter.frame(
-        snapshot: snapshot, doc: doc, first: painted.first, last: painted.last, applied: applied, useChanged: useChanged,
+      let runs = dirtyRuns(
+        doc, painted, revision: snapshot.revision, applied: applied, changed: useChanged ? snapshot.changed : nil,
         entries: Array(entries[0...(painted.last - first)]))
-      XCTAssertEqual(painted.runs, legacy.runs, "step \(step)")
-      XCTAssertEqual(painted.spans, legacy.spans, "step \(step)")
+      XCTAssertEqual(painted.runs, runs, "step \(step)")
+      var expected: [[Int]] = []
+      var r = 0
+      while r + 1 < runs.count {
+        for line in runs[r]...runs[r + 1] {
+          expected.append(highlighter.spans(snapshot: snapshot, doc: doc, firstLine: line, lastLine: line)[0])
+        }
+        r += 2
+      }
+      XCTAssertEqual(painted.spans, expected, "step \(step)")
     }
+  }
+
+  // The core's dirty-run rule over the frame's lines, the oracle for the runs a frame paints.
+  private func dirtyRuns(
+    _ doc: Document, _ f: EditorFrame, revision: Int, applied: Int, changed: [Int]?, entries: [Int32]
+  ) -> [Int] {
+    let text = Array(doc.text().utf16)
+    let c = (changed ?? []).map { Int32($0) }
+    var out = [Int32](repeating: 0, count: 2 + entries.count * 2)
+    let n = c.withUnsafeBufferPointer { cb in
+      entries.withUnsafeBufferPointer { eb in
+        out.withUnsafeMutableBufferPointer { ob in
+          cp_test_dirty_runs(
+            text, UInt32(text.count), UInt32(doc.lineStart(f.first)), Int32(f.first), Int32(f.last), Int32(revision),
+            Int32(applied), cb.baseAddress, changed == nil ? -1 : Int32(c.count), eb.baseAddress, ob.baseAddress,
+            UInt32(ob.count))
+        }
+      }
+    }
+    XCTAssertLessThanOrEqual(Int(n), out.count)
+    return out[1..<(1 + Int(out[0]) * 2)].map { Int($0) }
   }
 
   private func checkReads(_ f: EditorFrame, _ core: EditorCore, _ first: Int, _ last: Int, _ step: Int) throws {

@@ -14,18 +14,6 @@ open class Highlighter(val language: LoadedLanguage) {
     return lines(lastLine - firstLine + 1, cursor, count)
   }
 
-  /** One draw's dirty runs, flat inclusive [lo, hi, ...], and the spans of every line in them, in order. */
-  fun frame(snapshot: Snapshot, doc: Document, first: Int, last: Int, applied: Int, useChanged: Boolean, entries: IntArray): Pair<IntArray, Array<IntArray>> {
-    val start = doc.lineStart(first)
-    val count = fill { CoreNative.frame(snapshot.pointer, first, last, start, applied, useChanged, entries, it) }
-    if (count == 0) return IntArray(0) to emptyArray()
-    val runCount = buffer[0]
-    val runs = buffer.copyOfRange(1, 1 + runCount * 2)
-    var lineCount = 0
-    for (r in 0 until runCount) lineCount += runs[r * 2 + 1] - runs[r * 2] + 1
-    return runs to lines(lineCount, intArrayOf(1 + runCount * 2), count)
-  }
-
   private inline fun fill(call: (IntArray) -> Int): Int {
     val (out, count) = CoreNative.fill(buffer, call)
     buffer = out
@@ -41,10 +29,5 @@ open class Highlighter(val language: LoadedLanguage) {
     val row = buffer.copyOfRange(i, i + triples * 3)
     cursor[0] = i + triples * 3
     row
-  }
-
-  companion object {
-    /** No cached layout for a line, as opposed to -1 for a line laid out plain. */
-    const val NO_ENTRY = Int.MIN_VALUE
   }
 }

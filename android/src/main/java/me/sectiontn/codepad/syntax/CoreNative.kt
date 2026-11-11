@@ -81,8 +81,6 @@ internal object CoreNative {
   @JvmStatic external fun engineNew(host: CoreHost, budgetMicros: Long): Long
   @JvmStatic external fun run(work: Long, arg: Long)
   @JvmStatic external fun engineSetLanguage(engine: Long, language: Long)
-  @JvmStatic external fun engineSetText(engine: Long, text: String, revision: Int)
-  @JvmStatic external fun engineEdit(engine: Long, start: Int, removed: Int, inserted: String, revision: Int, points: IntArray)
   @JvmStatic external fun engineRelease(engine: Long, snapshot: Long)
   @JvmStatic external fun engineClose(engine: Long)
   @JvmStatic external fun snapshotInfo(snapshot: Long, out: IntArray)
@@ -91,7 +89,6 @@ internal object CoreNative {
   @JvmStatic external fun injectedCount(snapshot: Long): Int
   @JvmStatic external fun injectedGet(snapshot: Long, index: Int, out: IntArray): Long
   @JvmStatic external fun highlight(snapshot: Long, first: Int, last: Int, firstLineStart: Int, out: IntArray?): Int
-  @JvmStatic external fun frame(snapshot: Long, first: Int, last: Int, firstLineStart: Int, applied: Int, useChanged: Boolean, entries: IntArray, out: IntArray?): Int
   @JvmStatic external fun shiftSpans(spans: IntArray, start: Int, removed: Int, inserted: Int, out: IntArray?): Int
 
   /** Only in the JVM host library: the TSLanguage pointer of a compiled-in grammar, 0 when absent. */

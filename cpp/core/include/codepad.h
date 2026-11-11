@@ -210,12 +210,6 @@ CP_API cp_engine *cp_engine_new(const cp_host *host, int64_t budget_micros,
                                 void (*on_snapshot)(void *ctx, cp_snapshot *snapshot));
 // NULL clears the language. A snapshot still in flight keeps the language it was parsed with.
 CP_API void cp_engine_set_language(cp_engine *engine, const cp_language *language);
-// The text path for an engine with no editor attached, kept until Android attaches its editor.
-CP_API void cp_engine_set_text(cp_engine *engine, const cp_unit *text, uint32_t length, int32_t revision);
-// Points are in UTF-16 units, as the platform document computes them.
-CP_API void cp_engine_edit(cp_engine *engine, uint32_t start, uint32_t removed, const cp_unit *inserted,
-                           uint32_t inserted_len, int32_t revision, cp_point start_point, cp_point old_end,
-                           cp_point new_end);
 // Frees the snapshot on the worker, or on the calling thread once the engine is closed. engine may be NULL then.
 CP_API void cp_engine_release(cp_engine *engine, cp_snapshot *snapshot);
 // No engine work runs after it. The engine frees itself on the worker.
@@ -255,20 +249,15 @@ CP_API void cp_snapshot_injected_get(const cp_snapshot *snapshot, uint32_t index
 // (startColumn, endColumn, styleId) triples. first_line_start is the document offset of first_line.
 CP_API uint32_t cp_highlight(const cp_snapshot *snapshot, int32_t first_line, int32_t last_line,
                              uint32_t first_line_start, int32_t *out, uint32_t cap);
-// cp_frame: the dirty runs of [first_line, last_line] then their spans, for one draw. entry_revisions[i] is the
-// cached revision of line first_line + i: CP_NO_ENTRY without one, -1 for a line laid out plain. use_changed is 1
-// when the snapshot is based on applied_revision. Layout: run_count, run_count inclusive (lo, hi) pairs, then for
-// each line of each run as cp_highlight.
 enum { CP_NO_ENTRY = -2147483647 - 1 };
-CP_API uint32_t cp_frame(const cp_snapshot *snapshot, int32_t first_line, int32_t last_line,
-                         uint32_t first_line_start, int32_t applied_revision, int32_t use_changed,
-                         const int32_t *entry_revisions, int32_t *out, uint32_t cap);
-// Main thread, one call per draw over lines [first_line, last_line] clamped to the document. entry_revisions holds
-// one entry per requested line, as for cp_frame. out receives, in order:
+// Main thread, one call per draw over lines [first_line, last_line] clamped to the document. entry_revisions[i] is
+// the cached revision of line first_line + i: CP_NO_ENTRY without one, -1 for a line laid out plain. use_changed
+// is 1 when the snapshot is based on applied_revision. out receives, in order:
 //   a header: revision, length, line_count, anchor, head, caret_line, decorations_version, history
 //   the line starts of the clamped first..last + 1 (line_count gives length + 1)
-//   the runs and spans laid out as cp_frame's. snapshot NULL or at another revision than the document: the runs
-//   are the lines with no entry and every span count is 0
+//   the dirty runs: run_count, run_count inclusive (lo, hi) pairs, then for each line of each run its spans as
+//   cp_highlight. snapshot NULL or at another revision than the document: the runs are the lines with no entry
+//   and every span count is 0
 //   for each line of each run, its text's offset and length in text_out
 // Returns the ints needed and sets *text_len to the units needed. Nothing is written unless both fit.
 CP_API uint32_t cp_editor_frame(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
@@ -284,7 +273,7 @@ CP_API uint32_t cp_shift_spans(const int32_t *spans, uint32_t count, int32_t sta
 // predicates, or -1 with a message in error when the query does not compile.
 CP_API int32_t cp_test_predicate(const cp_language *language, const char *query, uint32_t query_len,
                                  const cp_unit *source, uint32_t source_len, char *error, uint32_t error_cap);
-// The dirty runs of cp_frame over text whose line first_line starts at first_line_start, with any revision
+// The dirty runs of cp_editor_frame over text whose line first_line starts at first_line_start, with any revision
 // and regions. changed_len -1 means no regions.
 CP_API uint32_t cp_test_dirty_runs(const cp_unit *text, uint32_t length, uint32_t first_line_start,
                                    int32_t first_line, int32_t last_line, int32_t revision, int32_t applied,
