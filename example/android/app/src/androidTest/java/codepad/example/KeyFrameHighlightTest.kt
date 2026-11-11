@@ -60,4 +60,29 @@ class KeyFrameHighlightTest {
       assertTrue("the number kept its color in the frame before the snapshot", redPixels(before, 80) > 0)
     }
   }
+
+  // Enter before a colored token used to keep the whole line's spans on the shortened line and crash in setSpan.
+  @Test
+  fun aNewlineBeforeAColoredTokenMovesItsColorToTheNewLine() {
+    launch().use { s ->
+      val editor = s.editor()
+      val number = TokenStyleColors(0xFFFF0000.toInt(), false, false)
+      onMain {
+        editor.setTheme(ThemeColors.default.withTokens(mapOf("number" to number)))
+        editor.setLanguage("javascript")
+        editor.setInitialText("const f = 1;\n")
+        layout(editor)
+        draw(editor)
+      }
+      Thread.sleep(300)
+      assertTrue("the number painted", redPixels(onMain { draw(editor) }, 80) > 0)
+      val before = onMain {
+        editor.core.replace(6, 6, "\n")
+        draw(editor)
+      }
+      Thread.sleep(300)
+      assertTrue("the number painted after the snapshot", redPixels(onMain { draw(editor) }, 80) > 0)
+      assertTrue("the number kept its color in the frame before the snapshot", redPixels(before, 80) > 0)
+    }
+  }
 }
