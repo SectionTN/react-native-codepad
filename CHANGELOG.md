@@ -5,6 +5,7 @@
 ### Editor
 
 - Both platforms now highlight through one syntax engine written in C++, in place of the separate Kotlin and Swift engines. The shipped languages highlight exactly as before: the tests compare the colors of every sample file against a recording of the old engine. On the Android emulator, the example app used 10-14 MB less memory with the 10,000-line benchmark file open, most of it Java heap.
+- On Android, pressing Enter in the middle of a line no longer crashes the app when a colored token follows the cursor. This happened in every 0.1 release. On both platforms, the text moved to the new line now keeps its colors until the new highlighting arrives, instead of showing plain for a frame.
 
 ### Languages
 

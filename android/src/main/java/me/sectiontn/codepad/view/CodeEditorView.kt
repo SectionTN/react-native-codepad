@@ -97,6 +97,7 @@ class CodeEditorView(context: Context) : View(context) {
   private var appliedRevision = -1
   // The dropped entry's spans moved along a one line change, painted until the snapshot lands.
   private var pendingSpans: IntArray? = null
+  private var pendingTail: IntArray? = null
   private var pendingLine = -1
   private var pendingRevision = -1
   private var highlighter: Highlighter? = null
@@ -1300,6 +1301,8 @@ class CodeEditorView(context: Context) : View(context) {
         }
       } else if (line == pendingLine && pendingRevision == doc.revision) {
         fresh = pendingSpans
+      } else if (line == pendingLine + 1 && pendingRevision == doc.revision) {
+        fresh = pendingTail
       }
       val layout = LineLayout(doc.line(line), fresh, paint, theme, viewport.wrapWidth, core.settings.tabSize, m)
       cache.put(line, Entry(layout, fresh, if (inRun) revision else -1))
@@ -1309,19 +1312,25 @@ class CodeEditorView(context: Context) : View(context) {
     if (revision >= 0) {
       appliedRevision = revision
       pendingSpans = null
+      pendingTail = null
     }
   }
 
-  /** The edited line's previous spans moved along a change that stays inside it, or a newline typed at its end. */
+  /** The edited line's previous spans moved along a change that stays inside it, or split by a typed newline. */
   private fun keepSpans(first: Int, oldCount: Int, newCount: Int, change: Change) {
     pendingSpans = null
+    pendingTail = null
     if (oldCount != 1) return
     val spans = cache[first]?.spans ?: return
     val doc = core.document
     val column = change.start - doc.lineStart(first)
     pendingSpans = when {
       newCount == 1 -> shiftSpans(spans, column, change.removed.length, change.inserted.length)
-      newCount == 2 && change.removed.isEmpty() && change.inserted.startsWith("\n") && doc.lineLength(first) == column -> spans
+      newCount == 2 && change.removed.isEmpty() && change.inserted.startsWith("\n") -> {
+        val added = change.inserted.length - 1
+        pendingTail = shiftSpans(spans, 0, column, added)
+        shiftSpans(spans, column, doc.lineLength(first + 1) - added, 0)
+      }
       else -> return
     }
     pendingLine = first

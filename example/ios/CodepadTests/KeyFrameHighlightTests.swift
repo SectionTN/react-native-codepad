@@ -63,4 +63,23 @@ final class KeyFrameHighlightTests: XCTestCase {
     XCTAssertGreaterThan(redPixels(draw(editor), rows: 22), 0, "the number painted after the snapshot")
     XCTAssertGreaterThan(before, 0, "the number kept its color in the frame before the snapshot")
   }
+
+  // Enter before a colored token used to leave the moved text plain until the snapshot.
+  func testANewlineBeforeAColoredTokenMovesItsColorToTheNewLine() {
+    let editor = launch()
+    let number = TokenStyle(color: ThemeColors.color(255, 0, 0), bold: false, italic: false)
+    editor.setTheme(ThemeColors.default.withTokens(["number": number]))
+    editor.setLanguage("javascript")
+    editor.setInitialText("const f = 1;\n")
+    layout(editor)
+    draw(editor)
+    waitForSnapshot(editor)
+    XCTAssertGreaterThan(redPixels(draw(editor), rows: 60), 0, "the number painted")
+    editor.core.replace(6, 6, "\n")
+    XCTAssertNotEqual(editor.snapshotRevision, editor.core.document.revision, "the parse is still in flight")
+    let before = redPixels(draw(editor), rows: 60)
+    waitForSnapshot(editor)
+    XCTAssertGreaterThan(redPixels(draw(editor), rows: 60), 0, "the number painted after the snapshot")
+    XCTAssertGreaterThan(before, 0, "the number kept its color in the frame before the snapshot")
+  }
 }

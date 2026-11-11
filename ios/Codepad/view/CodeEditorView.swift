@@ -100,6 +100,7 @@ final class CodeEditorView: UIScrollView {
   private var appliedRevision = -1
   // The dropped entry's spans moved along a one line change, painted until the snapshot lands.
   private var pendingSpans: [Int]?
+  private var pendingTail: [Int]?
   private var pendingLine = -1
   private var pendingRevision = -1
   private var highlighter: Highlighter?
@@ -1001,6 +1002,8 @@ final class CodeEditorView: UIScrollView {
         }
       } else if line == pendingLine, pendingRevision == doc.revision {
         fresh = pendingSpans
+      } else if line == pendingLine + 1, pendingRevision == doc.revision {
+        fresh = pendingTail
       }
       let layout = makeLayout(line, spans: fresh, m)
       cache.put(line, Entry(id: takeEntryId(), layout: layout, spans: fresh, revision: inRun ? revision : -1))
@@ -1009,20 +1012,24 @@ final class CodeEditorView: UIScrollView {
     if revision >= 0 {
       appliedRevision = revision
       pendingSpans = nil
+      pendingTail = nil
     }
   }
 
-  /// The edited line's previous spans moved along a change that stays inside it, or a newline typed at its end.
+  /// The edited line's previous spans moved along a change that stays inside it, or split by a typed newline.
   private func keepSpans(_ first: Int, _ oldCount: Int, _ newCount: Int, _ change: Change) {
     pendingSpans = nil
+    pendingTail = nil
     guard oldCount == 1, let spans = cache[first]?.spans else { return }
     let doc = core.document
     let column = change.start - doc.lineStart(first)
     let removed = change.removed.utf16.count
     if newCount == 1 {
       pendingSpans = shiftSpans(spans, start: column, removed: removed, inserted: change.inserted.utf16.count)
-    } else if newCount == 2, removed == 0, change.inserted.hasPrefix("\n"), doc.lineLength(first) == column {
-      pendingSpans = spans
+    } else if newCount == 2, removed == 0, change.inserted.hasPrefix("\n") {
+      let added = change.inserted.utf16.count - 1
+      pendingTail = shiftSpans(spans, start: 0, removed: column, inserted: added)
+      pendingSpans = shiftSpans(spans, start: column, removed: doc.lineLength(first + 1) - added, inserted: 0)
     } else {
       return
     }
