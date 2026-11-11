@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "codepad.h"
+#include "editor.hpp"
 #include "highlighter.hpp"
 #include "spans.hpp"
 
@@ -114,6 +115,91 @@ extern "C" uint32_t cp_frame(const cp_snapshot *snapshot, int32_t first_line, in
     codepad::highlight(*snapshot, lines, lo, hi - lo + 1, ints);
   }
   return deliver(ints, out, cap);
+}
+
+extern "C" uint32_t cp_editor_frame(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
+                                    int32_t last_line, int32_t applied_revision, int32_t use_changed,
+                                    const int32_t *entry_revisions, int32_t *out, uint32_t cap, cp_unit *text_out,
+                                    uint32_t text_cap, uint32_t *text_len) {
+  const codepad::Document &doc = editor->doc;
+  int32_t line_count = doc.line_count();
+  int32_t first = std::clamp(first_line, 0, line_count - 1);
+  int32_t last = std::clamp(last_line, first, line_count - 1);
+  codepad::Selection sel = editor->selection();
+  std::vector<int32_t> ints{doc.revision(),
+                            static_cast<int32_t>(doc.length()),
+                            line_count,
+                            sel.anchor,
+                            sel.head,
+                            doc.line_at(static_cast<uint32_t>(std::max(sel.head, 0))),
+                            editor->decorations.version(),
+                            editor->history()};
+  auto count = static_cast<size_t>(last - first + 1);
+  codepad::Lines lines;
+  std::vector<int32_t> entries(count);
+  for (size_t k = 0; k < count; k++) {
+    int32_t line = first + static_cast<int32_t>(k);
+    lines.start.push_back(static_cast<int32_t>(doc.line_start(line)));
+    lines.length.push_back(static_cast<int32_t>(doc.line_length(line)));
+    bool requested = line >= first_line && line <= last_line;
+    entries[k] = requested ? entry_revisions[line - first_line] : CP_NO_ENTRY;
+  }
+  for (int32_t line = first; line <= last + 1; line++) ints.push_back(static_cast<int32_t>(doc.line_start(line)));
+  bool consistent = snapshot != nullptr && snapshot->text && snapshot->revision == doc.revision();
+  std::vector<int32_t> runs;
+  if (consistent) {
+    const int32_t *changed = use_changed ? snapshot->changed.data() : nullptr;
+    int32_t changed_len = use_changed ? static_cast<int32_t>(snapshot->changed.size()) : -1;
+    runs = codepad::dirty_runs(lines, first, snapshot->revision, applied_revision, changed, changed_len,
+                               entries.data());
+  } else {
+    for (size_t k = 0; k < count; k++) {
+      if (entries[k] != CP_NO_ENTRY) continue;
+      int32_t line = first + static_cast<int32_t>(k);
+      if (!runs.empty() && runs.back() == line - 1) {
+        runs.back() = line;
+      } else {
+        runs.push_back(line);
+        runs.push_back(line);
+      }
+    }
+  }
+  ints.push_back(static_cast<int32_t>(runs.size() / 2));
+  ints.insert(ints.end(), runs.begin(), runs.end());
+  for (size_t r = 0; r + 1 < runs.size(); r += 2) {
+    auto lo = static_cast<size_t>(runs[r] - first);
+    auto hi = static_cast<size_t>(runs[r + 1] - first);
+    if (consistent) {
+      codepad::highlight(*snapshot, lines, lo, hi - lo + 1, ints);
+    } else {
+      ints.insert(ints.end(), hi - lo + 1, 0);
+    }
+  }
+  // Each run line's text: offset and length in text_out.
+  uint32_t units = 0;
+  for (size_t r = 0; r + 1 < runs.size(); r += 2) {
+    for (int32_t line = runs[r]; line <= runs[r + 1]; line++) {
+      auto length = static_cast<uint32_t>(lines.length[static_cast<size_t>(line - first)]);
+      ints.push_back(static_cast<int32_t>(units));
+      ints.push_back(static_cast<int32_t>(length));
+      units += length;
+    }
+  }
+  if (text_len != nullptr) *text_len = units;
+  auto size = static_cast<uint32_t>(ints.size());
+  if (out == nullptr || size > cap || (units > 0 && (text_out == nullptr || units > text_cap))) return size;
+  std::memcpy(out, ints.data(), size * sizeof(int32_t));
+  auto *dest = reinterpret_cast<char16_t *>(text_out);
+  for (size_t r = 0; r + 1 < runs.size(); r += 2) {
+    for (int32_t line = runs[r]; line <= runs[r + 1]; line++) {
+      auto k = static_cast<size_t>(line - first);
+      auto start = static_cast<uint32_t>(lines.start[k]);
+      auto length = static_cast<uint32_t>(lines.length[k]);
+      doc.view()->copy(start, start + length, dest);
+      dest += length;
+    }
+  }
+  return size;
 }
 
 extern "C" uint32_t cp_shift_spans(const int32_t *spans, uint32_t count, int32_t start, int32_t removed,

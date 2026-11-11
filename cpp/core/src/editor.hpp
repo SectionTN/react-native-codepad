@@ -105,3 +105,8 @@ class Editor {
 };
 
 }  // namespace codepad
+
+// The C handle is the editor itself.
+struct cp_editor : codepad::Editor {
+  using Editor::Editor;
+};

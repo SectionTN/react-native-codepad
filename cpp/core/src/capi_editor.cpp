@@ -16,10 +16,6 @@ struct cp_search {
   std::shared_ptr<const codepad::Search> search;
 };
 
-struct cp_editor : codepad::Editor {
-  using Editor::Editor;
-};
-
 namespace {
 
 std::u16string_view units(const cp_unit *text, uint32_t length) {

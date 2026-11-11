@@ -34,9 +34,9 @@ final class CodeEditorView: UIScrollView {
     var spaceWidth: CGFloat { view.rowMetrics().spaceWidth }
     var viewHeight: Int { view.viewport.scrollY - view.viewport.insetTop + view.viewport.height }
     var originX: CGFloat { view.textPadding }
-    func lineAt(_ offset: Int) -> Int { view.core.document.lineAt(offset) }
-    func lineStart(_ line: Int) -> Int { view.core.document.lineStart(line) }
-    func lineLength(_ line: Int) -> Int { view.core.document.lineLength(line) }
+    func lineAt(_ offset: Int) -> Int { view.docLineAt(offset) }
+    func lineStart(_ line: Int) -> Int { view.docLineStart(line) }
+    func lineLength(_ line: Int) -> Int { view.docLineLength(line) }
     func lineTop(_ line: Int) -> Int { view.heights.rowStart(line) * rowHeight }
     func rowCount(_ line: Int) -> Int { view.cache[line]?.layout.rowCount ?? 0 }
     func rowSpans(line: Int, from: Int, to: Int, _ out: (_ row: Int, _ left: CGFloat, _ right: CGFloat) -> Void) {
@@ -105,6 +105,9 @@ final class CodeEditorView: UIScrollView {
   private var pendingRevision = -1
   private var highlighter: Highlighter?
   private(set) var engine: SyntaxEngine?
+  private let frameReader = FrameReader()
+  // Set from the frame call to the end of publish.
+  private var drawFrame: EditorFrame?
   private var heights: HeightMap
   private let viewport: Viewport
   private let cache = LayoutCache<Entry>(capacity: 64)
@@ -561,10 +564,9 @@ final class CodeEditorView: UIScrollView {
   /// The caret rect at an offset in content view coordinates.
   func caretRect(offset: Int) -> CGRect {
     let m = rowMetrics()
-    let doc = core.document
-    let line = doc.lineAt(offset)
+    let line = docLineAt(offset)
     let entry = cache[line] ?? layoutLine(line)
-    let col = offset - doc.lineStart(line)
+    let col = offset - docLineStart(line)
     let top = CGFloat((heights.rowStart(line) + entry.layout.rowOf(col)) * m.rowHeight)
     return CGRect(
       x: textPadding + entry.layout.caretX(col), y: top, width: CodeEditorView.caretWidth,
@@ -573,16 +575,15 @@ final class CodeEditorView: UIScrollView {
 
   /// One rect per visible row of [start, end) in content view coordinates, flagged at the selection ends.
   func selectionRects(start: Int, end: Int) -> [CPSelectionRect] {
-    let doc = core.document
     let m = rowMetrics()
     var rects: [CGRect] = []
     Decorations.forEachRect(geometry, start: start, end: end, firstLine: viewport.firstVisibleLine()) { rects.append($0) }
-    let startLine = doc.lineAt(start)
-    let endLine = doc.lineAt(end)
+    let startLine = docLineAt(start)
+    let endLine = docLineAt(end)
     // The last rect carries the end only when the end's row was reached, not cut off by the view bottom.
     var endTop: CGFloat = -1
     if let entry = cache[endLine] {
-      endTop = CGFloat((heights.rowStart(endLine) + entry.layout.rowOf(end - doc.lineStart(endLine))) * m.rowHeight)
+      endTop = CGFloat((heights.rowStart(endLine) + entry.layout.rowOf(end - docLineStart(endLine))) * m.rowHeight)
     }
     return rects.enumerated().map { i, rect in
       CPSelectionRect(
@@ -656,25 +657,30 @@ final class CodeEditorView: UIScrollView {
     let scrolled = scrollDirty
     if w == 0 || h == 0 { return }
     syncGaps()
-    let doc = core.document
     let m = rowMetrics()
     if revealPending {
       revealPending = false
       revealSelection()
     }
     let first = viewport.firstVisibleLine()
-    let lastBound = min(doc.lineCount - 1, first + h / m.rowHeight + 1)
+    let lastBound = min(heights.lineCount - 1, first + h / m.rowHeight + 1)
     let scrollBefore = viewport.scrollY
-    prepare(first, lastBound, m)
+    // One core call for the whole draw. Until publish returns, every read comes from it.
+    let frame = readFrame(first, lastBound)
+    drawFrame = frame
+    core.document.drawing = true
+    prepare(frame, m)
     if viewport.scrollY != scrollBefore { pushScroll() } else { updateContentSize() }
-    let caretLine = doc.lineAt(core.selection.head)
+    let caretLine = frame.caretLine
     let lastLine = placeLayers(first, lastBound, m)
     placeGutter(first, lastLine, caretLine)
-    placeDecorations(first, lastLine, caretLine, m)
+    placeDecorations(frame, first, lastLine, caretLine, m)
     placeMarkedUnderline(first)
     placeHandles()
-    placePlaceholder(m)
+    placePlaceholder(frame, m)
     publish(first, lastLine, caretLine, m)
+    core.document.drawing = false
+    drawFrame = nil
     if scrollDirty {
       scrollDirty = false
       textInput.menu.hide()
@@ -884,22 +890,53 @@ final class CodeEditorView: UIScrollView {
     return m
   }
 
+  /// The draw's frame: the lines in the window and whether each needs a layout, its spans and text.
+  private func readFrame(_ first: Int, _ last: Int) -> EditorFrame {
+    let usable = highlighter != nil ? snapshot : nil
+    var entries: [Int32] = []
+    entries.reserveCapacity(last - first + 1)
+    for line in first...last { entries.append(cache[line].map { Int32($0.revision) } ?? Int32(CP_NO_ENTRY)) }
+    let incremental = usable.map { $0.basedOn >= 0 && $0.basedOn == appliedRevision } ?? false
+    return frameReader.read(
+      core: core, snapshot: usable, first: first, last: last, applied: appliedRevision, useChanged: incremental,
+      entries: entries)
+  }
+
+  // Line reads for the geometry and UIKit: from the frame while a draw runs, else one core call. Neither goes
+  // through the document's checked members.
+  fileprivate func docLineAt(_ offset: Int) -> Int {
+    if let frame = drawFrame, let line = frame.lineAt(offset) { return line }
+    return Int(cp_doc_line_at(core.document.handle, Document.unsigned(offset)))
+  }
+
+  fileprivate func docLineStart(_ line: Int) -> Int {
+    if let frame = drawFrame, let start = frame.lineStart(line) { return start }
+    return Int(cp_doc_line_start(core.document.handle, Int32(clamping: line)))
+  }
+
+  fileprivate func docLineLength(_ line: Int) -> Int {
+    if let frame = drawFrame, let length = frame.lineLength(line) { return length }
+    let handle = core.document.handle
+    return Int(cp_doc_line_end(handle, Int32(clamping: line))) - Int(cp_doc_line_start(handle, Int32(clamping: line)))
+  }
+
   private func takeEntryId() -> Int {
     nextEntryId += 1
     return nextEntryId
   }
 
-  private func makeLayout(_ line: Int, spans: [Int]?, _ m: RowMetrics) -> LineLayout {
+  private func makeLayout(_ text: [UInt16], spans: [Int]?, _ m: RowMetrics) -> LineLayout {
     LineLayout(
-      text: core.document.line(line), spans: spans ?? [], font: font, styles: theme, foreground: theme.foreground, metrics: m,
+      text: text, spans: spans ?? [], font: font, styles: theme, foreground: theme.foreground, metrics: m,
       wrapWidth: viewport.wrapWidth)
   }
 
   /// Lays out one line plain, for hit tests and reveals on lines outside the drawn range.
   @discardableResult
   private func layoutLine(_ line: Int) -> Entry {
-    let spans = keptSpans(line)
-    let entry = Entry(id: takeEntryId(), layout: makeLayout(line, spans: spans, rowMetrics()), spans: spans, revision: -1)
+    let spans = keptSpans(line, revision: drawFrame?.revision)
+    let text = drawFrame?.text(line) ?? core.document.lineOutsideFrame(line)
+    let entry = Entry(id: takeEntryId(), layout: makeLayout(text, spans: spans, rowMetrics()), spans: spans, revision: -1)
     cache.put(line, entry)
     let scrollBefore = viewport.scrollY
     measured(line, entry.layout)
@@ -966,45 +1003,38 @@ final class CodeEditorView: UIScrollView {
 
   /// Builds missing layouts for [first, last] with one highlight query per run of dirty lines: when the snapshot follows
   /// the one last applied, only the lines its regions meet; otherwise every line not at its revision.
-  private func prepare(_ first: Int, _ last: Int, _ m: RowMetrics) {
-    let doc = core.document
-    let consistent = snapshot.flatMap { $0.revision == doc.revision ? $0 : nil }
-    let revision = consistent != nil && highlighter != nil ? doc.revision : -1
-    var runs: [Int] = []
-    var spans: [[Int]] = []
-    if let consistent, let highlighter {
-      let incremental = consistent.basedOn >= 0 && consistent.basedOn == appliedRevision
-      let entries = (first...last).map { cache[$0].map { Int32($0.revision) } ?? Int32(CP_NO_ENTRY) }
-      (runs, spans) = highlighter.frame(
-        snapshot: consistent, doc: doc, first: first, last: last, applied: appliedRevision, useChanged: incremental,
-        entries: entries)
-    }
+  private func prepare(_ frame: EditorFrame, _ m: RowMetrics) {
+    // The core paints from the snapshot only when it is at the frame's revision. Otherwise its runs are the lines
+    // with no layout, and those take the spans keepSpans kept.
+    let consistent = highlighter != nil && snapshot?.revision == frame.revision
+    let revision = consistent ? frame.revision : -1
+    let runs = frame.runs
     var r = 0
-    // The spans of the run lines arrive in line order, one entry per line.
+    // The spans and text of the run lines arrive in line order, one entry per line.
     var next = 0
-    for line in first...last {
+    for line in frame.first...frame.last {
       while r + 1 < runs.count && runs[r + 1] < line { r += 2 }
       let inRun = r + 1 < runs.count && line >= runs[r]
       let entry = cache[line]
-      if !inRun, let entry {
-        // A clean line keeps its layout and takes the revision without a query.
-        if revision >= 0 { entry.revision = revision }
+      if !inRun {
+        // A clean line keeps its layout and takes the revision without a query. Every line without one is in a run.
+        if let entry, revision >= 0 { entry.revision = revision }
         continue
       }
+      let lineSpans = next < frame.spans.count ? frame.spans[next] : []
+      next += 1
       var fresh: [Int]? = nil
-      if inRun {
-        let lineSpans = next < spans.count ? spans[next] : []
-        next += 1
+      if consistent {
         if !lineSpans.isEmpty { fresh = lineSpans }
         if let entry, entry.spans == fresh {
           entry.revision = revision
           continue
         }
       } else {
-        fresh = keptSpans(line)
+        fresh = keptSpans(line, revision: frame.revision)
       }
-      let layout = makeLayout(line, spans: fresh, m)
-      cache.put(line, Entry(id: takeEntryId(), layout: layout, spans: fresh, revision: inRun ? revision : -1))
+      let layout = makeLayout(frame.text(line) ?? [], spans: fresh, m)
+      cache.put(line, Entry(id: takeEntryId(), layout: layout, spans: fresh, revision: consistent ? revision : -1))
       measured(line, layout)
     }
     if revision >= 0 {
@@ -1015,8 +1045,8 @@ final class CodeEditorView: UIScrollView {
   }
 
   /// The spans keepSpans kept for a line of the current revision, or nil.
-  private func keptSpans(_ line: Int) -> [Int]? {
-    guard pendingRevision == core.document.revision else { return nil }
+  private func keptSpans(_ line: Int, revision: Int? = nil) -> [Int]? {
+    guard pendingRevision == (revision ?? core.document.revision) else { return nil }
     if line == pendingLine { return pendingSpans }
     if line == pendingLine + 1 { return pendingTail }
     return nil
@@ -1121,14 +1151,13 @@ final class CodeEditorView: UIScrollView {
   }
 
   /// Fills under the text: the active line, the search matches with the selected one apart, and the bracket pair.
-  private func placeDecorations(_ first: Int, _ lastLine: Int, _ caretLine: Int, _ m: RowMetrics) {
+  private func placeDecorations(_ frame: EditorFrame, _ first: Int, _ lastLine: Int, _ caretLine: Int, _ m: RowMetrics) {
     let d = textInput.decorations
+    let sel = Selection(anchor: frame.anchor, head: frame.head)
     if let search, search.active {
-      let doc = core.document
-      let windowStart = doc.lineStart(first)
-      let windowEnd = doc.lineEnd(lastLine)
+      let windowStart = docLineStart(first)
+      let windowEnd = docLineStart(lastLine) + docLineLength(lastLine)
       let matches = search.matchesForPaint()
-      let sel = core.selection
       let path = CGMutablePath()
       let active = CGMutablePath()
       var i = SearchSession.firstEndingAfter(matches, windowStart) * 2
@@ -1141,7 +1170,7 @@ final class CodeEditorView: UIScrollView {
     } else {
       d.setMatches(nil, active: nil)
     }
-    if highlightActiveLine && core.selection.isEmpty {
+    if highlightActiveLine && sel.isEmpty {
       d.setActiveLine(
         CGRect(
           x: 0, y: CGFloat(heights.rowStart(caretLine) * m.rowHeight), width: CGFloat(viewport.contentWidth),
@@ -1149,8 +1178,8 @@ final class CodeEditorView: UIScrollView {
     } else {
       d.setActiveLine(nil)
     }
-    let consistent = snapshot.flatMap { $0.revision == core.document.revision ? $0 : nil }
-    if let pair = brackets.pair(snapshot: consistent) {
+    let consistent = snapshot.flatMap { $0.revision == frame.revision ? $0 : nil }
+    if let pair = brackets.pair(snapshot: consistent, revision: frame.revision, head: frame.head) {
       let path = CGMutablePath()
       for offset in [pair.0, pair.1] {
         Decorations.addRects(path, geometry, start: offset, end: offset + 1, firstLine: first)
@@ -1239,8 +1268,8 @@ final class CodeEditorView: UIScrollView {
   }
 
   /// One layer in gutterForeground on the first row while the document is empty.
-  private func placePlaceholder(_ m: RowMetrics) {
-    guard let placeholder, core.document.length == 0 else {
+  private func placePlaceholder(_ frame: EditorFrame, _ m: RowMetrics) {
+    guard let placeholder, frame.length == 0 else {
       placeholderLayer?.isHidden = true
       return
     }
@@ -1272,7 +1301,7 @@ final class CodeEditorView: UIScrollView {
   /// The caret rect in visible area points, nil while the line has no layout.
   private func caretRect(_ m: RowMetrics, line: Int) -> CGRect? {
     guard let entry = cache[line] else { return nil }
-    let col = core.selection.head - core.document.lineStart(line)
+    let col = core.selection.head - docLineStart(line)
     let x = viewport.viewX(entry.layout.caretX(col))
     let top = CGFloat(viewport.lineTop(line) + entry.layout.rowOf(col) * m.rowHeight)
     return CGRect(x: x, y: top, width: CodeEditorView.caretWidth, height: CGFloat(m.rowHeight))

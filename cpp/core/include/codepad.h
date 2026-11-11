@@ -263,6 +263,18 @@ enum { CP_NO_ENTRY = -2147483647 - 1 };
 CP_API uint32_t cp_frame(const cp_snapshot *snapshot, int32_t first_line, int32_t last_line,
                          uint32_t first_line_start, int32_t applied_revision, int32_t use_changed,
                          const int32_t *entry_revisions, int32_t *out, uint32_t cap);
+// Main thread, one call per draw over lines [first_line, last_line] clamped to the document. entry_revisions holds
+// one entry per requested line, as for cp_frame. out receives, in order:
+//   a header: revision, length, line_count, anchor, head, caret_line, decorations_version, history
+//   the line starts of the clamped first..last + 1 (line_count gives length + 1)
+//   the runs and spans laid out as cp_frame's. snapshot NULL or at another revision than the document: the runs
+//   are the lines with no entry and every span count is 0
+//   for each line of each run, its text's offset and length in text_out
+// Returns the ints needed and sets *text_len to the units needed. Nothing is written unless both fit.
+CP_API uint32_t cp_editor_frame(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
+                                int32_t last_line, int32_t applied_revision, int32_t use_changed,
+                                const int32_t *entry_revisions, int32_t *out, uint32_t cap, cp_unit *text_out,
+                                uint32_t text_cap, uint32_t *text_len);
 // A line's triples after an edit inside it replaced removed units at start with inserted units.
 CP_API uint32_t cp_shift_spans(const int32_t *spans, uint32_t count, int32_t start, int32_t removed,
                                int32_t inserted, int32_t *out, uint32_t cap);

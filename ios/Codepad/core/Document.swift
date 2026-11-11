@@ -22,12 +22,38 @@ final class Document {
     cp_editor_free(handle)
   }
 
-  var length: Int { Int(cp_doc_length(handle)) }
-  var revision: Int { Int(cp_doc_revision(handle)) }
-  var lineCount: Int { Int(cp_doc_line_count(handle)) }
+  /// Main thread only: set while a draw reads its frame, when every read must come from the frame instead.
+  var drawing = false
+
+  // The JS thread reads under the shared lock at any time, so only main thread reads are checked.
+  @inline(__always) private func checkNotDrawing() {
+    assert(!Thread.isMainThread || !drawing, "the document was read during a draw: take it from the frame")
+  }
+
+  var length: Int {
+    checkNotDrawing()
+    return Int(cp_doc_length(handle))
+  }
+
+  var revision: Int {
+    checkNotDrawing()
+    return Int(cp_doc_revision(handle))
+  }
+
+  var lineCount: Int {
+    checkNotDrawing()
+    return Int(cp_doc_line_count(handle))
+  }
 
   func line(_ index: Int) -> [UInt16] {
     index >= 0 && index < lineCount ? units(lineStart(index), lineEnd(index)) : []
+  }
+
+  /// A line a draw needs outside its frame's window, such as an off-screen selection end. Not checked.
+  func lineOutsideFrame(_ index: Int) -> [UInt16] {
+    guard index >= 0 && index < Int(cp_doc_line_count(handle)) else { return [] }
+    let line = Int32(clamping: index)
+    return units(Int(cp_doc_line_start(handle, line)), Int(cp_doc_line_end(handle, line)))
   }
 
   func lineString(_ index: Int) -> String {
@@ -40,29 +66,35 @@ final class Document {
 
   /// Start offset of line `index`. `index == lineCount` yields `length + 1` so the prefix sums stay uniform.
   func lineStart(_ index: Int) -> Int {
-    Int(cp_doc_line_start(handle, Int32(clamping: index)))
+    checkNotDrawing()
+    return Int(cp_doc_line_start(handle, Int32(clamping: index)))
   }
 
   func lineEnd(_ index: Int) -> Int {
-    Int(cp_doc_line_end(handle, Int32(clamping: index)))
+    checkNotDrawing()
+    return Int(cp_doc_line_end(handle, Int32(clamping: index)))
   }
 
   func lineAt(_ offset: Int) -> Int {
-    Int(cp_doc_line_at(handle, Document.unsigned(offset)))
+    checkNotDrawing()
+    return Int(cp_doc_line_at(handle, Document.unsigned(offset)))
   }
 
   func offsetToPosition(_ offset: Int) -> Position {
+    checkNotDrawing()
     let p = cp_doc_position(handle, Document.unsigned(offset))
     return Position(line: Int(p.line), column: Int(p.column))
   }
 
   func positionToOffset(line: Int, column: Int) -> Int {
-    Int(cp_doc_offset(handle, Int32(clamping: line), Int32(clamping: column)))
+    checkNotDrawing()
+    return Int(cp_doc_offset(handle, Int32(clamping: line), Int32(clamping: column)))
   }
 
   /// The unit at `offset`, clamped into the document. A line end reads as the newline unit.
   func unit(at offset: Int) -> UInt16 {
-    cp_doc_unit_at(handle, Document.unsigned(offset))
+    checkNotDrawing()
+    return cp_doc_unit_at(handle, Document.unsigned(offset))
   }
 
   func text() -> String {
@@ -70,7 +102,8 @@ final class Document {
   }
 
   func text(_ start: Int, _ end: Int) -> String {
-    String(decoding: units(start, end), as: UTF16.self)
+    checkNotDrawing()
+    return String(decoding: units(start, end), as: UTF16.self)
   }
 
   private func units(_ start: Int, _ end: Int) -> [UInt16] {

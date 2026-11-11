@@ -18,9 +18,10 @@ final class BracketHighlight {
   }
 
   /// A snapshot at the document revision skips brackets in strings and comments. Without one every bracket counts.
-  func pair(snapshot: Snapshot?) -> (Int, Int)? {
-    let revision = core.document.revision
-    let head = core.selection.head
+  /// A draw passes its frame's revision and caret, so the document is not read again.
+  func pair(snapshot: Snapshot?, revision: Int? = nil, head: Int? = nil) -> (Int, Int)? {
+    let revision = revision ?? core.document.revision
+    let head = head ?? core.selection.head
     let snapshotRevision = snapshot?.revision ?? -1
     if revision == keyRevision && head == keyHead && snapshotRevision == keySnapshot && enabled == keyEnabled { return cached }
     keyRevision = revision
