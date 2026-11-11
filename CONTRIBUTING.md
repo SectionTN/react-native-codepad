@@ -17,14 +17,16 @@ yarn example ios --device <udid>           # the example on an iOS simulator
 yarn test:device                           # the instrumented tests on the emulator
 yarn test:ios                              # the XCTest suites on the simulator
 yarn gen:languages                         # regenerate the language packages
+yarn gen:unicode                           # regenerate the core's Unicode tables
 yarn docs                                  # the docs site with live reload
 ```
 
-The syntax engine is C++ under `cpp/core`, shared by both platforms, with PCRE2 for regular expressions. Android builds it with CMake into `libcodepad.so`, the pod builds it at -O2 in every configuration, and the Swift package compiles it for `yarn test:swift`. `yarn host:treesitter` compiles the core, tree-sitter and every grammar into one host library for the JVM tests, so run it again after a change under `cpp/`. The address and thread sanitizers check the core on macOS, and CI runs both:
+The editor engine is C++ under `cpp/core`, shared by both platforms, with PCRE2 for regular expressions. Android builds it with CMake into `libcodepad.so`, the pod builds it at -O2 in every configuration, and the Swift package compiles it for `yarn test:swift`. `yarn host:treesitter` compiles the core, tree-sitter and every grammar into one host library for the JVM tests, so run it again after a change under `cpp/`. The address and thread sanitizers check the core on macOS, and CI runs all three of these. `CODEPAD_TINY_CHUNKS=1` cuts the document into chunks of at most four UTF-16 units, which runs the whole suite across chunk boundaries:
 
 ```sh
-swift test --sanitize=address --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
-TSAN_OPTIONS=suppressions=$PWD/tests/swift/tsan-suppressions.txt swift test --sanitize=thread --filter 'Core|SyntaxEngine|InjectionReuse|Highlight'
+swift test --sanitize=address
+CODEPAD_TINY_CHUNKS=1 swift test --sanitize=address
+TSAN_OPTIONS=suppressions=$PWD/tests/swift/tsan-suppressions.txt swift test --sanitize=thread
 ```
 
 The [contributing page](https://reactnativecodepad.pages.dev/internals/contributing/) of the docs site has the full loop: the benches, the keyboard recorder, the host build, iOS, and what every command prints.

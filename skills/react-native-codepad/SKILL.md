@@ -11,7 +11,7 @@ metadata:
 # react-native-codepad
 
 - **IS:** installing react-native-codepad and building screens around its `CodeEditor`: languages, themes, the ref API, events, search, keyboard handling and layout.
-- **IS NOT:** a WebView editor (Monaco, CodeMirror) or a `TextInput` wrapper. The editor is a native view with its own engine in Kotlin and Swift, so `TextInput` habits (controlled `value`, style padding, `onChangeText` for everything) do not carry over.
+- **IS NOT:** a WebView editor (Monaco, CodeMirror) or a `TextInput` wrapper. The editor is a native view over its own C++ core, so `TextInput` habits (controlled `value`, style padding, `onChangeText` for everything) do not carry over.
 
 The installed package ships its API contract at `node_modules/react-native-codepad/src/types.ts`. Read it before using a prop or method this file does not name; it is the source of truth over anything here. The full docs as one text file: https://reactnativecodepad.pages.dev/llms-full.txt
 

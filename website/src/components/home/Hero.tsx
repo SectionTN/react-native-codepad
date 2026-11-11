@@ -86,8 +86,8 @@ export function Hero() {
             </span>
           </h1>
           <p data-hero className={styles.lead}>
-            Its own engine in Kotlin and Swift, tree-sitter highlighting and a Nitro binding. Not a
-            WebView in sight.
+            One C++ core shared by Android and iOS, drawn by a native view in Kotlin and Swift, with
+            tree-sitter highlighting and a Nitro binding. Not a WebView in sight.
           </p>
           <PmTabs hero />
           <InstallBox />
@@ -103,7 +103,7 @@ export function Hero() {
           <dl data-hero className={styles.facts}>
             <div>
               <dt className={ui.label}>Engine</dt>
-              <dd>Kotlin and Swift</dd>
+              <dd>One C++ core</dd>
             </div>
             <div>
               <dt className={ui.label}>Highlighting</dt>

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Editor
+
+- The document, the selection, undo, auto-closing, indentation, cursor movement, bracket matching, decorations and search now run in the same C++ core as the highlighting, shared by Android and iOS. Each platform keeps its own view, text layout and keyboard handling.
+- Search regular expressions now run on PCRE2 on both platforms, instead of Java regular expressions on Android and `NSRegularExpression` on iOS. Most patterns match as before. When a pattern does not compile, `setSearch()` still rejects, and the message now comes from PCRE2 and ends with the position of the error in the pattern. A pattern that backtracks too much stops at PCRE2's match limit and keeps the matches found before that point.
+- Cursor movement and Backspace now find character boundaries with the Unicode 16.0 rules on every Android and iOS version. Before, they followed the Unicode version of the device, so an older device could split an emoji built from several code points.
+- On Android, word movement and auto-closing now treat U+0085 (next line) as whitespace, and no longer treat U+001C to U+001F as whitespace. iOS already did both.
+
 ## 0.1.9 (2026-11-11)
 
 ### Languages

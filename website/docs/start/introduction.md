@@ -4,7 +4,7 @@ description: What CodePad is, what it is built on and what it ships with.
 sidebar_position: 1
 ---
 
-React Native CodePad is a code editor for React Native with its own engine on each platform: Kotlin on Android, Swift on iOS. Highlighting is done with the help of tree-sitter, and each language comes as its own npm package. The view is bound through Nitro, so everything works in a blink of an eye.
+React Native CodePad is a code editor for React Native with its own engine: one C++ core shared by Android and iOS, drawn by a native view in Kotlin on Android and in Swift on iOS. Highlighting is done with the help of tree-sitter, and each language comes as its own npm package. The view is bound through Nitro, so everything works in a blink of an eye.
 
 No WebView, no `TextInput`. CodePad draws its own caret, selection handles and edit menu, natively.
 

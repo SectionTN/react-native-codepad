@@ -13,21 +13,21 @@ const SHOTS: Shot[] = [
   {
     platform: 'ios',
     name: 'iOS',
-    caption: 'iOS · Swift engine · release build',
+    caption: 'iOS · Swift view · release build',
     ratio: '760 / 1652',
   },
   {
     platform: 'android',
     name: 'Android',
-    caption: 'Android · Kotlin engine · release build',
+    caption: 'Android · Kotlin view · release build',
     ratio: '760 / 1706',
   },
 ];
 
 const FACTS = [
-  ['android', 'A Kotlin engine, from Android 7.0 (API 24).'],
-  ['ios', 'A Swift engine, from iOS 17.'],
-  ['both', 'One Nitro binding, one JavaScript API, the same test vectors.'],
+  ['android', 'A native view in Kotlin, from Android 7.0 (API 24).'],
+  ['ios', 'A native view in Swift, from iOS 17.'],
+  ['both', 'One C++ core, one Nitro binding and one JavaScript API.'],
 ];
 const REQUIRES = [
   'React Native 0.81+',
@@ -90,8 +90,8 @@ export function PlatformPhones() {
       <SectionHeader
         n="05"
         label="platforms"
-        title="Kotlin on Android. Swift on iOS."
-        lead="Two engines, each written for its platform and checked against the same test vectors. These are release builds of the example app."
+        title="One core, two native views."
+        lead="The same C++ core runs on both platforms, and each platform draws it with its own view and text layout. These are release builds of the example app."
         gap={24}
       />
       {/* biome-ignore lint/a11y/noStaticElementInteractions: the tilt follows the pointer and carries no action */}

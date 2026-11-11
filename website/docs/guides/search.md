@@ -19,7 +19,7 @@ const { count } = await editor.current.setSearch({
 
 `setSearch` resolves with the match count once the matches are painted.
 
-- `regex` uses PCRE2 on both platforms, built into the shared core, so Unicode `\w` and `\b`, lookahead, bounded lookbehind and named groups behave the same. A pattern that does not compile rejects the promise and clears the search, so your bar can show the error while the user keeps typing.
+- `regex` uses PCRE2 on both platforms, built into the shared core, so Unicode `\w` and `\b`, lookahead, bounded lookbehind and named groups behave the same. A pattern that does not compile rejects the promise and clears the search, so your bar can show the error while the user keeps typing. When a pattern backtracks too much, such as `(a+)+$` over a long run of `a`, the search stops at PCRE2's match limit and keeps the matches it found before that point.
 - `caseSensitive` is off by default.
 - `wholeWord` wants identifier boundaries (`[A-Za-z0-9_]`) on both ends.
 

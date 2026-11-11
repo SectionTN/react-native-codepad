@@ -6,7 +6,7 @@
 [![npm](https://img.shields.io/npm/v/react-native-codepad?style=flat-square)](https://www.npmjs.com/package/react-native-codepad)
 [![license](https://img.shields.io/npm/l/react-native-codepad?style=flat-square&label=license)](https://github.com/SectionTN/react-native-codepad/blob/main/LICENSE)
 
-A native code editor for React Native. It runs its own engine in Kotlin on Android and Swift on iOS, with tree-sitter highlighting and no WebView.
+A native code editor for React Native. It runs one C++ core on both platforms, drawn by a native view in Kotlin on Android and Swift on iOS, with tree-sitter highlighting and no WebView.
 
 <picture>
   <source type="image/webp" srcset="https://raw.githubusercontent.com/SectionTN/react-native-codepad/main/.github/assets/codepad-showcase.webp" />

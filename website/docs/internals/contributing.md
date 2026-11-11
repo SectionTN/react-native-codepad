@@ -86,7 +86,7 @@ yarn example ios --device <udid>
 
 ## Conventions
 
-- The layers are the ones on the [architecture](/internals/architecture/) page: `core` and `input` are pure Kotlin and pure Swift, and Nitro code lives only in `com.margelo.nitro.codepad`, `ios/Codepad/nitro` and `src/specs`.
+- The layers are the ones on the [architecture](/internals/architecture/) page: `core` holds thin facades over the C++ core, `input` is pure Kotlin and pure Swift, and Nitro code lives only in `com.margelo.nitro.codepad`, `ios/Codepad/nitro` and `src/specs`.
 - UTF-16 offsets, half open ranges and 0 based lines and columns, everywhere.
 - Tests first: a vector or a JUnit and XCTest case for engine behavior, a jest case for the wrapper, and a keyboard recording for a keyboard bug.
 - Biome formatting, conventional commits with an imperative subject under 72 characters, and comments of one to three lines for platform quirks and invariants only.
