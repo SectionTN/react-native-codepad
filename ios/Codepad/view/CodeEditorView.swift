@@ -764,13 +764,11 @@ final class CodeEditorView: UIScrollView {
     textInput.cursorView.resetBlinkAnimation()
     textInput.menu.hide()
     selectionViewsDirty = true
-    // An edit that shortens the content under the offset clamped the core scroll. The scroll view and the scroll
-    // listener take it here, since the next draw's clamp would see no move.
-    if contentOffset.y > CGFloat(viewport.maxScrollY) || contentOffset.x > CGFloat(viewport.maxScrollX) {
-      pushScroll()
+    updateContentSize()
+    // A move the edit made, through the core's clamp or a relayout, reaches the scroll listener like any other.
+    // UIKit brings contentOffset back into the shorter content itself.
+    if CGFloat(viewport.scrollX) != latestFrame.scrollX || CGFloat(viewport.scrollY) != latestFrame.scrollY {
       onScrolled()
-    } else {
-      updateContentSize()
     }
     setNeedsLayout()
     onChange?(change, origin)
