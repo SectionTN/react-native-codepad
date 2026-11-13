@@ -752,7 +752,12 @@ final class CodeEditorView: UIScrollView {
     cache.shift(first: first, oldCount: oldCount, newCount: newCount)
     search?.onChange(change)
     // The core already moved the rows and gaps with the edit and clamped the scroll.
-    if updateGutter() { relayout() }
+    if updateGutter() {
+      // A relayout that moved the offset is a scroll the listener hears of, like the clamp below.
+      let before = contentOffset
+      relayout()
+      if contentOffset != before { onScrolled() }
+    }
     if origin != .api { revealPending = true }
     // A change the keyboard did not make: it ends a composition it touched and the keyboard hears of it.
     let session = textInput.session
@@ -764,11 +769,13 @@ final class CodeEditorView: UIScrollView {
     textInput.cursorView.resetBlinkAnimation()
     textInput.menu.hide()
     selectionViewsDirty = true
-    updateContentSize()
-    // A move the edit made, through the core's clamp or a relayout, reaches the scroll listener like any other.
-    // UIKit brings contentOffset back into the shorter content itself.
-    if CGFloat(viewport.scrollX) != latestFrame.scrollX || CGFloat(viewport.scrollY) != latestFrame.scrollY {
+    // An edit that shortens the content under the offset clamped the core scroll. The scroll view and the scroll
+    // listener take it here, since the next draw's clamp would see no move.
+    if contentOffset.y > CGFloat(viewport.maxScrollY) || contentOffset.x > CGFloat(viewport.maxScrollX) {
+      pushScroll()
       onScrolled()
+    } else {
+      updateContentSize()
     }
     setNeedsLayout()
     onChange?(change, origin)
