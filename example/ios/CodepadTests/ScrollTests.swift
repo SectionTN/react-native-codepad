@@ -35,10 +35,13 @@ final class ScrollTests: XCTestCase {
       editor.contentOffset.y = CGFloat(top) * rowHeight
       draw(editor)
     }
+    // Line 0 holds the caret, which every draw lays out, so it stays the newest entry.
     var oldest = Int.max
-    editor.cache.forEachEntry { line, _ in oldest = min(oldest, line) }
+    editor.cache.forEachEntry { line, _ in if line > 0 { oldest = min(oldest, line) } }
     editor.contentOffset.y = CGFloat(oldest - span / 2) * rowHeight
-    draw(editor)
+    // One layout pass: a render can run a second one, which lays the evicted lines out and hides the miss.
+    editor.setNeedsLayout()
+    editor.layoutIfNeeded()
     var cached = Set<Int>()
     editor.cache.forEachEntry { line, _ in cached.insert(line) }
     let frame = editor.viewport.firstVisibleLine()...editor.viewport.lastVisibleLine()
@@ -71,14 +74,18 @@ final class ScrollTests: XCTestCase {
     editor.setInitialText((0..<200).map { "line \($0)" }.joined(separator: "\n"))
     layout(editor)
     draw(editor)
-    editor.contentOffset.y = CGFloat(editor.viewport.maxScrollY)
-    draw(editor)
     var heard: CGFloat?
     editor.onScroll = { heard = $0.scrollY }
-    _ = editor.core.replace(editor.core.document.lineStart(20), editor.core.document.length, "")
-    draw(editor)
-    XCTAssertEqual(editor.contentOffset.y, CGFloat(editor.viewport.scrollY))
-    XCTAssertLessThanOrEqual(editor.viewport.scrollY, editor.viewport.maxScrollY)
-    XCTAssertEqual(heard, CGFloat(editor.viewport.scrollY))
+    // Keeping 110 lines keeps the gutter, keeping 20 shrinks it and relays out. Both clamp the scroll.
+    for keep in [110, 20] {
+      editor.contentOffset.y = CGFloat(editor.viewport.maxScrollY)
+      draw(editor)
+      heard = nil
+      _ = editor.core.replace(editor.core.document.lineStart(keep), editor.core.document.length, "")
+      draw(editor)
+      XCTAssertEqual(editor.contentOffset.y, CGFloat(editor.viewport.scrollY), "keeping \(keep) lines")
+      XCTAssertLessThanOrEqual(editor.viewport.scrollY, editor.viewport.maxScrollY)
+      XCTAssertEqual(heard, CGFloat(editor.viewport.scrollY), "keeping \(keep) lines")
+    }
   }
 }
