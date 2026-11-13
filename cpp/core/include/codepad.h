@@ -211,7 +211,8 @@ CP_API void cp_layout_free(cp_layout *layout);
 // Resets the rows to the editor's lines and takes its gaps. Every later edit and gap change of the editor updates
 // the rows before the change callback runs. NULL detaches.
 CP_API void cp_editor_attach_layout(cp_editor *editor, cp_layout *layout);
-// Returns 1 when the text area width changed, which is when line layouts must be rebuilt.
+// Returns 1 when the text area width changed, which is when line layouts must be rebuilt. The scroll is left as it
+// is: follow with cp_layout_scroll_to or cp_layout_restore, which clamp it and say whether it moved.
 CP_API int32_t cp_layout_configure(cp_layout *layout, const cp_layout_config *config);
 CP_API void cp_layout_geometry(const cp_layout *layout, cp_geometry *out);
 // Clamps and applies. Returns 1 when x moved, 2 when y moved, 3 when both did. out may be NULL.
@@ -226,6 +227,7 @@ CP_API int32_t cp_layout_reveal(cp_layout *layout, int32_t left, int32_t top, in
 CP_API uint32_t cp_layout_measure(cp_layout *layout, const int32_t *pairs, uint32_t pair_count, int32_t widest,
                                   int32_t first_line, int32_t last_line, cp_geometry *out, int32_t *tops_rows,
                                   uint32_t cap);
+// Leaves the scroll as it is, like cp_layout_configure.
 CP_API void cp_layout_set_widest(cp_layout *layout, int32_t widest);
 // Rows of a line outside the layout are 0.
 CP_API int32_t cp_layout_rows(const cp_layout *layout, int32_t line);
@@ -242,7 +244,7 @@ CP_API int32_t cp_layout_row_at(const cp_layout *layout, int32_t y);
 CP_API void cp_layout_anchor(const cp_layout *layout, int32_t *line, int32_t *offset);
 // Returns 1 when the scroll moved.
 CP_API int32_t cp_layout_restore(cp_layout *layout, int32_t line, int32_t offset);
-// Every line back to one row. Gaps stay.
+// Every line back to one row. Gaps stay. The scroll is left as it is, for cp_layout_restore.
 CP_API void cp_layout_reset_rows(cp_layout *layout);
 
 // Search, a PCRE2 regex or plain text, in Unicode mode with any newline ending a line. Empty matches are skipped.
