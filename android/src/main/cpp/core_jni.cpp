@@ -565,9 +565,10 @@ FN(editorFrame)(JNIEnv *e, jclass, jlong editor, jlong snapshot, jint first, jin
   uint32_t units = 0;
   auto *o = static_cast<jint *>(e->GetPrimitiveArrayCritical(out, nullptr));
   auto *t = static_cast<jchar *>(e->GetPrimitiveArrayCritical(text, nullptr));
-  uint32_t needed = cp_editor_frame(ed(editor), ptr<cp_snapshot>(snapshot), first, last, applied, use_changed ? 1 : 0,
-                                    revisions.data(), reinterpret_cast<int32_t *>(o), static_cast<uint32_t>(cap),
-                                    reinterpret_cast<cp_unit *>(t), static_cast<uint32_t>(text_cap), &units);
+  uint32_t needed = cp_editor_frame_range(ed(editor), ptr<cp_snapshot>(snapshot), first, last, applied,
+                                          use_changed ? 1 : 0, revisions.data(), reinterpret_cast<int32_t *>(o),
+                                          static_cast<uint32_t>(cap), reinterpret_cast<cp_unit *>(t),
+                                          static_cast<uint32_t>(text_cap), &units);
   e->ReleasePrimitiveArrayCritical(text, t, 0);
   e->ReleasePrimitiveArrayCritical(out, o, 0);
   auto length = static_cast<jint>(units);

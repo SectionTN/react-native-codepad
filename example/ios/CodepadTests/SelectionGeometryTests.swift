@@ -85,6 +85,29 @@ extension SelectionGeometryTests {
     XCTAssertEqual(handles.map(\.isHidden), [true, true], "no handles on a collapsed selection")
   }
 
+  // A selection end in a wrapped line above the view gets its layout before the layers are placed. Measured after
+  // them, its extra rows would move the scroll under the placed layers and leave the bottom of the view empty.
+  func testHandleLineAboveTheViewIsMeasuredBeforeTheLayers() {
+    let editor = launch()
+    editor.setSoftWrap(true)
+    let long = String(repeating: "word ", count: 80)
+    editor.setInitialText(([long] + (0..<100).map { "line \($0)" }).joined(separator: "\n"))
+    editor.contentOffset = CGPoint(x: 0, y: 600)
+    layout(editor)
+    editor.focus()
+    editor.core.setSelection(anchor: 3, head: editor.core.document.lineStart(30))
+    editor.layoutIfNeeded()
+    // A relayout drops every layout, so the next draw meets the anchor's line uncached.
+    editor.setTextPadding(12)
+    let before = editor.contentOffset.y
+    editor.layoutIfNeeded()
+    let layers = editor.textInput.textHost.sublayers?.compactMap { $0 as? LineLayer } ?? []
+    let bottom = layers.map(\.frame.maxY).max() ?? 0
+    XCTAssertGreaterThan(editor.contentOffset.y, before, "the wrapped line above grew in this draw")
+    XCTAssertGreaterThanOrEqual(bottom, editor.contentOffset.y + editor.bounds.height)
+    XCTAssertEqual(editor.latestFrame.scrollY, editor.contentOffset.y)
+  }
+
   func testSystemLollipopsStayInvisible() {
     let editor = launch()
     editor.setContentInsets(top: 20, bottom: 0, left: 0, right: 0)

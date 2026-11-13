@@ -84,6 +84,62 @@ final class FrameTests: XCTestCase {
     }
   }
 
+  // The draw hands the cache to the layout's frame call as (line, revision) pairs and lets the layout pick the
+  // window. Read densely over that window, the frame must paint the same lines with the same spans and text.
+  func testSparseEntriesMatchDenseEntries() throws {
+    var rng = SplitMix(state: 11)
+    let block = ["function f(a, b) {", "  const s = `x${a}`; // c", "  return a + b * 2;", "}", "let re = /ab+c/g;", ""]
+    let text = (0..<10_000).map { block[$0 % block.count] }.joined(separator: "\n")
+    let core = EditorCore(text)
+    let snapshots = SnapshotQueue()
+    let engine = SyntaxEngine(postToMain: { $0() }, onSnapshot: { snapshots.add($0) })
+    defer { engine.close() }
+    engine.setLanguage("javascript")
+    engine.attach(core)
+    let viewport = Viewport()
+    viewport.attach(core)
+    viewport.rowHeight = 1
+    viewport.resize(width: 100, height: 29)
+    let reader = FrameReader(ints: 4, units: 4)
+    let inserts = ["", "x", "\n", "/*", "\"", "ab\ncd", "}"]
+    for step in 0..<500 {
+      let doc = core.document
+      let at = Int.random(in: 0...doc.length, using: &rng)
+      core.replace(at, min(doc.length, at + Int.random(in: 0...3, using: &rng)), inserts.randomElement(using: &rng)!)
+      viewport.scrollTo(0, Int.random(in: 0..<doc.lineCount, using: &rng))
+      let top = viewport.firstVisibleLine()
+      var cached: [Int: Int32] = [:]
+      for line in max(0, top - 10)...min(doc.lineCount - 1, top + 40) where Bool.random(using: &rng) {
+        cached[line] = Int32(doc.revision)
+      }
+      // The cache lists its entries in no particular order.
+      var pairs: [Int32] = []
+      for (line, revision) in cached.sorted(by: { $0.key < $1.key }).shuffled(using: &rng) {
+        pairs += [Int32(line), revision]
+      }
+      let snapshot = step % 25 == 0 ? try XCTUnwrap(snapshots.takeRevision(doc.revision, 30), "step \(step)") : nil
+      let applied = snapshot?.basedOn ?? doc.revision - 1
+      let useChanged = snapshot != nil && Bool.random(using: &rng)
+      let sparse = reader.read(
+        core: core, layout: viewport, snapshot: snapshot, applied: applied, useChanged: useChanged, pairs: pairs)
+      XCTAssertEqual(sparse.first, top, "step \(step)")
+      XCTAssertEqual(sparse.last, min(doc.lineCount - 1, top + 30), "step \(step)")
+      let entries = (sparse.first...sparse.last).map { cached[$0] ?? Int32(CP_NO_ENTRY) }
+      let dense = reader.read(
+        core: core, snapshot: snapshot, first: sparse.first, last: sparse.last, applied: applied,
+        useChanged: useChanged, entries: entries)
+      XCTAssertEqual(sparse.runs, dense.runs, "step \(step)")
+      XCTAssertEqual(sparse.spans, dense.spans, "step \(step)")
+      var r = 0
+      while r + 1 < sparse.runs.count {
+        for line in sparse.runs[r]...sparse.runs[r + 1] {
+          XCTAssertEqual(sparse.text(line), dense.text(line), "step \(step) line \(line)")
+        }
+        r += 2
+      }
+    }
+  }
+
   // The core's dirty-run rule over the frame's lines, the oracle for the runs a frame paints.
   private func dirtyRuns(
     _ doc: Document, _ f: EditorFrame, revision: Int, applied: Int, changed: [Int]?, entries: [Int32]

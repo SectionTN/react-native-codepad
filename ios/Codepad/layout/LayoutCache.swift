@@ -27,6 +27,11 @@ final class LayoutCache<T> {
     trim()
   }
 
+  /// Every entry in no particular order. The eviction order stays as it is.
+  func forEachEntry(_ body: (Int, T) -> Void) {
+    for (line, value) in map { body(line, value) }
+  }
+
   func clear() {
     map.removeAll()
     order.removeAll()

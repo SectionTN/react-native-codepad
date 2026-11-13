@@ -647,23 +647,27 @@ final class CodeEditorView: UIScrollView {
     let w = Int(bounds.width.rounded())
     let h = Int(bounds.height.rounded())
     if w != viewport.width || h != viewport.height { sizeChanged(w, h) }
-    if viewport.scrollTo(Int(contentOffset.x.rounded()), Int(contentOffset.y.rounded())) { scrollDirty = true }
-    let scrolled = scrollDirty
-    if w == 0 || h == 0 { return }
     let m = rowMetrics()
+    // The layout's three calls of a draw: this scroll, the frame, then the measure call in prepare. Until endDraw,
+    // the layout reads come from them.
+    if viewport.beginDraw(scrollX: Int(contentOffset.x.rounded()), scrollY: Int(contentOffset.y.rounded())) {
+      scrollDirty = true
+    }
+    let scrolled = scrollDirty
+    if w == 0 || h == 0 {
+      viewport.endDraw()
+      return
+    }
     if revealPending {
       revealPending = false
       revealSelection()
     }
-    let first = viewport.firstVisibleLine()
-    let lastBound = min(viewport.lineCount - 1, first + h / m.rowHeight + 1)
-    let scrollBefore = viewport.scrollY
-    // One core call for the whole draw. Until publish returns, every read comes from it.
-    let frame = readFrame(first, lastBound)
+    let frame = readFrame()
     drawFrame = frame
     core.document.drawing = true
-    prepare(frame, m)
-    if viewport.scrollY != scrollBefore { pushScroll() } else { updateContentSize() }
+    let first = frame.first
+    let lastBound = frame.last
+    if prepare(frame, m) { pushScroll() } else { updateContentSize() }
     let caretLine = frame.caretLine
     let lastLine = placeLayers(first, lastBound, m)
     placeGutter(first, lastLine, caretLine)
@@ -672,6 +676,7 @@ final class CodeEditorView: UIScrollView {
     placeHandles()
     placePlaceholder(frame, m)
     publish(first, lastLine, caretLine, m)
+    viewport.endDraw()
     core.document.drawing = false
     drawFrame = nil
     if scrollDirty {
@@ -867,16 +872,18 @@ final class CodeEditorView: UIScrollView {
     return m
   }
 
-  /// The draw's frame: the lines in the window and whether each needs a layout, its spans and text.
-  private func readFrame(_ first: Int, _ last: Int) -> EditorFrame {
+  /// The draw's frame: the layout picks the lines, the frame says which need a layout and brings their spans and text.
+  private func readFrame() -> EditorFrame {
     let usable = highlighter != nil ? snapshot : nil
-    var entries: [Int32] = []
-    entries.reserveCapacity(last - first + 1)
-    for line in first...last { entries.append(cache[line].map { Int32($0.revision) } ?? Int32(CP_NO_ENTRY)) }
+    var pairs: [Int32] = []
+    pairs.reserveCapacity(2 * cache.size)
+    cache.forEachEntry { line, entry in
+      pairs.append(Int32(clamping: line))
+      pairs.append(Int32(clamping: entry.revision))
+    }
     let incremental = usable.map { $0.basedOn >= 0 && $0.basedOn == appliedRevision } ?? false
     return frameReader.read(
-      core: core, snapshot: usable, first: first, last: last, applied: appliedRevision, useChanged: incremental,
-      entries: entries)
+      core: core, layout: viewport, snapshot: usable, applied: appliedRevision, useChanged: incremental, pairs: pairs)
   }
 
   // Line reads for the geometry and UIKit: from the frame while a draw runs, else one core call. Neither goes
@@ -911,19 +918,25 @@ final class CodeEditorView: UIScrollView {
   /// Lays out one line plain, for hit tests and reveals on lines outside the drawn range.
   @discardableResult
   private func layoutLine(_ line: Int) -> Entry {
-    let spans = keptSpans(line, revision: drawFrame?.revision)
-    let text = drawFrame?.text(line) ?? core.document.lineOutsideFrame(line)
-    let entry = Entry(id: takeEntryId(), layout: makeLayout(text, spans: spans, rowMetrics()), spans: spans, revision: -1)
-    cache.put(line, entry)
+    let entry = plainEntry(line)
     let scrollBefore = viewport.scrollY
-    measured(line, entry.layout)
+    viewport.measured(line, entry.layout.rowCount, widest: offeredWidth(entry.layout))
     if viewport.scrollY != scrollBefore { pushScroll() } else { updateContentSize() }
     return entry
   }
 
-  private func measured(_ line: Int, _ layout: LineLayout) {
-    viewport.measured(line, layout.rowCount)
-    if !viewport.wrap { viewport.widestLine = max(viewport.widestLine, Int(layout.width().rounded())) }
+  /// A plain layout put in the cache and not yet measured.
+  private func plainEntry(_ line: Int) -> Entry {
+    let spans = keptSpans(line, revision: drawFrame?.revision)
+    let text = drawFrame?.text(line) ?? core.document.lineOutsideFrame(line)
+    let entry = Entry(id: takeEntryId(), layout: makeLayout(text, spans: spans, rowMetrics()), spans: spans, revision: -1)
+    cache.put(line, entry)
+    return entry
+  }
+
+  /// The width a layout offers as the widest line, or -1 while wrapping.
+  private func offeredWidth(_ layout: LineLayout) -> Int {
+    viewport.wrap ? -1 : Int(layout.width().rounded())
   }
 
   private func onScrolled() {
@@ -978,14 +991,22 @@ final class CodeEditorView: UIScrollView {
     }
   }
 
-  /// Builds missing layouts for [first, last] with one highlight query per run of dirty lines: when the snapshot follows
-  /// the one last applied, only the lines its regions meet; otherwise every line not at its revision.
-  private func prepare(_ frame: EditorFrame, _ m: RowMetrics) {
+  /// Builds missing layouts for [first, last] with one highlight query per run of dirty lines: the lines the snapshot's
+  /// regions meet when it follows the one last applied, else every line not at its revision. Ends with the draw's
+  /// measure call and returns true when it moved the scroll.
+  private func prepare(_ frame: EditorFrame, _ m: RowMetrics) -> Bool {
     // The core paints from the snapshot only when it is at the frame's revision. Otherwise its runs are the lines
     // with no layout, and those take the spans keepSpans kept.
     let consistent = highlighter != nil && snapshot?.revision == frame.revision
     let revision = consistent ? frame.revision : -1
     let runs = frame.runs
+    var pairs: [Int32] = []
+    var widest = -1
+    func measured(_ line: Int, _ layout: LineLayout) {
+      pairs.append(Int32(clamping: line))
+      pairs.append(Int32(clamping: layout.rowCount))
+      widest = max(widest, offeredWidth(layout))
+    }
     var r = 0
     // The spans and text of the run lines arrive in line order, one entry per line.
     var next = 0
@@ -1019,6 +1040,15 @@ final class CodeEditorView: UIScrollView {
       pendingSpans = nil
       pendingTail = nil
     }
+    // The handles' lines too, so placeHandles finds their layouts without a measurement inside the draw.
+    let sel = core.selection
+    if hasFocus && !sel.isEmpty {
+      for offset in [sel.min, sel.max] {
+        let line = docLineAt(offset)
+        if cache[line] == nil { measured(line, plainEntry(line).layout) }
+      }
+    }
+    return viewport.measure(pairs: pairs, widest: widest, first: frame.first, last: frame.last)
   }
 
   /// The spans keepSpans kept for a line of the current revision, or nil.
@@ -1286,15 +1316,10 @@ final class CodeEditorView: UIScrollView {
 
   /// Every gap in view points, sorted by line, the full view width wide.
   private func gapRects(_ m: RowMetrics) -> [GapRect] {
-    let rows = core.decorations.gapRows()
-    if rows.isEmpty { return [] }
-    var out: [GapRect] = []
-    for line in rows.keys.sorted() {
-      let top = CGFloat(viewport.rowTop(viewport.rowStart(line) + viewport.rows(line)))
-      let height = CGFloat((rows[line] ?? 0) * m.rowHeight)
-      out.append(GapRect(line: line, rect: CGRect(x: 0, y: top, width: bounds.width, height: height)))
+    viewport.gaps().map { gap in
+      let rect = CGRect(x: 0, y: CGFloat(gap.top), width: bounds.width, height: CGFloat(gap.rows * m.rowHeight))
+      return GapRect(line: gap.line, rect: rect)
     }
-    return out
   }
 
   private func publish(_ first: Int, _ last: Int, _ caretLine: Int, _ m: RowMetrics) {

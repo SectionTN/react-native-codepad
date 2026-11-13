@@ -62,6 +62,18 @@ final class ContentSizeTests: XCTestCase {
     XCTAssertEqual(sizes.last?.height ?? 0, 10 * row + 24, accuracy: 0.5)
   }
 
+  // UIScrollView owns the rubber band past the top. The layout clamps its own copy and leaves the offset alone.
+  func testBounceOffsetIsNotPushedBack() {
+    let editor = launch()
+    editor.setInitialText((0..<200).map { "line \($0)" }.joined(separator: "\n"))
+    layout(editor)
+    draw(editor)
+    editor.contentOffset = CGPoint(x: 0, y: -40)
+    draw(editor)
+    XCTAssertEqual(editor.contentOffset.y, -40)
+    XCTAssertEqual(editor.latestFrame.scrollY, 0)
+  }
+
   // A note under the last line, as a checker would open after the final line of an exercise.
   func testGapRowsCountInTheContentHeight() {
     let editor = launch()

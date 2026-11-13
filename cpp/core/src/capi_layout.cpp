@@ -54,10 +54,17 @@ uint32_t cp_layout_measure(cp_layout *layout, const int32_t *pairs, uint32_t pai
   fill(l, out);
   if (first_line > last_line) return 0;
   auto lines = static_cast<uint32_t>(last_line - first_line + 1);
-  uint32_t needed = 2 * lines + 1;
+  const std::vector<int32_t> &gaps = l.gap_lines();
+  uint32_t needed = 2 * lines + 1 + 3 * static_cast<uint32_t>(gaps.size());
   if (tops_rows == nullptr || cap < needed) return needed;
   for (uint32_t i = 0; i <= lines; i++) tops_rows[i] = l.line_top(first_line + static_cast<int32_t>(i));
   for (uint32_t i = 0; i < lines; i++) tops_rows[lines + 1 + i] = l.rows(first_line + static_cast<int32_t>(i));
+  int32_t *gap = tops_rows + 2 * lines + 1;
+  for (int32_t line : gaps) {
+    *gap++ = line;
+    *gap++ = l.row_top(l.row_start(line) + l.rows(line));
+    *gap++ = l.gap_rows(line);
+  }
   return needed;
 }
 

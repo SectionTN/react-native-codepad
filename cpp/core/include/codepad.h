@@ -220,8 +220,9 @@ CP_API int32_t cp_layout_scroll_to(cp_layout *layout, int32_t x, int32_t y, cp_g
 CP_API int32_t cp_layout_reveal(cp_layout *layout, int32_t left, int32_t top, int32_t right, int32_t bottom,
                                 cp_geometry *out);
 // Applies (line, rows) pairs in order, as successive measurements would, then raises the widest line to widest
-// when widest >= 0 and the layout does not wrap. Writes the view tops of first_line..last_line + 1, then the text
-// rows of first_line..last_line, and returns how many ints that needs. A short buffer gets nothing written.
+// when widest >= 0 and the layout does not wrap. Writes the view tops of first_line..last_line + 1, the text rows of
+// first_line..last_line, then (line, view top, rows) for every gap in line order, and returns how many ints that
+// needs. A short buffer gets nothing written. first_line > last_line writes nothing and returns 0.
 CP_API uint32_t cp_layout_measure(cp_layout *layout, const int32_t *pairs, uint32_t pair_count, int32_t widest,
                                   int32_t first_line, int32_t last_line, cp_geometry *out, int32_t *tops_rows,
                                   uint32_t cap);
@@ -331,20 +332,27 @@ CP_API void cp_snapshot_injected_get(const cp_snapshot *snapshot, uint32_t index
 CP_API uint32_t cp_highlight(const cp_snapshot *snapshot, int32_t first_line, int32_t last_line,
                              uint32_t first_line_start, int32_t *out, uint32_t cap);
 enum { CP_NO_ENTRY = -2147483647 - 1 };
-// Main thread, one call per draw over lines [first_line, last_line] clamped to the document. entry_revisions[i] is
-// the cached revision of line first_line + i: CP_NO_ENTRY without one, -1 for a line laid out plain. use_changed
-// is 1 when the snapshot is based on applied_revision. out receives, in order:
-//   a header: revision, length, line_count, anchor, head, caret_line, decorations_version, history
-//   the line starts of the clamped first..last + 1 (line_count gives length + 1)
+// Main thread, one call per draw. The layout picks the lines: its first visible line through the lines one view
+// height of rows can show, clamped to the document. entries holds entry_count (line, revision) pairs of the view's
+// cache in any order: a line without a pair has no entry, -1 marks a line laid out plain. use_changed is 1 when the
+// snapshot is based on applied_revision. out receives, in order:
+//   a header: revision, length, line_count, anchor, head, caret_line, decorations_version, history, first, last
+//   the line starts of first..last + 1 (line_count gives length + 1)
 //   the dirty runs: run_count, run_count inclusive (lo, hi) pairs, then for each line of each run its spans as
 //   cp_highlight. snapshot NULL or at another revision than the document: the runs are the lines with no entry
 //   and every span count is 0
 //   for each line of each run, its text's offset and length in text_out
 // Returns the ints needed and sets *text_len to the units needed. Nothing is written unless both fit.
-CP_API uint32_t cp_editor_frame(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
-                                int32_t last_line, int32_t applied_revision, int32_t use_changed,
-                                const int32_t *entry_revisions, int32_t *out, uint32_t cap, cp_unit *text_out,
+CP_API uint32_t cp_editor_frame(const cp_editor *editor, const cp_layout *layout, const cp_snapshot *snapshot,
+                                int32_t applied_revision, int32_t use_changed, const int32_t *entries,
+                                uint32_t entry_count, int32_t *out, uint32_t cap, cp_unit *text_out,
                                 uint32_t text_cap, uint32_t *text_len);
+// cp_editor_frame over lines [first_line, last_line] clamped to the document, with no first and last in the
+// header. entry_revisions[i] is the cached revision of line first_line + i.
+CP_API uint32_t cp_editor_frame_range(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
+                                      int32_t last_line, int32_t applied_revision, int32_t use_changed,
+                                      const int32_t *entry_revisions, int32_t *out, uint32_t cap, cp_unit *text_out,
+                                      uint32_t text_cap, uint32_t *text_len);
 // A line's triples after an edit inside it replaced removed units at start with inserted units.
 CP_API uint32_t cp_shift_spans(const int32_t *spans, uint32_t count, int32_t start, int32_t removed,
                                int32_t inserted, int32_t *out, uint32_t cap);

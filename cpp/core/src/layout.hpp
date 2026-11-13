@@ -28,6 +28,8 @@ class Layout {
   // Zero for a line outside the map.
   int32_t rows(int32_t line) const;
   int32_t gap_rows(int32_t line) const;
+  // The lines with a gap, ascending.
+  const std::vector<int32_t> &gap_lines() const { return gap_lines_; }
   int32_t row_start(int32_t line) const;
   int32_t line_at_row(int32_t row) const;
   bool is_gap_row(int32_t row) const;

@@ -5,6 +5,7 @@
 #include "codepad.h"
 #include "editor.hpp"
 #include "highlighter.hpp"
+#include "layout.hpp"
 #include "spans.hpp"
 
 namespace codepad {
@@ -95,32 +96,31 @@ extern "C" uint32_t cp_highlight(const cp_snapshot *snapshot, int32_t first_line
   return deliver(ints, out, cap);
 }
 
-extern "C" uint32_t cp_editor_frame(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
-                                    int32_t last_line, int32_t applied_revision, int32_t use_changed,
-                                    const int32_t *entry_revisions, int32_t *out, uint32_t cap, cp_unit *text_out,
-                                    uint32_t text_cap, uint32_t *text_len) {
+static std::vector<int32_t> frame_header(const cp_editor *editor) {
   const codepad::Document &doc = editor->doc;
-  int32_t line_count = doc.line_count();
-  int32_t first = std::clamp(first_line, 0, line_count - 1);
-  int32_t last = std::clamp(last_line, first, line_count - 1);
   codepad::Selection sel = editor->selection();
-  std::vector<int32_t> ints{doc.revision(),
-                            static_cast<int32_t>(doc.length()),
-                            line_count,
-                            sel.anchor,
-                            sel.head,
-                            doc.line_at(static_cast<uint32_t>(std::max(sel.head, 0))),
-                            editor->decorations.version(),
-                            editor->history()};
+  return {doc.revision(),
+          static_cast<int32_t>(doc.length()),
+          doc.line_count(),
+          sel.anchor,
+          sel.head,
+          doc.line_at(static_cast<uint32_t>(std::max(sel.head, 0))),
+          editor->decorations.version(),
+          editor->history()};
+}
+
+// The frame of lines first..last, already clamped, after the header in ints. entries holds one revision per line.
+static uint32_t build_frame(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first, int32_t last,
+                            const std::vector<int32_t> &entries, int32_t applied_revision, int32_t use_changed,
+                            std::vector<int32_t> &ints, int32_t *out, uint32_t cap, cp_unit *text_out,
+                            uint32_t text_cap, uint32_t *text_len) {
+  const codepad::Document &doc = editor->doc;
   auto count = static_cast<size_t>(last - first + 1);
   codepad::Lines lines;
-  std::vector<int32_t> entries(count);
   for (size_t k = 0; k < count; k++) {
     int32_t line = first + static_cast<int32_t>(k);
     lines.start.push_back(static_cast<int32_t>(doc.line_start(line)));
     lines.length.push_back(static_cast<int32_t>(doc.line_length(line)));
-    bool requested = line >= first_line && line <= last_line;
-    entries[k] = requested ? entry_revisions[line - first_line] : CP_NO_ENTRY;
   }
   for (int32_t line = first; line <= last + 1; line++) ints.push_back(static_cast<int32_t>(doc.line_start(line)));
   bool consistent = snapshot != nullptr && snapshot->text && snapshot->revision == doc.revision();
@@ -178,6 +178,43 @@ extern "C" uint32_t cp_editor_frame(const cp_editor *editor, const cp_snapshot *
     }
   }
   return size;
+}
+
+extern "C" uint32_t cp_editor_frame_range(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
+                                          int32_t last_line, int32_t applied_revision, int32_t use_changed,
+                                          const int32_t *entry_revisions, int32_t *out, uint32_t cap,
+                                          cp_unit *text_out, uint32_t text_cap, uint32_t *text_len) {
+  int32_t line_count = editor->doc.line_count();
+  int32_t first = std::clamp(first_line, 0, line_count - 1);
+  int32_t last = std::clamp(last_line, first, line_count - 1);
+  std::vector<int32_t> entries(static_cast<size_t>(last - first + 1));
+  for (int32_t line = first; line <= last; line++) {
+    bool requested = line >= first_line && line <= last_line;
+    entries[static_cast<size_t>(line - first)] = requested ? entry_revisions[line - first_line] : CP_NO_ENTRY;
+  }
+  std::vector<int32_t> ints = frame_header(editor);
+  return build_frame(editor, snapshot, first, last, entries, applied_revision, use_changed, ints, out, cap, text_out,
+                     text_cap, text_len);
+}
+
+extern "C" uint32_t cp_editor_frame(const cp_editor *editor, const cp_layout *layout, const cp_snapshot *snapshot,
+                                    int32_t applied_revision, int32_t use_changed, const int32_t *entries,
+                                    uint32_t entry_count, int32_t *out, uint32_t cap, cp_unit *text_out,
+                                    uint32_t text_cap, uint32_t *text_len) {
+  const codepad::Layout &l = *layout->layout;
+  int32_t line_count = editor->doc.line_count();
+  int32_t first = std::clamp(l.first_visible_line(), 0, line_count - 1);
+  int32_t last = std::clamp(first + l.config().height / l.config().row_height + 1, first, line_count - 1);
+  std::vector<int32_t> dense(static_cast<size_t>(last - first + 1), CP_NO_ENTRY);
+  for (uint32_t i = 0; i < entry_count; i++) {
+    int32_t line = entries[2 * i];
+    if (line >= first && line <= last) dense[static_cast<size_t>(line - first)] = entries[2 * i + 1];
+  }
+  std::vector<int32_t> ints = frame_header(editor);
+  ints.push_back(first);
+  ints.push_back(last);
+  return build_frame(editor, snapshot, first, last, dense, applied_revision, use_changed, ints, out, cap, text_out,
+                     text_cap, text_len);
 }
 
 extern "C" uint32_t cp_shift_spans(const int32_t *spans, uint32_t count, int32_t start, int32_t removed,
