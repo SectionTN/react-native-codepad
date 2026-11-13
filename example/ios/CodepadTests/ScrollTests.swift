@@ -19,4 +19,29 @@ final class ScrollTests: XCTestCase {
     draw(editor)
     XCTAssertEqual(editor.latestFrame.scrollX, before, accuracy: 0.5, "scrollX after the inset change")
   }
+
+  // A draw that lays out new lines evicts the oldest layouts. After a jump back to the old end of the cache, the
+  // frame's own cached lines must not be evicted before the draw reaches them, or they stay blank.
+  func testAJumpBackKeepsTheFramesCachedLines() {
+    let editor = launch()
+    editor.setInitialText((0..<3000).map { "line \($0)" }.joined(separator: "\n"))
+    layout(editor)
+    draw(editor)
+    let rowHeight = CGFloat(editor.viewport.rowHeight)
+    let span = editor.viewport.lastVisibleLine() - editor.viewport.firstVisibleLine()
+    var top = 0
+    while top < 3 * editor.cache.capacity {
+      top += span
+      editor.contentOffset.y = CGFloat(top) * rowHeight
+      draw(editor)
+    }
+    var oldest = Int.max
+    editor.cache.forEachEntry { line, _ in oldest = min(oldest, line) }
+    editor.contentOffset.y = CGFloat(oldest - span / 2) * rowHeight
+    draw(editor)
+    var cached = Set<Int>()
+    editor.cache.forEachEntry { line, _ in cached.insert(line) }
+    let frame = editor.viewport.firstVisibleLine()...editor.viewport.lastVisibleLine()
+    XCTAssertEqual(frame.filter { !cached.contains($0) }, [], "frame \(frame), oldest cached before the jump \(oldest)")
+  }
 }

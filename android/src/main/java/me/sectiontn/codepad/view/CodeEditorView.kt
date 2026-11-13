@@ -1355,6 +1355,8 @@ class CodeEditorView(context: Context) : View(context) {
     var count = 0
     var widest = -1
     var r = 0
+    // A run line's insert evicts the oldest layout, which must not be a frame line the loop has not reached yet.
+    for (line in frame.first..frame.last) cache[line]
     // The spans and text of the run lines arrive in line order, one entry per line.
     var next = 0
     for (line in frame.first..frame.last) {

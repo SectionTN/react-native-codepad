@@ -7,7 +7,7 @@ import os
 @MainActor
 final class CodeEditorView: UIScrollView {
   /// revision is the snapshot the spans came from, -1 when the line was laid out plain.
-  private final class Entry {
+  final class Entry {
     let id: Int
     let layout: LineLayout
     let spans: [Int]?
@@ -109,7 +109,7 @@ final class CodeEditorView: UIScrollView {
   // Set from the frame call to the end of publish.
   private var drawFrame: EditorFrame?
   let viewport = Viewport()
-  private let cache = LayoutCache<Entry>(capacity: 64)
+  let cache = LayoutCache<Entry>(capacity: 64)
   private var nextEntryId = 0
   private var brackets: BracketHighlight
   private lazy var geometry = ContentGeometry(self)
@@ -1008,6 +1008,8 @@ final class CodeEditorView: UIScrollView {
       widest = max(widest, offeredWidth(layout))
     }
     var r = 0
+    // A run line's insert evicts the oldest layout, which must not be a frame line the loop has not reached yet.
+    for line in frame.first...frame.last { _ = cache[line] }
     // The spans and text of the run lines arrive in line order, one entry per line.
     var next = 0
     for line in frame.first...frame.last {
