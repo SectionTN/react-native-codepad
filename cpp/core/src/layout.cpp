@@ -222,9 +222,10 @@ void Layout::restore(Anchor anchor) {
 void Layout::measured(int32_t line, int32_t rows) {
   int32_t first = first_visible_line();
   int32_t old = set_rows(line, rows);
-  if (old != rows && line < first) {
-    scroll_y_ = std::clamp(scroll_y_ + (rows - old) * config_.row_height, 0, max_scroll_y());
-  }
+  if (old == rows) return;
+  if (line < first) scroll_y_ += (rows - old) * config_.row_height;
+  // A visible line that shrinks can lower the end of the content below the scroll.
+  scroll_y_ = std::clamp(scroll_y_, 0, max_scroll_y());
 }
 
 void Layout::geometry(cp_geometry &out) const {
