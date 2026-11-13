@@ -566,6 +566,8 @@ class CodeEditorView(context: Context) : View(context) {
     cache.shift(first, oldCount, newCount)
     search?.onChange(change)
     if (updateGutter()) relayout()
+    // A clamp the edit made reaches the scroll listener like any other move.
+    if (viewport.scrollX / density != frame.scrollX || viewport.scrollY / density != frame.scrollY) onScrolled()
     hideInsertionHandle()
     menu.hide()
     restartBlink()

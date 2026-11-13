@@ -30,4 +30,29 @@ class ScrollTest {
       }
     }
   }
+
+  // An API edit that removes the lines under the scroll clamps it in the core. The scroll listener must hear of it,
+  // or the host keeps the old offset.
+  @Test
+  fun anEditThatClampsTheScrollReachesTheScrollListener() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        editor.setInitialText((0 until 200).joinToString("\n") { "line $it" })
+        layout(editor)
+        draw(editor)
+        editor.scrollToLine(199, false)
+        draw(editor)
+        val before = editor.frame.scrollY
+        assertTrue("scrolled to the end, scrollY $before", before > 0f)
+        var heard = -1f
+        editor.onScrollListener = { heard = it.scrollY }
+        val doc = editor.core.document
+        editor.core.replace(doc.lineStart(20), doc.length, "")
+        draw(editor)
+        assertTrue("the edit clamped the scroll, scrollY ${editor.frame.scrollY}", editor.frame.scrollY < before)
+        assertEquals(editor.frame.scrollY, heard, 0.01f)
+      }
+    }
+  }
 }

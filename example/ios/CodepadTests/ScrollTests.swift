@@ -64,8 +64,8 @@ final class ScrollTests: XCTestCase {
     XCTAssertEqual(frame.filter { !cached.contains($0) }, [], "frame \(frame)")
   }
 
-  // An API edit that removes the lines under the offset clamps the core scroll. The scroll view must take it, or the
-  // layers paint at one offset while UIKit scrolls at another.
+  // An API edit that removes the lines under the offset clamps the core scroll. The scroll view and the scroll
+  // listener must take it, or the layers paint at one offset while UIKit and the host keep another.
   func testAnEditThatShortensTheContentUnderTheOffsetMovesIt() {
     let editor = launch()
     editor.setInitialText((0..<200).map { "line \($0)" }.joined(separator: "\n"))
@@ -73,9 +73,12 @@ final class ScrollTests: XCTestCase {
     draw(editor)
     editor.contentOffset.y = CGFloat(editor.viewport.maxScrollY)
     draw(editor)
+    var heard: CGFloat?
+    editor.onScroll = { heard = $0.scrollY }
     _ = editor.core.replace(editor.core.document.lineStart(20), editor.core.document.length, "")
     draw(editor)
     XCTAssertEqual(editor.contentOffset.y, CGFloat(editor.viewport.scrollY))
     XCTAssertLessThanOrEqual(editor.viewport.scrollY, editor.viewport.maxScrollY)
+    XCTAssertEqual(heard, CGFloat(editor.viewport.scrollY))
   }
 }
