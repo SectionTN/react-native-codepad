@@ -675,7 +675,13 @@ final class CodeEditorView: UIScrollView {
     }
     let first = frame.first
     let lastBound = frame.last
-    if moved { pushScroll() } else { updateContentSize() }
+    if moved {
+      // A move the measure call made reaches the scroll listener at the end of this draw.
+      scrollDirty = true
+      pushScroll()
+    } else {
+      updateContentSize()
+    }
     let caretLine = frame.caretLine
     let lastLine = placeLayers(first, lastBound, m)
     placeGutter(first, lastLine, caretLine)

@@ -3,6 +3,8 @@ package codepad.example
 import android.os.SystemClock
 import android.view.KeyEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import me.sectiontn.codepad.layout.Viewport
+import me.sectiontn.codepad.view.CodeEditorView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -27,6 +29,30 @@ class ScrollTest {
         editor.setContentInsets(0f, 24f, 0f, 0f)
         draw(editor)
         assertEquals("scrollX after the inset change", before, editor.frame.scrollX, 0.5f)
+      }
+    }
+  }
+
+  // A measure call that clamps the scroll moves it in a draw where nothing else scrolled. The listener hears of it.
+  @Test
+  fun aClampInTheMeasureCallReachesTheScrollListener() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        editor.setInitialText((0 until 100).joinToString("\n") { "line $it" })
+        layout(editor)
+        draw(editor)
+        val viewport = CodeEditorView::class.java.getDeclaredField("viewport").apply { isAccessible = true }
+          .get(editor) as Viewport
+        viewport.measured(98, 30)
+        viewport.measured(99, 30)
+        viewport.scrollTo(0, viewport.maxScrollY)
+        val before = viewport.scrollY
+        var heard = -1f
+        editor.onScrollListener = { heard = it.scrollY }
+        draw(editor)
+        assertTrue("the measure call clamped the scroll, scrollY ${viewport.scrollY}", viewport.scrollY < before)
+        assertEquals(editor.frame.scrollY, heard, 0.01f)
       }
     }
   }

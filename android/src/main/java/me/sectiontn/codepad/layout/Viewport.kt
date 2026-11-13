@@ -140,12 +140,14 @@ class Viewport {
 
   /**
    * The draw's measure call: the first [pairCount] (line, rows) pairs and the widest line, then the tops and rows of
-   * [first]..[last] and every gap.
+   * [first]..[last] and every gap. Returns true when it moved the scroll from the last position this viewport read.
    */
-  fun measure(pairs: IntArray, pairCount: Int, widest: Int, first: Int, last: Int) {
+  fun measure(pairs: IntArray, pairCount: Int, widest: Int, first: Int, last: Int): Boolean {
+    val before = known[SCROLL_Y]
     this.first = first
     this.last = last
     fill(pairs, pairCount, widest)
+    return known[SCROLL_Y] != before
   }
 
   fun endDraw() {

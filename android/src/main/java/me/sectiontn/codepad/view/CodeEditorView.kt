@@ -1274,14 +1274,16 @@ class CodeEditorView(context: Context) : View(context) {
     var f = readFrame()
     drawFrame = f
     if (debugSwitch()) core.document.drawingThread = Thread.currentThread()
-    prepare(f, m)
+    var moved = prepare(f, m)
     // A measure call that clamps the scroll (a visible line lost rows at the end) shows lines above the frame, and
     // their own measure call can clamp again. They are laid out in this draw, so none of them shows blank.
     while (viewport.firstVisibleLine() < f.first) {
       f = readFrame()
       drawFrame = f
-      prepare(f, m)
+      if (prepare(f, m)) moved = true
     }
+    // A move the measure call made reaches the scroll listener at the end of this draw.
+    if (moved) scrollDirty = true
     val firstLine = f.first
     val lastBound = f.last
     val caretLine = f.caretLine
@@ -1354,8 +1356,11 @@ class CodeEditorView(context: Context) : View(context) {
     return frameReader.read(core, viewport, usable?.pointer ?: 0L, appliedRevision, incremental, framePairs, n)
   }
 
-  /** Ends with the draw's measure call, which takes the rows of every line laid out here and the widest one. */
-  private fun prepare(frame: EditorFrame, m: RowMetrics) {
+  /**
+   * Ends with the draw's measure call, which takes the rows of every line laid out here and the widest one. Returns
+   * true when that call moved the scroll.
+   */
+  private fun prepare(frame: EditorFrame, m: RowMetrics): Boolean {
     // The core paints from the snapshot only when it is at the frame's revision. Otherwise its runs are the lines
     // with no layout, and those take the spans keepSpans kept.
     val consistent = highlighter != null && snapshot?.revision == frame.revision
@@ -1402,7 +1407,7 @@ class CodeEditorView(context: Context) : View(context) {
       pendingSpans = null
       pendingTail = null
     }
-    viewport.measure(measurePairs, count, widest, frame.first, frame.last)
+    return viewport.measure(measurePairs, count, widest, frame.first, frame.last)
   }
 
   /** The spans [keepSpans] kept for a line of [revision], the current one, or null. */

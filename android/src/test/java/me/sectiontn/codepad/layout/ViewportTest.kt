@@ -86,6 +86,30 @@ class ViewportTest {
     }
   }
 
+  // A measure call that lowers the end of the content under the scroll clamps it. The view tells the scroll listener
+  // only when the call reports the move.
+  @Test
+  fun aMeasureCallReportsTheScrollItMoved() {
+    lines(100).use { core ->
+      val v = Viewport()
+      v.attach(core)
+      v.rowHeight = 10
+      v.resize(100, 50)
+      v.measured(98, 30)
+      v.measured(99, 30)
+      v.scrollTo(0, v.maxScrollY)
+      val before = v.scrollY
+      v.beginDraw(checksCalls = false)
+      assertTrue(v.measure(intArrayOf(98, 1, 99, 1), 2, -1, 90, 99))
+      v.endDraw()
+      assertTrue("clamped from $before to ${v.scrollY}", v.scrollY < before)
+      v.beginDraw(checksCalls = false)
+      assertFalse(v.measure(IntArray(0), 0, -1, 90, 99))
+      v.endDraw()
+      v.close()
+    }
+  }
+
   // With the debug switch on, a ninth single layout call in one draw throws: a per-line crossing crept into the draw.
   @Test
   fun aNinthCallInsideADrawThrowsInDebug() {
