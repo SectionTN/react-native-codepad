@@ -42,6 +42,26 @@ final class ContentSizeTests: XCTestCase {
     XCTAssertEqual(sizes[1].height, 2 * row + 24, accuracy: 0.5)
   }
 
+  // setInitialText swaps the editor under the view: the insets stay, the rows start over and the scroll goes home.
+  func testSetInitialTextWhileScrolledKeepsTheInsetsAndStartsAtTheTop() {
+    let editor = launch()
+    var sizes: [CGSize] = []
+    editor.onContentSizeChange = { sizes.append($0) }
+    editor.setContentInsets(top: 0, bottom: 24, left: 0, right: 0)
+    editor.setInitialText((0..<1000).map { "line \($0)" }.joined(separator: "\n"))
+    layout(editor)
+    draw(editor)
+    editor.scrollToLine(500, animated: false)
+    draw(editor)
+    XCTAssertGreaterThan(editor.contentOffset.y, 0)
+    let row = (sizes[0].height - 24) / 1000
+    editor.setInitialText((0..<10).map { "line \($0)" }.joined(separator: "\n"))
+    draw(editor)
+    XCTAssertEqual(editor.contentOffset.y, 0)
+    XCTAssertEqual(sizes.last?.width ?? 0, 300, accuracy: 0.5)
+    XCTAssertEqual(sizes.last?.height ?? 0, 10 * row + 24, accuracy: 0.5)
+  }
+
   // A note under the last line, as a checker would open after the final line of an exercise.
   func testGapRowsCountInTheContentHeight() {
     let editor = launch()

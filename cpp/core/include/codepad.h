@@ -170,6 +170,80 @@ CP_API uint32_t cp_editor_decorations(const cp_editor *editor, cp_decoration *ou
 // Moves whenever the decorations change.
 CP_API int32_t cp_editor_decorations_version(const cp_editor *editor);
 
+// The layout of one view: rows per line, the gaps under lines, the scroll and the view metrics, in the platform's
+// integer view units. Main thread only. The platform's scroller stays the authority. The layout keeps a clamped copy.
+typedef struct cp_layout cp_layout;
+typedef struct {
+  int32_t row_height;
+  int32_t width;
+  int32_t height;
+  int32_t inset_top;
+  int32_t inset_bottom;
+  int32_t inset_left;
+  int32_t inset_right;
+  int32_t gutter_width;
+  int32_t text_padding;
+  int32_t wrap;
+} cp_layout_config;
+// text_left is the view x of layout x 0. first_line and last_line are the visible lines.
+typedef struct {
+  int32_t scroll_x;
+  int32_t scroll_y;
+  int32_t max_scroll_x;
+  int32_t max_scroll_y;
+  int32_t content_width;
+  int32_t content_height;
+  int32_t first_line;
+  int32_t last_line;
+  int32_t text_area_left;
+  int32_t text_area_width;
+  int32_t viewport_height;
+  int32_t wrap_width;
+  int32_t text_left;
+  int32_t total_rows;
+  int32_t line_count;
+  int32_t row_height;
+  int32_t widest_line;
+} cp_geometry;
+CP_API cp_layout *cp_layout_new(void);
+// The layout lives on while an editor still holds it.
+CP_API void cp_layout_free(cp_layout *layout);
+// Resets the rows to the editor's lines and takes its gaps. Every later edit and gap change of the editor updates
+// the rows before the change callback runs. NULL detaches.
+CP_API void cp_editor_attach_layout(cp_editor *editor, cp_layout *layout);
+// Returns 1 when the text area width changed, which is when line layouts must be rebuilt.
+CP_API int32_t cp_layout_configure(cp_layout *layout, const cp_layout_config *config);
+CP_API void cp_layout_geometry(const cp_layout *layout, cp_geometry *out);
+// Returns 1 when the clamped scroll moved. out may be NULL.
+CP_API int32_t cp_layout_scroll_to(cp_layout *layout, int32_t x, int32_t y, cp_geometry *out);
+// The smallest scroll that shows a rect in layout coordinates with the text padding around it. Returns 1 when it moved.
+CP_API int32_t cp_layout_reveal(cp_layout *layout, int32_t left, int32_t top, int32_t right, int32_t bottom,
+                                cp_geometry *out);
+// Applies (line, rows) pairs in order, as successive measurements would, then raises the widest line to widest
+// when widest >= 0 and the layout does not wrap. Writes the view tops of first_line..last_line + 1, then the text
+// rows of first_line..last_line, and returns how many ints that needs. A short buffer gets nothing written.
+CP_API uint32_t cp_layout_measure(cp_layout *layout, const int32_t *pairs, uint32_t pair_count, int32_t widest,
+                                  int32_t first_line, int32_t last_line, cp_geometry *out, int32_t *tops_rows,
+                                  uint32_t cap);
+CP_API void cp_layout_set_widest(cp_layout *layout, int32_t widest);
+// Rows of a line outside the layout are 0.
+CP_API int32_t cp_layout_rows(const cp_layout *layout, int32_t line);
+CP_API int32_t cp_layout_gap_rows(const cp_layout *layout, int32_t line);
+// Clamped to [0, line_count]. line_count gives the total rows.
+CP_API int32_t cp_layout_row_start(const cp_layout *layout, int32_t line);
+CP_API int32_t cp_layout_line_at_row(const cp_layout *layout, int32_t row);
+CP_API int32_t cp_layout_is_gap_row(const cp_layout *layout, int32_t row);
+CP_API int32_t cp_layout_row_top(const cp_layout *layout, int32_t row);
+CP_API int32_t cp_layout_line_top(const cp_layout *layout, int32_t line);
+// The content row under view y, possibly outside the rows.
+CP_API int32_t cp_layout_row_at(const cp_layout *layout, int32_t y);
+// The top visible line and how far the scroll sits below its top, so a relayout can put it back.
+CP_API void cp_layout_anchor(const cp_layout *layout, int32_t *line, int32_t *offset);
+// Returns 1 when the scroll moved.
+CP_API int32_t cp_layout_restore(cp_layout *layout, int32_t line, int32_t offset);
+// Every line back to one row. Gaps stay.
+CP_API void cp_layout_reset_rows(cp_layout *layout);
+
 // Search, a PCRE2 regex or plain text, in Unicode mode with any newline ending a line. Empty matches are skipped.
 typedef struct cp_search cp_search;
 enum { CP_SEARCH_REGEX = 1, CP_SEARCH_CASE = 2, CP_SEARCH_WORD = 4 };

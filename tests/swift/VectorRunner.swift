@@ -16,8 +16,7 @@ final class VectorRunner {
   private var lastResult: Any? = nil
   private var lastError: String? = nil
 
-  // Created by the first layout op. Until the layout moves into the core, the runner keeps it in step as the view does.
-  private var heights: HeightMap? = nil
+  // Created and attached by the first layout op. The core keeps its rows and gaps in step with the edits.
   private var viewport: Viewport? = nil
   private var anchor: Viewport.Anchor? = nil
   private var widthChanged = false
@@ -27,36 +26,16 @@ final class VectorRunner {
     let clock = Clock()
     self.clock = clock
     core = EditorCore(testCase["text"] as? String ?? "", clock: { clock.now })
-    core.onChange = { [weak self] change, origin in
-      guard let self else { return }
-      self.changes.append((change, origin))
-      if let h = self.heights {
-        let first = self.core.document.lineAt(change.start)
-        h.replaceLines(first: first, oldCount: Self.lineSpan(change.removed), newCount: Self.lineSpan(change.inserted))
-        h.setGaps(self.core.decorations.gapRows())
-        self.viewport?.clamp()
-      }
-    }
-  }
-
-  private static func lineSpan(_ text: String) -> Int {
-    text.utf16.reduce(1) { $0 + ($1 == 10 ? 1 : 0) }
+    core.onChange = { [weak self] change, origin in self?.changes.append((change, origin)) }
   }
 
   private func layout(_ op: [String: Any]) {
-    let h: HeightMap
-    if let existing = heights {
-      h = existing
-    } else {
-      h = HeightMap(lineCount: core.document.lineCount)
-      h.setGaps(core.decorations.gapRows())
-      heights = h
-    }
     let vp: Viewport
     if let existing = viewport {
       vp = existing
     } else {
-      vp = Viewport(heights: h)
+      vp = Viewport()
+      vp.attach(core)
       viewport = vp
     }
     let before = vp.textAreaWidth
@@ -139,11 +118,6 @@ final class VectorRunner {
     case "decorate":
       let items = (op["items"] as? [[String: Any]] ?? []).map(decorationOf)
       _ = core.setDecorations(items, revision: op["revision"] as? Int ?? -1)
-      if let vp = viewport {
-        let a = vp.anchor()
-        vp.heights.setGaps(core.decorations.gapRows())
-        vp.restore(a)
-      }
     case "layout": layout(op)
     case "measure":
       guard let vp = viewport else { return XCTFail("measure before layout") }
@@ -159,7 +133,7 @@ final class VectorRunner {
       }
     case "anchor": anchor = viewport?.anchor()
     case "restore": if let a = anchor { viewport?.restore(a) }
-    case "resetRows": heights?.resetAll()
+    case "resetRows": viewport?.resetRows()
     default: XCTFail("op not implemented: \(name)")
     }
   }
@@ -264,7 +238,7 @@ final class VectorRunner {
 
   private func checkLayout(_ expect: [String: Any], _ at: String) {
     guard let vp = viewport else { return }
-    let h = vp.heights
+    let h = vp
     if let v = expect["widthChanged"] as? Bool { XCTAssertEqual(widthChanged, v, "widthChanged \(at)") }
     if let v = expect["scroll"] as? [Int] { XCTAssertEqual([vp.scrollX, vp.scrollY], v, "scroll \(at)") }
     if let v = expect["maxScroll"] as? [Int] { XCTAssertEqual([vp.maxScrollX, vp.maxScrollY], v, "maxScroll \(at)") }

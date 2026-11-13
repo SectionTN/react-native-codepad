@@ -70,6 +70,24 @@ void Editor::attach(std::shared_ptr<Engine> engine) {
   epoch_ = engine_ ? engine_attach(*engine_, doc.view(), doc.revision()) : 0;
 }
 
+void Editor::attach_layout(std::shared_ptr<Layout> layout) {
+  layout_ = std::move(layout);
+  if (!layout_) return;
+  layout_->reset(doc.line_count());
+  layout_->set_gaps(decorations.items());
+  layout_->clamp();
+}
+
+bool Editor::set_decorations(const cp_decoration *items, uint32_t count, int32_t revision) {
+  if (!decorations.set(items, count, revision, doc)) return false;
+  if (layout_) {
+    Layout::Anchor a = layout_->anchor();
+    layout_->set_gaps(decorations.items());
+    layout_->restore(a);
+  }
+  return true;
+}
+
 void Editor::forward(const Document::Pending &p) {
   if (engine_) engine_edit(*engine_, epoch_, p.change, p.start_point, p.old_end_point, p.new_end_point, doc.view());
 }
@@ -94,6 +112,7 @@ Change Editor::replace(uint32_t start, uint32_t end, std::u16string_view text, i
   }
   forward(p);
   decorations.edited(p.change, doc);
+  if (layout_) layout_->edited(p.change, doc, decorations.items());
   move_selection(after, true);
   if (origin == CP_ORIGIN_INPUT || origin == CP_ORIGIN_API) {
     undo_.record(p.change, before, after, typing);
@@ -112,6 +131,7 @@ void Editor::replay(uint32_t start, uint32_t end, const std::u16string &text, in
   }
   forward(p);
   decorations.edited(p.change, doc);
+  if (layout_) layout_->edited(p.change, doc, decorations.items());
   notify(p.change, origin);
 }
 
@@ -123,6 +143,7 @@ void Editor::set_text(std::u16string_view text, bool keep_history) {
     sync_history();
   }
   decorations.reset(doc.revision());
+  if (layout_) layout_->set_gaps(decorations.items());
 }
 
 void Editor::insert(std::u16string_view text, int32_t origin) {

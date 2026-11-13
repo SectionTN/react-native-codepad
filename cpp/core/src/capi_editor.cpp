@@ -150,7 +150,7 @@ void cp_editor_attach(cp_editor *editor, cp_engine *engine) {
 }
 
 int32_t cp_editor_set_decorations(cp_editor *editor, const cp_decoration *items, uint32_t count, int32_t revision) {
-  return editor->decorations.set(items, count, revision, editor->doc) ? 1 : 0;
+  return editor->set_decorations(items, count, revision) ? 1 : 0;
 }
 
 uint32_t cp_editor_decorations(const cp_editor *editor, cp_decoration *out, uint32_t cap) {

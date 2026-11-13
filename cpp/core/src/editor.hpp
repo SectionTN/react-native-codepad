@@ -14,6 +14,7 @@
 #include "document.hpp"
 #include "engine.hpp"
 #include "indenter.hpp"
+#include "layout.hpp"
 #include "search.hpp"
 #include "undo.hpp"
 
@@ -53,6 +54,10 @@ class Editor {
   BracketPair bracket_match(const cp_snapshot *snapshot, uint32_t caret) const;
   // The engine parses the current text and hears every later edit. nullptr detaches.
   void attach(std::shared_ptr<Engine> engine);
+  // The layout takes this document's lines and gaps, then follows every edit before the change callback.
+  void attach_layout(std::shared_ptr<Layout> layout);
+  // False when the edits since revision are no longer known. A change moves the gaps and keeps the top line.
+  bool set_decorations(const cp_decoration *items, uint32_t count, int32_t revision);
 
   // False with PCRE2's message in error when the regex does not compile, which also clears the search.
   bool set_search(std::u16string_view text, int32_t flags, std::string &error);
@@ -102,6 +107,7 @@ class Editor {
   std::optional<SearchSession> search_;
   std::shared_ptr<Engine> engine_;
   uint64_t epoch_ = 0;
+  std::shared_ptr<Layout> layout_;
 };
 
 }  // namespace codepad

@@ -37,7 +37,7 @@ final class CodeEditorView: UIScrollView {
     func lineAt(_ offset: Int) -> Int { view.docLineAt(offset) }
     func lineStart(_ line: Int) -> Int { view.docLineStart(line) }
     func lineLength(_ line: Int) -> Int { view.docLineLength(line) }
-    func lineTop(_ line: Int) -> Int { view.heights.rowStart(line) * rowHeight }
+    func lineTop(_ line: Int) -> Int { view.viewport.rowStart(line) * rowHeight }
     func rowCount(_ line: Int) -> Int { view.cache[line]?.layout.rowCount ?? 0 }
     func rowSpans(line: Int, from: Int, to: Int, _ out: (_ row: Int, _ left: CGFloat, _ right: CGFloat) -> Void) {
       view.cache[line]?.layout.selectionRows(from: from, to: to, out)
@@ -108,8 +108,7 @@ final class CodeEditorView: UIScrollView {
   private let frameReader = FrameReader()
   // Set from the frame call to the end of publish.
   private var drawFrame: EditorFrame?
-  private var heights: HeightMap
-  private let viewport: Viewport
+  private let viewport = Viewport()
   private let cache = LayoutCache<Entry>(capacity: 64)
   private var nextEntryId = 0
   private var brackets: BracketHighlight
@@ -137,7 +136,6 @@ final class CodeEditorView: UIScrollView {
   private var selectionViewsDirty = false
   private var contentDirty = false
   private var gapsDirty = false
-  private var syncedDecorations = -1
   private var revealPending = false
   private var autoFocusPending = false
   private var lastContentSize = CGSize(width: -1, height: -1)
@@ -151,9 +149,6 @@ final class CodeEditorView: UIScrollView {
     let core = EditorCore()
     coreLock = OSAllocatedUnfairLock(initialState: core)
     font = CTFontCreateWithName("Menlo" as CFString, 14, nil)
-    let heights = HeightMap(lineCount: 1)
-    self.heights = heights
-    viewport = Viewport(heights: heights)
     brackets = BracketHighlight(core: core)
     textInput = TextInputView(core: core)
     super.init(frame: frame)
@@ -198,7 +193,6 @@ final class CodeEditorView: UIScrollView {
   func setText(_ text: String, keepHistory: Bool) {
     textInput.session.reset()
     core.setText(text, keepHistory: keepHistory)
-    syncGaps()
     viewport.scrollTo(0, 0)
     pushScroll()
     setNeedsLayout()
@@ -514,7 +508,7 @@ final class CodeEditorView: UIScrollView {
   }
 
   func scrollToLine(_ line: Int, animated: Bool) {
-    let target = heights.rowStart(max(0, min(line, core.document.lineCount - 1))) * viewport.rowHeight
+    let target = viewport.rowStart(max(0, min(line, core.document.lineCount - 1))) * viewport.rowHeight
     if animated {
       setContentOffset(CGPoint(x: viewport.scrollX, y: min(target, viewport.maxScrollY)), animated: true)
     } else if viewport.scrollTo(viewport.scrollX, target) {
@@ -533,7 +527,7 @@ final class CodeEditorView: UIScrollView {
     let col = head - doc.lineStart(line)
     let row = entry.layout.rowOf(col)
     let x = Int(entry.layout.caretX(col).rounded())
-    let top = (heights.rowStart(line) + row) * m.rowHeight
+    let top = (viewport.rowStart(line) + row) * m.rowHeight
     if viewport.reveal(left: x, top: top, right: x + Int(CodeEditorView.caretWidth), bottom: top + m.rowHeight) {
       pushScroll()
       onScrolled()
@@ -554,10 +548,10 @@ final class CodeEditorView: UIScrollView {
   private func offsetAt(row: Int, contentX: CGFloat) -> Int {
     let doc = core.document
     if row < 0 { return 0 }
-    if row >= heights.totalRows { return doc.length }
-    let line = heights.lineAtRow(row)
+    if row >= viewport.totalRows { return doc.length }
+    let line = viewport.lineAtRow(row)
     let entry = cache[line] ?? layoutLine(line)
-    let rowInLine = max(0, min(row - heights.rowStart(line), entry.layout.rowCount - 1))
+    let rowInLine = max(0, min(row - viewport.rowStart(line), entry.layout.rowCount - 1))
     return doc.lineStart(line) + entry.layout.columnAt(row: rowInLine, x: contentX)
   }
 
@@ -567,7 +561,7 @@ final class CodeEditorView: UIScrollView {
     let line = docLineAt(offset)
     let entry = cache[line] ?? layoutLine(line)
     let col = offset - docLineStart(line)
-    let top = CGFloat((heights.rowStart(line) + entry.layout.rowOf(col)) * m.rowHeight)
+    let top = CGFloat((viewport.rowStart(line) + entry.layout.rowOf(col)) * m.rowHeight)
     return CGRect(
       x: textPadding + entry.layout.caretX(col), y: top, width: CodeEditorView.caretWidth,
       height: CGFloat(m.rowHeight))
@@ -583,7 +577,7 @@ final class CodeEditorView: UIScrollView {
     // The last rect carries the end only when the end's row was reached, not cut off by the view bottom.
     var endTop: CGFloat = -1
     if let entry = cache[endLine] {
-      endTop = CGFloat((heights.rowStart(endLine) + entry.layout.rowOf(end - docLineStart(endLine))) * m.rowHeight)
+      endTop = CGFloat((viewport.rowStart(endLine) + entry.layout.rowOf(end - docLineStart(endLine))) * m.rowHeight)
     }
     return rects.enumerated().map { i, rect in
       CPSelectionRect(
@@ -656,14 +650,13 @@ final class CodeEditorView: UIScrollView {
     if viewport.scrollTo(Int(contentOffset.x.rounded()), Int(contentOffset.y.rounded())) { scrollDirty = true }
     let scrolled = scrollDirty
     if w == 0 || h == 0 { return }
-    syncGaps()
     let m = rowMetrics()
     if revealPending {
       revealPending = false
       revealSelection()
     }
     let first = viewport.firstVisibleLine()
-    let lastBound = min(heights.lineCount - 1, first + h / m.rowHeight + 1)
+    let lastBound = min(viewport.lineCount - 1, first + h / m.rowHeight + 1)
     let scrollBefore = viewport.scrollY
     // One core call for the whole draw. Until publish returns, every read comes from it.
     let frame = readFrame(first, lastBound)
@@ -710,6 +703,7 @@ final class CodeEditorView: UIScrollView {
   }
 
   private func wire(_ core: EditorCore) {
+    viewport.attach(core)
     core.onChange = { [weak self] change, origin in self?.onDocumentChange(change, origin) }
     core.onSelectionChange = { [weak self] _ in self?.onSelectionMoved() }
     let enabled = brackets.enabled
@@ -741,12 +735,11 @@ final class CodeEditorView: UIScrollView {
     let first = doc.lineAt(change.start)
     let oldCount = lineSpan(change.removed)
     let newCount = lineSpan(change.inserted)
-    heights.replaceLines(first: first, oldCount: oldCount, newCount: newCount)
-    syncGaps()
     keepSpans(first, oldCount, newCount, change)
     cache.shift(first: first, oldCount: oldCount, newCount: newCount)
     search?.onChange(change)
-    if updateGutter() { relayout() } else { viewport.clamp() }
+    // The core already moved the rows and gaps with the edit and clamped the scroll.
+    if updateGutter() { relayout() }
     if origin != .api { revealPending = true }
     // A change the keyboard did not make: it ends a composition it touched and the keyboard hears of it.
     let session = textInput.session
@@ -770,30 +763,17 @@ final class CodeEditorView: UIScrollView {
 
   /// Replaces the decorations. `revision` is the one they were computed for, below zero for the current text.
   func setDecorations(_ items: [Decoration], revision: Int) {
+    // The core moves the gaps and keeps the top visible line where it was.
     if !core.setDecorations(items, revision: revision) { return }
-    let anchor = viewport.anchor()
-    if syncGaps() {
-      viewport.restore(anchor)
-      pushScroll()
-    }
+    pushScroll()
     selectionViewsDirty = true
     updateContentSize()
     setNeedsLayout()
   }
 
-  /// Pushes the gap rows of a changed decoration set into the height map. True when it pushed.
-  @discardableResult
-  private func syncGaps() -> Bool {
-    let set = core.decorations
-    if set.version == syncedDecorations { return false }
-    syncedDecorations = set.version
-    heights.setGaps(set.gapRows())
-    return true
-  }
-
   /// True when a point in content view coordinates is in a gap, where taps leave the caret alone.
   func inGap(contentY: CGFloat) -> Bool {
-    heights.isGapRow(Int((contentY / CGFloat(rowMetrics().rowHeight)).rounded(.down)))
+    viewport.isGapRow(Int((contentY / CGFloat(rowMetrics().rowHeight)).rounded(.down)))
   }
 
   /// The gap under `line` in view points from the last frame, or nil.
@@ -802,9 +782,6 @@ final class CodeEditorView: UIScrollView {
   }
 
   private func resetDocument() {
-    heights = HeightMap(lineCount: core.document.lineCount)
-    syncedDecorations = -1
-    viewport.heights = heights
     cache.clear()
     viewport.widestLine = 0
     updateGutter()
@@ -820,7 +797,7 @@ final class CodeEditorView: UIScrollView {
     let scrollX = viewport.scrollX
     viewport.rowHeight = rowMetrics().rowHeight
     cache.clear()
-    heights.resetAll()
+    viewport.resetRows()
     viewport.widestLine = 0
     updateGutter()
     viewport.restore(anchor)
@@ -1093,7 +1070,7 @@ final class CodeEditorView: UIScrollView {
       if viewport.lineTop(line) >= viewport.height { break }
       guard let entry = cache[line] else { break }
       let full = CGRect(
-        x: 0, y: CGFloat(heights.rowStart(line) * m.rowHeight), width: CGFloat(viewport.contentWidth),
+        x: 0, y: CGFloat(viewport.rowStart(line) * m.rowHeight), width: CGFloat(viewport.contentWidth),
         height: CGFloat(entry.layout.rowCount * m.rowHeight))
       let clipped = full.intersection(clip)
       place(entry, clipped.isNull || clipped.isEmpty ? full : clipped, full, scale)
@@ -1173,8 +1150,8 @@ final class CodeEditorView: UIScrollView {
     if highlightActiveLine && sel.isEmpty {
       d.setActiveLine(
         CGRect(
-          x: 0, y: CGFloat(heights.rowStart(caretLine) * m.rowHeight), width: CGFloat(viewport.contentWidth),
-          height: CGFloat(heights.rows(caretLine) * m.rowHeight)))
+          x: 0, y: CGFloat(viewport.rowStart(caretLine) * m.rowHeight), width: CGFloat(viewport.contentWidth),
+          height: CGFloat(viewport.rows(caretLine) * m.rowHeight)))
     } else {
       d.setActiveLine(nil)
     }
@@ -1207,8 +1184,8 @@ final class CodeEditorView: UIScrollView {
       case .lineBackground(let line, let color):
         if line < first || line > lastLine { continue }
         let rect = CGRect(
-          x: 0, y: CGFloat(heights.rowStart(line) * m.rowHeight), width: CGFloat(viewport.contentWidth),
-          height: CGFloat(heights.rows(line) * m.rowHeight))
+          x: 0, y: CGFloat(viewport.rowStart(line) * m.rowHeight), width: CGFloat(viewport.contentWidth),
+          height: CGFloat(viewport.rows(line) * m.rowHeight))
         backgrounds.path(DecorationLayers.Paint(color: color, width: 0)).addRect(rect)
       case .underline(let u):
         let thickness = CGFloat(u.thickness)
@@ -1313,7 +1290,7 @@ final class CodeEditorView: UIScrollView {
     if rows.isEmpty { return [] }
     var out: [GapRect] = []
     for line in rows.keys.sorted() {
-      let top = CGFloat(viewport.rowTop(heights.rowStart(line) + heights.rows(line)))
+      let top = CGFloat(viewport.rowTop(viewport.rowStart(line) + viewport.rows(line)))
       let height = CGFloat((rows[line] ?? 0) * m.rowHeight)
       out.append(GapRect(line: line, rect: CGRect(x: 0, y: top, width: bounds.width, height: height)))
     }
