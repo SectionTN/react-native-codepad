@@ -4,7 +4,7 @@ description: The shared C++ core, the platform layers and threads, the tree-sitt
 sidebar_position: 1
 ---
 
-The editor engine is one C++ core under `cpp/core`, shared by Android and iOS. It holds the document, the selection, undo, the editing commands, decorations, search and the tree-sitter parsing, behind a C API that Kotlin calls through JNI and Swift calls directly. Each platform keeps its own view, layout, input and drawing, in Kotlin and in Swift, with the same layers and the same names, and it is bound to React Native through Nitro Views. The TypeScript wrapper, the core, the tree-sitter runtime, the grammars and the test vectors are shared.
+The editor engine is one C++ core under `cpp/core`, shared by Android and iOS. It holds the document, the selection, undo, the editing commands, decorations, search, the tree-sitter parsing and the rows and scroll of the layout, behind a C API that Kotlin calls through JNI and Swift calls directly. Each platform keeps its own view, line layout, input and drawing, in Kotlin and in Swift, with the same layers and the same names, and it is bound to React Native through Nitro Views. The TypeScript wrapper, the core, the tree-sitter runtime, the grammars and the test vectors are shared.
 
 ## Why an own engine
 
@@ -19,7 +19,7 @@ Under `me.sectiontn.codepad` in `android/src/main/java`:
 | `core` | `EditorCore`, `Document`, `UndoManager`, `DecorationSet`, `TextMovement`, `Searcher` and `EditorFrame`, thin Kotlin facades over the C++ core. | `CoreNative` |
 | `input` | `ImeSession`, the keyboard protocol, and `KeyCommands`, the hardware key table. | core |
 | `syntax` | `SyntaxEngine` and its thread, `CoreNative`, the JNI binding to the C++ core, `LanguageRegistry`, `Highlighter`, the per line span cache. | core |
-| `layout` | `LineLayout` over `StaticLayout`, `HeightMap`, `LayoutCache`, `Viewport`, `CaretMover`, `GutterMetrics`. | core, syntax |
+| `layout` | `LineLayout` over `StaticLayout`, `LayoutCache`, `Viewport` (the facade over the core's layout), `CaretMover`, `GutterMetrics`. | core, syntax |
 | `view` | `CodeEditorView`: drawing, gestures, scrolling, the input connection, handles, the edit menu, the keyboard inset tracker. | every layer before it |
 | `com.margelo.nitro.codepad` | `HybridCodeEditorView` and `HybridCodepad`, the Nitro layer. | view |
 
@@ -27,7 +27,7 @@ The core runs `tests/vectors/*.json` on the JVM and under `swift test`. The keyb
 
 ### `core`
 
-The document is immutable UTF-16 text in shared chunks, plus a table of line starts. An edit builds a new text that shares every chunk outside the edited range. A parse or a reader on another thread goes on reading the version it started with, and an edit copies only the chunks it changes. `\r\n` and a `\r` on its own become `\n` on load. One replacement is the only mutation. The main thread prepares it outside the lock and commits it under the exclusive lock. A draw reads everything it needs in one call, `cp_editor_frame`: the selection, the visible lines' starts, and the lines to lay out with their spans and text. Undo groups hold the inverse changes plus the selection before and after. Single character typing merges into the previous group when it is adjacent, within a second and not a newline. API edits never merge with typing.
+The document is immutable UTF-16 text in shared chunks, plus a table of line starts. An edit builds a new text that shares every chunk outside the edited range. A parse or a reader on another thread goes on reading the version it started with, and an edit copies only the chunks it changes. `\r\n` and a `\r` on its own become `\n` on load. One replacement is the only mutation. The main thread prepares it outside the lock and commits it under the exclusive lock. A draw reads the document in one call, `cp_editor_frame`: the core's layout picks the visible lines, and the call returns the selection, their starts, and the lines to lay out with their spans and text. Undo groups hold the inverse changes plus the selection before and after. Single character typing merges into the previous group when it is adjacent, within a second and not a newline. API edits never merge with typing.
 
 ### `syntax`
 
@@ -37,7 +37,7 @@ The main thread queries the published snapshot for the visible lines only and ca
 
 ### `layout`
 
-`LineLayout` turns a line into a `StaticLayout` at the wrap width. The row height is uniform, `round(fontSize * lineHeight)`, so a fallback font for emoji or CJK never changes it. `HeightMap` stores a row count per line, with unmeasured lines counting as one. `LayoutCache` is an LRU around the viewport. Only a wrap width change drops it, and the scroll is then re-anchored to the top visible line.
+`LineLayout` turns a line into a `StaticLayout` at the wrap width. The row height is uniform, `round(fontSize * lineHeight)`, so a fallback font for emoji or CJK never changes it. The core's layout stores a row count per line, with unmeasured lines counting as one, the gap rows under decorated lines, and the scroll. Edits update the rows inside the core before the change callback runs. `Viewport` is the facade over it. Once the view has laid out the frame's lines, one more call, `cp_layout_measure`, records their row counts and the widest line. It returns the view top of each visible line, their rows and every gap, and the painters read that copy until the draw ends. A draw makes these two core calls, and a fling frame makes one scroll call. `LayoutCache` is an LRU around the viewport. Only a wrap width change drops it, and the scroll is then re-anchored to the top visible line.
 
 ### `view`
 
