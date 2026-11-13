@@ -1360,7 +1360,9 @@ final class CodeEditorView: UIScrollView {
   /// One line per scrolled frame with its layout time, for the scroll bench.
   private func logFrame() {
     if !debugSwitch() { return }
-    let ms = Int(((CACurrentMediaTime() - frameStart) * 1000).rounded())
-    DebugSwitch.log.info("{\"call\":\"frame\",\"ms\":\(ms, privacy: .public)}")
+    let elapsed = CACurrentMediaTime() - frameStart
+    let ms = Int((elapsed * 1000).rounded())
+    let us = Int((elapsed * 1_000_000).rounded())
+    DebugSwitch.log.info("{\"call\":\"frame\",\"ms\":\(ms, privacy: .public),\"us\":\(us, privacy: .public)}")
   }
 }

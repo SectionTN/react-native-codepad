@@ -10,9 +10,9 @@ bundle=${CODEPAD_BUNDLE:-me.sectiontn.codepad.example}
 seconds=${CODEPAD_BENCH_SECONDS:-30}
 
 summary() {
-  sort -n | awk -v name="$1" '{ v[NR] = $1 } END {
+  sort -n | awk -v name="$1" -v unit="${2:-ms}" '{ v[NR] = $1 } END {
     if (NR == 0) exit
-    printf "%-8s p50 %d ms  p90 %d ms  p95 %d ms  p99 %d ms  max %d ms\n", name, v[int(NR * 0.5 + 0.5)], v[int(NR * 0.9 + 0.5)], v[int(NR * 0.95 + 0.5)], v[int(NR * 0.99 + 0.5)], v[NR]
+    printf "%-8s p50 %d %s  p90 %d %s  p95 %d %s  p99 %d %s  max %d %s\n", name, v[int(NR * 0.5 + 0.5)], unit, v[int(NR * 0.9 + 0.5)], unit, v[int(NR * 0.95 + 0.5)], unit, v[int(NR * 0.99 + 0.5)], unit, v[NR], unit
   }'
 }
 
@@ -42,6 +42,7 @@ case "$cmd" in
     [ -n "$frames" ] || { echo "no frame lines: scroll the editor while it streams"; exit 1; }
     echo "frames $(echo "$frames" | wc -l | tr -d ' ')  over 16 ms $(echo "$frames" | awk '$1 > 16 { n++ } END { print n + 0 }')"
     echo "$frames" | summary frame
+    sed -n 's/.*"call":"frame","ms":[0-9]*,"us":\([0-9]*\).*/\1/p' "$raw" | summary frame us
     ;;
   memory)
     pid=$(pgrep -f "CodepadExample.app/CodepadExample" | head -n 1)

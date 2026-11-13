@@ -6,6 +6,8 @@ set -euo pipefail
 pkg=${CODEPAD_PACKAGE:-me.sectiontn.codepad.example}
 cmd=${1:-scroll}
 
+summary() { sort -n | awk -v name="$1" -v unit="${2:-ms}" '{ v[NR] = $1 } END { if (NR == 0) exit; printf "%-8s p50 %d %s  p95 %d %s  max %d %s  n %d\n", name, v[int(NR * 0.5 + 0.5)], unit, v[int(NR * 0.95 + 0.5)], unit, v[NR], unit, NR }'; }
+
 case "$cmd" in
   scroll)
     swipes=${2:-8}
@@ -14,13 +16,22 @@ case "$cmd" in
     x=$((width / 2))
     from=$((height * 8 / 10))
     to=$((height * 2 / 10))
+    adb shell settings put global codepad_debug 1
+    # The view re-reads the setting at most once a second.
+    sleep 1.2
+    adb logcat -c
     adb shell dumpsys gfxinfo "$pkg" reset > /dev/null
     for ((i = 0; i < swipes; i++)); do
       adb shell input swipe "$x" "$from" "$x" "$to" 80
       sleep 1.5
     done
     sleep 1
+    adb shell settings put global codepad_debug 0
     adb shell dumpsys gfxinfo "$pkg" | sed -n '/Total frames rendered/,/99th percentile/p'
+    log=$(adb logcat -d -v raw -s codepad-ime:I)
+    # draw is a whole onDraw of a scrolled frame, fling one computeScroll that moved the scroll.
+    echo "$log" | sed -n 's/.*"call":"draw","us":\([0-9]*\).*/\1/p' | summary draw us
+    echo "$log" | sed -n 's/.*"call":"fling","us":\([0-9]*\).*/\1/p' | summary fling us
     ;;
   memory)
     adb shell dumpsys meminfo "$pkg" | grep -E 'Java Heap:|Native Heap:|Graphics:|TOTAL PSS'
@@ -41,7 +52,6 @@ case "$cmd" in
     lines=$(adb logcat -d -v raw -s codepad-ime:I | sed -n 's/.*"call":"paint","latency":\([0-9]*\),"work":\([0-9]*\).*/\1 \2/p')
     [ -n "$lines" ] || { echo "no paint lines: focus the editor first"; exit 1; }
     # latency runs from the key event time to the end of the draw, so it includes the wait for the next vsync; work is the time in the key handler and onDraw.
-    summary() { sort -n | awk -v name="$1" '{ v[NR] = $1 } END { printf "%-8s p50 %d ms  p95 %d ms  max %d ms\n", name, v[int(NR * 0.5 + 0.5)], v[int(NR * 0.95 + 0.5)], v[NR] }'; }
     echo "frames $(echo "$lines" | wc -l)"
     echo "$lines" | awk '{ print $1 }' | summary latency
     echo "$lines" | awk '{ print $2 }' | summary work

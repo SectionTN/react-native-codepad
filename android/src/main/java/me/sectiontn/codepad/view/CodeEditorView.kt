@@ -1102,11 +1102,13 @@ class CodeEditorView(context: Context) : View(context) {
 
   override fun computeScroll() {
     if (!scroller.step()) return
+    val start = System.nanoTime()
     val wasTop = viewport.scrollY == 0
     val wasBottom = viewport.scrollY == viewport.maxScrollY
     val wasLeft = viewport.scrollX == 0
     val wasRight = viewport.scrollX == viewport.maxScrollX
-    if (viewport.scrollTo(scroller.currX, scroller.currY)) onScrolled()
+    val moved = viewport.scrollTo(scroller.currX, scroller.currY)
+    if (moved) onScrolled()
     val v = scroller.currVelocity.toInt()
     if (scroller.flinging && v > 0) {
       if (!wasTop && viewport.scrollY == 0) scroller.absorbTop(v)
@@ -1114,6 +1116,7 @@ class CodeEditorView(context: Context) : View(context) {
       if (!wasLeft && viewport.scrollX == 0) scroller.absorbLeft(v)
       if (!wasRight && viewport.scrollX == viewport.maxScrollX) scroller.absorbRight(v)
     }
+    if (moved && debugSwitch()) Log.i(DebugSwitch.TAG, "{\"call\":\"fling\",\"us\":${(System.nanoTime() - start) / 1000}}")
     postInvalidateOnAnimation()
   }
 
@@ -1261,6 +1264,7 @@ class CodeEditorView(context: Context) : View(context) {
   override fun onDraw(canvas: Canvas) {
     if (dropped) return
     drawStart = SystemClock.uptimeMillis()
+    val drawNanos = System.nanoTime()
     // React Native parents leave clipChildren off, so an unclipped drawColor would cover siblings.
     canvas.clipRect(0, 0, width, height)
     canvas.drawColor(theme.background)
@@ -1299,6 +1303,7 @@ class CodeEditorView(context: Context) : View(context) {
     core.document.drawingThread = null
     drawFrame = null
     flushIme(m)
+    val scrolled = scrollDirty
     if (scrollDirty) {
       scrollDirty = false
       onScrollListener?.invoke(frame)
@@ -1319,6 +1324,7 @@ class CodeEditorView(context: Context) : View(context) {
       drawn = true
       onFirstDraw?.let { post(it) }
     }
+    if (scrolled && debugSwitch()) Log.i(DebugSwitch.TAG, "{\"call\":\"draw\",\"us\":${(System.nanoTime() - drawNanos) / 1000}}")
   }
 
   /**
