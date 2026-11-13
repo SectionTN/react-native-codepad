@@ -70,6 +70,22 @@ final class CoreLayoutTests: XCTestCase {
     XCTAssertEqual(cp_layout_scroll_to(viewport.handle, 0, 0, nil), 3)
   }
 
+  // A draw reveals the caret before its measure call, when its copy has no tops yet. Reading the last draw's top there
+  // puts the caret row off by the scroll since then, and the reveal jumps or misses.
+  func testAReadBeforeTheMeasureCallIgnoresTheLastDrawsTops() {
+    let core = EditorCore((0..<100).map { "line \($0)" }.joined(separator: "\n"))
+    let viewport = Viewport()
+    viewport.attach(core)
+    viewport.rowHeight = 10
+    viewport.resize(width: 100, height: 50)
+    viewport.beginDraw(scrollX: 0, scrollY: 100)
+    viewport.measure(pairs: [], widest: -1, first: 10, last: 16)
+    viewport.endDraw()
+    viewport.beginDraw(scrollX: 0, scrollY: 300)
+    XCTAssertEqual(viewport.rowStart(10), 10)
+    viewport.endDraw()
+  }
+
   // onGapLayout publishes every gap on each draw, the ones off screen too, so the measure call carries them all.
   func testMeasureWritesEveryGapAfterTheRows() {
     let core = EditorCore((0..<20).map { _ in "x" }.joined(separator: "\n"))

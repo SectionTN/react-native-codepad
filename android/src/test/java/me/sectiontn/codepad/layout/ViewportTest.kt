@@ -64,6 +64,28 @@ class ViewportTest {
     }
   }
 
+  // A draw reveals the caret before its measure call, when its copy has no tops yet. Reading the last draw's top there
+  // puts the caret row off by the scroll since then, and the reveal jumps or misses.
+  @Test
+  fun aReadBeforeTheMeasureCallIgnoresTheLastDrawsTops() {
+    lines(100).use { core ->
+      val v = Viewport()
+      v.attach(core)
+      v.rowHeight = 10
+      v.resize(100, 50)
+      v.scrollTo(0, 100)
+      v.beginDraw(checksCalls = false)
+      v.measure(IntArray(0), 0, -1, 10, 16)
+      v.endDraw()
+      v.scrollTo(0, 300)
+      v.beginDraw(checksCalls = false)
+      v.measured(10, 1)
+      assertEquals(10, v.rowStart(10))
+      v.endDraw()
+      v.close()
+    }
+  }
+
   // With the debug switch on, a ninth single layout call in one draw throws: a per-line crossing crept into the draw.
   @Test
   fun aNinthCallInsideADrawThrowsInDebug() {

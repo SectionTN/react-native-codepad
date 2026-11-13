@@ -314,7 +314,7 @@ final class Viewport {
   }
 
   private func drawnTop(_ line: Int) -> Int? {
-    cached && line >= first && line <= last + 1 ? Int(buffer[line - first]) : nil
+    cached && last >= first && line >= first && line <= last + 1 ? Int(buffer[line - first]) : nil
   }
 
   private static func parseGaps(_ ints: ArraySlice<Int32>, from start: Int) -> [Gap] {

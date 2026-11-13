@@ -332,7 +332,9 @@ class Viewport {
     configKnown = true
   }
 
-  private fun drawnTop(line: Int): Int? = if (cached && line >= first && line <= last + 1) buffer[line - first] else null
+  // last < first means this draw has no tops yet, or lost them to a scroll move.
+  private fun drawnTop(line: Int): Int? =
+    if (cached && last >= first && line >= first && line <= last + 1) buffer[line - first] else null
 
   private fun field(i: Int): Int {
     if (!cached) geometry()
