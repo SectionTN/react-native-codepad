@@ -1269,10 +1269,17 @@ class CodeEditorView(context: Context) : View(context) {
       revealSelection()
     }
     // One core call for the document. Until publish returns, every document read comes from it.
-    val f = readFrame()
+    var f = readFrame()
     drawFrame = f
     if (debugSwitch()) core.document.drawingThread = Thread.currentThread()
     prepare(f, m)
+    // A measure call that clamps the scroll (a visible line lost rows at the end) shows lines above the frame. They
+    // are laid out in this draw too, so none of them shows blank.
+    if (viewport.firstVisibleLine() < f.first) {
+      f = readFrame()
+      drawFrame = f
+      prepare(f, m)
+    }
     val firstLine = f.first
     val lastBound = f.last
     val caretLine = f.caretLine

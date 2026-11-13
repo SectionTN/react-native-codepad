@@ -44,4 +44,22 @@ final class ScrollTests: XCTestCase {
     let frame = editor.viewport.firstVisibleLine()...editor.viewport.lastVisibleLine()
     XCTAssertEqual(frame.filter { !cached.contains($0) }, [], "frame \(frame), oldest cached before the jump \(oldest)")
   }
+
+  // A measure call that lowers the end of the content clamps the scroll and shows lines above the draw's frame. The
+  // same draw lays them out, so none of them shows blank.
+  func testAClampInTheMeasureCallLaysOutTheLinesItShows() {
+    let editor = launch()
+    editor.setInitialText((0..<100).map { "line \($0)" }.joined(separator: "\n"))
+    layout(editor)
+    draw(editor)
+    // The core holds 30 rows for the last line, its layout will have one.
+    editor.viewport.measured(99, 30)
+    editor.contentOffset.y = CGFloat(editor.viewport.maxScrollY)
+    editor.setNeedsLayout()
+    editor.layoutIfNeeded()
+    var cached = Set<Int>()
+    editor.cache.forEachEntry { line, _ in cached.insert(line) }
+    let frame = editor.viewport.firstVisibleLine()...editor.viewport.lastVisibleLine()
+    XCTAssertEqual(frame.filter { !cached.contains($0) }, [], "frame \(frame)")
+  }
 }

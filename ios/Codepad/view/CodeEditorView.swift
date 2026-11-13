@@ -662,12 +662,20 @@ final class CodeEditorView: UIScrollView {
       revealPending = false
       revealSelection()
     }
-    let frame = readFrame()
+    var frame = readFrame()
     drawFrame = frame
     core.document.drawing = true
+    var moved = prepare(frame, m)
+    // A measure call that clamps the scroll (a visible line lost rows at the end) shows lines above the frame. They
+    // are laid out in this draw too, so none of them shows blank.
+    if viewport.firstVisibleLine() < frame.first {
+      frame = readFrame()
+      drawFrame = frame
+      if prepare(frame, m) { moved = true }
+    }
     let first = frame.first
     let lastBound = frame.last
-    if prepare(frame, m) { pushScroll() } else { updateContentSize() }
+    if moved { pushScroll() } else { updateContentSize() }
     let caretLine = frame.caretLine
     let lastLine = placeLayers(first, lastBound, m)
     placeGutter(first, lastLine, caretLine)
