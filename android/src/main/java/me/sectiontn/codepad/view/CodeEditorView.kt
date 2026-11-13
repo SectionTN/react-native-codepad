@@ -1273,9 +1273,9 @@ class CodeEditorView(context: Context) : View(context) {
     drawFrame = f
     if (debugSwitch()) core.document.drawingThread = Thread.currentThread()
     prepare(f, m)
-    // A measure call that clamps the scroll (a visible line lost rows at the end) shows lines above the frame. They
-    // are laid out in this draw too, so none of them shows blank.
-    if (viewport.firstVisibleLine() < f.first) {
+    // A measure call that clamps the scroll (a visible line lost rows at the end) shows lines above the frame, and
+    // their own measure call can clamp again. They are laid out in this draw, so none of them shows blank.
+    while (viewport.firstVisibleLine() < f.first) {
       f = readFrame()
       drawFrame = f
       prepare(f, m)

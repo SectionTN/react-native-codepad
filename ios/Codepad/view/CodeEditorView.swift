@@ -666,9 +666,9 @@ final class CodeEditorView: UIScrollView {
     drawFrame = frame
     core.document.drawing = true
     var moved = prepare(frame, m)
-    // A measure call that clamps the scroll (a visible line lost rows at the end) shows lines above the frame. They
-    // are laid out in this draw too, so none of them shows blank.
-    if viewport.firstVisibleLine() < frame.first {
+    // A measure call that clamps the scroll (a visible line lost rows at the end) shows lines above the frame, and
+    // their own measure call can clamp again. They are laid out in this draw, so none of them shows blank.
+    while viewport.firstVisibleLine() < frame.first {
       frame = readFrame()
       drawFrame = frame
       if prepare(frame, m) { moved = true }
