@@ -2,6 +2,7 @@
 #include <jni.h>
 #include <time.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -554,24 +555,118 @@ FN(searchFind)(JNIEnv *e, jclass, jlong search, jlong text, jintArray scan, jint
   return n;
 }
 
-// Main thread, once per draw. No Kotlin runs inside, so both outputs stay critical. text_len[0] gets the units needed.
-FN(editorFrame)(JNIEnv *e, jclass, jlong editor, jlong snapshot, jint first, jint last, jint applied,
-                jboolean use_changed, jintArray entries, jintArray out, jcharArray text, jintArray text_len) -> jint {
-  jsize n = e->GetArrayLength(entries);
-  std::vector<int32_t> revisions(static_cast<size_t>(n));
-  if (n > 0) e->GetIntArrayRegion(entries, 0, n, reinterpret_cast<jint *>(revisions.data()));
+// Main thread, once per draw. No Kotlin runs inside, so the arrays stay critical. The first pair_count (line,
+// revision) pairs of pairs are read. text_len[0] gets the units needed.
+FN(editorFrame)(JNIEnv *e, jclass, jlong editor, jlong layout, jlong snapshot, jint applied, jboolean use_changed,
+                jintArray pairs, jint pair_count, jintArray out, jcharArray text, jintArray text_len) -> jint {
+  auto count = static_cast<uint32_t>(std::max(0, std::min(pair_count, e->GetArrayLength(pairs) / 2)));
   jsize cap = e->GetArrayLength(out);
   jsize text_cap = e->GetArrayLength(text);
   uint32_t units = 0;
+  auto *p = static_cast<jint *>(e->GetPrimitiveArrayCritical(pairs, nullptr));
   auto *o = static_cast<jint *>(e->GetPrimitiveArrayCritical(out, nullptr));
   auto *t = static_cast<jchar *>(e->GetPrimitiveArrayCritical(text, nullptr));
-  uint32_t needed = cp_editor_frame_range(ed(editor), ptr<cp_snapshot>(snapshot), first, last, applied,
-                                          use_changed ? 1 : 0, revisions.data(), reinterpret_cast<int32_t *>(o),
-                                          static_cast<uint32_t>(cap), reinterpret_cast<cp_unit *>(t),
-                                          static_cast<uint32_t>(text_cap), &units);
+  uint32_t needed = cp_editor_frame(ed(editor), ptr<cp_layout>(layout), ptr<cp_snapshot>(snapshot), applied,
+                                    use_changed ? 1 : 0, reinterpret_cast<const int32_t *>(p), count,
+                                    reinterpret_cast<int32_t *>(o), static_cast<uint32_t>(cap),
+                                    reinterpret_cast<cp_unit *>(t), static_cast<uint32_t>(text_cap), &units);
   e->ReleasePrimitiveArrayCritical(text, t, 0);
   e->ReleasePrimitiveArrayCritical(out, o, 0);
+  e->ReleasePrimitiveArrayCritical(pairs, p, JNI_ABORT);
   auto length = static_cast<jint>(units);
   e->SetIntArrayRegion(text_len, 0, 1, &length);
   return static_cast<jint>(needed);
 }
+
+// The layout. Main thread only. Geometry crosses as the 17 ints of cp_geometry, in its field order.
+static_assert(sizeof(cp_geometry) == 17 * sizeof(int32_t), "cp_geometry is 17 packed ints");
+static_assert(sizeof(cp_layout_config) == 10 * sizeof(int32_t), "cp_layout_config is 10 packed ints");
+
+namespace {
+
+cp_layout *lay(jlong v) { return ptr<cp_layout>(v); }
+
+void put(JNIEnv *e, jintArray out, const cp_geometry &g) {
+  if (out != nullptr) e->SetIntArrayRegion(out, 0, 17, reinterpret_cast<const jint *>(&g));
+}
+
+}  // namespace
+
+FN(layoutNew)(JNIEnv *, jclass) -> jlong { return reinterpret_cast<jlong>(cp_layout_new()); }
+FN(layoutFree)(JNIEnv *, jclass, jlong layout) -> void { cp_layout_free(lay(layout)); }
+
+FN(editorAttachLayout)(JNIEnv *, jclass, jlong editor, jlong layout) -> void {
+  cp_editor_attach_layout(ed(editor), layout != 0 ? lay(layout) : nullptr);
+}
+
+FN(layoutConfigure)(JNIEnv *e, jclass, jlong layout, jintArray config) -> jboolean {
+  cp_layout_config c;
+  e->GetIntArrayRegion(config, 0, 10, reinterpret_cast<jint *>(&c));
+  return cp_layout_configure(lay(layout), &c) != 0;
+}
+
+FN(layoutGeometry)(JNIEnv *e, jclass, jlong layout, jintArray out) -> void {
+  cp_geometry g;
+  cp_layout_geometry(lay(layout), &g);
+  put(e, out, g);
+}
+
+FN(layoutScrollTo)(JNIEnv *e, jclass, jlong layout, jint x, jint y, jintArray out) -> jint {
+  cp_geometry g;
+  int32_t axes = cp_layout_scroll_to(lay(layout), x, y, &g);
+  put(e, out, g);
+  return axes;
+}
+
+FN(layoutReveal)(JNIEnv *e, jclass, jlong layout, jint left, jint top, jint right, jint bottom, jintArray out)
+    -> jboolean {
+  cp_geometry g;
+  int32_t moved = cp_layout_reveal(lay(layout), left, top, right, bottom, &g);
+  put(e, out, g);
+  return moved != 0;
+}
+
+// The draw's measure call. The first pair_count (line, rows) pairs of pairs are applied. tops_rows may be short, then
+// it gets nothing and the return says how many ints it needs.
+FN(layoutMeasure)(JNIEnv *e, jclass, jlong layout, jintArray pairs, jint pair_count, jint widest, jint first,
+                  jint last, jintArray geometry, jintArray tops_rows) -> jint {
+  auto count = static_cast<uint32_t>(std::max(0, std::min(pair_count, e->GetArrayLength(pairs) / 2)));
+  jsize cap = e->GetArrayLength(tops_rows);
+  cp_geometry g;
+  auto *p = static_cast<jint *>(e->GetPrimitiveArrayCritical(pairs, nullptr));
+  auto *o = static_cast<jint *>(e->GetPrimitiveArrayCritical(tops_rows, nullptr));
+  uint32_t needed = cp_layout_measure(lay(layout), reinterpret_cast<const int32_t *>(p), count, widest, first, last,
+                                      &g, reinterpret_cast<int32_t *>(o), static_cast<uint32_t>(cap));
+  e->ReleasePrimitiveArrayCritical(tops_rows, o, 0);
+  e->ReleasePrimitiveArrayCritical(pairs, p, JNI_ABORT);
+  put(e, geometry, g);
+  return static_cast<jint>(needed);
+}
+
+FN(layoutSetWidest)(JNIEnv *, jclass, jlong layout, jint widest) -> void { cp_layout_set_widest(lay(layout), widest); }
+FN(layoutRows)(JNIEnv *, jclass, jlong layout, jint line) -> jint { return cp_layout_rows(lay(layout), line); }
+FN(layoutGapRows)(JNIEnv *, jclass, jlong layout, jint line) -> jint { return cp_layout_gap_rows(lay(layout), line); }
+FN(layoutRowStart)(JNIEnv *, jclass, jlong layout, jint line) -> jint {
+  return cp_layout_row_start(lay(layout), line);
+}
+FN(layoutLineAtRow)(JNIEnv *, jclass, jlong layout, jint row) -> jint {
+  return cp_layout_line_at_row(lay(layout), row);
+}
+FN(layoutIsGapRow)(JNIEnv *, jclass, jlong layout, jint row) -> jboolean {
+  return cp_layout_is_gap_row(lay(layout), row) != 0;
+}
+FN(layoutRowTop)(JNIEnv *, jclass, jlong layout, jint row) -> jint { return cp_layout_row_top(lay(layout), row); }
+FN(layoutLineTop)(JNIEnv *, jclass, jlong layout, jint line) -> jint { return cp_layout_line_top(lay(layout), line); }
+FN(layoutRowAt)(JNIEnv *, jclass, jlong layout, jint y) -> jint { return cp_layout_row_at(lay(layout), y); }
+
+FN(layoutAnchor)(JNIEnv *e, jclass, jlong layout, jintArray out) -> void {
+  int32_t anchor[2] = {0, 0};
+  cp_layout_anchor(lay(layout), &anchor[0], &anchor[1]);
+  e->SetIntArrayRegion(out, 0, 2, reinterpret_cast<const jint *>(anchor));
+}
+
+FN(layoutRestore)(JNIEnv *, jclass, jlong layout, jint line, jint offset) -> jboolean {
+  return cp_layout_restore(lay(layout), line, offset) != 0;
+}
+
+FN(layoutResetRows)(JNIEnv *, jclass, jlong layout) -> void { cp_layout_reset_rows(lay(layout)); }

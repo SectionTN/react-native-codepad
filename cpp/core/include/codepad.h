@@ -214,7 +214,7 @@ CP_API void cp_editor_attach_layout(cp_editor *editor, cp_layout *layout);
 // Returns 1 when the text area width changed, which is when line layouts must be rebuilt.
 CP_API int32_t cp_layout_configure(cp_layout *layout, const cp_layout_config *config);
 CP_API void cp_layout_geometry(const cp_layout *layout, cp_geometry *out);
-// Returns 1 when the clamped scroll moved. out may be NULL.
+// Clamps and applies. Returns 1 when x moved, 2 when y moved, 3 when both did. out may be NULL.
 CP_API int32_t cp_layout_scroll_to(cp_layout *layout, int32_t x, int32_t y, cp_geometry *out);
 // The smallest scroll that shows a rect in layout coordinates with the text padding around it. Returns 1 when it moved.
 CP_API int32_t cp_layout_reveal(cp_layout *layout, int32_t left, int32_t top, int32_t right, int32_t bottom,
@@ -347,17 +347,17 @@ CP_API uint32_t cp_editor_frame(const cp_editor *editor, const cp_layout *layout
                                 int32_t applied_revision, int32_t use_changed, const int32_t *entries,
                                 uint32_t entry_count, int32_t *out, uint32_t cap, cp_unit *text_out,
                                 uint32_t text_cap, uint32_t *text_len);
-// cp_editor_frame over lines [first_line, last_line] clamped to the document, with no first and last in the
-// header. entry_revisions[i] is the cached revision of line first_line + i.
-CP_API uint32_t cp_editor_frame_range(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
-                                      int32_t last_line, int32_t applied_revision, int32_t use_changed,
-                                      const int32_t *entry_revisions, int32_t *out, uint32_t cap, cp_unit *text_out,
-                                      uint32_t text_cap, uint32_t *text_len);
 // A line's triples after an edit inside it replaced removed units at start with inserted units.
 CP_API uint32_t cp_shift_spans(const int32_t *spans, uint32_t count, int32_t start, int32_t removed,
                                int32_t inserted, int32_t *out, uint32_t cap);
 
 #ifdef CODEPAD_TEST_HOOKS
+// cp_editor_frame over lines [first_line, last_line] clamped to the document, with no first and last in the
+// header. entry_revisions[i] is the cached revision of line first_line + i.
+CP_API uint32_t cp_test_frame_range(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
+                                    int32_t last_line, int32_t applied_revision, int32_t use_changed,
+                                    const int32_t *entry_revisions, int32_t *out, uint32_t cap, cp_unit *text_out,
+                                    uint32_t text_cap, uint32_t *text_len);
 // Parses source with the language, runs query over the whole tree and returns how many matches pass their
 // predicates, or -1 with a message in error when the query does not compile.
 CP_API int32_t cp_test_predicate(const cp_language *language, const char *query, uint32_t query_len,

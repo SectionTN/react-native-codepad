@@ -39,7 +39,6 @@ import me.sectiontn.codepad.input.KeyCommand
 import me.sectiontn.codepad.input.KeyCommands
 import me.sectiontn.codepad.layout.CaretMover
 import me.sectiontn.codepad.layout.GutterMetrics
-import me.sectiontn.codepad.layout.HeightMap
 import me.sectiontn.codepad.layout.LayoutCache
 import me.sectiontn.codepad.layout.LineGeometry
 import me.sectiontn.codepad.layout.LineLayout
@@ -108,9 +107,11 @@ class CodeEditorView(context: Context) : View(context) {
   var engine: SyntaxEngine? = null
     private set
 
-  private var heights = HeightMap(1)
-  private val viewport = Viewport(heights)
+  private val viewport = Viewport()
   private val cache = LayoutCache<Entry>(64)
+  // The draw's (line, revision) pairs for the frame call and (line, rows) pairs for the measure call, kept across draws.
+  private var framePairs = IntArray(256)
+  private var measurePairs = IntArray(64)
   private val frameReader = FrameReader()
   // The frame of the draw in progress: from the frame call to the end of publish, every read comes from it.
   private var drawFrame: EditorFrame? = null
@@ -182,7 +183,6 @@ class CodeEditorView(context: Context) : View(context) {
   private var lastContentWidth = -1f
   private var lastContentHeight = -1f
   private var gapsDirty = false
-  private var syncedDecorations = -1
   private var grabDy = 0f
   private var dragFixed = 0
   private var anchorX = 0f
@@ -271,7 +271,6 @@ class CodeEditorView(context: Context) : View(context) {
   fun setText(text: String, keepHistory: Boolean) {
     ime.reset()
     core.setText(text, keepHistory)
-    syncGaps()
     viewport.scrollTo(0, 0)
     restartInput()
     invalidate()
@@ -448,11 +447,12 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   fun scrollToLine(line: Int, animated: Boolean) {
-    val target = heights.rowStart(line.coerceIn(0, core.document.lineCount - 1)) * viewport.rowHeight
+    val target = viewport.rowStart(line.coerceIn(0, core.document.lineCount - 1)) * viewport.rowHeight
     scroller.abort()
+    val s = viewport.scroll()
     if (animated) {
-      scroller.animateTo(viewport.scrollX, viewport.scrollY, viewport.scrollX, target.coerceIn(0, viewport.maxScrollY))
-    } else if (viewport.scrollTo(viewport.scrollX, target)) {
+      scroller.animateTo(s.x, s.y, s.x, target.coerceIn(0, s.maxY))
+    } else if (viewport.scrollTo(s.x, target)) {
       onScrolled()
     }
   }
@@ -466,7 +466,7 @@ class CodeEditorView(context: Context) : View(context) {
     val col = head - core.document.lineStart(line)
     val row = entry.layout.rowOf(col)
     val x = Math.round(entry.layout.caretX(col))
-    val top = (heights.rowStart(line) + row) * m.rowHeight
+    val top = (viewport.rowStart(line) + row) * m.rowHeight
     scroller.abort()
     if (viewport.reveal(x, top, x + dp(EditorPainter.CARET_WIDTH_DP), top + m.rowHeight)) onScrolled()
   }
@@ -476,10 +476,10 @@ class CodeEditorView(context: Context) : View(context) {
     val doc = core.document
     val row = viewport.rowAt(y.toInt())
     if (row < 0) return 0
-    if (row >= heights.totalRows) return doc.length
-    val line = heights.lineAtRow(row)
+    if (row >= viewport.totalRows) return doc.length
+    val line = viewport.lineAtRow(row)
     val entry = cache[line] ?: layoutLine(line)
-    val rowInLine = (row - heights.rowStart(line)).coerceIn(0, entry.layout.rowCount - 1)
+    val rowInLine = (row - viewport.rowStart(line)).coerceIn(0, entry.layout.rowCount - 1)
     return doc.lineStart(line) + entry.layout.columnAt(rowInLine, viewport.contentX(x))
   }
 
@@ -532,6 +532,7 @@ class CodeEditorView(context: Context) : View(context) {
   private fun wire(core: EditorCore) {
     core.onChange = { change, origin -> onDocumentChange(change, origin) }
     core.onSelectionChange = { onSelectionMoved() }
+    viewport.attach(core)
     ime = ImeSession(core)
     brackets = BracketHighlight(core).also { it.enabled = brackets.enabled }
     search?.close()
@@ -560,12 +561,11 @@ class CodeEditorView(context: Context) : View(context) {
     val first = doc.lineAt(change.start)
     val oldCount = lineSpan(change.removed)
     val newCount = lineSpan(change.inserted)
-    heights.replaceLines(first, oldCount, newCount)
-    syncGaps()
+    // The core already moved the rows and gaps and clamped the scroll.
     keepSpans(first, oldCount, newCount, change)
     cache.shift(first, oldCount, newCount)
     search?.onChange(change)
-    if (updateGutter()) relayout() else viewport.clamp()
+    if (updateGutter()) relayout()
     hideInsertionHandle()
     menu.hide()
     restartBlink()
@@ -585,25 +585,12 @@ class CodeEditorView(context: Context) : View(context) {
 
   /** Replaces the decorations. [revision] is the one they were computed for, below zero for the current text. */
   fun setDecorations(items: List<Decoration>, revision: Int) {
+    // The core moves the gaps and keeps the top visible line in place.
     if (!core.setDecorations(items, revision)) return
-    val anchor = viewport.anchor()
-    if (syncGaps()) viewport.restore(anchor)
     invalidate()
   }
 
-  /** Pushes the gap rows of a changed decoration set into the height map. True when it pushed. */
-  private fun syncGaps(): Boolean {
-    val set = core.decorations
-    if (set.version == syncedDecorations) return false
-    syncedDecorations = set.version
-    heights.setGaps(set.gapRows())
-    return true
-  }
-
   private fun resetDocument() {
-    heights = HeightMap(core.document.lineCount)
-    syncedDecorations = -1
-    viewport.heights = heights
     cache.clear()
     viewport.widestLine = 0
     updateGutter()
@@ -618,7 +605,7 @@ class CodeEditorView(context: Context) : View(context) {
     val scrollX = viewport.scrollX
     viewport.rowHeight = rowMetrics().rowHeight
     cache.clear()
-    heights.resetAll()
+    viewport.resetRows()
     viewport.widestLine = 0
     updateGutter()
     viewport.restore(anchor)
@@ -697,10 +684,12 @@ class CodeEditorView(context: Context) : View(context) {
     val layout = LineLayout(text, spans, paint, theme, viewport.wrapWidth, core.settings.tabSize, rowMetrics())
     val entry = Entry(layout, spans, -1)
     cache.put(line, entry)
-    viewport.measured(line, layout.rowCount)
-    if (!viewport.wrap) viewport.widestLine = maxOf(viewport.widestLine, Math.round(layout.width()))
+    viewport.measured(line, layout.rowCount, offeredWidth(layout))
     return entry
   }
+
+  /** The width a layout offers as the widest line, or -1 while wrapping. */
+  private fun offeredWidth(layout: LineLayout): Int = if (viewport.wrap) -1 else Math.round(layout.width())
 
   private fun onScrolled() {
     anchorDirty = true
@@ -711,23 +700,23 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   private fun scrollByTouch(dx: Float, dy: Float) {
-    val oldX = viewport.scrollX
-    val oldY = viewport.scrollY
     val rx = Math.round(dx)
     val ry = Math.round(dy)
-    viewport.scrollBy(rx, ry)
-    val overX = if (viewport.maxScrollX > 0) rx - (viewport.scrollX - oldX) else 0
-    val overY = if (viewport.maxScrollY > 0) ry - (viewport.scrollY - oldY) else 0
+    val moved = viewport.scrollBy(rx, ry)
+    val s = viewport.lastScroll
+    val overX = if (s.maxX > 0) rx - s.dx else 0
+    val overY = if (s.maxY > 0) ry - s.dy else 0
     if (overX != 0 || overY != 0) scroller.pull(overX.toFloat(), overY.toFloat(), touchX, touchY, width, height)
-    if (oldX != viewport.scrollX || oldY != viewport.scrollY) onScrolled()
+    if (moved) onScrolled()
   }
 
   private fun fling(velocityX: Float, velocityY: Float) {
     val min = viewConfig.scaledMinimumFlingVelocity
-    val vx = if (abs(velocityX) > min && viewport.maxScrollX > 0) -velocityX.toInt() else 0
-    val vy = if (abs(velocityY) > min && viewport.maxScrollY > 0) -velocityY.toInt() else 0
+    val s = viewport.scroll()
+    val vx = if (abs(velocityX) > min && s.maxX > 0) -velocityX.toInt() else 0
+    val vy = if (abs(velocityY) > min && s.maxY > 0) -velocityY.toInt() else 0
     if (vx == 0 && vy == 0) return
-    scroller.fling(viewport.scrollX, viewport.scrollY, vx, vy, viewport.maxScrollX, viewport.maxScrollY)
+    scroller.fling(s.x, s.y, vx, vy, s.maxX, s.maxY)
   }
 
   /** Shows the caret at once and restarts the blink cycle. Runs on focus, edits and caret moves. */
@@ -951,7 +940,7 @@ class CodeEditorView(context: Context) : View(context) {
   private inner class GestureHost : GestureMachine.Host {
     override fun offsetAt(x: Float, y: Float): Int = this@CodeEditorView.offsetAt(x, y)
 
-    override fun inGap(x: Float, y: Float): Boolean = heights.isGapRow(viewport.rowAt(y.toInt()))
+    override fun inGap(x: Float, y: Float): Boolean = viewport.isGapRow(viewport.rowAt(y.toInt()))
 
     // Runs on touch down, so this is where the grab offset and the fixed selection end are captured.
     override fun handleAt(x: Float, y: Float): GestureMachine.Handle? {
@@ -1103,18 +1092,18 @@ class CodeEditorView(context: Context) : View(context) {
   override fun computeScroll() {
     if (!scroller.step()) return
     val start = System.nanoTime()
-    val wasTop = viewport.scrollY == 0
-    val wasBottom = viewport.scrollY == viewport.maxScrollY
-    val wasLeft = viewport.scrollX == 0
-    val wasRight = viewport.scrollX == viewport.maxScrollX
+    // One core call. An axis that moved onto an edge reached it in this step.
     val moved = viewport.scrollTo(scroller.currX, scroller.currY)
+    val s = viewport.lastScroll
     if (moved) onScrolled()
     val v = scroller.currVelocity.toInt()
     if (scroller.flinging && v > 0) {
-      if (!wasTop && viewport.scrollY == 0) scroller.absorbTop(v)
-      if (!wasBottom && viewport.scrollY == viewport.maxScrollY) scroller.absorbBottom(v)
-      if (!wasLeft && viewport.scrollX == 0) scroller.absorbLeft(v)
-      if (!wasRight && viewport.scrollX == viewport.maxScrollX) scroller.absorbRight(v)
+      val movedX = s.axes and 1 != 0
+      val movedY = s.axes and 2 != 0
+      if (movedY && s.y == 0) scroller.absorbTop(v)
+      if (movedY && s.y == s.maxY) scroller.absorbBottom(v)
+      if (movedX && s.x == 0) scroller.absorbLeft(v)
+      if (movedX && s.x == s.maxX) scroller.absorbRight(v)
     }
     if (moved && debugSwitch()) Log.i(DebugSwitch.TAG, "{\"call\":\"fling\",\"us\":${(System.nanoTime() - start) / 1000}}")
     postInvalidateOnAnimation()
@@ -1237,6 +1226,7 @@ class CodeEditorView(context: Context) : View(context) {
     snapshot = null
     if (dropped) {
       core.close()
+      viewport.close()
       coreReleased = true
     }
   }
@@ -1258,6 +1248,7 @@ class CodeEditorView(context: Context) : View(context) {
     snapshot?.close()
     snapshot = null
     core.close()
+    viewport.close()
     coreReleased = true
   }
 
@@ -1269,27 +1260,36 @@ class CodeEditorView(context: Context) : View(context) {
     canvas.clipRect(0, 0, width, height)
     canvas.drawColor(theme.background)
     if (width == 0 || height == 0) return
-    syncGaps()
     val m = rowMetrics()
+    // The layout's two calls of a draw: the frame, then the measure call in prepare. Until endDraw, the layout reads
+    // come from them. With the debug switch on, a ninth single call throws.
+    viewport.beginDraw(checksCalls = debugSwitch())
     if (revealPending) {
       revealPending = false
       revealSelection()
     }
-    val firstLine = viewport.firstVisibleLine()
-    val lastBound = minOf(heights.lineCount - 1, firstLine + height / m.rowHeight + 1)
-    // One core call for the whole draw. Until publish returns, every read comes from it.
-    val f = readFrame(firstLine, lastBound)
+    // One core call for the document. Until publish returns, every document read comes from it.
+    val f = readFrame()
     drawFrame = f
     if (debugSwitch()) core.document.drawingThread = Thread.currentThread()
     prepare(f, m)
+    val firstLine = f.first
+    val lastBound = f.last
     val caretLine = f.caretLine
     val caretOnly = f.anchor == f.head
-    if (highlightActiveLine && caretOnly) painter.drawActiveLine(canvas, caretLine, width, height)
+    if (highlightActiveLine && caretOnly && caretLine in firstLine..lastBound) {
+      painter.drawActiveLine(canvas, caretLine, width, height)
+    }
     val decorated = core.decorations.items
-    if (decorated.isNotEmpty()) decorationPainter.drawLineBackgrounds(canvas, decorated, viewport, width, height)
+    if (decorated.isNotEmpty()) {
+      decorationPainter.drawLineBackgrounds(canvas, decorated, viewport, firstLine, lastBound, width, height)
+    }
     drawFills(canvas, f, firstLine, lastBound)
     if (decorated.isNotEmpty()) {
-      clippedToText(canvas) { decorationPainter.drawUnderlines(canvas, decorated, rowGeometry, firstLine, -m.ascent) }
+      val windowEnd = docLineStart(lastBound) + docLineLength(lastBound)
+      clippedToText(canvas) {
+        decorationPainter.drawUnderlines(canvas, decorated, rowGeometry, firstLine, windowEnd, -m.ascent)
+      }
     }
     val lastLine = painter.drawText(canvas, f.lineCount, firstLine, width, height)
     drawComposing(canvas, firstLine)
@@ -1300,6 +1300,7 @@ class CodeEditorView(context: Context) : View(context) {
     placeholder?.let { if (f.length == 0) painter.drawPlaceholder(canvas, m, it) }
     if (scroller.draw(canvas, width, height)) postInvalidateOnAnimation()
     publish(firstLine, lastLine, caretLine, m)
+    viewport.endDraw()
     core.document.drawingThread = null
     drawFrame = null
     flushIme(m)
@@ -1331,19 +1332,28 @@ class CodeEditorView(context: Context) : View(context) {
    * Builds missing layouts for [first, last] with one highlight query per run of dirty lines: when the snapshot follows
    * the one last applied, only the lines its regions meet; otherwise every line not at its revision.
    */
-  private fun readFrame(first: Int, last: Int): EditorFrame {
+  private fun readFrame(): EditorFrame {
     val usable = if (highlighter != null) snapshot else null
-    val entries = IntArray(last - first + 1) { cache[first + it]?.revision ?: EditorFrame.NO_ENTRY }
+    if (framePairs.size < 2 * cache.size) framePairs = IntArray(2 * maxOf(cache.size, cache.capacity))
+    var n = 0
+    cache.forEachEntry { line, entry ->
+      framePairs[2 * n] = line
+      framePairs[2 * n + 1] = entry.revision
+      n++
+    }
     val incremental = usable != null && usable.basedOn >= 0 && usable.basedOn == appliedRevision
-    return frameReader.read(core, usable?.pointer ?: 0L, first, last, appliedRevision, incremental, entries)
+    return frameReader.read(core, viewport, usable?.pointer ?: 0L, appliedRevision, incremental, framePairs, n)
   }
 
+  /** Ends with the draw's measure call, which takes the rows of every line laid out here and the widest one. */
   private fun prepare(frame: EditorFrame, m: RowMetrics) {
     // The core paints from the snapshot only when it is at the frame's revision. Otherwise its runs are the lines
     // with no layout, and those take the spans keepSpans kept.
     val consistent = highlighter != null && snapshot?.revision == frame.revision
     val revision = if (consistent) frame.revision else -1
     val runs = frame.runs
+    var count = 0
+    var widest = -1
     var r = 0
     // The spans and text of the run lines arrive in line order, one entry per line.
     var next = 0
@@ -1370,14 +1380,18 @@ class CodeEditorView(context: Context) : View(context) {
       }
       val layout = LineLayout(frame.text(line) ?: "", fresh, paint, theme, viewport.wrapWidth, core.settings.tabSize, m)
       cache.put(line, Entry(layout, fresh, if (consistent) revision else -1))
-      viewport.measured(line, layout.rowCount)
-      if (!viewport.wrap) viewport.widestLine = maxOf(viewport.widestLine, Math.round(layout.width()))
+      if (2 * count + 2 > measurePairs.size) measurePairs = measurePairs.copyOf(2 * measurePairs.size)
+      measurePairs[2 * count] = line
+      measurePairs[2 * count + 1] = layout.rowCount
+      count++
+      widest = maxOf(widest, offeredWidth(layout))
     }
     if (revision >= 0) {
       appliedRevision = revision
       pendingSpans = null
       pendingTail = null
     }
+    viewport.measure(measurePairs, count, widest, frame.first, frame.last)
   }
 
   /** The spans [keepSpans] kept for a line of [revision], the current one, or null. */
@@ -1444,13 +1458,9 @@ class CodeEditorView(context: Context) : View(context) {
   private fun caretRect(m: RowMetrics, line: Int): RectF? = painter.caretRect(m, line, core.selection.head - docLineStart(line))
 
   /** Every gap in view dp, sorted by line, the full view width wide. */
-  private fun gapRects(m: RowMetrics): List<GapRect> {
-    val rows = core.decorations.gapRows()
-    if (rows.isEmpty()) return emptyList()
-    return rows.keys.sorted().map { line ->
-      val top = viewport.rowTop(heights.rowStart(line) + heights.rows(line)).toFloat()
-      GapRect(line, RectF(0f, top / density, width / density, (top + rows.getValue(line) * m.rowHeight) / density))
-    }
+  private fun gapRects(m: RowMetrics): List<GapRect> = viewport.gaps().map { gap ->
+    val top = gap.top.toFloat()
+    GapRect(gap.line, RectF(0f, top / density, width / density, (top + gap.rows * m.rowHeight) / density))
   }
 
   /** The gap under [line] in view dp from the last frame, or null. */

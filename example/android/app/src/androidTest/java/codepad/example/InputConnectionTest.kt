@@ -110,6 +110,27 @@ class InputConnectionTest {
     }
   }
 
+  // The layout lives as long as the core. A dropped view still in the window relays out on a keyboard edit that
+  // widens the gutter, and draws, until it leaves.
+  @Test
+  fun aDroppedViewStillDrawsUntilItLeavesTheWindow() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        editor.setInitialText("abc")
+        layout(editor)
+        draw(editor)
+        editor.requestFocus()
+        val connection = checkNotNull(editor.onCreateInputConnection(EditorInfo()))
+        editor.close()
+        assertTrue(connection.commitText("\n".repeat(9), 1))
+        draw(editor)
+        (editor.parent as ViewGroup).removeView(editor)
+        assertFalse(connection.commitText("x", 1))
+      }
+    }
+  }
+
   // A keyboard call queued before the dropped view left the window runs after its core was freed.
   @Test
   fun aKeyboardCallAfterTheCoreIsFreedDoesNothing() {

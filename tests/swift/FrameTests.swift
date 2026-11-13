@@ -4,6 +4,26 @@ import XCTest
 
 @testable import Codepad
 
+extension FrameReader {
+  /// A frame of lines [first, last] with one entry per line, through the test hook.
+  func read(
+    core: EditorCore, snapshot: Snapshot?, first: Int, last: Int, applied: Int, useChanged: Bool, entries: [Int32]
+  ) -> EditorFrame {
+    let handle: OpaquePointer = core.document.handle
+    let snap: OpaquePointer? = snapshot?.pointer
+    let firstLine = Int32(clamping: first)
+    let lastLine = Int32(clamping: last)
+    let appliedRevision = Int32(clamping: applied)
+    let changed: Int32 = useChanged ? 1 : 0
+    return read(window: (first, last)) { out, cap, text, textCap, length in
+      entries.withUnsafeBufferPointer { e in
+        cp_test_frame_range(
+          handle, snap, firstLine, lastLine, appliedRevision, changed, e.baseAddress, out, cap, text, textCap, length)
+      }
+    }
+  }
+}
+
 final class FrameTests: XCTestCase {
   private struct SplitMix: RandomNumberGenerator {
     var state: UInt64

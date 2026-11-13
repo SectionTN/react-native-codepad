@@ -60,84 +60,46 @@ final class FrameReader {
     self.units = [UInt16](repeating: 0, count: max(units, 1))
   }
 
-  /// The draw's frame: the layout picks the lines, `pairs` holds (line, revision) for each cached line.
+  /// One frame call's buffers: the ints, their capacity, the text units, their capacity and the text length out.
+  typealias Call = (
+    UnsafeMutablePointer<Int32>?, UInt32, UnsafeMutablePointer<UInt16>?, UInt32, UnsafeMutablePointer<UInt32>
+  ) -> UInt32
+
+  /// The draw's frame: the layout picks the lines, `pairs` holds (line, revision) for each cached line in any order.
   func read(
     core: EditorCore, layout: Viewport, snapshot: Snapshot?, applied: Int, useChanged: Bool, pairs: [Int32]
   ) -> EditorFrame {
-    while true {
-      var textLength: UInt32 = 0
-      let needed = callLayout(core, layout, snapshot, applied, useChanged, pairs, &textLength)
-      let fits = Int(needed) <= ints.count && Int(textLength) <= units.count
-      if fits { return decode(nil) }
-      if Int(needed) > ints.count { ints = [Int32](repeating: 0, count: Int(needed)) }
-      if Int(textLength) > units.count { units = [UInt16](repeating: 0, count: Int(textLength)) }
-    }
-  }
-
-  /// A frame of lines [first, last], with one entry per line.
-  func read(
-    core: EditorCore, snapshot: Snapshot?, first: Int, last: Int, applied: Int, useChanged: Bool, entries: [Int32]
-  ) -> EditorFrame {
-    while true {
-      var textLength: UInt32 = 0
-      let needed = call(core, snapshot, first, last, applied, useChanged, entries, &textLength)
-      let fits = Int(needed) <= ints.count && Int(textLength) <= units.count
-      if fits { return decode((first, last)) }
-      if Int(needed) > ints.count { ints = [Int32](repeating: 0, count: Int(needed)) }
-      if Int(textLength) > units.count { units = [UInt16](repeating: 0, count: Int(textLength)) }
-    }
-  }
-
-  private func callLayout(
-    _ core: EditorCore, _ layout: Viewport, _ snapshot: Snapshot?, _ applied: Int, _ useChanged: Bool,
-    _ pairs: [Int32], _ textLength: inout UInt32
-  ) -> UInt32 {
     let handle: OpaquePointer = core.document.handle
     let layoutHandle: OpaquePointer = layout.handle
     let snap: OpaquePointer? = snapshot?.pointer
     let appliedRevision = Int32(clamping: applied)
     let changed: Int32 = useChanged ? 1 : 0
     let pairCount = UInt32(pairs.count / 2)
-    var length: UInt32 = 0
-    let needed: UInt32 = pairs.withUnsafeBufferPointer { p in
-      ints.withUnsafeMutableBufferPointer { o in
-        units.withUnsafeMutableBufferPointer { t in
-          let intCap = UInt32(o.count)
-          let textCap = UInt32(t.count)
-          return cp_editor_frame(
-            handle, layoutHandle, snap, appliedRevision, changed, p.baseAddress, pairCount, o.baseAddress, intCap,
-            t.baseAddress, textCap, &length)
-        }
+    return read(window: nil) { out, cap, text, textCap, length in
+      pairs.withUnsafeBufferPointer { p in
+        cp_editor_frame(
+          handle, layoutHandle, snap, appliedRevision, changed, p.baseAddress, pairCount, out, cap, text, textCap,
+          length)
       }
     }
-    textLength = length
-    return needed
   }
 
-  private func call(
-    _ core: EditorCore, _ snapshot: Snapshot?, _ first: Int, _ last: Int, _ applied: Int, _ useChanged: Bool,
-    _ entries: [Int32], _ textLength: inout UInt32
-  ) -> UInt32 {
-    let handle: OpaquePointer = core.document.handle
-    let snap: OpaquePointer? = snapshot?.pointer
-    let firstLine = Int32(clamping: first)
-    let lastLine = Int32(clamping: last)
-    let appliedRevision = Int32(clamping: applied)
-    let changed: Int32 = useChanged ? 1 : 0
-    var length: UInt32 = 0
-    let needed: UInt32 = entries.withUnsafeBufferPointer { e in
-      ints.withUnsafeMutableBufferPointer { o in
+  /// Makes `call` until both buffers fit, then decodes. `window` is the range a range call asked for.
+  func read(window: (Int, Int)?, _ call: Call) -> EditorFrame {
+    while true {
+      var textLength: UInt32 = 0
+      let needed: UInt32 = ints.withUnsafeMutableBufferPointer { o in
         units.withUnsafeMutableBufferPointer { t in
           let intCap = UInt32(o.count)
           let textCap = UInt32(t.count)
-          return cp_editor_frame_range(
-            handle, snap, firstLine, lastLine, appliedRevision, changed, e.baseAddress, o.baseAddress, intCap,
-            t.baseAddress, textCap, &length)
+          return call(o.baseAddress, intCap, t.baseAddress, textCap, &textLength)
         }
       }
+      let fits = Int(needed) <= ints.count && Int(textLength) <= units.count
+      if fits { return decode(window) }
+      if Int(needed) > ints.count { ints = [Int32](repeating: 0, count: Int(needed)) }
+      if Int(textLength) > units.count { units = [UInt16](repeating: 0, count: Int(textLength)) }
     }
-    textLength = length
-    return needed
   }
 
   /// `window` is the range a range call asked for. The layout's call writes its own after the header.

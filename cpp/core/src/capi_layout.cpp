@@ -33,9 +33,12 @@ int32_t cp_layout_configure(cp_layout *layout, const cp_layout_config *config) {
 void cp_layout_geometry(const cp_layout *layout, cp_geometry *out) { fill(*layout->layout, out); }
 
 int32_t cp_layout_scroll_to(cp_layout *layout, int32_t x, int32_t y, cp_geometry *out) {
-  bool moved = layout->layout->scroll_to(x, y);
-  fill(*layout->layout, out);
-  return moved ? 1 : 0;
+  Layout &l = *layout->layout;
+  int32_t old_x = l.scroll_x();
+  int32_t old_y = l.scroll_y();
+  l.scroll_to(x, y);
+  fill(l, out);
+  return (l.scroll_x() != old_x ? 1 : 0) | (l.scroll_y() != old_y ? 2 : 0);
 }
 
 int32_t cp_layout_reveal(cp_layout *layout, int32_t left, int32_t top, int32_t right, int32_t bottom,

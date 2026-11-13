@@ -1,5 +1,6 @@
 package me.sectiontn.codepad.core
 
+import me.sectiontn.codepad.layout.Viewport
 import me.sectiontn.codepad.syntax.CoreNative
 
 /**
@@ -48,11 +49,6 @@ class EditorFrame internal constructor(
     val i = runLines.indexOf(line)
     return if (i < 0) null else texts[i]
   }
-
-  companion object {
-    /** CP_NO_ENTRY: a line with no layout. */
-    const val NO_ENTRY = Int.MIN_VALUE
-  }
 }
 
 /** Makes the frame call, with buffers kept across draws and grown when the core asks for more. */
@@ -61,17 +57,22 @@ class FrameReader(ints: Int = 4096, units: Int = 16384) {
   private var units = CharArray(maxOf(units, 1))
   private val textLength = IntArray(1)
 
-  /** [snapshot] is a snapshot pointer or 0. [entries] holds the cached revision of each line of [first, last]. */
-  fun read(core: EditorCore, snapshot: Long, first: Int, last: Int, applied: Int, useChanged: Boolean, entries: IntArray): EditorFrame {
+  /**
+   * The draw's frame: the layout picks the lines. [pairs] holds [pairCount] (line, revision) pairs of the view's cache
+   * in any order. [snapshot] is a snapshot pointer or 0.
+   */
+  fun read(core: EditorCore, layout: Viewport, snapshot: Long, applied: Int, useChanged: Boolean, pairs: IntArray, pairCount: Int): EditorFrame {
     while (true) {
-      val needed = CoreNative.editorFrame(core.handle(), snapshot, first, last, applied, useChanged, entries, ints, units, textLength)
-      if (needed <= ints.size && textLength[0] <= units.size) return decode(first, last)
+      val needed = CoreNative.editorFrame(
+        core.handle(), layout.nativeHandle(), snapshot, applied, useChanged, pairs, pairCount, ints, units, textLength,
+      )
+      if (needed <= ints.size && textLength[0] <= units.size) return decode()
       if (needed > ints.size) ints = IntArray(needed)
       if (textLength[0] > units.size) units = CharArray(textLength[0])
     }
   }
 
-  private fun decode(first: Int, last: Int): EditorFrame {
+  private fun decode(): EditorFrame {
     var i = 0
     fun next(): Int = ints[i++]
     val revision = next()
@@ -82,8 +83,8 @@ class FrameReader(ints: Int = 4096, units: Int = 16384) {
     val caretLine = next()
     val decorationsVersion = next()
     val history = next()
-    val lo = first.coerceIn(0, lineCount - 1)
-    val hi = last.coerceIn(lo, lineCount - 1)
+    val lo = next()
+    val hi = next()
     val starts = IntArray(hi - lo + 2) { next() }
     val runs = IntArray(next() * 2) { next() }
     var count = 0

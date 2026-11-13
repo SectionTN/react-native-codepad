@@ -29,22 +29,27 @@ class DecorationPainter(private val density: Float) {
   private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
   private val path = Path()
 
-  /** Full width tints over each line's text rows, drawn above the active line. */
-  fun drawLineBackgrounds(canvas: Canvas, items: List<Decoration>, viewport: Viewport, width: Int, height: Int) {
+  /** Full width tints over the text rows of each line in [first]..[last], drawn above the active line. */
+  fun drawLineBackgrounds(
+    canvas: Canvas, items: List<Decoration>, viewport: Viewport, first: Int, last: Int, width: Int, height: Int,
+  ) {
     for (d in items) {
-      if (d !is LineBackground) continue
+      if (d !is LineBackground || d.line < first || d.line > last) continue
       val top = viewport.lineTop(d.line)
-      val bottom = top + viewport.heights.rows(d.line) * viewport.rowHeight
+      val bottom = top + viewport.rows(d.line) * viewport.rowHeight
       if (bottom <= 0 || top >= height) continue
       fill.color = d.color
       canvas.drawRect(viewport.textAreaLeft.toFloat(), top.toFloat(), width.toFloat(), bottom.toFloat(), fill)
     }
   }
 
-  /** [baseline] is the distance from a row's top to its baseline in pixels. */
-  fun drawUnderlines(canvas: Canvas, items: List<Decoration>, g: RowGeometry, firstLine: Int, baseline: Int) {
+  /**
+   * [baseline] is the distance from a row's top to its baseline in pixels. An underline starting past [windowEnd] is
+   * skipped, since finding its line's top would cost a layout call.
+   */
+  fun drawUnderlines(canvas: Canvas, items: List<Decoration>, g: RowGeometry, firstLine: Int, windowEnd: Int, baseline: Int) {
     for (d in items) {
-      if (d !is Underline) continue
+      if (d !is Underline || d.start > windowEnd) continue
       RangeRects.forEach(g, d.start, d.end, firstLine, padNewline = false) { left, top, right, _ ->
         val lineTop = top + baseline + d.offset * density
         if (d.style == UnderlineStyle.Solid) {

@@ -1,6 +1,5 @@
 package me.sectiontn.codepad.core
 
-import me.sectiontn.codepad.layout.HeightMap
 import me.sectiontn.codepad.layout.Viewport
 import org.json.JSONArray
 import org.json.JSONObject
@@ -16,31 +15,21 @@ class VectorRunner(private val case: JSONObject) {
   private var lastResult: Any? = null
   private var lastError: String? = null
 
-  // Created by the first layout op. Until the layout moves into the core, the runner keeps it in step as the view does.
-  private var heights: HeightMap? = null
+  // Created by the first layout op and attached to the editor, which keeps its rows in step.
   private var viewport: Viewport? = null
   private var anchor: Viewport.Anchor? = null
   private var widthChanged = false
+  private val pairs = IntArray(64)
 
   init {
-    core.onChange = { change, origin ->
-      changes.add(change to origin)
-      heights?.let { h ->
-        h.replaceLines(core.document.lineAt(change.start), lineSpan(change.removed), lineSpan(change.inserted))
-        h.setGaps(core.decorations.gapRows())
-        viewport!!.clamp()
-      }
-    }
+    core.onChange = { change, origin -> changes.add(change to origin) }
   }
 
-  private fun lineSpan(text: String): Int = 1 + text.count { it == '\n' }
-
   private fun layout(op: JSONObject) {
-    val h = heights ?: HeightMap(core.document.lineCount).also {
-      it.setGaps(core.decorations.gapRows())
-      heights = it
+    val vp = viewport ?: Viewport().also {
+      it.attach(core)
+      viewport = it
     }
-    val vp = viewport ?: Viewport(h).also { viewport = it }
     val before = vp.textAreaWidth
     val insets = op.getJSONArray("insets")
     vp.rowHeight = op.getInt("rowHeight")
@@ -115,25 +104,26 @@ class VectorRunner(private val case: JSONObject) {
         val arr = op.getJSONArray("items")
         val items = (0 until arr.length()).map { i -> decorationOf(arr.getJSONObject(i)) }
         core.setDecorations(items, op.optInt("revision", -1))
-        viewport?.let { vp ->
-          val a = vp.anchor()
-          vp.heights.setGaps(core.decorations.gapRows())
-          vp.restore(a)
-        }
       }
       "layout" -> layout(op)
+      // Through the draw's batch call, so the vectors cover the pair marshalling.
       "measure" -> {
         val vp = viewport!!
-        val pairs = op.getJSONArray("pairs")
-        for (i in 0 until pairs.length()) vp.measured(pairs.getJSONArray(i).getInt(0), pairs.getJSONArray(i).getInt(1))
-        if (op.has("widest") && !vp.wrap) vp.widestLine = maxOf(vp.widestLine, op.getInt("widest"))
+        val list = op.getJSONArray("pairs")
+        for (i in 0 until list.length()) {
+          pairs[2 * i] = list.getJSONArray(i).getInt(0)
+          pairs[2 * i + 1] = list.getJSONArray(i).getInt(1)
+        }
+        vp.beginDraw(checksCalls = true)
+        vp.measure(pairs, list.length(), op.optInt("widest", -1), 0, -1)
+        vp.endDraw()
       }
       "scrollTo" -> lastResult = viewport!!.scrollTo(op.getInt("x"), op.getInt("y"))
       "scrollBy" -> lastResult = viewport!!.scrollBy(op.getInt("dx"), op.getInt("dy"))
       "reveal" -> lastResult = viewport!!.reveal(op.getInt("left"), op.getInt("top"), op.getInt("right"), op.getInt("bottom"))
       "anchor" -> anchor = viewport!!.anchor()
       "restore" -> viewport!!.restore(anchor!!)
-      "resetRows" -> heights!!.resetAll()
+      "resetRows" -> viewport!!.resetRows()
       else -> fail("op not implemented: $name")
     }
   }
@@ -230,7 +220,6 @@ class VectorRunner(private val case: JSONObject) {
 
   private fun checkLayout(expect: JSONObject, where: String) {
     val vp = viewport ?: return
-    val h = vp.heights
     fun pair(key: String) = expect.getJSONArray(key).let { listOf(it.getInt(0), it.getInt(1)) }
     fun keyed(key: String, actual: (Int) -> Any) {
       val o = expect.getJSONObject(key)
@@ -242,10 +231,10 @@ class VectorRunner(private val case: JSONObject) {
     if (expect.has("maxScroll")) assertEquals("maxScroll $where", pair("maxScroll"), listOf(vp.maxScrollX, vp.maxScrollY))
     if (expect.has("content")) assertEquals("content $where", pair("content"), listOf(vp.contentWidth, vp.contentHeight))
     if (expect.has("visible")) assertEquals("visible $where", pair("visible"), listOf(vp.firstVisibleLine(), vp.lastVisibleLine()))
-    if (expect.has("totalRows")) assertEquals("totalRows $where", expect.getInt("totalRows"), h.totalRows)
-    if (expect.has("rowStart")) keyed("rowStart") { h.rowStart(it) }
-    if (expect.has("lineAtRow")) keyed("lineAtRow") { h.lineAtRow(it) }
-    if (expect.has("isGapRow")) keyed("isGapRow") { h.isGapRow(it) }
+    if (expect.has("totalRows")) assertEquals("totalRows $where", expect.getInt("totalRows"), vp.totalRows)
+    if (expect.has("rowStart")) keyed("rowStart") { vp.rowStart(it) }
+    if (expect.has("lineAtRow")) keyed("lineAtRow") { vp.lineAtRow(it) }
+    if (expect.has("isGapRow")) keyed("isGapRow") { vp.isGapRow(it) }
     if (expect.has("lineTop")) keyed("lineTop") { vp.lineTop(it) }
   }
 }

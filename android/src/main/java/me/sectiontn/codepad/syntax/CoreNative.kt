@@ -69,9 +69,32 @@ internal object CoreNative {
   @JvmStatic external fun textRelease(text: Long)
   @JvmStatic external fun searchFind(search: Long, text: Long, scan: IntArray, out: IntArray): Int
   @JvmStatic external fun editorFrame(
-    editor: Long, snapshot: Long, first: Int, last: Int, applied: Int, useChanged: Boolean, entries: IntArray, out: IntArray,
-    text: CharArray, textLength: IntArray,
+    editor: Long, layout: Long, snapshot: Long, applied: Int, useChanged: Boolean, pairs: IntArray, pairCount: Int,
+    out: IntArray, text: CharArray, textLength: IntArray,
   ): Int
+
+  @JvmStatic external fun layoutNew(): Long
+  @JvmStatic external fun layoutFree(layout: Long)
+  @JvmStatic external fun editorAttachLayout(editor: Long, layout: Long)
+  @JvmStatic external fun layoutConfigure(layout: Long, config: IntArray): Boolean
+  @JvmStatic external fun layoutGeometry(layout: Long, out: IntArray)
+  @JvmStatic external fun layoutScrollTo(layout: Long, x: Int, y: Int, out: IntArray): Int
+  @JvmStatic external fun layoutReveal(layout: Long, left: Int, top: Int, right: Int, bottom: Int, out: IntArray): Boolean
+  @JvmStatic external fun layoutMeasure(
+    layout: Long, pairs: IntArray, pairCount: Int, widest: Int, first: Int, last: Int, geometry: IntArray, topsRows: IntArray,
+  ): Int
+  @JvmStatic external fun layoutSetWidest(layout: Long, widest: Int)
+  @JvmStatic external fun layoutRows(layout: Long, line: Int): Int
+  @JvmStatic external fun layoutGapRows(layout: Long, line: Int): Int
+  @JvmStatic external fun layoutRowStart(layout: Long, line: Int): Int
+  @JvmStatic external fun layoutLineAtRow(layout: Long, row: Int): Int
+  @JvmStatic external fun layoutIsGapRow(layout: Long, row: Int): Boolean
+  @JvmStatic external fun layoutRowTop(layout: Long, row: Int): Int
+  @JvmStatic external fun layoutLineTop(layout: Long, line: Int): Int
+  @JvmStatic external fun layoutRowAt(layout: Long, y: Int): Int
+  @JvmStatic external fun layoutAnchor(layout: Long, out: IntArray)
+  @JvmStatic external fun layoutRestore(layout: Long, line: Int, offset: Int): Boolean
+  @JvmStatic external fun layoutResetRows(layout: Long)
 
   @JvmStatic external fun abiRange(): IntArray
   @JvmStatic external fun languageLoad(id: String, pointer: Long, highlights: ByteArray, injections: ByteArray?, error: Array<String?>): Long

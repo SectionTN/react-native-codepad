@@ -52,6 +52,9 @@ class EditorCore(initialText: String = "", clock: (() -> Long)? = null) : AutoCl
   val canUndo: Boolean get() = life.read { CoreNative.editorHistory(handle()) and 1 != 0 }
   val canRedo: Boolean get() = life.read { CoreNative.editorHistory(handle()) and 2 != 0 }
 
+  /** False once [close] freed the core. Main thread. */
+  internal val isOpen: Boolean get() = native != 0L
+
   internal fun handle(): Long {
     val h = native
     check(h != 0L) { "the editor core is closed" }

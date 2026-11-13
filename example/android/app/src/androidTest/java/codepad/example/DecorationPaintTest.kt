@@ -38,6 +38,26 @@ class DecorationPaintTest {
     )
   }
 
+  // A checker marks lines all over a file. Each one below the window would cost a layout call per draw, and the
+  // debug switch the suite runs with throws past eight of them.
+  @Test
+  fun decorationsBelowTheWindowCostNoLayoutCall() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        editor.setInitialText(List(200) { "line $it" }.joinToString("\n"))
+        layout(editor)
+        draw(editor)
+        val doc = editor.core.document
+        val items = (100 until 106).flatMap { line ->
+          listOf(Underline(doc.lineStart(line), doc.lineStart(line) + 4, red, UnderlineStyle.Solid, 2f, 4f), LineBackground(line, tint))
+        }
+        editor.setDecorations(items, -1)
+        draw(editor)
+      }
+    }
+  }
+
   @Test
   fun solidUnderlineSitsOffsetBelowTheBaseline() {
     launch().use { s ->

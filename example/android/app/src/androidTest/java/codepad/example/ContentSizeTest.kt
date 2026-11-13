@@ -31,6 +31,34 @@ class ContentSizeTest {
     }
   }
 
+  // setInitialText swaps the editor under the same layout: the size and wrap stay, the rows start over and the
+  // scroll goes back to the top.
+  @Test
+  fun setInitialTextWhileScrolledKeepsTheMetrics() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        val sizes = ArrayList<Pair<Float, Float>>()
+        editor.onContentSizeListener = { w, h -> sizes.add(w to h) }
+        editor.setContentInsets(0f, 24f, 0f, 0f)
+        editor.setSoftWrap(true)
+        editor.setInitialText(List(1000) { "line $it" }.joinToString("\n"))
+        layout(editor)
+        draw(editor)
+        editor.scrollToLine(500, false)
+        draw(editor)
+        assertTrue("scrolled, at ${editor.frame.scrollY}", editor.frame.scrollY > 0f)
+        val row = (sizes[0].second - 24f) / 1000
+        editor.setInitialText((listOf("word ".repeat(60)) + List(9) { "line $it" }).joinToString("\n"))
+        draw(editor)
+        val density = editor.resources.displayMetrics.density
+        assertEquals(0f, editor.frame.scrollY, 0f)
+        assertEquals("still wrapping", 600 / density, sizes.last().first, 0.5f)
+        assertTrue("the long line wraps, ${sizes.last().second}", sizes.last().second > 11 * row + 24f)
+      }
+    }
+  }
+
   @Test
   fun listenerReportsTheSizeWithInsetsOncePerChange() {
     launch().use { s ->

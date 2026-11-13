@@ -21,7 +21,7 @@ internal class EditorPainter(
 
   fun drawActiveLine(canvas: Canvas, line: Int, width: Int, height: Int) {
     val top = viewport.lineTop(line)
-    val bottom = top + viewport.heights.rows(line) * viewport.rowHeight
+    val bottom = top + viewport.rows(line) * viewport.rowHeight
     if (bottom <= 0 || top >= height) return
     fill.color = theme.activeLine
     canvas.drawRect(viewport.textAreaLeft.toFloat(), top.toFloat(), width.toFloat(), bottom.toFloat(), fill)

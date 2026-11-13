@@ -180,23 +180,6 @@ static uint32_t build_frame(const cp_editor *editor, const cp_snapshot *snapshot
   return size;
 }
 
-extern "C" uint32_t cp_editor_frame_range(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
-                                          int32_t last_line, int32_t applied_revision, int32_t use_changed,
-                                          const int32_t *entry_revisions, int32_t *out, uint32_t cap,
-                                          cp_unit *text_out, uint32_t text_cap, uint32_t *text_len) {
-  int32_t line_count = editor->doc.line_count();
-  int32_t first = std::clamp(first_line, 0, line_count - 1);
-  int32_t last = std::clamp(last_line, first, line_count - 1);
-  std::vector<int32_t> entries(static_cast<size_t>(last - first + 1));
-  for (int32_t line = first; line <= last; line++) {
-    bool requested = line >= first_line && line <= last_line;
-    entries[static_cast<size_t>(line - first)] = requested ? entry_revisions[line - first_line] : CP_NO_ENTRY;
-  }
-  std::vector<int32_t> ints = frame_header(editor);
-  return build_frame(editor, snapshot, first, last, entries, applied_revision, use_changed, ints, out, cap, text_out,
-                     text_cap, text_len);
-}
-
 extern "C" uint32_t cp_editor_frame(const cp_editor *editor, const cp_layout *layout, const cp_snapshot *snapshot,
                                     int32_t applied_revision, int32_t use_changed, const int32_t *entries,
                                     uint32_t entry_count, int32_t *out, uint32_t cap, cp_unit *text_out,
@@ -223,6 +206,23 @@ extern "C" uint32_t cp_shift_spans(const int32_t *spans, uint32_t count, int32_t
 }
 
 #ifdef CODEPAD_TEST_HOOKS
+extern "C" uint32_t cp_test_frame_range(const cp_editor *editor, const cp_snapshot *snapshot, int32_t first_line,
+                                        int32_t last_line, int32_t applied_revision, int32_t use_changed,
+                                        const int32_t *entry_revisions, int32_t *out, uint32_t cap, cp_unit *text_out,
+                                        uint32_t text_cap, uint32_t *text_len) {
+  int32_t line_count = editor->doc.line_count();
+  int32_t first = std::clamp(first_line, 0, line_count - 1);
+  int32_t last = std::clamp(last_line, first, line_count - 1);
+  std::vector<int32_t> entries(static_cast<size_t>(last - first + 1));
+  for (int32_t line = first; line <= last; line++) {
+    bool requested = line >= first_line && line <= last_line;
+    entries[static_cast<size_t>(line - first)] = requested ? entry_revisions[line - first_line] : CP_NO_ENTRY;
+  }
+  std::vector<int32_t> ints = frame_header(editor);
+  return build_frame(editor, snapshot, first, last, entries, applied_revision, use_changed, ints, out, cap, text_out,
+                     text_cap, text_len);
+}
+
 extern "C" uint32_t cp_test_dirty_runs(const cp_unit *text, uint32_t length, uint32_t first_line_start,
                                        int32_t first_line, int32_t last_line, int32_t revision, int32_t applied,
                                        const int32_t *changed, int32_t changed_len, const int32_t *entry_revisions,

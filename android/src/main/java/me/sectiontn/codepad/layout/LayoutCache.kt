@@ -19,6 +19,11 @@ class LayoutCache<T : Any>(capacity: Int) {
     trim()
   }
 
+  /** Every entry, least recently used first. The eviction order stays as it is. */
+  fun forEachEntry(body: (line: Int, value: T) -> Unit) {
+    for ((line, value) in map) body(line, value)
+  }
+
   fun clear() = map.clear()
 
   /** Lines [first, first + oldCount) changed. Their entries drop and later entries move with their text. */

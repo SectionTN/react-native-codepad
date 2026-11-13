@@ -37,6 +37,24 @@ class LayoutCacheTest {
     assertEquals(3, c.size)
   }
 
+  // The draw lists the cache for the frame call before it lays anything out. A listing that refreshed the order
+  // would evict the lines just drawn instead of the stale ones.
+  @Test
+  fun forEachEntryLeavesTheEvictionOrder() {
+    val c = LayoutCache<String>(8)
+    for (i in 0 until 8) c.put(i, "l$i")
+    c[0]
+    val seen = HashMap<Int, String>()
+    c.forEachEntry { line, value -> seen[line] = value }
+    assertEquals((0 until 8).associateWith { "l$it" }, seen)
+    c.put(8, "l8")
+    c.put(9, "l9")
+    assertNull(c[1])
+    assertNull(c[2])
+    assertEquals("l0", c[0])
+    assertEquals("l3", c[3])
+  }
+
   @Test
   fun capacityChangeTrims() {
     val c = LayoutCache<String>(4)

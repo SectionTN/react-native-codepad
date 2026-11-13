@@ -56,6 +56,20 @@ final class CoreLayoutTests: XCTestCase {
     XCTAssertEqual(Array(out[6...10]), [1, 1, 1, 1, 1])
   }
 
+  // A fling frame makes one scroll call and learns from it which edge it reached, for the edge glow.
+  func testScrollToReportsEachAxisThatMoved() {
+    let core = EditorCore((0..<20).map { _ in String(repeating: "x", count: 30) }.joined(separator: "\n"))
+    let viewport = Viewport()
+    viewport.attach(core)
+    viewport.rowHeight = 10
+    viewport.resize(width: 100, height: 50)
+    viewport.widestLine = 300
+    XCTAssertEqual(cp_layout_scroll_to(viewport.handle, 0, 0, nil), 0)
+    XCTAssertEqual(cp_layout_scroll_to(viewport.handle, 40, 0, nil), 1)
+    XCTAssertEqual(cp_layout_scroll_to(viewport.handle, 40, 30, nil), 2)
+    XCTAssertEqual(cp_layout_scroll_to(viewport.handle, 0, 0, nil), 3)
+  }
+
   // onGapLayout publishes every gap on each draw, the ones off screen too, so the measure call carries them all.
   func testMeasureWritesEveryGapAfterTheRows() {
     let core = EditorCore((0..<20).map { _ in "x" }.joined(separator: "\n"))
