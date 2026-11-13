@@ -27,6 +27,23 @@ final class DecorationPaintTests: XCTestCase {
       searchMatchActive: d.searchMatchActive, tokens: [:])
   }
 
+  // A checker underlines lines all over a file. Each one below the window cost a layout call per draw, and nine of
+  // them trapped Debug builds.
+  func testUnderlinesBelowTheWindowCostNoLayoutCall() {
+    let editor = launch()
+    editor.setInitialText((0..<200).map { "line \($0)" }.joined(separator: "\n"))
+    layout(editor)
+    draw(editor)
+    let doc = editor.core.document
+    let items = (100..<106).map { line in
+      Decoration.underline(
+        Underline(start: doc.lineStart(line), end: doc.lineStart(line) + 4, color: red, style: .solid, thickness: 2, offset: 4))
+    }
+    editor.setDecorations(items, revision: -1)
+    draw(editor)
+    XCTAssertEqual(editor.viewport.drawCalls, 0)
+  }
+
   func testSolidUnderlineSitsOffsetBelowTheBaseline() {
     let editor = launch()
     editor.setLineNumbers(false)

@@ -108,7 +108,7 @@ final class CodeEditorView: UIScrollView {
   private let frameReader = FrameReader()
   // Set from the frame call to the end of publish.
   private var drawFrame: EditorFrame?
-  private let viewport = Viewport()
+  let viewport = Viewport()
   private let cache = LayoutCache<Entry>(capacity: 64)
   private var nextEntryId = 0
   private var brackets: BracketHighlight
@@ -1207,6 +1207,8 @@ final class CodeEditorView: UIScrollView {
       return
     }
     let scale = displayScale()
+    // An underline starting below the window would cost a layout call to find that out.
+    let windowEnd = docLineStart(lastLine) + docLineLength(lastLine)
     var backgrounds = DecorationLayers.Batch()
     var underlines = DecorationLayers.Batch()
     for item in items {
@@ -1218,6 +1220,7 @@ final class CodeEditorView: UIScrollView {
           height: CGFloat(viewport.rows(line) * m.rowHeight))
         backgrounds.path(DecorationLayers.Paint(color: color, width: 0)).addRect(rect)
       case .underline(let u):
+        if u.start > windowEnd { continue }
         let thickness = CGFloat(u.thickness)
         RangeRects.forEach(geometry, start: u.start, end: u.end, firstLine: first, padNewline: false) { left, top, right, _ in
           let lineTop = top + m.ascent + CGFloat(u.offset)
