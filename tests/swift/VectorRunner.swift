@@ -16,12 +16,58 @@ final class VectorRunner {
   private var lastResult: Any? = nil
   private var lastError: String? = nil
 
+  // Created by the first layout op. Until the layout moves into the core, the runner keeps it in step as the view does.
+  private var heights: HeightMap? = nil
+  private var viewport: Viewport? = nil
+  private var anchor: Viewport.Anchor? = nil
+  private var widthChanged = false
+
   init(_ testCase: [String: Any]) {
     self.testCase = testCase
     let clock = Clock()
     self.clock = clock
     core = EditorCore(testCase["text"] as? String ?? "", clock: { clock.now })
-    core.onChange = { [weak self] change, origin in self?.changes.append((change, origin)) }
+    core.onChange = { [weak self] change, origin in
+      guard let self else { return }
+      self.changes.append((change, origin))
+      if let h = self.heights {
+        let first = self.core.document.lineAt(change.start)
+        h.replaceLines(first: first, oldCount: Self.lineSpan(change.removed), newCount: Self.lineSpan(change.inserted))
+        h.setGaps(self.core.decorations.gapRows())
+        self.viewport?.clamp()
+      }
+    }
+  }
+
+  private static func lineSpan(_ text: String) -> Int {
+    text.utf16.reduce(1) { $0 + ($1 == 10 ? 1 : 0) }
+  }
+
+  private func layout(_ op: [String: Any]) {
+    let h: HeightMap
+    if let existing = heights {
+      h = existing
+    } else {
+      h = HeightMap(lineCount: core.document.lineCount)
+      h.setGaps(core.decorations.gapRows())
+      heights = h
+    }
+    let vp: Viewport
+    if let existing = viewport {
+      vp = existing
+    } else {
+      vp = Viewport(heights: h)
+      viewport = vp
+    }
+    let before = vp.textAreaWidth
+    let insets = op["insets"] as? [Int] ?? [0, 0, 0, 0]
+    vp.rowHeight = int(op, "rowHeight")
+    vp.gutterWidth = int(op, "gutter")
+    vp.textPadding = int(op, "padding")
+    vp.wrap = bool(op, "wrap", false)
+    _ = vp.resize(width: int(op, "width"), height: int(op, "height"))
+    _ = vp.setInsets(top: insets[0], bottom: insets[1], left: insets[2], right: insets[3])
+    widthChanged = vp.textAreaWidth != before
   }
 
   func run() {
@@ -93,6 +139,27 @@ final class VectorRunner {
     case "decorate":
       let items = (op["items"] as? [[String: Any]] ?? []).map(decorationOf)
       _ = core.setDecorations(items, revision: op["revision"] as? Int ?? -1)
+      if let vp = viewport {
+        let a = vp.anchor()
+        vp.heights.setGaps(core.decorations.gapRows())
+        vp.restore(a)
+      }
+    case "layout": layout(op)
+    case "measure":
+      guard let vp = viewport else { return XCTFail("measure before layout") }
+      for pair in op["pairs"] as? [[Int]] ?? [] { vp.measured(pair[0], pair[1]) }
+      if let widest = op["widest"] as? Int, !vp.wrap { vp.widestLine = max(vp.widestLine, widest) }
+    case "scrollTo":
+      if let vp = viewport { lastResult = vp.scrollTo(int(op, "x"), int(op, "y")) }
+    case "scrollBy":
+      if let vp = viewport { lastResult = vp.scrollTo(vp.scrollX + int(op, "dx"), vp.scrollY + int(op, "dy")) }
+    case "reveal":
+      if let vp = viewport {
+        lastResult = vp.reveal(left: int(op, "left"), top: int(op, "top"), right: int(op, "right"), bottom: int(op, "bottom"))
+      }
+    case "anchor": anchor = viewport?.anchor()
+    case "restore": if let a = anchor { viewport?.restore(a) }
+    case "resetRows": heights?.resetAll()
     default: XCTFail("op not implemented: \(name)")
     }
   }
@@ -192,6 +259,22 @@ final class VectorRunner {
         XCTAssertNil(lastError, "no error expected \(at)")
       }
     }
+    checkLayout(expect, at)
+  }
+
+  private func checkLayout(_ expect: [String: Any], _ at: String) {
+    guard let vp = viewport else { return }
+    let h = vp.heights
+    if let v = expect["widthChanged"] as? Bool { XCTAssertEqual(widthChanged, v, "widthChanged \(at)") }
+    if let v = expect["scroll"] as? [Int] { XCTAssertEqual([vp.scrollX, vp.scrollY], v, "scroll \(at)") }
+    if let v = expect["maxScroll"] as? [Int] { XCTAssertEqual([vp.maxScrollX, vp.maxScrollY], v, "maxScroll \(at)") }
+    if let v = expect["content"] as? [Int] { XCTAssertEqual([vp.contentWidth, vp.contentHeight], v, "content \(at)") }
+    if let v = expect["visible"] as? [Int] { XCTAssertEqual([vp.firstVisibleLine(), vp.lastVisibleLine()], v, "visible \(at)") }
+    if let v = expect["totalRows"] as? Int { XCTAssertEqual(h.totalRows, v, "totalRows \(at)") }
+    for (k, v) in expect["rowStart"] as? [String: Int] ?? [:] { XCTAssertEqual(h.rowStart(Int(k)!), v, "rowStart \(k) \(at)") }
+    for (k, v) in expect["lineAtRow"] as? [String: Int] ?? [:] { XCTAssertEqual(h.lineAtRow(Int(k)!), v, "lineAtRow \(k) \(at)") }
+    for (k, v) in expect["isGapRow"] as? [String: Bool] ?? [:] { XCTAssertEqual(h.isGapRow(Int(k)!), v, "isGapRow \(k) \(at)") }
+    for (k, v) in expect["lineTop"] as? [String: Int] ?? [:] { XCTAssertEqual(vp.lineTop(Int(k)!), v, "lineTop \(k) \(at)") }
   }
 
   // JSON booleans and integers both arrive as NSNumber; only a CFBoolean compares as a Bool.
