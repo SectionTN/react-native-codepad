@@ -56,6 +56,22 @@ final class CoreLayoutTests: XCTestCase {
     XCTAssertEqual(Array(out[6...10]), [1, 1, 1, 1, 1])
   }
 
+  // The draw measures through the batch entry point, the vectors one pair at a time. A growth above and a shrink at
+  // the first visible line in one batch keep that line in place.
+  func testABatchWithAGrowthAboveAndAShrinkAtTheTopKeepsTheTopLine() {
+    let core = EditorCore((0..<20).map { _ in "x" }.joined(separator: "\n"))
+    let viewport = Viewport()
+    viewport.attach(core)
+    viewport.rowHeight = 10
+    viewport.resize(width: 100, height: 50)
+    viewport.measured(5, 3)
+    viewport.beginDraw(scrollX: 0, scrollY: 50)
+    XCTAssertTrue(viewport.measure(pairs: [2, 2, 5, 1], widest: -1, first: 5, last: 9))
+    XCTAssertEqual(viewport.scrollY, 60)
+    XCTAssertEqual(viewport.lineTop(5), 0)
+    viewport.endDraw()
+  }
+
   // A fling frame makes one scroll call and learns from it which edge it reached, for the edge glow.
   func testScrollToReportsEachAxisThatMoved() {
     let core = EditorCore((0..<20).map { _ in String(repeating: "x", count: 30) }.joined(separator: "\n"))
