@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.11 (2026-11-13)
+
+### Editor
+
+- The layout now runs in the same C++ core as the rest of the editor: the rows of each line, the gap rows under decorated lines, the scroll position, and the mapping between rows and the view. Each platform keeps its own text layout and drawing. On the iOS simulator, in the example app's Debug build, a draw of the 10,000-line benchmark file takes 10 to 15 percent less time than in 0.1.10.
+- When the visible lines at the end of the document lose rows, the view now moves up to the new end. Before, it showed blank space below the last line until the next scroll.
+- On iOS, an edit that removes the text under the scroll position now moves the scroll view too. Before, the text and the scroll view could sit at different offsets until the next scroll.
+- `onScroll` now fires when the editor moves the scroll position itself, for example when an edit removes text at the end of the document while the view is scrolled to the end.
+
 ## 0.1.10 (2026-11-13)
 
 ### Editor
