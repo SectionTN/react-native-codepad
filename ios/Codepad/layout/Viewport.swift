@@ -21,7 +21,7 @@ final class Viewport {
     let rows: Int
   }
 
-  /// Core calls a draw may make besides its scroll and measure calls. Debug builds trap past it.
+  /// Core calls a draw may make besides its scroll and measure calls. A draw that checks its calls traps past it.
   static let drawCallLimit = 8
 
   let handle: OpaquePointer
@@ -40,6 +40,7 @@ final class Viewport {
   private var needed = 0
   /// Core calls this draw made besides its scroll and measure calls.
   private(set) var drawCalls = 0
+  private var checksCalls = false
 
   init() {
     handle = cp_layout_new()!
@@ -119,10 +120,12 @@ final class Viewport {
     maxScrollX > 0 && abs(dx) > abs(dy)
   }
 
-  /// Starts a draw with the scroll view's offset, clamped. True when the position moved.
+  /// Starts a draw with the scroll view's offset, clamped. True when the position moved. With `checksCalls`, a Debug
+  /// build traps on a single call past `drawCallLimit` before `endDraw`.
   @discardableResult
-  func beginDraw(scrollX x: Int, scrollY y: Int) -> Bool {
+  func beginDraw(scrollX x: Int, scrollY y: Int, checksCalls: Bool = false) -> Bool {
     drawing = true
+    self.checksCalls = checksCalls
     drawCalls = 0
     last = first - 1
     let moved = cp_layout_scroll_to(handle, Int32(clamping: x), Int32(clamping: y), &known) != 0
@@ -357,7 +360,7 @@ final class Viewport {
     guard drawing else { return }
     drawCalls += 1
     #if DEBUG
-      if drawCalls > Viewport.drawCallLimit { assertionFailure("\(drawCalls) layout calls in one draw") }
+      if checksCalls && drawCalls > Viewport.drawCallLimit { assertionFailure("\(drawCalls) layout calls in one draw") }
     #endif
   }
 

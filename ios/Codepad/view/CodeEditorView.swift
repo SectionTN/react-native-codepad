@@ -649,8 +649,9 @@ final class CodeEditorView: UIScrollView {
     if w != viewport.width || h != viewport.height { sizeChanged(w, h) }
     let m = rowMetrics()
     // The layout's three calls of a draw: this scroll, the frame, then the measure call in prepare. Until endDraw,
-    // the layout reads come from them.
-    if viewport.beginDraw(scrollX: Int(contentOffset.x.rounded()), scrollY: Int(contentOffset.y.rounded())) {
+    // the layout reads come from them. With the debug switch on, a ninth single call traps.
+    let x = Int(contentOffset.x.rounded())
+    if viewport.beginDraw(scrollX: x, scrollY: Int(contentOffset.y.rounded()), checksCalls: debugSwitch()) {
       scrollDirty = true
     }
     let scrolled = scrollDirty

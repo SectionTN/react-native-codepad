@@ -72,6 +72,19 @@ final class CoreLayoutTests: XCTestCase {
     viewport.endDraw()
   }
 
+  // Apps build the library in Debug too, so a draw past the call limit traps only when the view asks for the check.
+  func testADrawPastTheCallLimitDoesNotTrapWithoutTheCheck() {
+    let core = EditorCore((0..<100).map { "line \($0)" }.joined(separator: "\n"))
+    let viewport = Viewport()
+    viewport.attach(core)
+    viewport.rowHeight = 20
+    viewport.resize(width: 400, height: 200)
+    viewport.beginDraw(scrollX: 0, scrollY: 0)
+    for _ in 0...Viewport.drawCallLimit { _ = viewport.gapRows(50) }
+    XCTAssertEqual(viewport.drawCalls, Viewport.drawCallLimit + 1)
+    viewport.endDraw()
+  }
+
   // A fling frame makes one scroll call and learns from it which edge it reached, for the edge glow.
   func testScrollToReportsEachAxisThatMoved() {
     let core = EditorCore((0..<20).map { _ in String(repeating: "x", count: 30) }.joined(separator: "\n"))

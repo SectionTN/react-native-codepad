@@ -44,6 +44,8 @@ func layout(_ view: UIView, width: CGFloat = 300, height: CGFloat = 200) {
 @discardableResult
 func draw(_ editor: CodeEditorView) -> UIImage {
   editor.layoutIfNeeded()
+  // The app's trap needs the debug switch, so the suite checks the draw's single layout calls here.
+  XCTAssertLessThanOrEqual(editor.viewport.drawCalls, Viewport.drawCallLimit, "single layout calls in one draw")
   return render(editor)
 }
 
