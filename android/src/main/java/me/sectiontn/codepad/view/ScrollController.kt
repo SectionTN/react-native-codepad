@@ -3,8 +3,10 @@ package me.sectiontn.codepad.view
 import android.content.Context
 import android.graphics.Canvas
 import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.EdgeEffect
 import android.widget.OverScroller
+import kotlin.math.roundToInt
 
 /** Fling physics and the four edge glows. The view keeps the scroll position, this only animates it. */
 class ScrollController(context: Context, private val view: View) {
@@ -14,9 +16,17 @@ class ScrollController(context: Context, private val view: View) {
   private val left = EdgeEffect(context)
   private val right = EdgeEffect(context)
 
-  val isFinished: Boolean get() = scroller.isFinished
-  val currX: Int get() = scroller.currX
-  val currY: Int get() = scroller.currY
+  // The animateTo target, read again every frame.
+  private var target: (() -> Int)? = null
+  private var aimed = false
+  private var aimX = 0
+  private var aimY = 0
+  private var fromY = 0
+  private var started = 0L
+
+  val isFinished: Boolean get() = target == null && scroller.isFinished
+  val currX: Int get() = if (aimed) aimX else scroller.currX
+  val currY: Int get() = if (aimed) aimY else scroller.currY
   val currVelocity: Float get() = scroller.currVelocity
 
   /** True between fling() and the next abort() or animateTo(), so only flings light the edges up. */
@@ -38,24 +48,40 @@ class ScrollController(context: Context, private val view: View) {
   }
 
   fun fling(startX: Int, startY: Int, velocityX: Int, velocityY: Int, maxX: Int, maxY: Int) {
+    abort()
     flinging = true
     scroller.fling(startX, startY, velocityX, velocityY, 0, maxX, 0, maxY)
     view.postInvalidateOnAnimation()
   }
 
-  fun animateTo(startX: Int, startY: Int, x: Int, y: Int) {
-    flinging = false
-    scroller.startScroll(startX, startY, x - startX, y - startY, SCROLL_DURATION_MS)
+  /** Scrolls vertically to [y], which can move while the scroll runs: wrapped lines take their rows on the way. */
+  fun animateTo(startX: Int, startY: Int, y: () -> Int) {
+    abort()
+    target = y
+    aimed = true
+    aimX = startX
+    aimY = startY
+    fromY = startY
+    started = AnimationUtils.currentAnimationTimeMillis()
     view.postInvalidateOnAnimation()
   }
 
   fun abort() {
     flinging = false
     scroller.abortAnimation()
+    target = null
+    aimed = false
   }
 
   /** Advances a running animation. False once it is finished. */
-  fun step(): Boolean = scroller.computeScrollOffset()
+  fun step(): Boolean {
+    val y = target ?: return scroller.computeScrollOffset()
+    val t = ((AnimationUtils.currentAnimationTimeMillis() - started).toFloat() / SCROLL_DURATION_MS).coerceAtMost(1f)
+    val eased = 1 - (1 - t) * (1 - t) * (1 - t)
+    aimY = fromY + ((y() - fromY) * eased).roundToInt()
+    if (t >= 1f) target = null
+    return true
+  }
 
   /** A drag went past an edge by (dx, dy) px with the finger at (x, y). */
   fun pull(dx: Float, dy: Float, x: Float, y: Float, width: Int, height: Int) {

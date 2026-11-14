@@ -78,4 +78,30 @@ class ScrollTest {
       }
     }
   }
+
+  // The lines an animated scroll passes get their wrapped heights on the way, which moves the target line down.
+  // The scroll still ends with that line at the top.
+  @Test
+  fun anAnimatedScrollToLineWithWrapEndsAtTheLine() {
+    launch().use { s ->
+      val editor = s.editor()
+      onMain {
+        editor.setSoftWrap(true)
+        editor.setInitialText((0 until 600).joinToString("\n") { "line $it " + "word ".repeat(20) })
+        layout(editor)
+        draw(editor)
+        editor.scrollToLine(400, true)
+        assertTrue("the scroll is animating", viewportOf(editor).scrollY < viewportOf(editor).rowHeight)
+        // The rows the passed lines would get from the draws on the way.
+        for (line in 1 until 400) viewportOf(editor).measured(line, 3)
+      }
+      SystemClock.sleep(1000)
+      onMain {
+        draw(editor)
+        val viewport = viewportOf(editor)
+        assertEquals(400, viewport.firstVisibleLine())
+        assertEquals(viewport.rowStart(400) * viewport.rowHeight, viewport.scrollY)
+      }
+    }
+  }
 }

@@ -447,15 +447,16 @@ class CodeEditorView(context: Context) : View(context) {
   }
 
   fun scrollToLine(line: Int, animated: Boolean) {
-    val target = viewport.rowStart(line.coerceIn(0, core.document.lineCount - 1)) * viewport.rowHeight
     scroller.abort()
     val s = viewport.scroll()
     if (animated) {
-      scroller.animateTo(s.x, s.y, s.x, target.coerceIn(0, s.maxY))
-    } else if (viewport.scrollTo(s.x, target)) {
+      scroller.animateTo(s.x, s.y) { lineTop(line).coerceAtMost(viewport.maxScrollY) }
+    } else if (viewport.scrollTo(s.x, lineTop(line))) {
       onScrolled()
     }
   }
+
+  private fun lineTop(line: Int): Int = viewport.rowStart(line.coerceIn(0, core.document.lineCount - 1)) * viewport.rowHeight
 
   /** Scrolls the least amount that shows the caret with the text padding around it. */
   fun revealSelection() {
