@@ -369,14 +369,15 @@ export class EditorView {
     } finally {
       this.inputting = false;
     }
-    if (probing) probeKey(this, performance.now() - start);
     const after = this.core.selection;
     if (
-      this.core.revision !== revision ||
-      after.anchor !== before.anchor ||
-      after.head !== before.head
+      this.core.revision === revision &&
+      after.anchor === before.anchor &&
+      after.head === before.head
     )
-      this.revealing = true;
+      return;
+    this.revealing = true;
+    if (probing) probeKey(this, performance.now() - start);
   }
 
   // A hardware key the editor runs itself. True when the browser must not act on it.

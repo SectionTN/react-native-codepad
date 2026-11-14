@@ -4,14 +4,23 @@ import type { CoreModule } from './core/module';
 export const PUMP_BUDGET_MS = 6;
 
 type View = { draw(): void };
-type Probe = { work: number[]; pumps: number[] };
+// Per key: work and its three parts, the handler, the engine share of the frame that draws it, and that draw.
+type Probe = {
+  work: number[];
+  handler: number[];
+  engine: number[];
+  draw: number[];
+  pumps: number[];
+};
 
 const views = new Set<View>();
 let core: CoreModule | null = null;
 let scheduled = false;
 
 // With localStorage codepad_debug set to 1 at load, the bench reads key and frame times from globalThis.
-const probe: Probe | null = debugOn() ? { work: [], pumps: [] } : null;
+const probe: Probe | null = debugOn()
+  ? { work: [], handler: [], engine: [], draw: [], pumps: [] }
+  : null;
 if (probe) (globalThis as { __codepadProbe?: Probe }).__codepadProbe = probe;
 let keyView: View | null = null;
 let keyMs = 0;
@@ -61,7 +70,11 @@ function frame(): void {
     const drawStart = probe ? performance.now() : 0;
     view.draw();
     if (probe && view === keyView) {
-      probe.work.push(keyMs + pumped + performance.now() - drawStart);
+      const drawn = performance.now() - drawStart;
+      probe.work.push(keyMs + pumped + drawn);
+      probe.handler.push(keyMs);
+      probe.engine.push(pumped);
+      probe.draw.push(drawn);
       keyView = null;
       keyMs = 0;
     }
