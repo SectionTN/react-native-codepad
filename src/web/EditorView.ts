@@ -28,7 +28,7 @@ export type ViewOptions = {
   autoIndent: boolean;
   autoCloseBrackets: boolean;
   onContentSize?: (width: number, height: number) => void;
-  onScroll?: (x: number, y: number) => void;
+  onScroll?: (x: number, y: number, contentWidth: number, contentHeight: number) => void;
   onFirstDraw?: () => void;
   onChange?: (change: WebChange) => void;
   onSelection?: (anchor: number, head: number, revision: number) => void;
@@ -590,7 +590,7 @@ export class EditorView {
     const y = layout.scrollY;
     if (x !== this.lastScroll.x || y !== this.lastScroll.y) {
       this.lastScroll = { x, y };
-      this.o.onScroll?.(x, y);
+      this.o.onScroll?.(x, y, layout.contentWidth, layout.contentHeight);
     }
   }
 

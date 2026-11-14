@@ -4,6 +4,7 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -70,6 +71,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
 ) {
   const node = useRef<ComponentRef<typeof View>>(null);
   const [view, setView] = useState<EditorView | null>(null);
+  const viewRef = useRef<EditorView | null>(null);
   const handlers = useRef({
     onReady,
     onScroll,
@@ -88,37 +90,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   };
   const initial = useRef(initialValue);
 
-  useEffect(() => {
-    let alive = true;
-    let created: EditorView | null = null;
-    loadCore().then(
-      (m) => {
-        const host = node.current as unknown as HTMLElement | null;
-        if (!alive || !host) return;
-        created = new EditorView(host, m, initial.current);
-        setView(created);
-      },
-      (e: Error) => console.warn(e.message),
-    );
-    return () => {
-      alive = false;
-      created?.destroy();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (avoidKeyboard) notYet('avoidKeyboard');
-    if (autoFocus) notYet('autoFocus');
-    if (suggestions !== 'off') notYet('suggestions');
-    if (decorations) notYet('decorations');
-    if (onGapLayout) notYet('onGapLayout');
-    if (onFocus) notYet('onFocus');
-    if (onBlur) notYet('onBlur');
-  }, [avoidKeyboard, autoFocus, suggestions, decorations, onGapLayout, onFocus, onBlur]);
-
-  useEffect(() => {
-    if (!view) return;
-    const options: Partial<ViewOptions> = {
+  // The callbacks read the latest handlers and the view through refs, so the object only follows the props.
+  const options = useMemo<Partial<ViewOptions>>(
+    () => ({
       theme,
       fontFamily,
       fontSize,
@@ -137,13 +111,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       autoIndent,
       autoCloseBrackets,
       onContentSize: (width, height) => handlers.current.onContentSizeChange?.({ width, height }),
-      onScroll: (x, y) =>
-        handlers.current.onScroll?.({
-          x,
-          y,
-          contentWidth: view.layout.contentWidth,
-          contentHeight: view.layout.contentHeight,
-        }),
+      onScroll: (x, y, contentWidth, contentHeight) =>
+        handlers.current.onScroll?.({ x, y, contentWidth, contentHeight }),
       onFirstDraw: () => handlers.current.onReady?.(),
       onChange: (c) => {
         const h = handlers.current;
@@ -154,32 +123,70 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
           origin: c.origin,
           revision: c.revision,
         });
-        h.onChangeText?.(view.core.text());
+        if (h.onChangeText && viewRef.current) h.onChangeText(viewRef.current.core.text());
       },
       onSelection: (anchor, head, revision) =>
         handlers.current.onSelectionChange?.({ anchor, head, revision }),
+    }),
+    [
+      theme,
+      fontFamily,
+      fontSize,
+      lineHeight,
+      lineNumbers,
+      softWrap,
+      highlightActiveLine,
+      matchBrackets,
+      textPadding,
+      contentInsets,
+      scrollEnabled,
+      placeholder,
+      readOnly,
+      tabSize,
+      insertSpaces,
+      autoIndent,
+      autoCloseBrackets,
+    ],
+  );
+  const latest = useRef({ options, language });
+  latest.current = { options, language };
+
+  // Options and language reach the view before its first draw, which the pump runs before React commits.
+  useEffect(() => {
+    let alive = true;
+    let created: EditorView | null = null;
+    loadCore().then(
+      (m) => {
+        const host = node.current as unknown as HTMLElement | null;
+        if (!alive || !host) return;
+        created = new EditorView(host, m, initial.current);
+        created.setOptions(latest.current.options);
+        created.setLanguage(latest.current.language);
+        viewRef.current = created;
+        setView(created);
+      },
+      (e: Error) => console.warn(e.message),
+    );
+    return () => {
+      alive = false;
+      viewRef.current = null;
+      created?.destroy();
     };
-    view.setOptions(options);
-  }, [
-    view,
-    theme,
-    fontFamily,
-    fontSize,
-    lineHeight,
-    lineNumbers,
-    softWrap,
-    highlightActiveLine,
-    matchBrackets,
-    textPadding,
-    contentInsets,
-    scrollEnabled,
-    placeholder,
-    readOnly,
-    tabSize,
-    insertSpaces,
-    autoIndent,
-    autoCloseBrackets,
-  ]);
+  }, []);
+
+  useEffect(() => {
+    if (avoidKeyboard) notYet('avoidKeyboard');
+    if (autoFocus) notYet('autoFocus');
+    if (suggestions !== 'off') notYet('suggestions');
+    if (decorations) notYet('decorations');
+    if (onGapLayout) notYet('onGapLayout');
+    if (onFocus) notYet('onFocus');
+    if (onBlur) notYet('onBlur');
+  }, [avoidKeyboard, autoFocus, suggestions, decorations, onGapLayout, onFocus, onBlur]);
+
+  useEffect(() => {
+    view?.setOptions(options);
+  }, [view, options]);
 
   useEffect(() => {
     view?.setLanguage(language);
