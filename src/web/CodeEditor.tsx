@@ -72,6 +72,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   const node = useRef<ComponentRef<typeof View>>(null);
   const [view, setView] = useState<EditorView | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  // Writes made before the core loads, run in order once the view exists, or settled unapplied on unmount.
+  const queued = useRef<{ edit: (v: EditorView) => void; done: () => void }[]>([]);
+  const gone = useRef(false);
   const handlers = useRef({
     onReady,
     onScroll,
@@ -155,22 +158,37 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   useEffect(() => {
     let alive = true;
     let created: EditorView | null = null;
+    gone.current = false;
+    const drop = () => {
+      for (const write of queued.current.splice(0)) write.done();
+    };
     loadCore().then(
       (m) => {
         const host = node.current as unknown as HTMLElement | null;
         if (!alive || !host) return;
-        created = new EditorView(host, m, initial.current);
-        created.setOptions(latest.current.options);
-        created.setLanguage(latest.current.language);
-        viewRef.current = created;
-        setView(created);
+        const v = new EditorView(host, m, initial.current);
+        created = v;
+        v.setOptions(latest.current.options);
+        v.setLanguage(latest.current.language);
+        viewRef.current = v;
+        for (const write of queued.current.splice(0)) {
+          v.apply(() => write.edit(v));
+          write.done();
+        }
+        setView(v);
       },
-      (e: Error) => console.warn(e.message),
+      (e: Error) => {
+        console.warn(e.message);
+        drop();
+      },
     );
     return () => {
       alive = false;
+      gone.current = true;
       viewRef.current = null;
       created?.destroy();
+      // A StrictMode remount runs the effect again before this fires and keeps the waiting writes.
+      setTimeout(() => gone.current && drop(), 0);
     };
   }, []);
 
@@ -192,41 +210,46 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     view?.setLanguage(language);
   }, [view, language]);
 
-  // Until the core loads, reads see an empty document and writes do nothing, like native before onReady.
+  // Reads see an empty document until the core loads and after unmount. Writes made before the load wait for it.
   useImperativeHandle(ref, () => {
-    const core = view?.core;
+    const core = () => viewRef.current?.core;
     const write = (edit: (v: EditorView) => void): Promise<void> => {
-      if (view) view.apply(() => edit(view));
+      const v = viewRef.current;
+      if (v) v.apply(() => edit(v));
+      else if (!gone.current) return new Promise((done) => queued.current.push({ edit, done }));
       return Promise.resolve();
     };
     return {
-      getText: () => core?.text() ?? '',
-      getTextInRange: (range) => core?.text(range.start, range.end) ?? '',
-      getLength: () => core?.length ?? 0,
-      getLineCount: () => core?.lineCount ?? 1,
-      getLine: (index) => core?.line(index) ?? '',
-      getSelection: () => core?.selection ?? { anchor: 0, head: 0 },
-      getRevision: () => core?.revision ?? 0,
-      offsetToPosition: (offset) => core?.offsetToPosition(offset) ?? { line: 0, column: 0 },
-      positionToOffset: (pos) => core?.positionToOffset(pos.line, pos.column) ?? 0,
-      getCursorRect: () => (view && core ? view.caretRect(core.selection.head) : null),
+      getText: () => core()?.text() ?? '',
+      getTextInRange: (range) => core()?.text(range.start, range.end) ?? '',
+      getLength: () => core()?.length ?? 0,
+      getLineCount: () => core()?.lineCount ?? 1,
+      getLine: (index) => core()?.line(index) ?? '',
+      getSelection: () => core()?.selection ?? { anchor: 0, head: 0 },
+      getRevision: () => core()?.revision ?? 0,
+      offsetToPosition: (offset) => core()?.offsetToPosition(offset) ?? { line: 0, column: 0 },
+      positionToOffset: (pos) => core()?.positionToOffset(pos.line, pos.column) ?? 0,
+      getCursorRect: () => {
+        const v = viewRef.current;
+        return v ? v.caretRect(v.core.selection.head) : null;
+      },
       getGapRect: () => {
         notYet('getGapRect');
         return null;
       },
-      getVisibleLines: () => view?.visibleLines() ?? { first: 0, last: 0 },
-      canUndo: () => core?.canUndo ?? false,
-      canRedo: () => core?.canRedo ?? false,
+      getVisibleLines: () => viewRef.current?.visibleLines() ?? { first: 0, last: 0 },
+      canUndo: () => core()?.canUndo ?? false,
+      canRedo: () => core()?.canRedo ?? false,
       isFocused: () => false,
       setText: (text, opts) => write((v) => v.core.setText(text, opts?.keepHistory ?? false)),
       setSelection: (sel) => write((v) => v.core.setSelection(sel.anchor, sel.head)),
       selectAll: () => write((v) => v.core.selectAll()),
       scrollToLine: (line) => {
-        view?.scrollToLine(line);
+        viewRef.current?.scrollToLine(line);
         return Promise.resolve();
       },
       revealSelection: () => {
-        view?.revealSelection();
+        viewRef.current?.revealSelection();
         return Promise.resolve();
       },
       replaceRange: (range, text) => write((v) => v.core.replace(range.start, range.end, text)),
@@ -251,7 +274,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       deleteBackward: () => later('deleteBackward', undefined),
       deleteForward: () => later('deleteForward', undefined),
     };
-  }, [view]);
+  }, []);
 
   return <View {...viewProps} ref={node} />;
 });
