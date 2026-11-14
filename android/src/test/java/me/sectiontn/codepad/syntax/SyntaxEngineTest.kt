@@ -314,4 +314,26 @@ class SyntaxEngineTest {
     snapshot.close()
     engine.close()
   }
+
+  // A parse posted just before close lands after it, when the view that would free it is gone.
+  @Test
+  fun aSnapshotPostedBeforeCloseNeverReachesTheHost() {
+    val main = LinkedBlockingQueue<Runnable>()
+    val core = EditorCore("let a = 1;")
+    val engine = SyntaxEngine(postToMain = { main.add(it) }, onSnapshot = { snapshots.add(it) })
+    engine.setLanguage("javascript")
+    engine.attach(core)
+    while (snapshots.none { it.length > 0 }) checkNotNull(main.poll(5, TimeUnit.SECONDS)).run()
+    while (true) (main.poll(300, TimeUnit.MILLISECONDS) ?: break).run()
+    snapshots.forEach { it.close() }
+    snapshots.clear()
+    core.replace(4, 5, "value")
+    val late = checkNotNull(main.poll(5, TimeUnit.SECONDS))
+    engine.close()
+    late.run()
+    val reached = snapshots.size
+    snapshots.forEach { it.close() }
+    checkNotNull(main.poll(5, TimeUnit.SECONDS)).run()
+    assertEquals(0, reached)
+  }
 }

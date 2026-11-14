@@ -178,8 +178,9 @@ struct Engine : std::enable_shared_from_this<Engine> {
   static void run_post(void *arg) {
     std::unique_ptr<Post> post(static_cast<Post *>(arg));
     Engine &engine = *post->engine;
-    // Parsed before the latest attach: its revision can equal the new document's, so the host must never see it.
-    if (post->snapshot && post->snapshot->epoch != engine.epoch.load()) {
+    // Parsed before the latest attach, whose revision can equal the new document's, or landing after close, when the
+    // host that would free it is gone. The host never sees either.
+    if (post->snapshot && (engine.shut || post->snapshot->epoch != engine.epoch.load())) {
       engine.release(post->snapshot);
       return;
     }
