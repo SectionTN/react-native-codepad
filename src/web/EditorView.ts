@@ -7,10 +7,11 @@ import type { CoreModule } from './core/module';
 import { type DecodedFrame, decodeFrame } from './frame';
 import { CaretMover, type LineGeometry } from './input/CaretMover';
 import { InputHost } from './input/InputHost';
+import { overlapOf, watchViewport } from './input/keyboardInset';
 import { keyCommand } from './input/keys';
 import { WebInputSession } from './input/WebInputSession';
 import { ensureInjected, ensureLanguage, onRegistered } from './loader';
-import { registerView, requestPump } from './pump';
+import { probeKey, probing, registerView, requestPump } from './pump';
 import { type CssTheme, cssTheme } from './theme';
 
 export type ViewOptions = {
@@ -38,6 +39,7 @@ export type ViewOptions = {
   onSelection?: (anchor: number, head: number, revision: number) => void;
   suggestions: Suggestions;
   autoFocus: boolean;
+  avoidKeyboard: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
 };
@@ -63,6 +65,7 @@ export const DEFAULT_OPTIONS: ViewOptions = {
   autoCloseBrackets: true,
   suggestions: 'off',
   autoFocus: false,
+  avoidKeyboard: false,
 };
 
 const MONOSPACE = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
@@ -127,6 +130,9 @@ export class EditorView {
   private frameText = 0;
   private frameTextCap = 0;
   private readonly onScrollEvent = () => this.invalidate();
+  private offViewport: () => void = () => {};
+  // The keyboard's overlap with the editor, part of the bottom inset under avoidKeyboard.
+  private keyboard = 0;
   // Injection names the engine found no language for, and the ids this view already refreshed after.
   private readonly missed = new Set<string>();
   private readonly refreshedFor = new Set<string>();
@@ -228,6 +234,10 @@ export class EditorView {
       before.lineNumbers !== this.o.lineNumbers ||
       before.scrollEnabled !== this.o.scrollEnabled;
     if (before.scrollEnabled !== this.o.scrollEnabled) this.listenToPage(!this.o.scrollEnabled);
+    if (before.avoidKeyboard !== this.o.avoidKeyboard) {
+      this.offViewport();
+      this.offViewport = this.o.avoidKeyboard ? watchViewport(this.onScrollEvent) : () => {};
+    }
     this.input.setSuggestions(this.o.suggestions);
     this.input.setReadOnly(this.o.readOnly);
     if (
@@ -350,6 +360,7 @@ export class EditorView {
 
   // A keyboard edit or caret move shows the caret, a selection the page wrote back does not.
   private applyInput(edit: () => void): void {
+    const start = probing ? performance.now() : 0;
     const revision = this.core.revision;
     const before = this.core.selection;
     this.inputting = true;
@@ -358,6 +369,7 @@ export class EditorView {
     } finally {
       this.inputting = false;
     }
+    if (probing) probeKey(this, performance.now() - start);
     const after = this.core.selection;
     if (
       this.core.revision !== revision ||
@@ -681,6 +693,7 @@ export class EditorView {
     this.scroller.removeEventListener('click', this.onClickEvent);
     this.scroller.removeEventListener('mousedown', this.onMouseDownEvent);
     this.listenToPage(false);
+    this.offViewport();
     this.resize?.disconnect();
     document.fonts?.removeEventListener?.('loadingdone', this.remeasureEvent);
     this.scroller.removeEventListener('scroll', this.onScrollEvent);
@@ -797,7 +810,12 @@ export class EditorView {
     if (this.layout.gutterWidth !== gutter) this.layout.gutterWidth = gutter;
     if (this.layout.textPadding !== o.textPadding) this.layout.textPadding = o.textPadding;
     this.layout.resize(width, height);
-    this.layout.setInsets(insets.top ?? 0, insets.bottom ?? 0, insets.left ?? 0, insets.right ?? 0);
+    // An editor that sizes to its text leaves the keyboard to the page.
+    const keyboard = o.avoidKeyboard && o.scrollEnabled ? overlapOf(this.root) : 0;
+    if (keyboard > this.keyboard && this.input.focused) this.revealing = true;
+    this.keyboard = keyboard;
+    const bottom = (insets.bottom ?? 0) + keyboard;
+    this.layout.setInsets(insets.top ?? 0, bottom, insets.left ?? 0, insets.right ?? 0);
     if (o.softWrap && this.layout.textAreaWidth !== before) this.relayout();
   }
 
@@ -1017,7 +1035,8 @@ export class EditorView {
   private report(): void {
     const layout = this.layout;
     const width = layout.textAreaLeft + layout.contentWidth + layout.insetRight;
-    const height = layout.insetTop + layout.contentHeight + layout.insetBottom;
+    // The keyboard's inset is not the content's size.
+    const height = layout.insetTop + layout.contentHeight + layout.insetBottom - this.keyboard;
     if (width !== this.lastContent.width || height !== this.lastContent.height) {
       this.lastContent = { width, height };
       this.o.onContentSize?.(width, height);

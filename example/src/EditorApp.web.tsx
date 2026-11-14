@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CodeEditor, Codepad } from 'react-native-codepad';
+import { generateJavaScript } from './bench/generate';
 import { GENERATED_FILES, SAMPLE_FILES } from './files';
 import { NESTED_SNIPPET } from './screens/nestedSnippet';
 import { THEMES } from './themes';
@@ -24,14 +25,32 @@ export function EditorApp() {
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const [demo, setDemo] = useState<Demo>('editor');
   const theme = THEMES[themeIndex % THEMES.length]?.theme;
+  // Lines of the generated JavaScript file the typing bench opened, 0 for a picked file.
+  const [benchLines, setBenchLines] = useState(0);
   const file = FILES.find((f) => f.id === fileId) ?? FILES[0];
-  const text = useMemo(() => file?.load() ?? '', [file]);
+  const text = useMemo(
+    () => (benchLines ? generateJavaScript(benchLines) : (file?.load() ?? '')),
+    [file, benchLines],
+  );
   // Set when a file or a demo is picked, so the first paint counts from the tap.
   const started = useRef(performance.now());
   const pick = <T,>(set: (value: T) => void, value: T) => {
     started.current = performance.now();
+    setBenchLines(0);
     set(value);
   };
+
+  // scripts/bench-web.mjs opens its file through this hook.
+  useEffect(() => {
+    if (!__DEV__) return;
+    (globalThis as { __codepadBench?: { open(lines: number): void } }).__codepadBench = {
+      open: (lines) => {
+        started.current = performance.now();
+        setDemo('editor');
+        setBenchLines(lines);
+      },
+    };
+  }, []);
   const ready = (label: string) => () =>
     console.log(
       `[example] ${label} first paint ${Math.round(performance.now() - started.current)} ms`,
@@ -71,14 +90,15 @@ export function EditorApp() {
       </ScrollView>
       {demo === 'editor' ? (
         <CodeEditor
-          key={file?.id}
+          key={benchLines ? `bench-${benchLines}` : file?.id}
           style={styles.editor}
           initialValue={text}
-          language={file?.language}
+          language={benchLines ? 'javascript' : file?.language}
           theme={theme}
           fontFamily={FONT}
           scrollEnabled={scrollEnabled}
-          onReady={ready(file?.name ?? '')}
+          avoidKeyboard
+          onReady={ready(benchLines ? `bench ${benchLines}` : (file?.name ?? ''))}
         />
       ) : null}
       {demo === 'nested' ? (
