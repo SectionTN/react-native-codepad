@@ -126,7 +126,7 @@ export class EditorView {
     this.scroller.addEventListener('scroll', this.onScrollEvent, { passive: true });
     this.resize =
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => this.invalidate());
-    this.resize?.observe(this.root);
+    this.resize?.observe(this.scroller);
     document.fonts?.ready.then(() => this.remeasure());
     document.fonts?.addEventListener?.('loadingdone', this.remeasureEvent);
     this.lastSelection = this.core.selection;
@@ -135,6 +135,7 @@ export class EditorView {
   }
 
   setOptions(next: Partial<ViewOptions>): void {
+    if (this.destroyed) return;
     const before = this.o;
     this.o = { ...this.o, ...next };
     const metrics =
@@ -165,6 +166,7 @@ export class EditorView {
 
   // Draws plain text until the language and the languages it injects have loaded, then colors.
   setLanguage(id: string): void {
+    if (this.destroyed) return;
     if (id === this.language) return;
     this.language = id;
     this.languageReady = false;
@@ -180,6 +182,7 @@ export class EditorView {
 
   // Runs an edit, then hands its changes and selection to the cache and the listeners.
   apply(edit: () => void): void {
+    if (this.destroyed) return;
     edit();
     const changes = this.core.takeChanges();
     for (const change of changes) this.changed(change, changes.length);
@@ -194,6 +197,7 @@ export class EditorView {
 
   // Scrolls so the line is at the top of the editor, or of the page when the editor does not scroll.
   scrollToLine(line: number): void {
+    if (this.destroyed) return;
     const top = this.layout.insetTop + this.layout.rowStart(line) * this.rowHeight;
     if (this.o.scrollEnabled) {
       this.scroller.scrollTop = top - this.layout.insetTop;
@@ -205,6 +209,7 @@ export class EditorView {
 
   // Scrolls the least that shows the caret.
   revealSelection(): void {
+    if (this.destroyed) return;
     const caret = this.caretRect(this.core.selection.head);
     const line = this.core.lineAt(this.core.selection.head);
     const top = this.layout.rowStart(line) * this.rowHeight;
@@ -215,6 +220,7 @@ export class EditorView {
 
   // The caret at offset in view coordinates, or null when its line is not drawn.
   caretRect(offset: number): Rect | null {
+    if (this.destroyed) return null;
     const line = this.core.lineAt(offset);
     const entry = this.cache.get(line);
     if (!entry || !this.attached.has(line)) return null;
@@ -234,6 +240,7 @@ export class EditorView {
   }
 
   visibleLines(): { first: number; last: number } {
+    if (this.destroyed) return { first: 0, last: 0 };
     return { first: this.layout.firstVisibleLine(), last: this.layout.lastVisibleLine() };
   }
 
@@ -277,6 +284,8 @@ export class EditorView {
     if (this.frameInts) this.m._free(this.frameInts);
     if (this.frameText) this.m._free(this.frameText);
     this.core.close();
+    // The engine finishes closing in the pump, which may have no other editor to run for.
+    requestPump();
   }
 
   private invalidate(): void {
@@ -351,8 +360,8 @@ export class EditorView {
   private configure(): void {
     const o = this.o;
     const insets = o.contentInsets;
-    const width = Math.round(this.root.clientWidth);
-    const height = o.scrollEnabled ? Math.round(this.root.clientHeight) : window.innerHeight;
+    const width = Math.round(this.scroller.clientWidth);
+    const height = o.scrollEnabled ? Math.round(this.scroller.clientHeight) : window.innerHeight;
     const digits = Math.max(2, String(this.core.lineCount).length);
     const gutter = o.lineNumbers ? Math.ceil(this.charWidth * (digits + 2)) : 0;
     const before = this.layout.textAreaWidth;
@@ -587,7 +596,7 @@ export class EditorView {
       this.o.onFirstDraw?.();
     }
     const x = layout.scrollX;
-    const y = layout.scrollY;
+    const y = this.o.scrollEnabled ? layout.scrollY : 0;
     if (x !== this.lastScroll.x || y !== this.lastScroll.y) {
       this.lastScroll = { x, y };
       this.o.onScroll?.(x, y, layout.contentWidth, layout.contentHeight);

@@ -15,7 +15,7 @@
     <script type="module">
       import { configureWeb } from '/lib/module/web/configure.js';
       import { EditorView } from '/lib/module/web/EditorView.js';
-      import { loadCore } from '/lib/module/web/loader.js';
+      import { ensureLanguage, loadCore } from '/lib/module/web/loader.js';
 
       configureWeb({ assetsUrl: new URL(location.href).searchParams.get('assets') });
       // Waits a frame at a time until test() holds, or fails after two seconds.
@@ -26,7 +26,11 @@
           await new Promise((r) => requestAnimationFrame(r));
         }
       }
-      window.codepad = { EditorView, loadCore, until };
+      // Waits n frames.
+      async function frames(n) {
+        for (let i = 0; i < n; i++) await new Promise((r) => requestAnimationFrame(r));
+      }
+      window.codepad = { EditorView, ensureLanguage, frames, loadCore, until };
       window.ready = true;
     </script>
   </body>
