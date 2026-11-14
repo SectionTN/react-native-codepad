@@ -145,7 +145,10 @@ export class EditorView {
       before.tabSize !== this.o.tabSize ||
       before.softWrap !== this.o.softWrap;
     const looks =
-      metrics || before.theme !== this.o.theme || before.lineNumbers !== this.o.lineNumbers;
+      metrics ||
+      before.theme !== this.o.theme ||
+      before.lineNumbers !== this.o.lineNumbers ||
+      before.scrollEnabled !== this.o.scrollEnabled;
     if (before.scrollEnabled !== this.o.scrollEnabled) this.listenToPage(!this.o.scrollEnabled);
     if (
       before.tabSize !== this.o.tabSize ||
@@ -161,6 +164,8 @@ export class EditorView {
       };
     }
     if (looks) this.applyOptions(metrics);
+    // Bold or italic tokens change widths and wrapped rows in a font that is not monospace.
+    if (!metrics && before.theme !== this.o.theme) this.relayout();
     this.invalidate();
   }
 
@@ -212,7 +217,14 @@ export class EditorView {
     if (this.destroyed) return;
     const caret = this.caretRect(this.core.selection.head);
     const line = this.core.lineAt(this.core.selection.head);
-    const top = this.layout.rowStart(line) * this.rowHeight;
+    let row = this.layout.rowStart(line);
+    const el = this.cache.get(line)?.el;
+    if (caret && el) {
+      // The caret's row inside a wrapped line, from where the browser drew it.
+      const lineY = el.getBoundingClientRect().top - this.root.getBoundingClientRect().top;
+      row += Math.max(0, Math.round((caret.y - lineY) / this.rowHeight));
+    }
+    const top = row * this.rowHeight;
     const x = caret ? caret.x - this.layout.textLeft : 0;
     if (this.layout.reveal(x, top, x + 1, top + this.rowHeight)) this.syncScroll();
     this.invalidate();
@@ -344,8 +356,6 @@ export class EditorView {
       this.layout.rowHeight = this.rowHeight;
       this.layout.wrap = o.softWrap;
       this.relayout();
-    } else {
-      for (const entry of this.cache.values()) this.paint(entry.el, entry.text, entry.spans);
     }
   }
 
@@ -478,6 +488,8 @@ export class EditorView {
         const el = entry?.el ?? this.makeLine();
         el.dataset.line = String(line);
         this.paint(el, data.text, spans);
+        // The width it wraps at, before prepare reads its height.
+        el.style.width = this.o.softWrap ? `${this.layout.wrapWidth}px` : '';
         const next = { el, revision, spans, text: data.text };
         this.cache.delete(line);
         this.cache.set(line, next);

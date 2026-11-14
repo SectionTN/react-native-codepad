@@ -261,6 +261,90 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('wrapped lines of every length stack without overlapping', async () => {
+      const { page, errors } = await open();
+      const count = await page.evaluate(async () => {
+        const { EditorView, frames, loadCore, overlaps, until } = window.codepad;
+        const host = document.getElementById('a');
+        const text = Array.from({ length: 12 }, (_, i) => 'word '.repeat(10 + i * 7)).join('\n');
+        const view = new EditorView(host, await loadCore(), text);
+        view.setOptions({ softWrap: true });
+        await until(() => host.querySelector('[data-line="0"]'));
+        await frames(5);
+        return overlaps('a');
+      });
+      assert.equal(count, 0);
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
+
+    test('a theme that makes keywords bold measures wrapped lines again', async () => {
+      const { page, errors } = await open();
+      const count = await page.evaluate(async () => {
+        const { EditorView, frames, githubLight, loadCore, overlaps, until } = window.codepad;
+        const host = document.getElementById('a');
+        const text = `x = a ${'and not b '.repeat(150)}\ny = 1\n`;
+        const view = new EditorView(host, await loadCore(), text);
+        view.setOptions({ softWrap: true, fontFamily: 'Arial' });
+        view.setLanguage('python');
+        await until(() => host.querySelector('[data-line="0"] span'));
+        await frames(3);
+        const bold = { ...githubLight, tokens: { ...githubLight.tokens } };
+        for (const name of Object.keys(bold.tokens)) {
+          if (name.startsWith('keyword')) bold.tokens[name] = { color: '#cf222e', bold: true };
+        }
+        view.setOptions({ theme: bold });
+        await frames(5);
+        return overlaps('a');
+      });
+      assert.equal(count, 0);
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
+
+    test('revealSelection shows the caret on a later row of a wrapped line', async () => {
+      const { page, errors } = await open();
+      const y = await page.evaluate(async () => {
+        const { EditorView, frames, loadCore, until } = window.codepad;
+        const host = document.getElementById('a');
+        const text = `${'word '.repeat(600)}\nend`;
+        const view = new EditorView(host, await loadCore(), text);
+        view.setOptions({ softWrap: true });
+        await until(() => host.querySelector('[data-line="0"]'));
+        await frames(3);
+        const head = view.core.lineEnd(0);
+        view.apply(() => view.core.setSelection(head, head));
+        view.revealSelection();
+        await frames(5);
+        return view.caretRect(head)?.y ?? null;
+      });
+      assert.ok(y !== null && y >= 0 && y < 300, `caret y ${y}`);
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
+
+    test('turning scrolling back on gives the editor its host height again', async () => {
+      const { page, errors } = await open();
+      const result = await page.evaluate(async () => {
+        const { EditorView, frames, loadCore, until } = window.codepad;
+        const host = document.getElementById('a');
+        const text = Array.from({ length: 100 }, (_, i) => `line ${i}`).join('\n');
+        const view = new EditorView(host, await loadCore(), text);
+        view.setOptions({ scrollEnabled: false });
+        await until(() => host.firstElementChild.getBoundingClientRect().height > 300);
+        view.setOptions({ scrollEnabled: true });
+        await frames(5);
+        const scroller = host.querySelector('[data-scroller]');
+        return {
+          height: host.firstElementChild.getBoundingClientRect().height,
+          overflowY: getComputedStyle(scroller).overflowY,
+        };
+      });
+      assert.deepEqual(result, { height: 300, overflowY: 'auto' });
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
+
     test('caret x grows across an emoji and Arabic', async () => {
       const { page, errors } = await open();
       const result = await page.evaluate(async () => {
