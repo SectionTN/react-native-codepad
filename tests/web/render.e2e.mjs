@@ -285,7 +285,7 @@ for (const engine of [chromium, webkit]) {
 
     test('a theme that makes keywords bold measures wrapped lines again', async () => {
       const { page, errors } = await open();
-      const count = await page.evaluate(async () => {
+      const result = await page.evaluate(async () => {
         const { EditorView, frames, githubLight, loadCore, overlaps, until } = window.codepad;
         const host = document.getElementById('a');
         const text = `x = a ${'and not b '.repeat(150)}\ny = 1\n`;
@@ -300,9 +300,10 @@ for (const engine of [chromium, webkit]) {
         }
         view.setOptions({ theme: bold });
         await frames(5);
-        return overlaps('a');
+        return { lines: host.querySelectorAll('[data-line]').length, overlaps: overlaps('a') };
       });
-      assert.equal(count, 0);
+      assert.ok(result.lines >= 2, `only ${result.lines} line drawn, nothing to overlap`);
+      assert.equal(result.overlaps, 0);
       assert.deepEqual(errors, []);
       await page.close();
     });
