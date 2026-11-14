@@ -73,7 +73,7 @@ final class CoreHighlightTests: XCTestCase {
   private func name(_ style: Int32) -> String {
     var buffer = [CChar](repeating: 0, count: 128)
     _ = cp_style_name(style, &buffer, 128)
-    return String(cString: buffer)
+    return String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
   }
 
   /// Renders cp_highlight lines as the golden files do, from the given line on.

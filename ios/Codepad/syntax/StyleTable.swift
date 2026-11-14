@@ -23,7 +23,7 @@ enum StyleTable {
       buffer = [CChar](repeating: 0, count: length + 1)
       _ = cp_style_name(Int32(id), &buffer, UInt32(length + 1))
     }
-    let name = String(cString: buffer)
+    let name = String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
     names.lock.withLock { names.byId[id] = name }
     return name
   }

@@ -103,7 +103,7 @@ enum LanguageRegistry {
         }
       }
     }
-    let message = String(cString: error)
+    let message = String(decoding: error.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
     guard let handle else {
       log.warning("\(message, privacy: .public)")
       return nil

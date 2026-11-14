@@ -21,7 +21,7 @@ final class CoreLanguageTests: XCTestCase {
         }
       }
     }
-    return (language, String(cString: error))
+    return (language, text(error))
   }
 
   private func javascript() throws -> OpaquePointer {
@@ -40,7 +40,7 @@ final class CoreLanguageTests: XCTestCase {
         cp_test_predicate(lang, qc.baseAddress, UInt32(qc.count), s, UInt32(s.count), &message, 512)
       }
     }
-    XCTAssertGreaterThanOrEqual(count, 0, String(cString: message))
+    XCTAssertGreaterThanOrEqual(count, 0, text(message))
     return count
   }
 
@@ -89,7 +89,7 @@ final class CoreLanguageTests: XCTestCase {
     XCTAssertEqual(cp_style_id("keyword.function"), id)
     var name = [CChar](repeating: 0, count: 64)
     XCTAssertEqual(cp_style_name(id, &name, 64), UInt32("keyword.function".utf8.count))
-    XCTAssertEqual(String(cString: name), "keyword.function")
+    XCTAssertEqual(text(name), "keyword.function")
     var short = [CChar](repeating: 0, count: 4)
     XCTAssertEqual(cp_style_name(id, &short, 4), UInt32("keyword.function".utf8.count))
   }
@@ -135,4 +135,9 @@ final class CoreLanguageTests: XCTestCase {
     XCTAssertEqual(try accepted("((template_string) @t (#match? @t \"^.a.b.$\"))", "`a\rb`;"), 0)
     XCTAssertEqual(try accepted("((template_string) @t (#match? @t \"^.a.b.$\"))", "`a-b`;"), 1)
   }
+}
+
+/// The text of a NUL-terminated C buffer.
+private func text(_ buffer: [CChar]) -> String {
+  String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
 }
