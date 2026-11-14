@@ -6,8 +6,12 @@
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
     ".": {
-      "react-native-codepad-source": "./src/index.ts",
+      "react-native-codepad-source": {
+        "browser": "./src/index.web.ts",
+        "default": "./src/index.ts"
+      },
       "types": "./lib/typescript/src/index.d.ts",
+      "browser": "./lib/module/index.web.js",
       "default": "./lib/module/index.js"
     },
     "./package.json": "./package.json"

@@ -30,3 +30,6 @@ export type {
 
 export const Codepad: { availableLanguages(): string[] } =
   NitroModules.createHybridObject<CodepadSpec>('Codepad');
+
+// Points the web build at its files. Native finds its languages by itself, so this does nothing here.
+export function configureWeb(_options: { assetsUrl?: string }): void {}
