@@ -127,7 +127,7 @@ jobs:
 
       - name: Check the example's custom language package
         run: |
-          node lib/cli/bin.js language tests/fixtures/kv_lite --out example/modules/codepad-lang-kv_lite
+          node lib/cli/bin.js language tests/fixtures/kv_lite --out example/modules/codepad-lang-kv_lite --no-web
           git status --porcelain -- example/modules
           test -z "$(git status --porcelain -- example/modules)"
 

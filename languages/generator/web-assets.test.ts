@@ -105,3 +105,14 @@ test('finds the custom languages in the app modules folder', () => {
   const ids = copyWebAssets(app, out, core).languages.map((l) => l.id);
   assert.deepEqual(ids, ['a', 'b', 'b_inline', 'algo']);
 });
+
+test('a custom package renamed with --id keeps its grammar entry point', () => {
+  const { app, core, out } = fakeApp();
+  const local = path.join(app, 'modules/codepad-lang-kv');
+  const json = { name: 'codepad-lang-kv', codepad: { symbol: 'kv_lite' } };
+  write(path.join(local, 'package.json'), JSON.stringify(json));
+  write(path.join(local, 'web/kv.wasm'), 'kv');
+  write(path.join(local, 'queries/kv/highlights.scm'), '(x) @kv');
+  const kv = copyWebAssets(app, out, core).languages.find((l) => l.id === 'kv');
+  assert.equal(kv?.symbol, 'tree_sitter_kv_lite');
+});

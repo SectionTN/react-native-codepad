@@ -12,6 +12,7 @@
     "ios",
     "grammar",
     "queries",
+    "web",
     "*.podspec",
     "!android/build",
     "!android/.cxx"
@@ -27,6 +28,7 @@
   },
   "codepad": {
     "generated": true,
-    "core": "0.1.12"
+    "core": "0.1.12",
+    "symbol": "kv_lite"
   }
 }

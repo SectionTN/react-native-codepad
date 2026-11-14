@@ -11,7 +11,7 @@ const out = () => path.join(mkdtempSync(path.join(tmpdir(), 'codepad-bin-')), 'p
 
 test('language writes the package and returns 0', () => {
   const dir = out();
-  assert.equal(main(['language', FIXTURE, '--out', dir]), 0);
+  assert.equal(main(['language', FIXTURE, '--out', dir, '--no-web']), 0);
   assert.ok(existsSync(path.join(dir, 'package.json')));
 });
 

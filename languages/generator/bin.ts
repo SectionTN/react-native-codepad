@@ -7,7 +7,7 @@ import { CustomLanguageError, emitCustomLanguage } from './custom.ts';
 import { copyWebAssets, WebAssetsError } from './web-assets.ts';
 
 const USAGE = [
-  'usage: react-native-codepad language <grammar-dir> [--id <id>] [--out <dir>] [--name <npm name>]',
+  'usage: react-native-codepad language <grammar-dir> [--id <id>] [--out <dir>] [--name <npm name>] [--no-web]',
   '       react-native-codepad web <public-dir> [--root <app-root>]',
 ].join('\n');
 
@@ -39,6 +39,7 @@ function language(args: string[]): number {
       outDir: parsed.values.out,
       id: parsed.values.id,
       name: parsed.values.name,
+      web: !parsed.values['no-web'],
     });
     process.stdout.write(
       `Wrote ${npmName} to ${outDir}.\nRebuild the app (run pod install first on iOS) and pass language="${id}" to CodeEditor.\n`,
@@ -55,7 +56,12 @@ function parseLanguageArgs(args: string[]) {
   return parseArgs({
     args,
     allowPositionals: true,
-    options: { id: { type: 'string' }, out: { type: 'string' }, name: { type: 'string' } },
+    options: {
+      id: { type: 'string' },
+      out: { type: 'string' },
+      name: { type: 'string' },
+      'no-web': { type: 'boolean' },
+    },
   });
 }
 

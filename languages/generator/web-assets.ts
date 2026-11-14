@@ -53,20 +53,29 @@ function ownCore(): string {
     : path.join(here, '..', '..', 'lib', 'web');
 }
 
+// symbol is the C name of a custom package's one grammar, kept when --id renamed the package.
+type LanguagePackage = { name: string; dir: string; symbol?: string | undefined };
+
 // Every language package of the app: its dependencies, then the custom packages in its modules folder.
-function languagePackages(appRoot: string): { name: string; dir: string }[] {
+function languagePackages(appRoot: string): LanguagePackage[] {
   const pkg = readJson(path.join(appRoot, 'package.json'));
   if (!pkg) throw new WebAssetsError(`${appRoot} has no package.json`);
-  const out: { name: string; dir: string }[] = [];
+  const out: LanguagePackage[] = [];
+  const add = (dir: string, fallbackName: string) => {
+    const json = readJson(path.join(dir, 'package.json'));
+    const codepad = json?.codepad as Json | undefined;
+    if (!json || !codepad) return;
+    const name = typeof json.name === 'string' ? json.name : fallbackName;
+    const symbol = typeof codepad.symbol === 'string' ? codepad.symbol : undefined;
+    out.push({ name, dir, symbol });
+  };
   for (const name of Object.keys((pkg.dependencies as Json | undefined) ?? {})) {
     const dir = packageDir(name, appRoot);
-    if (dir && readJson(path.join(dir, 'package.json'))?.codepad) out.push({ name, dir });
+    if (dir) add(dir, name);
   }
   const modules = path.join(appRoot, 'modules');
   for (const entry of existsSync(modules) ? readdirSync(modules).sort() : []) {
-    const dir = path.join(modules, entry);
-    const json = readJson(path.join(dir, 'package.json'));
-    if (json?.codepad) out.push({ name: (json.name as string | undefined) ?? entry, dir });
+    add(path.join(modules, entry), entry);
   }
   return out;
 }
@@ -90,7 +99,7 @@ export function copyWebAssets(
   copyFileSync(path.join(coreDir, 'codepad.js'), path.join(dest, 'codepad.js'));
   copyFileSync(path.join(coreDir, 'codepad.wasm'), path.join(dest, 'codepad.wasm'));
   const languages: WebLanguage[] = [];
-  for (const { name, dir } of languagePackages(appRoot)) {
+  for (const { name, dir, symbol } of languagePackages(appRoot)) {
     const queries = path.join(dir, 'queries');
     const grammars = existsSync(queries)
       ? readdirSync(queries)
@@ -114,7 +123,7 @@ export function copyWebAssets(
       languages.push({
         id: grammar,
         wasm: `${grammar}.wasm`,
-        symbol: `tree_sitter_${grammar}`,
+        symbol: `tree_sitter_${symbol && grammars.length === 1 ? symbol : grammar}`,
         highlights: copyQuery('highlights'),
         injections: copyQuery('injections'),
       });

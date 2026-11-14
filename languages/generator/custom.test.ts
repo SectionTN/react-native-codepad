@@ -14,6 +14,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { CustomLanguageError, emitCustomLanguage, SHIPPED_IDS } from './custom.ts';
 import { loadManifest, repoRoot } from './manifest.ts';
+import { wasmImporting } from './wasm-fixture.ts';
 
 const FIXTURE = path.join(repoRoot, 'tests/fixtures/kv_lite');
 const CORE = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8'))
@@ -45,7 +46,7 @@ function rejects(fn: () => unknown, message: RegExp): void {
 
 test('emits a private package from the fixture', () => {
   const out = path.join(temp(), 'pkg');
-  const r = emitCustomLanguage({ grammarDir: FIXTURE, outDir: out });
+  const r = emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out });
   assert.deepEqual(r, { id: 'kv_lite', npmName: 'codepad-lang-kv_lite', outDir: out });
   const pkg = json(out, 'package.json');
   assert.equal(pkg.name, 'codepad-lang-kv_lite');
@@ -53,7 +54,7 @@ test('emits a private package from the fixture', () => {
   assert.equal(pkg.license, 'UNLICENSED');
   assert.equal(pkg.version, '1.0.0');
   assert.deepEqual(pkg.peerDependencies, { 'react-native-codepad': `^${CORE}` });
-  assert.deepEqual(pkg.codepad, { generated: true, core: CORE });
+  assert.deepEqual(pkg.codepad, { generated: true, core: CORE, symbol: 'kv_lite' });
   assert.equal(pkg.repository, undefined);
   assert.equal(pkg.author, undefined);
   assert.match(
@@ -77,7 +78,13 @@ test('emits a private package from the fixture', () => {
 
 test('--id and --name rename the package, not the C entry point', () => {
   const out = path.join(temp(), 'pkg');
-  const r = emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'kv', name: '@acme/kv' });
+  const r = emitCustomLanguage({
+    web: false,
+    grammarDir: FIXTURE,
+    outDir: out,
+    id: 'kv',
+    name: '@acme/kv',
+  });
   assert.deepEqual(r, { id: 'kv', npmName: '@acme/kv', outDir: out });
   assert.equal(json(out, 'package.json').name, '@acme/kv');
   assert.match(read(out, 'ios/CPLangKv.swift'), /tree_sitter_kv_lite\(\)/);
@@ -88,10 +95,15 @@ test('--id and --name rename the package, not the C entry point', () => {
 test('relative paths resolve against cwd, and the default out is cwd/modules', () => {
   const cwd = temp();
   cpSync(FIXTURE, path.join(cwd, 'grammars/kv_lite'), { recursive: true });
-  const r = emitCustomLanguage({ grammarDir: 'grammars/kv_lite', cwd });
+  const r = emitCustomLanguage({ web: false, grammarDir: 'grammars/kv_lite', cwd });
   assert.equal(r.outDir, path.join(cwd, 'modules/codepad-lang-kv_lite'));
   assert.ok(existsSync(path.join(r.outDir, 'package.json')));
-  const other = emitCustomLanguage({ grammarDir: 'grammars/kv_lite', outDir: 'out/kv', cwd });
+  const other = emitCustomLanguage({
+    web: false,
+    grammarDir: 'grammars/kv_lite',
+    outDir: 'out/kv',
+    cwd,
+  });
   assert.equal(other.outDir, path.join(cwd, 'out/kv'));
 });
 
@@ -105,24 +117,40 @@ test('an npm author object becomes one author string', () => {
     }),
   );
   const out = path.join(temp(), 'pkg');
-  emitCustomLanguage({ grammarDir: dir, outDir: out });
+  emitCustomLanguage({ web: false, grammarDir: dir, outDir: out });
   assert.equal(json(out, 'package.json').author, 'Ann <a@b.c> (https://x)');
   assert.equal(json(out, 'package.json').version, '2.0.0');
 });
 
 test('rejects ids that cannot name a package', () => {
   const out = path.join(temp(), 'pkg');
-  rejects(() => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'Kv' }), /"Kv"/);
-  rejects(() => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: '1kv' }), /"1kv"/);
   rejects(
-    () => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'kv-lite' }),
+    () => emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out, id: 'Kv' }),
+    /"Kv"/,
+  );
+  rejects(
+    () => emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out, id: '1kv' }),
+    /"1kv"/,
+  );
+  rejects(
+    () => emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out, id: 'kv-lite' }),
     /"kv-lite"/,
   );
-  rejects(() => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'fun' }), /Kotlin/);
-  rejects(() => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'int' }), /Java/);
-  rejects(() => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'python' }), /ships/);
   rejects(
-    () => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out, id: 'markdown_inline' }),
+    () => emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out, id: 'fun' }),
+    /Kotlin/,
+  );
+  rejects(
+    () => emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out, id: 'int' }),
+    /Java/,
+  );
+  rejects(
+    () => emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out, id: 'python' }),
+    /ships/,
+  );
+  rejects(
+    () =>
+      emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out, id: 'markdown_inline' }),
     /ships/,
   );
   assert.equal(existsSync(out), false);
@@ -137,24 +165,27 @@ test('rejects a grammar folder it cannot build', () => {
   };
   const parser = (dir: string) => path.join(dir, 'src/parser.c');
   rejects(
-    () => emitCustomLanguage({ grammarDir: path.join(temp(), 'empty'), outDir: out() }),
+    () => emitCustomLanguage({ web: false, grammarDir: path.join(temp(), 'empty'), outDir: out() }),
     /src\/parser\.c/,
   );
   const noSymbol = broken((d) =>
     writeFileSync(parser(d), read(d, 'src/parser.c').replace(/tree_sitter_kv_lite/g, 'kv')),
   );
-  rejects(() => emitCustomLanguage({ grammarDir: noSymbol, outDir: out() }), /tree_sitter_/);
   rejects(
-    () => emitCustomLanguage({ grammarDir: withoutParserH(), outDir: out() }),
+    () => emitCustomLanguage({ web: false, grammarDir: noSymbol, outDir: out() }),
+    /tree_sitter_/,
+  );
+  rejects(
+    () => emitCustomLanguage({ web: false, grammarDir: withoutParserH(), outDir: out() }),
     /src\/tree_sitter\/parser\.h/,
   );
   const cxx = broken((d) => writeFileSync(path.join(d, 'src/scanner.cc'), ''));
-  rejects(() => emitCustomLanguage({ grammarDir: cxx, outDir: out() }), /scanner\.cc/);
+  rejects(() => emitCustomLanguage({ web: false, grammarDir: cxx, outDir: out() }), /scanner\.cc/);
   const outside = broken((d) =>
     writeFileSync(path.join(d, 'src/scanner.c'), '#include"../common/scanner.h"\n'),
   );
   rejects(
-    () => emitCustomLanguage({ grammarDir: outside, outDir: out() }),
+    () => emitCustomLanguage({ web: false, grammarDir: outside, outDir: out() }),
     /\.\.\/common\/scanner\.h/,
   );
   const outsideHeader = broken((d) => {
@@ -162,7 +193,7 @@ test('rejects a grammar folder it cannot build', () => {
     writeFileSync(path.join(d, 'src/tag.h'), '#include "../../common/tag.h"\n');
   });
   rejects(
-    () => emitCustomLanguage({ grammarDir: outsideHeader, outDir: out() }),
+    () => emitCustomLanguage({ web: false, grammarDir: outsideHeader, outDir: out() }),
     /src\/tag\.h includes "\.\.\/\.\.\/common\/tag\.h"/,
   );
   const oldAbi = broken((d) =>
@@ -174,9 +205,9 @@ test('rejects a grammar folder it cannot build', () => {
       ),
     ),
   );
-  rejects(() => emitCustomLanguage({ grammarDir: oldAbi, outDir: out() }), /ABI 12/);
+  rejects(() => emitCustomLanguage({ web: false, grammarDir: oldAbi, outDir: out() }), /ABI 12/);
   rejects(
-    () => emitCustomLanguage({ grammarDir: withoutHighlights(), outDir: out() }),
+    () => emitCustomLanguage({ web: false, grammarDir: withoutHighlights(), outDir: out() }),
     /queries\/highlights\.scm/,
   );
 });
@@ -206,7 +237,7 @@ test('stops on a pattern it would drop, and on inherits', () => {
     '((key) @variable (#is-not? local))\n',
   );
   rejects(
-    () => emitCustomLanguage({ grammarDir: dropped, outDir: path.join(temp(), 'pkg') }),
+    () => emitCustomLanguage({ web: false, grammarDir: dropped, outDir: path.join(temp(), 'pkg') }),
     /is-not\?/,
   );
   const inherits = fixtureCopy();
@@ -215,7 +246,8 @@ test('stops on a pattern it would drop, and on inherits', () => {
     '; inherits: ecma\n(key) @property\n',
   );
   rejects(
-    () => emitCustomLanguage({ grammarDir: inherits, outDir: path.join(temp(), 'pkg') }),
+    () =>
+      emitCustomLanguage({ web: false, grammarDir: inherits, outDir: path.join(temp(), 'pkg') }),
     /inherits/,
   );
 });
@@ -223,16 +255,19 @@ test('stops on a pattern it would drop, and on inherits', () => {
 test('refuses an output folder it did not generate', () => {
   const out = temp();
   writeFileSync(path.join(out, 'package.json'), JSON.stringify({ name: 'my-app' }));
-  rejects(() => emitCustomLanguage({ grammarDir: FIXTURE, outDir: out }), /not generated/);
+  rejects(
+    () => emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out }),
+    /not generated/,
+  );
   assert.equal(existsSync(path.join(out, 'android')), false);
 });
 
 test('regenerates its own output and removes stale files', () => {
   const out = path.join(temp(), 'pkg');
-  emitCustomLanguage({ grammarDir: FIXTURE, outDir: out });
+  emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out });
   const stale = path.join(out, 'queries/kv_lite/injections.scm');
   writeFileSync(stale, '');
-  emitCustomLanguage({ grammarDir: FIXTURE, outDir: out });
+  emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out });
   assert.equal(existsSync(stale), false);
   assert.ok(existsSync(path.join(out, 'queries/kv_lite/highlights.scm')));
 });
@@ -251,7 +286,42 @@ test('refuses a grammar whose C name is a grammar CodePad ships', () => {
   );
   rejects(
     () =>
-      emitCustomLanguage({ grammarDir: dir, outDir: path.join(temp(), 'pkg'), id: 'python_ext' }),
+      emitCustomLanguage({
+        web: false,
+        grammarDir: dir,
+        outDir: path.join(temp(), 'pkg'),
+        id: 'python_ext',
+      }),
     /tree_sitter_python.*grammar\.js/s,
   );
+});
+
+test('builds the web grammar and fails naming an import the core lacks', () => {
+  const ok = emitCustomLanguage({
+    grammarDir: FIXTURE,
+    outDir: path.join(temp(), 'pkg'),
+    buildWasm: (_dir, out) => writeFileSync(out, wasmImporting(['malloc'])),
+    allowedImports: ['malloc'],
+  });
+  assert.ok(existsSync(path.join(ok.outDir, 'web/kv_lite.wasm')));
+  rejects(
+    () =>
+      emitCustomLanguage({
+        grammarDir: FIXTURE,
+        outDir: path.join(temp(), 'pkg'),
+        buildWasm: (_dir, out) => writeFileSync(out, wasmImporting(['malloc', 'qsort'])),
+        allowedImports: ['malloc'],
+      }),
+    /kv_lite\.wasm imports qsort, which the web core does not provide/,
+  );
+});
+
+test('a renamed id keeps the grammar entry point for the web loader', () => {
+  const r = emitCustomLanguage({
+    web: false,
+    grammarDir: FIXTURE,
+    outDir: path.join(temp(), 'pkg'),
+    id: 'kv',
+  });
+  assert.equal(json(r.outDir, 'package.json').codepad.symbol, 'kv_lite');
 });
