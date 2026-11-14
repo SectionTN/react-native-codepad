@@ -87,22 +87,6 @@ export function webGrammars(): WebGrammar[] {
   return out;
 }
 
-// The injection aliases of LanguageRegistry.kt, the table native resolves fence and query names with.
-export function kotlinAliases(): Record<string, string> {
-  const kt = readFileSync(
-    join(ROOT, 'android/src/main/java/me/sectiontn/codepad/syntax/LanguageRegistry.kt'),
-    'utf8',
-  );
-  const body = kt.slice(
-    kt.indexOf('aliases = mapOf('),
-    kt.indexOf(')\n', kt.indexOf('aliases = mapOf(')),
-  );
-  const out: Record<string, string> = {};
-  for (const [, name, id] of body.matchAll(/"([^"]+)" to "([^"]*)"/g))
-    out[name as string] = id as string;
-  return out;
-}
-
 export function styleName(m: RawCore, id: number): string {
   const out = m._malloc(256);
   const length = m._cp_style_name(id, out, 256);

@@ -5,7 +5,6 @@ import {
   builtCore,
   cstring,
   highlight,
-  kotlinAliases,
   loadCore,
   loadGrammar,
   pumpAll,
@@ -14,6 +13,7 @@ import {
   utf16,
   webGrammars,
 } from '../../../tests/web/core';
+import { INJECTION_ALIASES } from '../aliases';
 
 const goldens = join(ROOT, 'tests/highlight');
 const dir = builtCore('build/web-test', 'cpp/web/build.sh --test');
@@ -33,7 +33,7 @@ if (dir && missing.length > 0)
   async () => {
     const m = await loadCore(dir as string);
     for (const g of grammars) loadGrammar(m, g.wasm, g.grammar, g.queries);
-    for (const [name, id] of Object.entries(kotlinAliases())) {
+    for (const [name, id] of Object.entries(INJECTION_ALIASES)) {
       cstring(m, name, (n) => cstring(m, id, (i) => m._cpw_language_alias(n, i)));
     }
     for (const name of names) {

@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 import { realpathSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { CustomLanguageError, emitCustomLanguage } from './custom.ts';
+import { copyWebAssets, WebAssetsError } from './web-assets.ts';
 
-const USAGE =
-  'usage: react-native-codepad language <grammar-dir> [--id <id>] [--out <dir>] [--name <npm name>]';
+const USAGE = [
+  'usage: react-native-codepad language <grammar-dir> [--id <id>] [--out <dir>] [--name <npm name>]',
+  '       react-native-codepad web <public-dir> [--root <app-root>]',
+].join('\n');
 
 function usage(): number {
   process.stderr.write(`${USAGE}\n`);
@@ -15,10 +19,15 @@ function usage(): number {
 /** Runs the command line and returns the exit code. */
 export function main(argv: string[]): number {
   const [command, ...rest] = argv;
-  if (command !== 'language') return usage();
+  if (command === 'language') return language(rest);
+  if (command === 'web') return web(rest);
+  return usage();
+}
+
+function language(args: string[]): number {
   let parsed: ReturnType<typeof parseLanguageArgs>;
   try {
-    parsed = parseLanguageArgs(rest);
+    parsed = parseLanguageArgs(args);
   } catch {
     return usage();
   }
@@ -48,6 +57,34 @@ function parseLanguageArgs(args: string[]) {
     allowPositionals: true,
     options: { id: { type: 'string' }, out: { type: 'string' }, name: { type: 'string' } },
   });
+}
+
+function web(args: string[]): number {
+  let parsed: ReturnType<typeof parseWebArgs>;
+  try {
+    parsed = parseWebArgs(args);
+  } catch {
+    return usage();
+  }
+  const [publicDir, ...extra] = parsed.positionals;
+  if (!publicDir || extra.length > 0) return usage();
+  try {
+    const out = path.resolve(publicDir);
+    const { languages } = copyWebAssets(path.resolve(parsed.values.root ?? '.'), out);
+    const ids = languages.map((l) => l.id).join(', ') || 'none';
+    process.stdout.write(
+      `Copied the web core and ${languages.length} languages (${ids}) to ${path.join(out, 'codepad')}.\n`,
+    );
+    return 0;
+  } catch (e) {
+    if (!(e instanceof WebAssetsError)) throw e;
+    process.stderr.write(`error: ${e.message}\n`);
+    return 1;
+  }
+}
+
+function parseWebArgs(args: string[]) {
+  return parseArgs({ args, allowPositionals: true, options: { root: { type: 'string' } } });
 }
 
 // npm links the bin through node_modules/.bin, so compare real paths.

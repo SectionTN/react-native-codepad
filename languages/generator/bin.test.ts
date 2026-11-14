@@ -24,4 +24,11 @@ test('usage errors return 2', () => {
   assert.equal(main(['build', FIXTURE]), 2);
   assert.equal(main(['language']), 2);
   assert.equal(main(['language', FIXTURE, '--bogus']), 2);
+  assert.equal(main(['web']), 2);
+  assert.equal(main(['web', 'a', 'b']), 2);
+});
+
+test('web refuses a folder that is not an app and returns 1', () => {
+  const empty = mkdtempSync(path.join(tmpdir(), 'codepad-bin-'));
+  assert.equal(main(['web', path.join(empty, 'public'), '--root', empty]), 1);
 });
