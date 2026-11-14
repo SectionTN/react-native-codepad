@@ -8,7 +8,12 @@ const INITIAL_CARET = SAMPLE.indexOf('\n', SAMPLE.indexOf('step_10'));
 const ta = document.getElementById('ta');
 const statusLine = document.getElementById('status');
 const shown = document.getElementById('doc');
-const suggest = new URLSearchParams(location.search).has('suggest');
+const params = new URLSearchParams(location.search);
+const suggest = params.has('suggest');
+// The form fields can come from the URL, for keyboards that cannot type them in Latin letters.
+for (const field of ['name', 'browser', 'keyboard']) {
+  if (params.has(field)) document.getElementById(field).value = params.get(field);
+}
 for (const [name, on, off] of [
   ['autocomplete', 'on', 'off'],
   ['autocorrect', 'on', 'off'],

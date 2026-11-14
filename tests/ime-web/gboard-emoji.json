@@ -1,0 +1,445 @@
+{
+  "name": "gboard-emoji",
+  "browser": "chrome-android",
+  "keyboard": "Gboard EN FR, suggestions on, emoji suggestion then two Backspaces",
+  "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Mobile Safari/537.36",
+  "recordedAt": "2026-11-14T21:33:26.751Z",
+  "settings": {
+    "autoCloseBrackets": false,
+    "autoIndent": false
+  },
+  "initial": {
+    "text": "def step_0(value):\n    total = value + 1\n    total = value + 2\n    total = value + 3\n    total = value + 4\ndef step_5(value):\n    total = value + 6\n    total = value + 7\n    total = value + 8\n    total = value + 9\ndef step_10(value):\n    total = value + 11\n    total = value + 12\n    total = value + 13\n    total = value + 14\ndef step_15(value):\n    total = value + 16\n    total = value + 17\n    total = value + 18\n    total = value + 19\ndef step_20(value):\n    total = value + 21\n    total = value + 22\n    total = value + 23\n    total = value + 24\ndef step_25(value):\n    total = value + 26\n    total = value + 27\n    total = value + 28\n    total = value + 29",
+    "selection": [233, 233]
+  },
+  "events": [
+    {
+      "t": 1,
+      "type": "sync",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 1848,
+      "type": "focus",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 0,
+        "end": 0
+      }
+    },
+    {
+      "t": 1854,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 3103,
+      "type": "keydown",
+      "key": "Unidentified",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 3106,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 3108,
+      "type": "input",
+      "inputType": "insertText",
+      "data": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 3116,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 3460,
+      "type": "keydown",
+      "key": "Unidentified",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 3461,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "h",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 3461,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "h",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): h\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 3467,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): h\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 3756,
+      "type": "keydown",
+      "key": "Unidentified",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): h\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 3757,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "e",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): h\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 3758,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "e",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): he\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 3767,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): he\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 4055,
+      "type": "keydown",
+      "key": "Unidentified",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): he\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 4056,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "l",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): he\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 4057,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "l",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): hel\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 4074,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): hel\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 26410,
+      "type": "keydown",
+      "key": "Unidentified",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): hel\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 26411,
+      "type": "beforeinput",
+      "inputType": "deleteContentBackward",
+      "data": null,
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): hel\n    total = value + 11",
+        "start": 42,
+        "end": 45
+      }
+    },
+    {
+      "t": 26412,
+      "type": "input",
+      "inputType": "deleteContentBackward",
+      "data": null,
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 26413,
+      "type": "keydown",
+      "key": "Unidentified",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 26414,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "👋🏻 ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 26426,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "👋🏻 ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): 👋🏻 \n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 26429,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): 👋🏻 \n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 27149,
+      "type": "keydown",
+      "key": "Backspace",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): 👋🏻 \n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 27152,
+      "type": "beforeinput",
+      "inputType": "deleteContentBackward",
+      "data": null,
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): 👋🏻 \n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 27156,
+      "type": "input",
+      "inputType": "deleteContentBackward",
+      "data": null,
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): 👋🏻\n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 27162,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): 👋🏻\n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 27802,
+      "type": "keydown",
+      "key": "Unidentified",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): 👋🏻\n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 27805,
+      "type": "beforeinput",
+      "inputType": "deleteContentBackward",
+      "data": null,
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): 👋🏻\n    total = value + 11",
+        "start": 42,
+        "end": 46
+      }
+    },
+    {
+      "t": 27808,
+      "type": "input",
+      "inputType": "deleteContentBackward",
+      "data": null,
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 27815,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 28560,
+      "type": "blur",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    }
+  ],
+  "expected": {
+    "text": "def step_0(value):\n    total = value + 1\n    total = value + 2\n    total = value + 3\n    total = value + 4\ndef step_5(value):\n    total = value + 6\n    total = value + 7\n    total = value + 8\n    total = value + 9\ndef step_10(value): \n    total = value + 11\n    total = value + 12\n    total = value + 13\n    total = value + 14\ndef step_15(value):\n    total = value + 16\n    total = value + 17\n    total = value + 18\n    total = value + 19\ndef step_20(value):\n    total = value + 21\n    total = value + 22\n    total = value + 23\n    total = value + 24\ndef step_25(value):\n    total = value + 26\n    total = value + 27\n    total = value + 28\n    total = value + 29"
+  }
+}

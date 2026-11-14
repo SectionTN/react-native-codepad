@@ -1,0 +1,666 @@
+{
+  "name": "ios-autocorrect",
+  "browser": "safari-ios",
+  "keyboard": "English US, autocorrect on, iOS 27.2 simulator",
+  "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1",
+  "recordedAt": "2026-11-14T21:45:35.162Z",
+  "settings": {
+    "autoCloseBrackets": false,
+    "autoIndent": false
+  },
+  "initial": {
+    "text": "def step_0(value):\n    total = value + 1\n    total = value + 2\n    total = value + 3\n    total = value + 4\ndef step_5(value):\n    total = value + 6\n    total = value + 7\n    total = value + 8\n    total = value + 9\ndef step_10(value):\n    total = value + 11\n    total = value + 12\n    total = value + 13\n    total = value + 14\ndef step_15(value):\n    total = value + 16\n    total = value + 17\n    total = value + 18\n    total = value + 19\ndef step_20(value):\n    total = value + 21\n    total = value + 22\n    total = value + 23\n    total = value + 24\ndef step_25(value):\n    total = value + 26\n    total = value + 27\n    total = value + 28\n    total = value + 29",
+    "selection": [233, 233]
+  },
+  "events": [
+    {
+      "t": 3,
+      "type": "sync",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 10467,
+      "type": "focus",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 0,
+        "end": 0
+      }
+    },
+    {
+      "t": 11926,
+      "type": "keydown",
+      "key": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 11960,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 11985,
+      "type": "input",
+      "inputType": "insertText",
+      "data": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 11987,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 12295,
+      "type": "keydown",
+      "key": "t",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 12302,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "t",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): \n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 12303,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "t",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): t\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 12304,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): t\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 12711,
+      "type": "keydown",
+      "key": "e",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): t\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 12718,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "e",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): t\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 12718,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "e",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): te\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 12719,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): te\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 13112,
+      "type": "keydown",
+      "key": "h",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): te\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 13119,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "h",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): te\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 13119,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "h",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): teh\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 13120,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): teh\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 13761,
+      "type": "keydown",
+      "key": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): teh\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 13763,
+      "type": "beforeinput",
+      "inputType": "insertReplacementText",
+      "data": "the",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): teh\n    total = value + 11",
+        "start": 42,
+        "end": 45
+      }
+    },
+    {
+      "t": 13767,
+      "type": "input",
+      "inputType": "insertReplacementText",
+      "data": "the",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 13786,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 13795,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 13795,
+      "type": "input",
+      "inputType": "insertText",
+      "data": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the \n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 13801,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the \n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 14611,
+      "type": "keydown",
+      "key": "w",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the \n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 14620,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "w",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the \n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 14620,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "w",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the w\n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 14622,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the w\n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 15011,
+      "type": "keydown",
+      "key": "r",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the w\n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 15017,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "r",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the w\n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 15017,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "r",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wr\n    total = value + 11",
+        "start": 48,
+        "end": 48
+      }
+    },
+    {
+      "t": 15018,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wr\n    total = value + 11",
+        "start": 48,
+        "end": 48
+      }
+    },
+    {
+      "t": 15418,
+      "type": "keydown",
+      "key": "o",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wr\n    total = value + 11",
+        "start": 48,
+        "end": 48
+      }
+    },
+    {
+      "t": 15432,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "o",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wr\n    total = value + 11",
+        "start": 48,
+        "end": 48
+      }
+    },
+    {
+      "t": 15432,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "o",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wro\n    total = value + 11",
+        "start": 49,
+        "end": 49
+      }
+    },
+    {
+      "t": 15433,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wro\n    total = value + 11",
+        "start": 49,
+        "end": 49
+      }
+    },
+    {
+      "t": 15829,
+      "type": "keydown",
+      "key": "l",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wro\n    total = value + 11",
+        "start": 49,
+        "end": 49
+      }
+    },
+    {
+      "t": 15847,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "l",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wro\n    total = value + 11",
+        "start": 49,
+        "end": 49
+      }
+    },
+    {
+      "t": 15848,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "l",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wrol\n    total = value + 11",
+        "start": 50,
+        "end": 50
+      }
+    },
+    {
+      "t": 15848,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wrol\n    total = value + 11",
+        "start": 50,
+        "end": 50
+      }
+    },
+    {
+      "t": 16229,
+      "type": "keydown",
+      "key": "d",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wrol\n    total = value + 11",
+        "start": 50,
+        "end": 50
+      }
+    },
+    {
+      "t": 16236,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "d",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wrol\n    total = value + 11",
+        "start": 50,
+        "end": 50
+      }
+    },
+    {
+      "t": 16236,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "d",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wrold\n    total = value + 11",
+        "start": 51,
+        "end": 51
+      }
+    },
+    {
+      "t": 16237,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wrold\n    total = value + 11",
+        "start": 51,
+        "end": 51
+      }
+    },
+    {
+      "t": 16897,
+      "type": "keydown",
+      "key": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wrold\n    total = value + 11",
+        "start": 51,
+        "end": 51
+      }
+    },
+    {
+      "t": 16900,
+      "type": "beforeinput",
+      "inputType": "insertReplacementText",
+      "data": "world",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the wrold\n    total = value + 11",
+        "start": 46,
+        "end": 51
+      }
+    },
+    {
+      "t": 16900,
+      "type": "input",
+      "inputType": "insertReplacementText",
+      "data": "world",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the world\n    total = value + 11",
+        "start": 51,
+        "end": 51
+      }
+    },
+    {
+      "t": 16900,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the world\n    total = value + 11",
+        "start": 51,
+        "end": 51
+      }
+    },
+    {
+      "t": 16906,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the world\n    total = value + 11",
+        "start": 51,
+        "end": 51
+      }
+    },
+    {
+      "t": 16906,
+      "type": "input",
+      "inputType": "insertText",
+      "data": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the world \n    total = value + 11",
+        "start": 52,
+        "end": 52
+      }
+    },
+    {
+      "t": 16907,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the world \n    total = value + 11",
+        "start": 52,
+        "end": 52
+      }
+    },
+    {
+      "t": 36080,
+      "type": "blur",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value): the world \n    total = value + 11",
+        "start": 52,
+        "end": 52
+      }
+    }
+  ],
+  "expected": {
+    "text": "def step_0(value):\n    total = value + 1\n    total = value + 2\n    total = value + 3\n    total = value + 4\ndef step_5(value):\n    total = value + 6\n    total = value + 7\n    total = value + 8\n    total = value + 9\ndef step_10(value): the world \n    total = value + 11\n    total = value + 12\n    total = value + 13\n    total = value + 14\ndef step_15(value):\n    total = value + 16\n    total = value + 17\n    total = value + 18\n    total = value + 19\ndef step_20(value):\n    total = value + 21\n    total = value + 22\n    total = value + 23\n    total = value + 24\ndef step_25(value):\n    total = value + 26\n    total = value + 27\n    total = value + 28\n    total = value + 29"
+  }
+}

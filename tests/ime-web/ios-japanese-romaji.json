@@ -1,0 +1,779 @@
+{
+  "name": "ios-japanese-romaji",
+  "browser": "safari-ios",
+  "keyboard": "Japanese Romaji, iOS 27.2 simulator",
+  "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1",
+  "recordedAt": "2026-11-14T21:43:23.167Z",
+  "settings": {
+    "autoCloseBrackets": false,
+    "autoIndent": false
+  },
+  "initial": {
+    "text": "def step_0(value):\n    total = value + 1\n    total = value + 2\n    total = value + 3\n    total = value + 4\ndef step_5(value):\n    total = value + 6\n    total = value + 7\n    total = value + 8\n    total = value + 9\ndef step_10(value):\n    total = value + 11\n    total = value + 12\n    total = value + 13\n    total = value + 14\ndef step_15(value):\n    total = value + 16\n    total = value + 17\n    total = value + 18\n    total = value + 19\ndef step_20(value):\n    total = value + 21\n    total = value + 22\n    total = value + 23\n    total = value + 24\ndef step_25(value):\n    total = value + 26\n    total = value + 27\n    total = value + 28\n    total = value + 29",
+    "selection": [233, 233]
+  },
+  "events": [
+    {
+      "t": 5,
+      "type": "sync",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 14095,
+      "type": "focus",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 0,
+        "end": 0
+      }
+    },
+    {
+      "t": 17140,
+      "type": "keydown",
+      "key": "n",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 17190,
+      "type": "compositionstart",
+      "data": "",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 17190,
+      "type": "compositionupdate",
+      "data": "n",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 17234,
+      "type": "beforeinput",
+      "inputType": "insertCompositionText",
+      "data": "n",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 17322,
+      "type": "input",
+      "inputType": "insertCompositionText",
+      "data": "n",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):n\n    total = value + 11",
+        "start": 41,
+        "end": 42
+      }
+    },
+    {
+      "t": 17323,
+      "type": "selectionchange",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):n\n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 17756,
+      "type": "keydown",
+      "key": "i",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):n\n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 17800,
+      "type": "compositionupdate",
+      "data": "に",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):n\n    total = value + 11",
+        "start": 41,
+        "end": 42
+      }
+    },
+    {
+      "t": 17800,
+      "type": "beforeinput",
+      "inputType": "insertCompositionText",
+      "data": "に",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):n\n    total = value + 11",
+        "start": 41,
+        "end": 42
+      }
+    },
+    {
+      "t": 18011,
+      "type": "input",
+      "inputType": "insertCompositionText",
+      "data": "に",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):に\n    total = value + 11",
+        "start": 41,
+        "end": 42
+      }
+    },
+    {
+      "t": 18085,
+      "type": "selectionchange",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):に\n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 18098,
+      "type": "keydown",
+      "key": "h",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):に\n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 18103,
+      "type": "compositionupdate",
+      "data": "にh",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):に\n    total = value + 11",
+        "start": 41,
+        "end": 42
+      }
+    },
+    {
+      "t": 18103,
+      "type": "beforeinput",
+      "inputType": "insertCompositionText",
+      "data": "にh",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):に\n    total = value + 11",
+        "start": 41,
+        "end": 42
+      }
+    },
+    {
+      "t": 18103,
+      "type": "input",
+      "inputType": "insertCompositionText",
+      "data": "にh",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にh\n    total = value + 11",
+        "start": 41,
+        "end": 43
+      }
+    },
+    {
+      "t": 18104,
+      "type": "selectionchange",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にh\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 18333,
+      "type": "keydown",
+      "key": "o",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にh\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 18383,
+      "type": "compositionupdate",
+      "data": "にほ",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にh\n    total = value + 11",
+        "start": 41,
+        "end": 43
+      }
+    },
+    {
+      "t": 18384,
+      "type": "beforeinput",
+      "inputType": "insertCompositionText",
+      "data": "にほ",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にh\n    total = value + 11",
+        "start": 41,
+        "end": 43
+      }
+    },
+    {
+      "t": 18392,
+      "type": "input",
+      "inputType": "insertCompositionText",
+      "data": "にほ",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にほ\n    total = value + 11",
+        "start": 41,
+        "end": 43
+      }
+    },
+    {
+      "t": 18439,
+      "type": "selectionchange",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にほ\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 18749,
+      "type": "keydown",
+      "key": "n",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にほ\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 18757,
+      "type": "compositionupdate",
+      "data": "にほn",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にほ\n    total = value + 11",
+        "start": 41,
+        "end": 43
+      }
+    },
+    {
+      "t": 18758,
+      "type": "beforeinput",
+      "inputType": "insertCompositionText",
+      "data": "にほn",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にほ\n    total = value + 11",
+        "start": 41,
+        "end": 43
+      }
+    },
+    {
+      "t": 18759,
+      "type": "input",
+      "inputType": "insertCompositionText",
+      "data": "にほn",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にほn\n    total = value + 11",
+        "start": 41,
+        "end": 44
+      }
+    },
+    {
+      "t": 18760,
+      "type": "selectionchange",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にほn\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 61452,
+      "type": "compositionupdate",
+      "data": "日本",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にほn\n    total = value + 11",
+        "start": 41,
+        "end": 44
+      }
+    },
+    {
+      "t": 61665,
+      "type": "beforeinput",
+      "inputType": "insertCompositionText",
+      "data": "日本",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):にほn\n    total = value + 11",
+        "start": 41,
+        "end": 44
+      }
+    },
+    {
+      "t": 61766,
+      "type": "input",
+      "inputType": "insertCompositionText",
+      "data": "日本",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 41,
+        "end": 43
+      }
+    },
+    {
+      "t": 61878,
+      "type": "beforeinput",
+      "inputType": "deleteCompositionText",
+      "data": null,
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 41,
+        "end": 43
+      }
+    },
+    {
+      "t": 61889,
+      "type": "input",
+      "inputType": "deleteCompositionText",
+      "data": null,
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 61957,
+      "type": "beforeinput",
+      "inputType": "insertFromComposition",
+      "data": "日本",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 61961,
+      "type": "input",
+      "inputType": "insertFromComposition",
+      "data": "日本",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 61970,
+      "type": "compositionend",
+      "data": "日本",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 61978,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 62252,
+      "type": "keydown",
+      "key": "g",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 62268,
+      "type": "compositionstart",
+      "data": "",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 62268,
+      "type": "compositionupdate",
+      "data": "g",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 62268,
+      "type": "beforeinput",
+      "inputType": "insertCompositionText",
+      "data": "g",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 62271,
+      "type": "input",
+      "inputType": "insertCompositionText",
+      "data": "g",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本g\n    total = value + 11",
+        "start": 43,
+        "end": 44
+      }
+    },
+    {
+      "t": 62287,
+      "type": "selectionchange",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本g\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 62583,
+      "type": "keydown",
+      "key": "o",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本g\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 62591,
+      "type": "compositionupdate",
+      "data": "ご",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本g\n    total = value + 11",
+        "start": 43,
+        "end": 44
+      }
+    },
+    {
+      "t": 62591,
+      "type": "beforeinput",
+      "inputType": "insertCompositionText",
+      "data": "ご",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本g\n    total = value + 11",
+        "start": 43,
+        "end": 44
+      }
+    },
+    {
+      "t": 62604,
+      "type": "input",
+      "inputType": "insertCompositionText",
+      "data": "ご",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 43,
+        "end": 44
+      }
+    },
+    {
+      "t": 62630,
+      "type": "selectionchange",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 63532,
+      "type": "compositionupdate",
+      "data": "ご",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 43,
+        "end": 44
+      }
+    },
+    {
+      "t": 63532,
+      "type": "beforeinput",
+      "inputType": "insertCompositionText",
+      "data": "ご",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 43,
+        "end": 44
+      }
+    },
+    {
+      "t": 63532,
+      "type": "input",
+      "inputType": "insertCompositionText",
+      "data": "ご",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 43,
+        "end": 44
+      }
+    },
+    {
+      "t": 63533,
+      "type": "beforeinput",
+      "inputType": "deleteCompositionText",
+      "data": null,
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 43,
+        "end": 44
+      }
+    },
+    {
+      "t": 63533,
+      "type": "input",
+      "inputType": "deleteCompositionText",
+      "data": null,
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 63533,
+      "type": "beforeinput",
+      "inputType": "insertFromComposition",
+      "data": "ご",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 63534,
+      "type": "input",
+      "inputType": "insertFromComposition",
+      "data": "ご",
+      "isComposing": true,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 63572,
+      "type": "compositionend",
+      "data": "ご",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 63572,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 64500,
+      "type": "keydown",
+      "key": "Backspace",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 64518,
+      "type": "beforeinput",
+      "inputType": "deleteContentBackward",
+      "data": null,
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本ご\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 64519,
+      "type": "input",
+      "inputType": "deleteContentBackward",
+      "data": null,
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 64520,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 65568,
+      "type": "blur",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):日本\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    }
+  ],
+  "expected": {
+    "text": "def step_0(value):\n    total = value + 1\n    total = value + 2\n    total = value + 3\n    total = value + 4\ndef step_5(value):\n    total = value + 6\n    total = value + 7\n    total = value + 8\n    total = value + 9\ndef step_10(value):日本\n    total = value + 11\n    total = value + 12\n    total = value + 13\n    total = value + 14\ndef step_15(value):\n    total = value + 16\n    total = value + 17\n    total = value + 18\n    total = value + 19\ndef step_20(value):\n    total = value + 21\n    total = value + 22\n    total = value + 23\n    total = value + 24\ndef step_25(value):\n    total = value + 26\n    total = value + 27\n    total = value + 28\n    total = value + 29"
+  }
+}
