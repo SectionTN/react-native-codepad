@@ -257,14 +257,14 @@ describe('CodeEditor', () => {
   it('maps the search methods onto the native object', async () => {
     const ref = createRef<CodeEditorRef>();
     const props = host(await render(<CodeEditor ref={ref} />));
-    expect(await ref.current?.setSearch({ text: 'ab' })).toEqual({ count: 0 });
+    expect(await ref.current?.setSearch({ text: 'ab' })).toEqual({ count: 0, limited: false });
     expect(await ref.current?.findNext()).toBeNull();
     expect(await ref.current?.findPrevious()).toBeNull();
     expect(await ref.current?.replaceCurrent('x')).toBe(false);
     expect(await ref.current?.replaceAll('x')).toBe(0);
     await ref.current?.clearSearch();
     const native = {
-      setSearch: jest.fn(() => Promise.resolve(3)),
+      setSearch: jest.fn(() => Promise.resolve({ count: 3, limited: true })),
       findNext: jest.fn(() => Promise.resolve({ index: -1, total: 0 })),
       findPrevious: jest.fn(() => Promise.resolve({ index: 1, total: 3 })),
       replaceCurrent: jest.fn(() => Promise.resolve(true)),
@@ -272,7 +272,7 @@ describe('CodeEditor', () => {
       clearSearch: jest.fn(() => Promise.resolve()),
     };
     props.hybridRef.f(native);
-    expect(await ref.current?.setSearch({ text: 'ab' })).toEqual({ count: 3 });
+    expect(await ref.current?.setSearch({ text: 'ab' })).toEqual({ count: 3, limited: true });
     expect(native.setSearch).toHaveBeenCalledWith({
       text: 'ab',
       regex: false,

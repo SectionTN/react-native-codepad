@@ -38,6 +38,8 @@ namespace margelo::nitro::codepad { struct NativeScrollEvent; }
 namespace margelo::nitro::codepad { struct NativeSearchHit; }
 // Forward declaration of `NativeSearchQuery` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSearchQuery; }
+// Forward declaration of `NativeSearchResult` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchResult; }
 // Forward declaration of `NativeSelection` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSelection; }
 // Forward declaration of `NativeSuggestions` to properly resolve imports.
@@ -67,6 +69,7 @@ namespace margelo::nitro::codepad { struct NativeVisibleLines; }
 #include "NativeScrollEvent.hpp"
 #include "NativeSearchHit.hpp"
 #include "NativeSearchQuery.hpp"
+#include "NativeSearchResult.hpp"
 #include "NativeSelection.hpp"
 #include "NativeSuggestions.hpp"
 #include "NativeTheme.hpp"

@@ -207,6 +207,7 @@ final class VectorRunner {
       }
     }
     if let v = expect["result"] { checkResult(v, at) }
+    if let v = expect["limited"] as? Bool { XCTAssertEqual(core.matchLimited, v, "limited \(at)") }
     if expect.keys.contains("brackets") {
       if expect["brackets"] is NSNull {
         XCTAssertNil(lastResult, "brackets \(at)")

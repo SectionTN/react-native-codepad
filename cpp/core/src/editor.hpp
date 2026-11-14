@@ -65,13 +65,14 @@ class Editor {
   bool search_active() const { return search_.has_value(); }
   bool search_stale() const { return search_ && search_->revision != doc.revision(); }
   int32_t match_count() const { return search_ ? search_->count() : 0; }
+  bool match_limited() const { return search_ && search_->limited; }
   // The matches, computed on the calling thread when stale.
   const std::vector<int32_t> &matches();
   // Selects the next match, or the previous one. False without a match.
   bool find(bool forward, int32_t &index, int32_t &total);
   bool replace_current(std::u16string_view text);
   int32_t replace_all(std::u16string_view text);
-  bool accept_matches(int32_t revision, const int32_t *pairs, uint32_t count);
+  bool accept_matches(int32_t revision, const int32_t *pairs, uint32_t count, bool limited);
   std::shared_ptr<const Search> search_query() const { return search_ ? search_->search : nullptr; }
 
  private:

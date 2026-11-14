@@ -192,6 +192,7 @@ class VectorRunner(private val case: JSONObject) {
       }
     }
     if (expect.has("result")) assertEquals("result $where", expect.get("result"), lastResult)
+    if (expect.has("limited")) assertEquals("limited $where", expect.getBoolean("limited"), core.matchLimited)
     if (expect.has("brackets")) {
       if (expect.isNull("brackets")) assertNull("brackets $where", lastResult)
       else {

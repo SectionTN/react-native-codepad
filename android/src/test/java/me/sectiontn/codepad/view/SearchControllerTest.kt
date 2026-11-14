@@ -123,4 +123,15 @@ class SearchControllerTest {
     controller.close()
     assertEquals(queued, executor.size)
   }
+
+  // setSearch's result reads the limit from the core, so the worker's scan has to bring it there.
+  @Test
+  fun aWorkerScanStoppedAtTheMatchLimitReachesTheCore() {
+    val core = EditorCore("aa\n" + "a".repeat(40) + "b\naaa")
+    val controller = SearchController(core, { main.add(it) }, executor)
+    controller.setQuery(SearchQuery("(a+)+$", regex = true))
+    settle()
+    assertEquals(1, core.matchCount)
+    assertTrue(core.matchLimited)
+  }
 }

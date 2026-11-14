@@ -168,6 +168,9 @@ final class EditorCore: @unchecked Sendable {
 
   var matchCount: Int { Int(cp_editor_match_count(document.handle)) }
 
+  /// True when a match attempt hit PCRE2's match limit, so the matches stop there.
+  var matchLimited: Bool { cp_editor_match_limited(document.handle) != 0 }
+
   /// True while a query is active and its matches belong to an older revision.
   var searchStale: Bool { cp_editor_search_stale(document.handle) != 0 }
 
@@ -209,10 +212,11 @@ final class EditorCore: @unchecked Sendable {
   }
 
   /// Stores matches computed elsewhere. False when the document moved on since `revision`.
-  func acceptMatches(revision: Int, matches: [Int]) -> Bool {
+  func acceptMatches(revision: Int, matches: [Int], limited: Bool) -> Bool {
     let pairs = matches.map { Int32(clamping: $0) }
     return pairs.withUnsafeBufferPointer {
-      cp_editor_accept_matches(document.handle, Int32(clamping: revision), $0.baseAddress, UInt32($0.count))
+      cp_editor_accept_matches(
+        document.handle, Int32(clamping: revision), $0.baseAddress, UInt32($0.count), limited ? 1 : 0)
     } != 0
   }
 

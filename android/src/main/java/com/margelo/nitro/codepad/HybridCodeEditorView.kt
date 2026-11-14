@@ -358,9 +358,9 @@ class HybridCodeEditorView(val context: ThemedReactContext) : HybridCodeEditorVi
 
   override fun paste(): Promise<Unit> = onMain { editor.paste(ChangeOrigin.Api) }
 
-  override fun setSearch(query: NativeSearchQuery): Promise<Double> = deferred { promise ->
+  override fun setSearch(query: NativeSearchQuery): Promise<NativeSearchResult> = deferred { promise ->
     editor.setSearch(SearchQuery(query.text, query.regex, query.caseSensitive, query.wholeWord))
-    editor.whenSearchFresh { promise.resolve(editor.matchCount.toDouble()) }
+    editor.whenSearchFresh { promise.resolve(NativeSearchResult(editor.matchCount.toDouble(), editor.matchLimited)) }
   }
 
   override fun findNext(): Promise<NativeSearchHit> = deferred { promise ->

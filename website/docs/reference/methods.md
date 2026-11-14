@@ -58,7 +58,7 @@ Native keeps the query and paints the matches. See the [search guide](/guides/se
 
 | Method | Notes |
 | --- | --- |
-| `setSearch(query)` | Sets a `SearchQuery` and resolves with the match count. Rejects when a regex does not compile. |
+| `setSearch(query)` | Sets a `SearchQuery` and resolves with `{ count, limited }`. `limited` is `true` when a regex stopped at PCRE2's match limit, so `count` covers only the matches found before it. Rejects when a regex does not compile. |
 | `findNext()`, `findPrevious()` | Select the next or previous match, wrapping around, and reveal it. Resolve with a `SearchHit`, or `null` without a query or matches. |
 | `replaceCurrent(text)` | Replaces the selected match and selects the next one. Resolves with `false` when the selection is not a match. |
 | `replaceAll(text)` | Replaces every match in one undo group and resolves with the number of replacements. |

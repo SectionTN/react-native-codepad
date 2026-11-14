@@ -210,8 +210,11 @@ export interface CodeEditorRef {
   paste(): Promise<void>;
   focus(): Promise<void>;
   blur(): Promise<void>;
-  /** Rejects when a regex query does not compile. */
-  setSearch(query: SearchQuery): Promise<{ count: number }>;
+  /**
+   * Rejects when a regex query does not compile. `limited` is true when the regex hit PCRE2's
+   * match limit, so `count` stops there.
+   */
+  setSearch(query: SearchQuery): Promise<{ count: number; limited: boolean }>;
   findNext(): Promise<SearchHit | null>;
   findPrevious(): Promise<SearchHit | null>;
   /** Replaces the selected match and selects the next one; false when the selection is not a match. */

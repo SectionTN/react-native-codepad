@@ -8,6 +8,7 @@
     { "name": "regex anchors are per line", "text": "x\nx", "ops": [{ "op": "search", "text": "^x", "regex": true, "expect": { "matches": [[0, 1], [2, 3]] } }] },
     { "name": "plain search escapes regex characters", "text": "a.b axb", "ops": [{ "op": "search", "text": "a.b", "expect": { "matches": [[0, 3]] } }] },
     { "name": "invalid regex reports an error and clears matches", "text": "abc", "ops": [{ "op": "search", "text": "a", "expect": { "matches": [[0, 1]] } }, { "op": "search", "text": "(", "regex": true, "expect": { "error": true, "matches": [] } }] },
+    { "name": "a regex past PCRE2's match limit keeps the matches before it and marks them limited", "text": "aa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab\naaa", "ops": [{ "op": "search", "text": "(a+)+$", "regex": true, "expect": { "result": 1, "matches": [[0, 2]], "limited": true } }, { "op": "search", "text": "a", "expect": { "result": 45, "limited": false } }] },
     { "name": "findNext starts at the first match at or after the caret and wraps", "text": "ab ab ab", "ops": [
       { "op": "setSelection", "anchor": 4, "head": 4 },
       { "op": "search", "text": "ab" },

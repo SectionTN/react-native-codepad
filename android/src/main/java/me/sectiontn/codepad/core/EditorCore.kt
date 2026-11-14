@@ -159,6 +159,9 @@ class EditorCore(initialText: String = "", clock: (() -> Long)? = null) : AutoCl
   val matches: IntArray get() = CoreNative.editorMatches(handle())
   val matchCount: Int get() = CoreNative.editorMatchCount(handle())
 
+  /** True when a match attempt hit PCRE2's match limit, so the matches stop there. */
+  val matchLimited: Boolean get() = CoreNative.editorMatchLimited(handle())
+
   /** True while a query is active and its matches belong to an older revision. */
   val searchStale: Boolean get() = CoreNative.editorSearchStale(handle())
 
@@ -188,7 +191,8 @@ class EditorCore(initialText: String = "", clock: (() -> Long)? = null) : AutoCl
   fun textSnapshot(): Long = CoreNative.editorText(handle())
 
   /** Stores matches computed elsewhere. False when the document moved on since [revision]. */
-  fun acceptMatches(revision: Int, matches: IntArray): Boolean = CoreNative.editorAcceptMatches(handle(), revision, matches)
+  fun acceptMatches(revision: Int, matches: IntArray, limited: Boolean): Boolean =
+    CoreNative.editorAcceptMatches(handle(), revision, matches, limited)
 
   fun findNext(): SearchHit? = find(true)
 

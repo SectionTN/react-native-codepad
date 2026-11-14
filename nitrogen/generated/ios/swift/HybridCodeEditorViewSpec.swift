@@ -76,7 +76,7 @@ public protocol HybridCodeEditorViewSpec_protocol: HybridObject, HybridView {
   func paste() throws -> Promise<Void>
   func focus() throws -> Promise<Void>
   func blur() throws -> Promise<Void>
-  func setSearch(query: NativeSearchQuery) throws -> Promise<Double>
+  func setSearch(query: NativeSearchQuery) throws -> Promise<NativeSearchResult>
   func findNext() throws -> Promise<NativeSearchHit>
   func findPrevious() throws -> Promise<NativeSearchHit>
   func replaceCurrent(text: String) throws -> Promise<Bool>

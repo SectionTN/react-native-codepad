@@ -231,13 +231,13 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     focus: () => native.current?.focus() ?? Promise.resolve(),
     blur: () => native.current?.blur() ?? Promise.resolve(),
     setSearch: async (query) => {
-      const count = await native.current?.setSearch({
+      const result = await native.current?.setSearch({
         text: query.text,
         regex: query.regex ?? false,
         caseSensitive: query.caseSensitive ?? false,
         wholeWord: query.wholeWord ?? false,
       });
-      return { count: count ?? 0 };
+      return { count: result?.count ?? 0, limited: result?.limited ?? false };
     },
     findNext: () => native.current?.findNext().then(toHit) ?? Promise.resolve(null),
     findPrevious: () => native.current?.findPrevious().then(toHit) ?? Promise.resolve(null),

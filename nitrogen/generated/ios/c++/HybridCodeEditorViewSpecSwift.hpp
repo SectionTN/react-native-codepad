@@ -44,6 +44,8 @@ namespace margelo::nitro::codepad { struct NativeRect; }
 namespace margelo::nitro::codepad { struct NativePosition; }
 // Forward declaration of `NativeVisibleLines` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeVisibleLines; }
+// Forward declaration of `NativeSearchResult` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchResult; }
 // Forward declaration of `NativeSearchQuery` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSearchQuery; }
 // Forward declaration of `NativeSearchHit` to properly resolve imports.
@@ -73,6 +75,7 @@ namespace margelo::nitro::codepad { enum class NativeCaretDirection; }
 #include "NativePosition.hpp"
 #include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
+#include "NativeSearchResult.hpp"
 #include "NativeSearchQuery.hpp"
 #include "NativeSearchHit.hpp"
 #include "NativeCaretDirection.hpp"
@@ -605,7 +608,7 @@ namespace margelo::nitro::codepad {
       auto __value = std::move(__result.value());
       return __value;
     }
-    inline std::shared_ptr<Promise<double>> setSearch(const NativeSearchQuery& query) override {
+    inline std::shared_ptr<Promise<NativeSearchResult>> setSearch(const NativeSearchQuery& query) override {
       auto __result = _swiftPart.setSearch(std::forward<decltype(query)>(query));
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());

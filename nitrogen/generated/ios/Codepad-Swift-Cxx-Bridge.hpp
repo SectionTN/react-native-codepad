@@ -34,6 +34,8 @@ namespace margelo::nitro::codepad { struct NativeRect; }
 namespace margelo::nitro::codepad { struct NativeScrollEvent; }
 // Forward declaration of `NativeSearchHit` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSearchHit; }
+// Forward declaration of `NativeSearchResult` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchResult; }
 // Forward declaration of `NativeSelection` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSelection; }
 // Forward declaration of `NativeSuggestions` to properly resolve imports.
@@ -67,6 +69,7 @@ namespace Codepad { class HybridCodepadSpec_cxx; }
 #include "NativeRect.hpp"
 #include "NativeScrollEvent.hpp"
 #include "NativeSearchHit.hpp"
+#include "NativeSearchResult.hpp"
 #include "NativeSelection.hpp"
 #include "NativeSuggestions.hpp"
 #include "NativeTheme.hpp"
@@ -550,38 +553,38 @@ namespace margelo::nitro::codepad::bridge::swift {
     return Func_void_std__exception_ptr_Wrapper(std::move(value));
   }
   
-  // pragma MARK: std::shared_ptr<Promise<double>>
+  // pragma MARK: std::shared_ptr<Promise<NativeSearchResult>>
   /**
-   * Specialized version of `std::shared_ptr<Promise<double>>`.
+   * Specialized version of `std::shared_ptr<Promise<NativeSearchResult>>`.
    */
-  using std__shared_ptr_Promise_double__ = std::shared_ptr<Promise<double>>;
-  inline std::shared_ptr<Promise<double>> create_std__shared_ptr_Promise_double__() noexcept {
-    return Promise<double>::create();
+  using std__shared_ptr_Promise_NativeSearchResult__ = std::shared_ptr<Promise<NativeSearchResult>>;
+  inline std::shared_ptr<Promise<NativeSearchResult>> create_std__shared_ptr_Promise_NativeSearchResult__() noexcept {
+    return Promise<NativeSearchResult>::create();
   }
-  inline PromiseHolder<double> wrap_std__shared_ptr_Promise_double__(std::shared_ptr<Promise<double>> promise) noexcept {
-    return PromiseHolder<double>(std::move(promise));
+  inline PromiseHolder<NativeSearchResult> wrap_std__shared_ptr_Promise_NativeSearchResult__(std::shared_ptr<Promise<NativeSearchResult>> promise) noexcept {
+    return PromiseHolder<NativeSearchResult>(std::move(promise));
   }
   
-  // pragma MARK: std::function<void(double /* result */)>
+  // pragma MARK: std::function<void(const NativeSearchResult& /* result */)>
   /**
-   * Specialized version of `std::function<void(double)>`.
+   * Specialized version of `std::function<void(const NativeSearchResult&)>`.
    */
-  using Func_void_double = std::function<void(double /* result */)>;
+  using Func_void_NativeSearchResult = std::function<void(const NativeSearchResult& /* result */)>;
   /**
-   * Wrapper class for a `std::function<void(double / * result * /)>`, this can be used from Swift.
+   * Wrapper class for a `std::function<void(const NativeSearchResult& / * result * /)>`, this can be used from Swift.
    */
-  class Func_void_double_Wrapper final {
+  class Func_void_NativeSearchResult_Wrapper final {
   public:
-    explicit Func_void_double_Wrapper(std::function<void(double /* result */)>&& func): _function(std::make_unique<std::function<void(double /* result */)>>(std::move(func))) {}
-    inline void call(double result) const noexcept {
+    explicit Func_void_NativeSearchResult_Wrapper(std::function<void(const NativeSearchResult& /* result */)>&& func): _function(std::make_unique<std::function<void(const NativeSearchResult& /* result */)>>(std::move(func))) {}
+    inline void call(NativeSearchResult result) const noexcept {
       _function->operator()(result);
     }
   private:
-    std::unique_ptr<std::function<void(double /* result */)>> _function;
+    std::unique_ptr<std::function<void(const NativeSearchResult& /* result */)>> _function;
   } SWIFT_NONCOPYABLE;
-  Func_void_double create_Func_void_double(void* NON_NULL swiftClosureWrapper) noexcept;
-  inline Func_void_double_Wrapper wrap_Func_void_double(Func_void_double value) noexcept {
-    return Func_void_double_Wrapper(std::move(value));
+  Func_void_NativeSearchResult create_Func_void_NativeSearchResult(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_NativeSearchResult_Wrapper wrap_Func_void_NativeSearchResult(Func_void_NativeSearchResult value) noexcept {
+    return Func_void_NativeSearchResult_Wrapper(std::move(value));
   }
   
   // pragma MARK: std::shared_ptr<Promise<NativeSearchHit>>
@@ -650,6 +653,40 @@ namespace margelo::nitro::codepad::bridge::swift {
   Func_void_bool create_Func_void_bool(void* NON_NULL swiftClosureWrapper) noexcept;
   inline Func_void_bool_Wrapper wrap_Func_void_bool(Func_void_bool value) noexcept {
     return Func_void_bool_Wrapper(std::move(value));
+  }
+  
+  // pragma MARK: std::shared_ptr<Promise<double>>
+  /**
+   * Specialized version of `std::shared_ptr<Promise<double>>`.
+   */
+  using std__shared_ptr_Promise_double__ = std::shared_ptr<Promise<double>>;
+  inline std::shared_ptr<Promise<double>> create_std__shared_ptr_Promise_double__() noexcept {
+    return Promise<double>::create();
+  }
+  inline PromiseHolder<double> wrap_std__shared_ptr_Promise_double__(std::shared_ptr<Promise<double>> promise) noexcept {
+    return PromiseHolder<double>(std::move(promise));
+  }
+  
+  // pragma MARK: std::function<void(double /* result */)>
+  /**
+   * Specialized version of `std::function<void(double)>`.
+   */
+  using Func_void_double = std::function<void(double /* result */)>;
+  /**
+   * Wrapper class for a `std::function<void(double / * result * /)>`, this can be used from Swift.
+   */
+  class Func_void_double_Wrapper final {
+  public:
+    explicit Func_void_double_Wrapper(std::function<void(double /* result */)>&& func): _function(std::make_unique<std::function<void(double /* result */)>>(std::move(func))) {}
+    inline void call(double result) const noexcept {
+      _function->operator()(result);
+    }
+  private:
+    std::unique_ptr<std::function<void(double /* result */)>> _function;
+  } SWIFT_NONCOPYABLE;
+  Func_void_double create_Func_void_double(void* NON_NULL swiftClosureWrapper) noexcept;
+  inline Func_void_double_Wrapper wrap_Func_void_double(Func_void_double value) noexcept {
+    return Func_void_double_Wrapper(std::move(value));
   }
   
   // pragma MARK: std::shared_ptr<HybridCodeEditorViewSpec>
@@ -736,13 +773,13 @@ namespace margelo::nitro::codepad::bridge::swift {
     return Result<std::shared_ptr<Promise<void>>>::withError(error);
   }
   
-  // pragma MARK: Result<std::shared_ptr<Promise<double>>>
-  using Result_std__shared_ptr_Promise_double___ = Result<std::shared_ptr<Promise<double>>>;
-  inline Result_std__shared_ptr_Promise_double___ create_Result_std__shared_ptr_Promise_double___(const std::shared_ptr<Promise<double>>& value) noexcept {
-    return Result<std::shared_ptr<Promise<double>>>::withValue(value);
+  // pragma MARK: Result<std::shared_ptr<Promise<NativeSearchResult>>>
+  using Result_std__shared_ptr_Promise_NativeSearchResult___ = Result<std::shared_ptr<Promise<NativeSearchResult>>>;
+  inline Result_std__shared_ptr_Promise_NativeSearchResult___ create_Result_std__shared_ptr_Promise_NativeSearchResult___(const std::shared_ptr<Promise<NativeSearchResult>>& value) noexcept {
+    return Result<std::shared_ptr<Promise<NativeSearchResult>>>::withValue(value);
   }
-  inline Result_std__shared_ptr_Promise_double___ create_Result_std__shared_ptr_Promise_double___(const std::exception_ptr& error) noexcept {
-    return Result<std::shared_ptr<Promise<double>>>::withError(error);
+  inline Result_std__shared_ptr_Promise_NativeSearchResult___ create_Result_std__shared_ptr_Promise_NativeSearchResult___(const std::exception_ptr& error) noexcept {
+    return Result<std::shared_ptr<Promise<NativeSearchResult>>>::withError(error);
   }
   
   // pragma MARK: Result<std::shared_ptr<Promise<NativeSearchHit>>>
@@ -761,6 +798,15 @@ namespace margelo::nitro::codepad::bridge::swift {
   }
   inline Result_std__shared_ptr_Promise_bool___ create_Result_std__shared_ptr_Promise_bool___(const std::exception_ptr& error) noexcept {
     return Result<std::shared_ptr<Promise<bool>>>::withError(error);
+  }
+  
+  // pragma MARK: Result<std::shared_ptr<Promise<double>>>
+  using Result_std__shared_ptr_Promise_double___ = Result<std::shared_ptr<Promise<double>>>;
+  inline Result_std__shared_ptr_Promise_double___ create_Result_std__shared_ptr_Promise_double___(const std::shared_ptr<Promise<double>>& value) noexcept {
+    return Result<std::shared_ptr<Promise<double>>>::withValue(value);
+  }
+  inline Result_std__shared_ptr_Promise_double___ create_Result_std__shared_ptr_Promise_double___(const std::exception_ptr& error) noexcept {
+    return Result<std::shared_ptr<Promise<double>>>::withError(error);
   }
   
   // pragma MARK: std::vector<std::string>

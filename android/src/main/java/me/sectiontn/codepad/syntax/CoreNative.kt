@@ -58,11 +58,12 @@ internal object CoreNative {
   @JvmStatic external fun editorSearchActive(editor: Long): Boolean
   @JvmStatic external fun editorSearchStale(editor: Long): Boolean
   @JvmStatic external fun editorMatchCount(editor: Long): Int
+  @JvmStatic external fun editorMatchLimited(editor: Long): Boolean
   @JvmStatic external fun editorMatches(editor: Long): IntArray
   @JvmStatic external fun editorFind(editor: Long, forward: Boolean, out: IntArray): Boolean
   @JvmStatic external fun editorReplaceCurrent(editor: Long, text: String): Boolean
   @JvmStatic external fun editorReplaceAll(editor: Long, text: String): Int
-  @JvmStatic external fun editorAcceptMatches(editor: Long, revision: Int, pairs: IntArray): Boolean
+  @JvmStatic external fun editorAcceptMatches(editor: Long, revision: Int, pairs: IntArray, limited: Boolean): Boolean
   @JvmStatic external fun editorSearchQuery(editor: Long): Long
   @JvmStatic external fun searchRelease(search: Long)
   @JvmStatic external fun editorText(editor: Long): Long

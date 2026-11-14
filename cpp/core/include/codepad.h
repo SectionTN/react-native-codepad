@@ -258,6 +258,8 @@ CP_API int32_t cp_editor_search_active(const cp_editor *editor);
 // 1 while a query is active and its matches belong to an older revision.
 CP_API int32_t cp_editor_search_stale(const cp_editor *editor);
 CP_API int32_t cp_editor_match_count(const cp_editor *editor);
+// 1 when a match attempt hit PCRE2's match limit, so the matches stop there.
+CP_API int32_t cp_editor_match_limited(const cp_editor *editor);
 // The matches as start and end pairs, computed on the calling thread when stale. Returns the ints there are.
 CP_API uint32_t cp_editor_matches(cp_editor *editor, int32_t *out, uint32_t cap);
 // Selects the next match, or the previous one when forward is 0. Returns 0 without a match.
@@ -265,8 +267,10 @@ CP_API int32_t cp_editor_find(cp_editor *editor, int32_t forward, int32_t *index
 CP_API int32_t cp_editor_replace_current(cp_editor *editor, const cp_unit *text, uint32_t length);
 // Returns how many matches were replaced, as one undo step.
 CP_API int32_t cp_editor_replace_all(cp_editor *editor, const cp_unit *text, uint32_t length);
-// Matches computed off the main thread for revision. count is in ints. Returns 0 when the document moved on.
-CP_API int32_t cp_editor_accept_matches(cp_editor *editor, int32_t revision, const int32_t *pairs, uint32_t count);
+// Matches computed off the main thread for revision, with the scan's limited flag. count is in ints. Returns 0 when
+// the document moved on.
+CP_API int32_t cp_editor_accept_matches(cp_editor *editor, int32_t revision, const int32_t *pairs, uint32_t count,
+                                       int32_t limited);
 // The compiled query, retained for the caller, or NULL without a search.
 CP_API cp_search *cp_editor_search_query(cp_editor *editor);
 // One scan of a query over a text, carried across cp_search_find calls. Start with next 0, or the offset to scan

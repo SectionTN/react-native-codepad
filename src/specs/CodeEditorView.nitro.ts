@@ -103,6 +103,12 @@ export interface NativeSearchHit {
   total: number;
 }
 
+// limited: a regex hit PCRE2's match limit, so the count stops there.
+export interface NativeSearchResult {
+  count: number;
+  limited: boolean;
+}
+
 export type NativeDecorationKind = 'underline' | 'gap' | 'lineBackground';
 
 export type NativeUnderlineStyle = 'solid' | 'wavy';
@@ -195,7 +201,7 @@ export interface CodeEditorViewMethods extends HybridViewMethods {
   paste(): Promise<void>;
   focus(): Promise<void>;
   blur(): Promise<void>;
-  setSearch(query: NativeSearchQuery): Promise<number>;
+  setSearch(query: NativeSearchQuery): Promise<NativeSearchResult>;
   findNext(): Promise<NativeSearchHit>;
   findPrevious(): Promise<NativeSearchHit>;
   replaceCurrent(text: string): Promise<boolean>;

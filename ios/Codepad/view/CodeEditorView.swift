@@ -458,6 +458,7 @@ final class CodeEditorView: UIScrollView {
   }
 
   var matchCount: Int { core.matchCount }
+  var matchLimited: Bool { core.matchLimited }
 
   func findNext() -> EditorCore.SearchHit? {
     let hit = core.findNext()

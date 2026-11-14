@@ -39,6 +39,8 @@ namespace margelo::nitro::codepad { struct NativeRect; }
 namespace margelo::nitro::codepad { struct NativePosition; }
 // Forward declaration of `NativeVisibleLines` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeVisibleLines; }
+// Forward declaration of `NativeSearchResult` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchResult; }
 // Forward declaration of `NativeSearchHit` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSearchHit; }
 // Forward declaration of `NativeSearchQuery` to properly resolve imports.
@@ -94,6 +96,8 @@ namespace margelo::nitro::codepad { enum class NativeCaretDirection; }
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/JPromise.hpp>
 #include <NitroModules/JUnit.hpp>
+#include "NativeSearchResult.hpp"
+#include "JNativeSearchResult.hpp"
 #include "NativeSearchHit.hpp"
 #include "JNativeSearchHit.hpp"
 #include "NativeSearchQuery.hpp"
@@ -835,14 +839,14 @@ namespace margelo::nitro::codepad {
       return __promise;
     }();
   }
-  std::shared_ptr<Promise<double>> JHybridCodeEditorViewSpec::setSearch(const NativeSearchQuery& query) {
+  std::shared_ptr<Promise<NativeSearchResult>> JHybridCodeEditorViewSpec::setSearch(const NativeSearchQuery& query) {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>(jni::alias_ref<JNativeSearchQuery> /* query */)>("setSearch");
     auto __result = method(_javaPart, JNativeSearchQuery::fromCpp(query));
     return [&]() {
-      auto __promise = Promise<double>::create();
+      auto __promise = Promise<NativeSearchResult>::create();
       __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
-        auto __result = jni::static_ref_cast<jni::JDouble>(__boxedResult);
-        __promise->resolve(__result->value());
+        auto __result = jni::static_ref_cast<JNativeSearchResult>(__boxedResult);
+        __promise->resolve(__result->toCpp());
       });
       __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
         jni::JniException __jniError(__throwable);

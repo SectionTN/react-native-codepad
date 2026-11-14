@@ -89,18 +89,22 @@ final class SearchController: @unchecked Sendable {
     queue.async { [self] in
       let started = DispatchTime.now().uptimeNanoseconds
       let result: [Int]
+      let limited: Bool
       do {
-        result = try Searcher.find(text, search) { job.cancelled }.matches
+        let found = try Searcher.find(text, search) { job.cancelled }
+        result = found.matches
+        limited = found.limited
       } catch {
         return
       }
       let millis = Int64((DispatchTime.now().uptimeNanoseconds - started) / 1_000_000)
-      postToMain { self.deliver(job, revision: revision, result: result, millis: millis) }
+      postToMain { self.deliver(job, revision: revision, result: result, limited: limited, millis: millis) }
     }
   }
 
-  private func deliver(_ job: Job, revision: Int, result: [Int], millis: Int64) {
-    if closed || job.generation != generation || !core.acceptMatches(revision: revision, matches: result) { return }
+  private func deliver(_ job: Job, revision: Int, result: [Int], limited: Bool, millis: Int64) {
+    if closed || job.generation != generation { return }
+    if !core.acceptMatches(revision: revision, matches: result, limited: limited) { return }
     running = nil
     displayed = result
     onResult?(result.count / 2, millis)

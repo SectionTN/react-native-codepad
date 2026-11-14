@@ -1474,21 +1474,21 @@ open class HybridCodeEditorViewSpec_cxx {
   }
   
   @inline(__always)
-  public final func setSearch(query: NativeSearchQuery) -> bridge.Result_std__shared_ptr_Promise_double___ {
+  public final func setSearch(query: NativeSearchQuery) -> bridge.Result_std__shared_ptr_Promise_NativeSearchResult___ {
     do {
       let __result = try self.__implementation.setSearch(query: query)
-      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_double__ in
-        let __promise = bridge.create_std__shared_ptr_Promise_double__()
-        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_double__(__promise)
+      let __resultCpp = { () -> bridge.std__shared_ptr_Promise_NativeSearchResult__ in
+        let __promise = bridge.create_std__shared_ptr_Promise_NativeSearchResult__()
+        let __promiseHolder = bridge.wrap_std__shared_ptr_Promise_NativeSearchResult__(__promise)
         __result
           .then({ __result in __promiseHolder.resolve(__result) })
           .catch({ __error in __promiseHolder.reject(__error.toCpp()) })
         return __promise
       }()
-      return bridge.create_Result_std__shared_ptr_Promise_double___(__resultCpp)
+      return bridge.create_Result_std__shared_ptr_Promise_NativeSearchResult___(__resultCpp)
     } catch (let __error) {
       let __exceptionPtr = __error.toCpp()
-      return bridge.create_Result_std__shared_ptr_Promise_double___(__exceptionPtr)
+      return bridge.create_Result_std__shared_ptr_Promise_NativeSearchResult___(__exceptionPtr)
     }
   }
   

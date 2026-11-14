@@ -425,7 +425,7 @@ abstract class HybridCodeEditorViewSpec: HybridView() {
   
   @DoNotStrip
   @Keep
-  abstract fun setSearch(query: NativeSearchQuery): Promise<Double>
+  abstract fun setSearch(query: NativeSearchQuery): Promise<NativeSearchResult>
   
   @DoNotStrip
   @Keep

@@ -100,4 +100,14 @@ final class SearchControllerTests: XCTestCase {
     XCTAssertThrowsError(try controller.setQuery(SearchQuery(text: "(", regex: true)))
     XCTAssertFalse(controller.active)
   }
+
+  /// setSearch's result reads the limit from the core, so the worker's scan has to bring it there.
+  func testAWorkerScanStoppedAtTheMatchLimitReachesTheCore() throws {
+    let core = EditorCore("aa\n" + String(repeating: "a", count: 40) + "b\naaa")
+    let controller = SearchController(core: core, queue: queue, postToMain: { [main] in main.post($0) })
+    try controller.setQuery(SearchQuery(text: "(a+)+$", regex: true))
+    settle()
+    XCTAssertEqual(core.matchCount, 1)
+    XCTAssertTrue(core.matchLimited)
+  }
 }

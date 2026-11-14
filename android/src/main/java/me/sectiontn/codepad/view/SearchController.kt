@@ -89,12 +89,12 @@ class SearchController(
       try {
         val started = System.nanoTime()
         val result = try {
-          Searcher.find(text, search) { job.cancelled }.matches
+          Searcher.find(text, search) { job.cancelled }
         } catch (e: CancellationException) {
           return@Runnable
         }
         val millis = (System.nanoTime() - started) / 1_000_000
-        postToMain(Runnable { deliver(job, revision, result, millis) })
+        postToMain(Runnable { deliver(job, revision, result.matches, result.limited, millis) })
       } finally {
         Searcher.release(search)
         Searcher.releaseText(text)
@@ -108,8 +108,8 @@ class SearchController(
     }
   }
 
-  private fun deliver(job: Job, revision: Int, result: IntArray, millis: Long) {
-    if (closed || job.generation != generation || !core.acceptMatches(revision, result)) return
+  private fun deliver(job: Job, revision: Int, result: IntArray, limited: Boolean, millis: Long) {
+    if (closed || job.generation != generation || !core.acceptMatches(revision, result, limited)) return
     running = null
     displayed = result
     onResult?.invoke(result.size / 2, millis)

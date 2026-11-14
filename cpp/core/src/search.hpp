@@ -39,6 +39,8 @@ struct SearchSession {
   std::shared_ptr<const Search> search;
   std::vector<int32_t> matches;
   int32_t revision = -1;
+  // A match attempt hit PCRE2's match limit, so the matches stop there.
+  bool limited = false;
 
   int32_t count() const { return static_cast<int32_t>(matches.size() / 2); }
   // The first match starting at or after offset, else count.

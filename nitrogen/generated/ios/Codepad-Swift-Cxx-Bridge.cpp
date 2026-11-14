@@ -79,10 +79,10 @@ namespace margelo::nitro::codepad::bridge::swift {
     };
   }
   
-  // pragma MARK: std::function<void(double /* result */)>
-  Func_void_double create_Func_void_double(void* NON_NULL swiftClosureWrapper) noexcept {
-    auto swiftClosure = Codepad::Func_void_double::fromUnsafe(swiftClosureWrapper);
-    return [swiftClosure = std::move(swiftClosure)](double result) mutable -> void {
+  // pragma MARK: std::function<void(const NativeSearchResult& /* result */)>
+  Func_void_NativeSearchResult create_Func_void_NativeSearchResult(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = Codepad::Func_void_NativeSearchResult::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const NativeSearchResult& result) mutable -> void {
       swiftClosure.call(result);
     };
   }
@@ -99,6 +99,14 @@ namespace margelo::nitro::codepad::bridge::swift {
   Func_void_bool create_Func_void_bool(void* NON_NULL swiftClosureWrapper) noexcept {
     auto swiftClosure = Codepad::Func_void_bool::fromUnsafe(swiftClosureWrapper);
     return [swiftClosure = std::move(swiftClosure)](bool result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::function<void(double /* result */)>
+  Func_void_double create_Func_void_double(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = Codepad::Func_void_double::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](double result) mutable -> void {
       swiftClosure.call(result);
     };
   }

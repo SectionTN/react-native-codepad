@@ -181,6 +181,8 @@ int32_t cp_editor_search_stale(const cp_editor *editor) { return editor->search_
 
 int32_t cp_editor_match_count(const cp_editor *editor) { return editor->match_count(); }
 
+int32_t cp_editor_match_limited(const cp_editor *editor) { return editor->match_limited() ? 1 : 0; }
+
 uint32_t cp_editor_matches(cp_editor *editor, int32_t *out, uint32_t cap) {
   const std::vector<int32_t> &matches = editor->matches();
   if (out != nullptr) std::copy_n(matches.begin(), std::min<size_t>(matches.size(), cap), out);
@@ -204,8 +206,9 @@ int32_t cp_editor_replace_all(cp_editor *editor, const cp_unit *text, uint32_t l
   return editor->replace_all(units(text, length));
 }
 
-int32_t cp_editor_accept_matches(cp_editor *editor, int32_t revision, const int32_t *pairs, uint32_t count) {
-  return editor->accept_matches(revision, pairs, count) ? 1 : 0;
+int32_t cp_editor_accept_matches(cp_editor *editor, int32_t revision, const int32_t *pairs, uint32_t count,
+                                 int32_t limited) {
+  return editor->accept_matches(revision, pairs, count, limited != 0) ? 1 : 0;
 }
 
 cp_search *cp_editor_search_query(cp_editor *editor) {

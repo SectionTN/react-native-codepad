@@ -37,6 +37,8 @@ namespace margelo::nitro::codepad { struct NativePosition; }
 namespace margelo::nitro::codepad { struct NativeRect; }
 // Forward declaration of `NativeVisibleLines` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeVisibleLines; }
+// Forward declaration of `NativeSearchResult` to properly resolve imports.
+namespace margelo::nitro::codepad { struct NativeSearchResult; }
 // Forward declaration of `NativeSearchQuery` to properly resolve imports.
 namespace margelo::nitro::codepad { struct NativeSearchQuery; }
 // Forward declaration of `NativeSearchHit` to properly resolve imports.
@@ -61,6 +63,7 @@ namespace margelo::nitro::codepad { enum class NativeCaretDirection; }
 #include "NativeRect.hpp"
 #include "NativeVisibleLines.hpp"
 #include <NitroModules/Promise.hpp>
+#include "NativeSearchResult.hpp"
 #include "NativeSearchQuery.hpp"
 #include "NativeSearchHit.hpp"
 #include "NativeCaretDirection.hpp"
@@ -192,7 +195,7 @@ namespace margelo::nitro::codepad {
       virtual std::shared_ptr<Promise<void>> paste() = 0;
       virtual std::shared_ptr<Promise<void>> focus() = 0;
       virtual std::shared_ptr<Promise<void>> blur() = 0;
-      virtual std::shared_ptr<Promise<double>> setSearch(const NativeSearchQuery& query) = 0;
+      virtual std::shared_ptr<Promise<NativeSearchResult>> setSearch(const NativeSearchQuery& query) = 0;
       virtual std::shared_ptr<Promise<NativeSearchHit>> findNext() = 0;
       virtual std::shared_ptr<Promise<NativeSearchHit>> findPrevious() = 0;
       virtual std::shared_ptr<Promise<bool>> replaceCurrent(const std::string& text) = 0;

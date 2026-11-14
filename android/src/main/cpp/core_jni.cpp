@@ -502,6 +502,7 @@ FN(editorSearchActive)(JNIEnv *, jclass, jlong editor) -> jboolean {
 
 FN(editorSearchStale)(JNIEnv *, jclass, jlong editor) -> jboolean { return cp_editor_search_stale(ed(editor)) != 0; }
 FN(editorMatchCount)(JNIEnv *, jclass, jlong editor) -> jint { return cp_editor_match_count(ed(editor)); }
+FN(editorMatchLimited)(JNIEnv *, jclass, jlong editor) -> jboolean { return cp_editor_match_limited(ed(editor)) != 0; }
 
 FN(editorMatches)(JNIEnv *e, jclass, jlong editor) -> jintArray {
   uint32_t n = cp_editor_matches(ed(editor), nullptr, 0);
@@ -527,11 +528,12 @@ FN(editorReplaceAll)(JNIEnv *e, jclass, jlong editor, jstring text) -> jint {
   return cp_editor_replace_all(ed(editor), units_of(s), count_of(s));
 }
 
-FN(editorAcceptMatches)(JNIEnv *e, jclass, jlong editor, jint revision, jintArray pairs) -> jboolean {
+FN(editorAcceptMatches)(JNIEnv *e, jclass, jlong editor, jint revision, jintArray pairs, jboolean limited)
+    -> jboolean {
   jsize n = e->GetArrayLength(pairs);
   std::vector<int32_t> in(static_cast<size_t>(n));
   if (n > 0) e->GetIntArrayRegion(pairs, 0, n, reinterpret_cast<jint *>(in.data()));
-  return cp_editor_accept_matches(ed(editor), revision, in.data(), static_cast<uint32_t>(n)) != 0;
+  return cp_editor_accept_matches(ed(editor), revision, in.data(), static_cast<uint32_t>(n), limited ? 1 : 0) != 0;
 }
 
 FN(editorSearchQuery)(JNIEnv *, jclass, jlong editor) -> jlong { return handle(cp_editor_search_query(ed(editor))); }

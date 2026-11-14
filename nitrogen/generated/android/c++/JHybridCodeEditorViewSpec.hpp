@@ -150,7 +150,7 @@ namespace margelo::nitro::codepad {
     std::shared_ptr<Promise<void>> paste() override;
     std::shared_ptr<Promise<void>> focus() override;
     std::shared_ptr<Promise<void>> blur() override;
-    std::shared_ptr<Promise<double>> setSearch(const NativeSearchQuery& query) override;
+    std::shared_ptr<Promise<NativeSearchResult>> setSearch(const NativeSearchQuery& query) override;
     std::shared_ptr<Promise<NativeSearchHit>> findNext() override;
     std::shared_ptr<Promise<NativeSearchHit>> findPrevious() override;
     std::shared_ptr<Promise<bool>> replaceCurrent(const std::string& text) override;

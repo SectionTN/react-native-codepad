@@ -395,6 +395,7 @@ void Editor::ensure_matches() {
   if (!search_ || search_->revision == doc.revision()) return;
   bool limited = false;
   search_->matches = search_->search->find_all(doc.text(0, doc.length()), limited);
+  search_->limited = limited;
   search_->revision = doc.revision();
 }
 
@@ -451,9 +452,10 @@ int32_t Editor::replace_all(std::u16string_view text) {
   return static_cast<int32_t>(targets.size() / 2);
 }
 
-bool Editor::accept_matches(int32_t revision, const int32_t *pairs, uint32_t count) {
+bool Editor::accept_matches(int32_t revision, const int32_t *pairs, uint32_t count, bool limited) {
   if (!search_ || revision != doc.revision()) return false;
   search_->matches.assign(pairs, pairs + count);
+  search_->limited = limited;
   search_->revision = revision;
   return true;
 }

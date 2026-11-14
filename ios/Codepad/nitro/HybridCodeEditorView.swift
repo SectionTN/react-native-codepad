@@ -350,11 +350,13 @@ final class HybridCodeEditorView: HybridCodeEditorViewSpec, @unchecked Sendable 
 
   // Search methods resolve once the worker's results match the document.
 
-  func setSearch(query: NativeSearchQuery) throws -> Promise<Double> {
+  func setSearch(query: NativeSearchQuery) throws -> Promise<NativeSearchResult> {
     let q = SearchQuery(text: query.text, regex: query.regex, caseSensitive: query.caseSensitive, wholeWord: query.wholeWord)
     return deferred { editor, promise in
       try editor.setSearch(q)
-      editor.whenSearchFresh { promise.resolve(withResult: Double(editor.matchCount)) }
+      editor.whenSearchFresh {
+        promise.resolve(withResult: NativeSearchResult(count: Double(editor.matchCount), limited: editor.matchLimited))
+      }
     }
   }
 

@@ -506,6 +506,7 @@ class CodeEditorView(context: Context) : View(context) {
   fun whenSearchFresh(block: () -> Unit) = search?.whenFresh(block) ?: block()
 
   val matchCount: Int get() = core.matchCount
+  val matchLimited: Boolean get() = core.matchLimited
 
   fun findNext(): EditorCore.SearchHit? = core.findNext().also { afterSearchMove() }
 
