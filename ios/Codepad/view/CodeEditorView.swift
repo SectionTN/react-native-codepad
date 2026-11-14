@@ -63,6 +63,16 @@ final class CodeEditorView: UIScrollView {
   static let defaultTextPadding: CGFloat = 8
   static let gutterPadding: CGFloat = 8
   static let caretWidth: CGFloat = 2
+  /// Android's SCROLL_DURATION_MS.
+  static let scrollDuration: CFTimeInterval = 0.25
+
+  /// An animated scrollToLine in flight.
+  private struct LineScroll {
+    let line: Int
+    let startY: Int
+    let start: CFTimeInterval
+    let link: CADisplayLink
+  }
 
   // The JS thread reads the core, the last frame and the focus through these locks.
   private let coreLock: OSAllocatedUnfairLock<EditorCore>
@@ -132,6 +142,7 @@ final class CodeEditorView: UIScrollView {
   private(set) var keyboardTracker: KeyboardInsetTracker?
   private var ready = false
   private var scrollDirty = false
+  private var lineScroll: LineScroll?
   private var selectionDirty = false
   private var selectionViewsDirty = false
   private var contentDirty = false
@@ -338,6 +349,7 @@ final class CodeEditorView: UIScrollView {
   private(set) var scrollsVertically = true
 
   func setScrollEnabled(_ enabled: Bool) {
+    stopLineScroll()
     scrollsVertically = enabled
     alwaysBounceVertical = enabled
     // A second scroll-to-top view in the window turns off the page's status bar tap.
@@ -509,17 +521,49 @@ final class CodeEditorView: UIScrollView {
   }
 
   func scrollToLine(_ line: Int, animated: Bool) {
-    let target = viewport.rowStart(max(0, min(line, core.document.lineCount - 1))) * viewport.rowHeight
+    stopLineScroll()
+    // Ends a deceleration or an animated offset, as Android aborts its scroller.
+    setContentOffset(contentOffset, animated: false)
     if animated {
-      setContentOffset(CGPoint(x: viewport.scrollX, y: min(target, viewport.maxScrollY)), animated: true)
-    } else if viewport.scrollTo(viewport.scrollX, target) {
+      let link = CADisplayLink(target: self, selector: #selector(stepLineScroll))
+      link.add(to: .main, forMode: .common)
+      lineScroll = LineScroll(line: line, startY: Int(contentOffset.y.rounded()), start: CACurrentMediaTime(), link: link)
+    } else if viewport.scrollTo(viewport.scrollX, lineTop(line)) {
       pushScroll()
       onScrolled()
     }
   }
 
+  private func lineTop(_ line: Int) -> Int {
+    viewport.rowStart(max(0, min(line, core.document.lineCount - 1))) * viewport.rowHeight
+  }
+
+  /// Aims at the line again every frame: the wrapped lines the scroll passes take their rows on the way.
+  @objc private func stepLineScroll() {
+    guard let scroll = lineScroll else { return }
+    if isTracking {
+      stopLineScroll()
+      return
+    }
+    let t = min(1, (CACurrentMediaTime() - scroll.start) / Self.scrollDuration)
+    let eased = 1 - pow(1 - t, 3)
+    let target = min(lineTop(scroll.line), viewport.maxScrollY)
+    let y = Double(scroll.startY) + Double(target - scroll.startY) * eased
+    if t >= 1 { stopLineScroll() }
+    if viewport.scrollTo(viewport.scrollX, Int(y.rounded())) {
+      pushScroll()
+      onScrolled()
+    }
+  }
+
+  private func stopLineScroll() {
+    lineScroll?.link.invalidate()
+    lineScroll = nil
+  }
+
   /// Scrolls the least amount that shows the caret with the text padding around it.
   func revealSelection() {
+    stopLineScroll()
     let m = rowMetrics()
     let doc = core.document
     let head = core.selection.head
@@ -627,6 +671,7 @@ final class CodeEditorView: UIScrollView {
   override func didMoveToWindow() {
     super.didMoveToWindow()
     if window == nil {
+      stopLineScroll()
       textInput.menu.hide()
       textInput.endLoupe()
       search?.close()

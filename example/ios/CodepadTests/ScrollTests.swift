@@ -107,4 +107,37 @@ final class ScrollTests: XCTestCase {
       XCTAssertEqual(heard, CGFloat(editor.viewport.scrollY), "keeping \(keep) lines")
     }
   }
+
+  // The lines an animated scroll passes get their wrapped heights on the way, which moves the target line down.
+  // The scroll still ends with that line at the top.
+  func testAnAnimatedScrollToLineWithWrapEndsAtTheLine() {
+    let editor = launch()
+    editor.setSoftWrap(true)
+    editor.setInitialText((0..<600).map { "line \($0) " + String(repeating: "word ", count: 20) }.joined(separator: "\n"))
+    layout(editor)
+    draw(editor)
+    editor.scrollToLine(400, animated: true)
+    XCTAssertLessThan(editor.contentOffset.y, CGFloat(editor.viewport.rowHeight), "the scroll is animating")
+    // The rows the passed lines would get from the draws on the way.
+    for line in 1..<400 { editor.viewport.measured(line, 3) }
+    spin(until: { false }, timeout: 1)
+    draw(editor)
+    XCTAssertEqual(editor.viewport.firstVisibleLine(), 400)
+    XCTAssertEqual(editor.viewport.scrollY, editor.viewport.rowStart(400) * editor.viewport.rowHeight)
+  }
+
+  // A scroll UIKit animates (a deceleration, an animated offset) stops when scrollToLine starts.
+  func testAScrollToLineTakesOverAScrollInFlight() {
+    for animated in [false, true] {
+      let editor = launch()
+      editor.setInitialText((0..<600).map { "line \($0)" }.joined(separator: "\n"))
+      layout(editor)
+      draw(editor)
+      editor.setContentOffset(CGPoint(x: 0, y: 400 * editor.viewport.rowHeight), animated: true)
+      editor.scrollToLine(50, animated: animated)
+      spin(until: { false }, timeout: 1)
+      draw(editor)
+      XCTAssertEqual(editor.viewport.firstVisibleLine(), 50, "animated \(animated)")
+    }
+  }
 }
