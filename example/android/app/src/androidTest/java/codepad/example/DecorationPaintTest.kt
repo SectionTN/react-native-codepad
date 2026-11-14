@@ -39,7 +39,7 @@ class DecorationPaintTest {
   }
 
   // A checker marks lines all over a file. Each one below the window would cost a layout call per draw, and the
-  // debug switch the suite runs with throws past eight of them.
+  // draw helper fails past eight of them.
   @Test
   fun decorationsBelowTheWindowCostNoLayoutCall() {
     launch().use { s ->

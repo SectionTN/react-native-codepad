@@ -110,10 +110,10 @@ class InputConnectionTest {
     }
   }
 
-  // The layout lives as long as the core. A dropped view still in the window relays out on a keyboard edit that
-  // widens the gutter, and draws, until it leaves.
+  // A dropped view still in the window keeps its core and layout: a keyboard edit that widens the gutter works and
+  // a draw call does not crash. Once the view leaves the window, keyboard calls do nothing.
   @Test
-  fun aDroppedViewStillDrawsUntilItLeavesTheWindow() {
+  fun aDroppedViewTakesKeyboardEditsUntilItLeavesTheWindow() {
     launch().use { s ->
       val editor = s.editor()
       onMain {

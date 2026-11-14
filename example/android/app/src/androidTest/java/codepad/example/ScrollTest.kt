@@ -3,8 +3,6 @@ package codepad.example
 import android.os.SystemClock
 import android.view.KeyEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import me.sectiontn.codepad.layout.Viewport
-import me.sectiontn.codepad.view.CodeEditorView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -42,8 +40,7 @@ class ScrollTest {
         editor.setInitialText((0 until 100).joinToString("\n") { "line $it" })
         layout(editor)
         draw(editor)
-        val viewport = CodeEditorView::class.java.getDeclaredField("viewport").apply { isAccessible = true }
-          .get(editor) as Viewport
+        val viewport = viewportOf(editor)
         viewport.measured(98, 30)
         viewport.measured(99, 30)
         viewport.scrollTo(0, viewport.maxScrollY)
