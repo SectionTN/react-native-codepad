@@ -12,9 +12,9 @@ import {
 } from '../../../tests/web/core';
 
 const dir = builtCore('lib/web', 'yarn build:web');
-const python = join(ROOT, 'build/web-test/grammars/python.wasm');
+const python = join(ROOT, 'languages/python/web/python.wasm');
 const ready = dir !== null && existsSync(python);
-if (dir && !ready) console.warn('python grammar not built, run cpp/web/build.sh --grammar');
+if (dir && !ready) console.warn('python grammar not built, run yarn build:web-grammars');
 
 (ready ? test : test.skip)('the core parses python and highlights in wasm', async () => {
   const m = await loadCore(dir as string);

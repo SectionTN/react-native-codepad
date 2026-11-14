@@ -131,6 +131,40 @@ jobs:
           git status --porcelain -- example/modules
           test -z "$(git status --porcelain -- example/modules)"
 
+  test-web:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
+        with:
+          version: 7.0.0
+          actions-cache-folder: emsdk-cache
+
+      - name: Build the web core and grammars
+        run: |
+          yarn build:web
+          cpp/web/build.sh --test
+          yarn build:web-grammars
+
+      - name: Build package
+        run: yarn prepare
+
+      - name: Run the web unit tests
+        run: yarn jest src/web
+
+      - name: Install the browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run the browser tests
+        run: yarn test:web
+
   build-android:
     runs-on: ubuntu-24.04
 

@@ -32,6 +32,17 @@ jobs:
       - name: Build package
         run: yarn prepare
 
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
+        with:
+          version: 7.0.0
+
+      # The core ships lib/web and every language package ships web/<grammar>.wasm.
+      - name: Build the web core and grammars
+        run: |
+          yarn build:web
+          yarn build:web-grammars
+
       # Trusted publishing stages each package; the versions go live once approved on npmjs.com, the core first.
       # A re-run skips only the live versions, so approve or reject the staged ones before it.
       - name: Stage the core, then the language packages
