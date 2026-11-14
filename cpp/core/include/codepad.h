@@ -10,8 +10,13 @@
 extern "C" {
 #endif
 
+#ifdef __EMSCRIPTEN__
+// The web build calls the core from JS, so every entry point is exported.
+#define CP_API __attribute__((used, visibility("default")))
+#else
 // Empty on purpose: only bindings linked into the same library call the core, so nothing is exported.
 #define CP_API
+#endif
 
 typedef uint16_t cp_unit;
 

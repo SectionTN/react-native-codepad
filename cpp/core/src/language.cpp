@@ -1,6 +1,7 @@
 #include "language.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
