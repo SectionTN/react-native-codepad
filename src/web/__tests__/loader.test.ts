@@ -60,6 +60,8 @@ function fakeModule(loaded: string[]): CoreModule {
 
 let loader: Loader;
 let missing: Set<string>;
+let offline: Set<string>;
+let scriptFails: number;
 let manifestText: string;
 let appended: number;
 let warn: jest.SpiedFunction<typeof console.warn>;
@@ -69,6 +71,8 @@ beforeEach(() => {
   jest.resetModules();
   loader = require('../loader') as Loader;
   missing = new Set();
+  offline = new Set();
+  scriptFails = 0;
   manifestText = JSON.stringify(MANIFEST);
   appended = 0;
   loaded.length = 0;
@@ -76,6 +80,7 @@ beforeEach(() => {
   const g = globalThis as Record<string, unknown>;
   g.fetch = jest.fn(async (url: string) => {
     const file = url.slice('/codepad/'.length);
+    if (offline.has(file)) throw new TypeError('Failed to fetch');
     if (missing.has(file)) return { ok: false, status: 404 };
     const bodies: Record<string, string> = {
       'languages.json': manifestText,
@@ -94,8 +99,13 @@ beforeEach(() => {
   g.document = {
     createElement: () => ({}),
     head: {
-      appendChild: (script: { onload?: () => void }) => {
+      appendChild: (script: { onload?: () => void; onerror?: () => void }) => {
         appended++;
+        if (scriptFails > 0) {
+          scriptFails--;
+          setTimeout(() => script.onerror?.(), 0);
+          return;
+        }
         g.createCodepadCore = async () => fakeModule(loaded);
         setTimeout(() => script.onload?.(), 0);
       },
@@ -156,8 +166,34 @@ test('warns with the url when a grammar fetch fails', async () => {
   missing.add('python.wasm');
   const m = await loader.loadCore();
   await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(false);
+  await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(false);
   expect(warn.mock.calls).toEqual([['[codepad] could not load /codepad/python.wasm: 404']]);
   expect(loaded).toEqual([]);
+});
+
+test('retries the core script after a load that failed', async () => {
+  scriptFails = 1;
+  await expect(loader.loadCore()).rejects.toThrow('[codepad] could not load /codepad/codepad.js');
+  await expect(loader.loadCore()).resolves.toBeDefined();
+  expect(appended).toBe(2);
+});
+
+test('retries a grammar after a network error', async () => {
+  offline.add('python.wasm');
+  const m = await loader.loadCore();
+  await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(false);
+  offline.clear();
+  await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(true);
+  expect(loaded).toEqual(['python']);
+});
+
+test('retries languages.json after a network error', async () => {
+  offline.add('languages.json');
+  const m = await loader.loadCore();
+  await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(false);
+  offline.clear();
+  await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(true);
+  expect(loader.availableLanguages()).toContain('python');
 });
 
 test('injects the core script once for two editors', async () => {

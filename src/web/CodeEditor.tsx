@@ -72,7 +72,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   const node = useRef<ComponentRef<typeof View>>(null);
   const [view, setView] = useState<EditorView | null>(null);
   const viewRef = useRef<EditorView | null>(null);
-  // Writes made before the core loads, run in order once the view exists, or settled unapplied on unmount.
+  // Writes made before the core loads, run in order once the view exists, or settled unapplied when none comes.
   const queued = useRef<{ edit: (v: EditorView) => void; done: () => void }[]>([]);
   const gone = useRef(false);
   const handlers = useRef({
@@ -179,6 +179,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       },
       (e: Error) => {
         console.warn(e.message);
+        // No view comes for this editor, so later writes settle at once.
+        gone.current = true;
         drop();
       },
     );

@@ -32,8 +32,13 @@ class MockView {
 }
 
 // The core load, resolved by the test.
-const mockCore: { resolve: (m: object) => void; promise: Promise<object> } = {
+const mockCore: {
+  resolve: (m: object) => void;
+  reject: (e: Error) => void;
+  promise: Promise<object>;
+} = {
   resolve: () => {},
+  reject: () => {},
   promise: Promise.resolve({}),
 };
 
@@ -50,8 +55,9 @@ function settled<T>(promise: Promise<T>): Promise<T | 'hung'> {
 
 beforeEach(() => {
   mockViews.length = 0;
-  mockCore.promise = new Promise((resolve) => {
+  mockCore.promise = new Promise((resolve, reject) => {
     mockCore.resolve = resolve;
+    mockCore.reject = reject;
   });
 });
 
@@ -106,4 +112,17 @@ test('a handle kept after unmount neither reads nor writes the closed editor', a
   expect(handle.getText()).toBe('');
   expect(view.core.setText).not.toHaveBeenCalled();
   expect(view.core.text).not.toHaveBeenCalled();
+});
+
+test('settles a write made after the core failed to load', async () => {
+  const ref = createRef<CodeEditorRef>();
+  const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  await render(<CodeEditor ref={ref} />);
+  await act(async () => {
+    mockCore.reject(new Error('[codepad] could not load /codepad/codepad.js'));
+    await tick();
+  });
+  const write = ref.current?.setText('late');
+  await expect(settled(write as Promise<void>)).resolves.toBeUndefined();
+  warn.mockRestore();
 });

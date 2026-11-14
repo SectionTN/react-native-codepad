@@ -26,7 +26,14 @@ const languages = new Map<string, Promise<string[] | null>>();
 
 // The page's one core, injected by a script tag from the assets folder on first use.
 export function loadCore(): Promise<CoreModule> {
-  if (!core) core = createCore(webAssetsUrl());
+  if (!core) {
+    const pending = createCore(webAssetsUrl());
+    core = pending;
+    // A failed load is not kept, so the next editor tries again.
+    pending.catch(() => {
+      if (core === pending) core = null;
+    });
+  }
   return core;
 }
 
@@ -61,18 +68,24 @@ export function availableLanguages(): string[] {
 function loadManifest(): Promise<Manifest | null> {
   if (!manifest) {
     const url = `${webAssetsUrl()}languages.json`;
-    manifest = fetchText(url).then((text) => {
-      if (text === null) return null;
-      const parsed = parseManifest(text);
-      if (!parsed) {
-        console.warn(
-          `[codepad] ${url} is not the file the web command writes. Run npx react-native-codepad web <public-dir>.`,
-        );
-        return null;
-      }
-      ids = parsed.languages.map((l) => l.id);
-      return parsed;
-    });
+    manifest = fetchText(url).then(
+      (text) => {
+        if (text === null) return null;
+        const parsed = parseManifest(text);
+        if (!parsed) {
+          console.warn(
+            `[codepad] ${url} is not the file the web command writes. Run npx react-native-codepad web <public-dir>.`,
+          );
+          return null;
+        }
+        ids = parsed.languages.map((l) => l.id);
+        return parsed;
+      },
+      (e: unknown) => {
+        manifest = null;
+        throw e;
+      },
+    );
   }
   return manifest;
 }
@@ -110,7 +123,12 @@ export async function ensureLanguage(m: CoreModule, id: string): Promise<boolean
 function loadOne(m: CoreModule, id: string): Promise<string[] | null> {
   let pending = languages.get(id);
   if (!pending) {
-    pending = loadLanguage(m, id);
+    // A network error is not kept, so a later editor retries. A 404 or a missing id stays, warned once.
+    pending = loadLanguage(m, id).catch((e: unknown) => {
+      if (!(e instanceof Offline)) throw e;
+      languages.delete(id);
+      return null;
+    });
     languages.set(id, pending);
   }
   return pending;
@@ -181,13 +199,20 @@ async function fetchBytes(url: string): Promise<Uint8Array | null> {
   return response ? new Uint8Array(await response.arrayBuffer()) : null;
 }
 
+// A fetch that never reached the server, which a later load may get past.
+class Offline extends Error {}
+
+// The response, or null after a warning for an HTTP error. Throws Offline after a warning for a network error.
 async function request(url: string): Promise<Response | null> {
+  let response: Response;
   try {
-    const response = await fetch(url);
-    if (response.ok) return response;
-    console.warn(`[codepad] could not load ${url}: ${response.status}`);
+    response = await fetch(url);
   } catch (e) {
-    console.warn(`[codepad] could not load ${url}: ${e instanceof Error ? e.message : String(e)}`);
+    const message = `[codepad] could not load ${url}: ${e instanceof Error ? e.message : String(e)}`;
+    console.warn(message);
+    throw new Offline(message);
   }
+  if (response.ok) return response;
+  console.warn(`[codepad] could not load ${url}: ${response.status}`);
   return null;
 }
