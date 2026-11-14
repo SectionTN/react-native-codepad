@@ -3,6 +3,7 @@
 #include <dlfcn.h>
 #include <emscripten/emscripten.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <deque>
@@ -31,6 +32,8 @@ struct Editor {
   bool closed = false;
   std::vector<int32_t> changes;
   std::vector<cp_unit> text;
+  // Injection names that found no language, in the order the engine asked.
+  std::vector<std::string> missed;
 };
 
 std::deque<Work> worker_q;
@@ -64,12 +67,17 @@ const cp_language *find(const std::string &id) {
 }
 
 // An injection name, lowercased. A loaded id wins over the aliases, like LanguageRegistry.canonicalInjectionId.
-const cp_language *resolve(void *, const char *name) {
+// A name that finds nothing is kept for the page, which may load its language, unless an alias says it never injects.
+const cp_language *resolve(void *ctx, const char *name) {
   std::string lower(name ? name : "");
   for (char &c : lower) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
   if (const cp_language *language = find(lower)) return language;
   auto it = aliases.find(lower);
-  return it == aliases.end() || it->second.empty() ? nullptr : find(it->second);
+  if (it != aliases.end() && it->second.empty()) return nullptr;
+  const cp_language *found = it == aliases.end() ? nullptr : find(it->second);
+  auto &missed = static_cast<Editor *>(ctx)->missed;
+  if (!found && std::find(missed.begin(), missed.end(), lower) == missed.end()) missed.push_back(lower);
+  return found;
 }
 
 void on_change(void *ctx, const cp_change *c, const cp_unit *removed, const cp_unit *inserted, int32_t origin) {
@@ -203,6 +211,26 @@ CPW cp_snapshot *cpw_snapshot(int32_t e) {
 CPW int32_t cpw_snapshot_count(int32_t e) {
   Editor *ed = at(e);
   return ed ? ed->snapshots : 0;
+}
+
+// The injection names that found no language since the last call, joined by newlines. Returns the bytes they take,
+// and keeps them for the next call when that is more than cap.
+CPW int32_t cpw_take_missed(int32_t e, char *out, int32_t cap) {
+  Editor *ed = at(e);
+  if (!ed) return 0;
+  std::string joined;
+  for (const std::string &name : ed->missed) joined += (joined.empty() ? "" : "\n") + name;
+  auto size = static_cast<int32_t>(joined.size());
+  if (size > cap) return size;
+  memcpy(out, joined.data(), joined.size());
+  ed->missed.clear();
+  return size;
+}
+
+// Looks the editor's missing injection names up again, after a language they may name registered.
+CPW void cpw_refresh(int32_t e) {
+  Editor *ed = at(e);
+  if (ed && ed->engine) cp_engine_refresh_injections(ed->engine);
 }
 
 // Pins the editor's history clock to millis, for tests. Below zero follows the page clock again.

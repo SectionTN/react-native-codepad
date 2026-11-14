@@ -413,6 +413,23 @@ export class EditorCore {
     return this.m._cpw_snapshot_count(this.index);
   }
 
+  // The injection names that found no language since the last call, so the page can load them.
+  takeMissedLanguages(): string[] {
+    for (let cap = 256; ; ) {
+      const out = this.m._malloc(cap);
+      const size = this.m._cpw_take_missed(this.index, out, cap);
+      const joined = size > 0 && size <= cap ? this.m.UTF8ToString(out, size) : '';
+      this.m._free(out);
+      if (size <= cap) return joined ? joined.split('\n') : [];
+      cap = size;
+    }
+  }
+
+  // Looks the missing injection names up again and repaints, after a language they may name registered.
+  refreshInjections(): void {
+    this.m._cpw_refresh(this.index);
+  }
+
   // Pins the history clock to millis, for tests and recordings. Below zero follows the page clock.
   setClock(millis: number): void {
     this.m._cpw_set_clock(this.index, millis);

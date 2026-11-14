@@ -226,3 +226,21 @@ test('retries languages.json when its body was cut off by a network error', asyn
   dropped.clear();
   await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(true);
 });
+
+test('loads the installed languages a fence names and resolves with them', async () => {
+  const m = await loader.loadCore();
+  await expect(loader.ensureInjected(m, ['Python', 'py', 'rust'])).resolves.toEqual(['python']);
+  expect(loaded).toEqual(['python']);
+  expect(warn).not.toHaveBeenCalled();
+});
+
+test('tells each listener once when a language registers, whatever loaded it', async () => {
+  const m = await loader.loadCore();
+  const heard: string[] = [];
+  const off = loader.onRegistered((id) => heard.push(id));
+  await loader.ensureLanguage(m, 'python');
+  await loader.ensureInjected(m, ['python']);
+  off();
+  await loader.ensureLanguage(m, 'css');
+  expect(heard).toEqual(['python']);
+});

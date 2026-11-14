@@ -234,6 +234,25 @@ struct Engine : std::enable_shared_from_this<Engine> {
     });
   }
 
+  // Forgets the names that resolved to nothing, then runs the injection pass over the whole text.
+  void refresh_injections() {
+    submit([this] {
+      bool forgot = false;
+      for (auto it = resolved.begin(); it != resolved.end();) {
+        if (it->second) {
+          ++it;
+          continue;
+        }
+        it = resolved.erase(it);
+        forgot = true;
+      }
+      if (!forgot || !text) return;
+      dirty.push_back(0);
+      dirty.push_back(static_cast<int32_t>(text->length()));
+      reparse();
+    });
+  }
+
   // Main thread. Returns the new epoch, 0 once closed.
   uint64_t attach(SharedText next, int32_t rev) {
     if (shut) return 0;
@@ -711,6 +730,8 @@ extern "C" cp_engine *cp_engine_new(const cp_host *host, int64_t budget_micros,
 extern "C" void cp_engine_set_language(cp_engine *engine, const cp_language *language) {
   engine->engine->set_language(language);
 }
+
+extern "C" void cp_engine_refresh_injections(cp_engine *engine) { engine->engine->refresh_injections(); }
 
 extern "C" void cp_engine_release(cp_engine *engine, cp_snapshot *snapshot) {
   if (!snapshot) return;

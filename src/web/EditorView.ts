@@ -5,7 +5,7 @@ import { EditorCore, type WebChange } from './core/EditorCore';
 import { Layout } from './core/Layout';
 import type { CoreModule } from './core/module';
 import { type DecodedFrame, decodeFrame } from './frame';
-import { ensureLanguage } from './loader';
+import { ensureInjected, ensureLanguage, onRegistered } from './loader';
 import { registerView, requestPump } from './pump';
 import { type CssTheme, cssTheme } from './theme';
 
@@ -91,6 +91,7 @@ export class EditorView {
   private language = '';
   private languageReady = false;
   private appliedRevision = -1;
+  private drawnSnapshot = 0;
   private seenSnapshots = 0;
   private dirty = true;
   private destroyed = false;
@@ -105,6 +106,12 @@ export class EditorView {
   private frameText = 0;
   private frameTextCap = 0;
   private readonly onScrollEvent = () => this.invalidate();
+  // Injection names the engine found no language for, and the ids this view already refreshed after.
+  private readonly missed = new Set<string>();
+  private readonly refreshedFor = new Set<string>();
+  private readonly offRegistered = onRegistered(() => {
+    if (this.missed.size) this.loadMissed();
+  });
 
   constructor(host: HTMLElement, m: CoreModule, text = '') {
     this.m = m;
@@ -175,6 +182,8 @@ export class EditorView {
     if (id === this.language) return;
     this.language = id;
     this.languageReady = false;
+    this.missed.clear();
+    this.refreshedFor.clear();
     this.core.setLanguage('');
     this.invalidate();
     if (!id) return;
@@ -262,10 +271,12 @@ export class EditorView {
     if (this.core.snapshotCount !== this.seenSnapshots) {
       this.seenSnapshots = this.core.snapshotCount;
       this.dirty = true;
+      this.loadMissed();
     }
     if (!this.dirty) return;
     this.dirty = false;
     this.configure();
+    this.restaleRefreshed();
     const [sx, sy] = this.scrollPosition();
     this.layout.beginDraw(sx, sy);
     let moved = false;
@@ -288,6 +299,7 @@ export class EditorView {
     if (this.destroyed) return;
     this.destroyed = true;
     this.unregister();
+    this.offRegistered();
     this.listenToPage(false);
     this.resize?.disconnect();
     document.fonts?.removeEventListener?.('loadingdone', this.remeasureEvent);
@@ -304,6 +316,33 @@ export class EditorView {
     if (this.destroyed) return;
     this.dirty = true;
     requestPump();
+  }
+
+  // A new snapshot at the drawn revision comes from a refresh: its colors changed with no edit, so every cached line
+  // is queried again, since the frame skips a line already at the snapshot's revision.
+  private restaleRefreshed(): void {
+    const snapshot = this.languageReady ? this.core.snapshot : 0;
+    if (snapshot === this.drawnSnapshot) return;
+    this.drawnSnapshot = snapshot;
+    if (snapshot === 0 || this.snapshotInfo(snapshot).revision !== this.appliedRevision) return;
+    for (const entry of this.cache.values()) entry.revision = -1;
+  }
+
+  // Loads the languages the engine could not find, like a Markdown fence's, then has it look them up again.
+  // It refreshes once per language that registered, so a name that never resolves cannot loop.
+  private loadMissed(): void {
+    for (const name of this.core.takeMissedLanguages()) this.missed.add(name);
+    if (!this.missed.size) return;
+    const language = this.language;
+    ensureInjected(this.m, [...this.missed]).then((ids) => {
+      if (this.destroyed || this.language !== language) return;
+      const fresh = ids.filter((id) => !this.refreshedFor.has(id));
+      if (!fresh.length) return;
+      for (const id of fresh) this.refreshedFor.add(id);
+      this.missed.clear();
+      this.core.refreshInjections();
+      this.invalidate();
+    });
   }
 
   private readonly remeasureEvent = () => this.remeasure();

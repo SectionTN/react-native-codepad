@@ -33,6 +33,8 @@ export interface CoreModule {
   _cpw_layout(e: number): Ptr;
   _cpw_snapshot(e: number): Ptr;
   _cpw_snapshot_count(e: number): number;
+  _cpw_take_missed(e: number, out: Ptr, cap: number): number;
+  _cpw_refresh(e: number): void;
   _cpw_set_clock(e: number, millis: number): void;
   _cpw_pump(budgetMs: number): number;
   _cpw_take_changes(
