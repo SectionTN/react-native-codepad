@@ -445,5 +445,64 @@ for (const engine of [chromium, webkit]) {
       assert.deepEqual(errors, []);
       await page.close();
     });
+
+    // The color of "func" in a Go fence, a language no injection query names, so only the fence loads it.
+    async function fenceKeywordColor(page, hosts) {
+      return page.evaluate(async (ids) => {
+        const { EditorView, loadCore, until } = window.codepad;
+        const m = await loadCore();
+        const text = '# Title\n```go\nfunc f() {}\n```\n';
+        const def = (id) =>
+          [...document.querySelectorAll(`#${id} [data-line="2"] span`)].find(
+            (s) => s.textContent === 'func',
+          );
+        const colors = [];
+        for (const id of ids) {
+          new EditorView(document.getElementById(id), m, text).setLanguage('markdown');
+          await until(() => def(id) && getComputedStyle(def(id)).color !== 'rgb(31, 35, 40)');
+          colors.push(getComputedStyle(def(id)).color);
+        }
+        return colors;
+      }, hosts);
+    }
+
+    test('a markdown fence colors go, which no injection query names', async () => {
+      const { page, errors } = await open();
+      assert.deepEqual(await fenceKeywordColor(page, ['a']), [KEYWORD]);
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
+
+    test('a second markdown editor colors the same fence', async () => {
+      const { page, errors } = await open();
+      assert.deepEqual(await fenceKeywordColor(page, ['a', 'b']), [KEYWORD, KEYWORD]);
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
+
+    test('a fence naming a language that is not installed draws plain and refreshes nothing', async () => {
+      const { page, errors } = await open();
+      const refreshes = await page.evaluate(async () => {
+        const { EditorView, frames, loadCore, until } = window.codepad;
+        const view = new EditorView(
+          document.getElementById('a'),
+          await loadCore(),
+          '```zig\nconst x = 1;\n```\n',
+        );
+        let count = 0;
+        const refresh = view.core.refreshInjections.bind(view.core);
+        view.core.refreshInjections = () => {
+          count++;
+          refresh();
+        };
+        view.setLanguage('markdown');
+        await until(() => view.core.snapshotCount > 0);
+        await frames(10);
+        return count;
+      });
+      assert.equal(refreshes, 0);
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
   });
 }

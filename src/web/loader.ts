@@ -23,6 +23,29 @@ let manifest: Promise<Manifest | null> | null = null;
 let ids: string[] = [];
 // Each language registered on its own, resolving to the ids its injection query names, or null when it failed.
 const languages = new Map<string, Promise<string[] | null>>();
+const registered = new Set<(id: string) => void>();
+
+// Calls the listener with each language id the first time it registers, and returns its removal.
+export function onRegistered(listener: (id: string) => void): () => void {
+  registered.add(listener);
+  return () => {
+    registered.delete(listener);
+  };
+}
+
+// Loads the installed languages that injection names map to, and resolves with the ids now registered.
+export async function ensureInjected(m: CoreModule, names: string[]): Promise<string[]> {
+  const list = await loadManifest().catch(() => null);
+  if (!list) return [];
+  const installed = (id: string) => list.languages.some((l) => l.id === id);
+  const ids = new Set<string>();
+  for (const name of names) {
+    const id = canonicalInjectionId(name, installed);
+    if (id && installed(id)) ids.add(id);
+  }
+  const loaded = await Promise.all([...ids].map((id) => ensureLanguage(m, id)));
+  return [...ids].filter((_, i) => loaded[i]);
+}
 
 // The page's one core, injected by a script tag from the assets folder on first use.
 export function loadCore(): Promise<CoreModule> {
@@ -186,6 +209,7 @@ async function loadLanguage(m: CoreModule, id: string): Promise<string[] | null>
     );
     return null;
   }
+  for (const listener of [...registered]) listener(id);
   return [...injected];
 }
 

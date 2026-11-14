@@ -305,6 +305,8 @@ CP_API cp_engine *cp_engine_new(const cp_host *host, int64_t budget_micros,
                                 void (*on_snapshot)(void *ctx, cp_snapshot *snapshot));
 // NULL clears the language. A snapshot still in flight keeps the language it was parsed with.
 CP_API void cp_engine_set_language(cp_engine *engine, const cp_language *language);
+// Looks up the injection names that found no language again and repaints, once the host resolves more of them.
+CP_API void cp_engine_refresh_injections(cp_engine *engine);
 // Frees the snapshot on the worker, or on the calling thread once the engine is closed. engine may be NULL then.
 CP_API void cp_engine_release(cp_engine *engine, cp_snapshot *snapshot);
 // No engine work runs after it. The engine frees itself on the worker.
