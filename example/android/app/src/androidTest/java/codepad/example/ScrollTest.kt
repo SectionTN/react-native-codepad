@@ -3,6 +3,7 @@ package codepad.example
 import android.os.SystemClock
 import android.view.KeyEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import me.sectiontn.codepad.view.CodeEditorView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -101,6 +102,40 @@ class ScrollTest {
         val viewport = viewportOf(editor)
         assertEquals(400, viewport.firstVisibleLine())
         assertEquals(viewport.rowStart(400) * viewport.rowHeight, viewport.scrollY)
+      }
+    }
+  }
+
+  // A document replaced during an animated scrollToLine stays at the top.
+  @Test
+  fun replacingTheDocumentStopsAnAnimatedScrollToLine() {
+    val long = (0 until 600).joinToString("\n") { "line $it" }
+    val replacements = listOf<Pair<String, (CodeEditorView) -> Unit>>(
+      "setText" to { it.setText(long, false) },
+      "setInitialText" to { it.setInitialText(long) },
+    )
+    for ((name, replace) in replacements) {
+      launch().use { s ->
+        val editor = s.editor()
+        onMain {
+          editor.setInitialText(long)
+          layout(editor)
+          draw(editor)
+          editor.scrollToLine(400, true)
+        }
+        val deadline = SystemClock.uptimeMillis() + 500
+        while (onMain { viewportOf(editor).scrollY } == 0 && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(8)
+        onMain {
+          val viewport = viewportOf(editor)
+          val target = viewport.rowStart(400) * viewport.rowHeight
+          assertTrue("$name: the scroll is animating", viewport.scrollY in 1 until target)
+          replace(editor)
+        }
+        SystemClock.sleep(1000)
+        onMain {
+          draw(editor)
+          assertEquals(name, 0, viewportOf(editor).scrollY)
+        }
       }
     }
   }

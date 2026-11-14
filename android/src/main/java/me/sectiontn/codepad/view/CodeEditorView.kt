@@ -271,6 +271,7 @@ class CodeEditorView(context: Context) : View(context) {
   fun setText(text: String, keepHistory: Boolean) {
     ime.reset()
     core.setText(text, keepHistory)
+    scroller.abort()
     viewport.scrollTo(0, 0)
     restartInput()
     invalidate()
@@ -598,6 +599,7 @@ class CodeEditorView(context: Context) : View(context) {
     cache.clear()
     viewport.widestLine = 0
     updateGutter()
+    scroller.abort()
     viewport.scrollTo(0, 0)
     invalidate()
   }
