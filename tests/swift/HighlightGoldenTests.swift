@@ -3,7 +3,8 @@ import XCTest
 
 @testable import Codepad
 
-/// Every sample's spans against tests/highlight/<id>.spans, recorded from the Kotlin engine.
+/// Every sample's spans against tests/highlight/<name>.spans, recorded from the Kotlin engine, in the language before
+/// the first dot of the name.
 final class HighlightGoldenTests: XCTestCase {
   private static let dir = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("highlight")
@@ -30,11 +31,12 @@ final class HighlightGoldenTests: XCTestCase {
     XCTAssertFalse(files.isEmpty)
     for file in files {
       let id = String(file.dropLast(4))
+      let language = String(id.prefix { $0 != "." })
       let text = try String(contentsOf: Self.dir.appendingPathComponent(file), encoding: .utf8)
       let snapshots = SnapshotQueue()
       let core = EditorCore(text)
       let engine = SyntaxEngine(postToMain: { $0() }, onSnapshot: { snapshots.add($0) })
-      engine.setLanguage(id)
+      engine.setLanguage(language)
       engine.attach(core)
       var snapshot: Snapshot?
       while let s = snapshots.take(10) {
@@ -45,7 +47,7 @@ final class HighlightGoldenTests: XCTestCase {
       }
       let parsed = try XCTUnwrap(snapshot, "\(id) never parsed")
       let doc = core.document
-      let lang = try XCTUnwrap(LanguageRegistry.resolve(id))
+      let lang = try XCTUnwrap(LanguageRegistry.resolve(language))
       let actual = render(Highlighter(language: lang).spans(snapshot: parsed, doc: doc, firstLine: 0, lastLine: doc.lineCount - 1))
       engine.close()
       let expected = try String(contentsOf: Self.dir.appendingPathComponent("\(id).spans"), encoding: .utf8)
