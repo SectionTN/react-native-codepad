@@ -6,7 +6,7 @@ sidebar_position: 7
 
 CodePad is built to handle large files without making every keystroke or scroll more expensive as the document grows.
 
-This guide covers how the editor handles large documents, what to watch out for when using its API, and how to run the benchmarks yourself. Every number on this page was measured before version 0.1.0.
+This guide covers how the editor handles large documents, what to watch out for when using its API, and how to run the benchmarks yourself. The Android numbers come from version 0.1.12 on a phone. The Markdown and iOS numbers were measured before version 0.1.0.
 
 ## Large files
 
@@ -16,19 +16,19 @@ CodePad runs parsing separately from rendering and can display text before synta
 
 Here are some results from the Android benchmark suite on the `debugOptimized` variant:
 
-- Opening a 10,000-line file took 27-35 ms.
-- Opening a 100,000-line file took 143-181 ms.
-- Scrolling through a 10,000-line file produced 2 janky frames out of 832.
-- Scrolling through a 100,000-line file while its initial parse was running produced 4 janky frames out of 829.
-- Typing in a 10,000-line file took 5-11 ms for key handling and drawing.
+- Opening a 10,000-line file took 106-134 ms, and 161 ms the first time after the app started.
+- Opening a 100,000-line file took 182-229 ms.
+- Scrolling through a 10,000-line file produced 3 janky frames out of 3,052.
+- Scrolling through a 100,000-line file while its initial parse was running produced 1 janky frame out of 3,192.
+- Typing in a 10,000-line file took 12-14 ms for key handling and drawing.
 
-These measurements were taken on an Android emulator running API 36, using `-gpu host` on an M1 Pro chip for GPU acceleration through MoltenVK. The app used the `debugOptimized` build with Metro attached. Results will vary by device and build configuration.
+These measurements were taken on a REDMI Note 15 Pro+ 5G running Android 16. The app used the `debugOptimized` build with Metro attached. An open time runs from choosing the file to the editor's first drawn frame. Results will vary by device and build configuration.
 
 ### Markdown and injected grammars
 
 Markdown is more expensive to parse than it might look. A document can contain inline grammar rules, fenced code blocks and language-specific syntax inside those blocks.
 
-We tested a Markdown document containing 2,000 paragraphs, 5,880 lines and 2,239 grammar injections.
+We tested a Markdown document containing 2,000 paragraphs, 5,880 lines and 2,239 grammar injections on an Android emulator.
 
 When every edit reparsed all injected grammars, updating syntax after a keystroke took 146-165 ms in the measured runs. With CodePad's incremental parsing, warm updates took around 3-4 ms.
 
@@ -102,7 +102,7 @@ Keep this in mind when measuring startup performance. A first run and a subseque
 
 Search performance depends on the document and the number of matches.
 
-In the 100,000-line benchmark, literal search found 274,316 matches in 165 ms. Regex search found 54,864 matches in 103 ms.
+On the same phone, a literal search for `e` in the 100,000-line file found 274,316 matches in 54-70 ms. The regular expression `e.*e` found 54,864 matches in 44-122 ms.
 
 These are benchmark results, not fixed limits. Use your own documents when evaluating search and memory performance in your application.
 
