@@ -42,3 +42,16 @@ test('decodes a frame with no runs', () => {
   expect(frame.lineStarts).toEqual([0, 4]);
   expect(frame.runs).toEqual([]);
 });
+
+test('keeps a leading U+FEFF in a line, so spans keep their offsets', () => {
+  const ints = Int32Array.from([
+    ...header(2, 0, 1),
+    ...[0, 6, 12],
+    ...[1, 0, 1],
+    ...[1, 0, 3, 7],
+    ...[0],
+    ...[0, 5, 5, 5],
+  ]);
+  const frame = decodeFrame(ints, units('﻿ef ab = 1'));
+  expect(frame.runs[0]?.lines.map((l) => l.text)).toEqual(['﻿ef a', 'b = 1']);
+});

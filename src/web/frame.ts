@@ -18,7 +18,8 @@ export type DecodedFrame = {
   runs: FrameRun[];
 };
 
-const decoder = new TextDecoder('utf-16le');
+// ignoreBOM keeps a line's leading U+FEFF, so span offsets stay right.
+const decoder = new TextDecoder('utf-16le', { ignoreBOM: true });
 
 // Reads one cp_editor_frame result, laid out as codepad.h describes it.
 export function decodeFrame(ints: Int32Array, text: Uint16Array): DecodedFrame {

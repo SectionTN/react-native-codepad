@@ -172,7 +172,16 @@ export interface CoreModule {
   _cp_style_name(id: number, out: Ptr, cap: number): number;
 }
 
-const decoder = new TextDecoder('utf-16le');
+// Fatal so a lone surrogate throws instead of turning into U+FFFD, and ignoreBOM keeps a leading U+FEFF.
+const decoder = new TextDecoder('utf-16le', { fatal: true, ignoreBOM: true });
+
+// Copies units as stored, lone surrogates included, a chunk at a time to stay under the argument limit.
+function unitsToString(units: Uint16Array): string {
+  let s = '';
+  for (let i = 0; i < units.length; i += 8192)
+    s += String.fromCharCode(...units.subarray(i, i + 8192));
+  return s;
+}
 
 // Grows on demand, one region per use. Callers never hold a region across another call that takes the same one.
 class Region {
@@ -226,7 +235,12 @@ export class Heap {
 
   readUnits(ptr: number, length: number): string {
     if (length <= 0) return '';
-    return decoder.decode(this.m.HEAPU16.subarray(ptr >> 1, (ptr >> 1) + length));
+    const units = this.m.HEAPU16.subarray(ptr >> 1, (ptr >> 1) + length);
+    try {
+      return decoder.decode(units);
+    } catch {
+      return unitsToString(units);
+    }
   }
 
   readInts(ptr: number, count: number): Int32Array<ArrayBuffer> {

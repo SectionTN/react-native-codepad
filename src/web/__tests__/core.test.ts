@@ -10,6 +10,7 @@ import {
   ROOT,
   utf16,
 } from '../../../tests/web/core';
+import { EditorCore } from '../core/EditorCore';
 
 const dir = builtCore('lib/web', 'yarn build:web');
 const python = join(ROOT, 'languages/python/web/python.wasm');
@@ -33,4 +34,12 @@ if (dir && !ready) console.warn('python grammar not built, run yarn build:web-gr
   for (let i = 1; i + 2 < ints.length; i += 3) triples.push(ints.slice(i, i + 3));
   expect(triples).toContainEqual([0, 3, keyword]);
   m._cpw_close(e);
+});
+
+(dir ? test : test.skip)('reads a leading U+FEFF and half a surrogate pair as stored', async () => {
+  const m = await loadCore(dir as string);
+  const core = new EditorCore(m, '﻿x\u{1F600}');
+  expect(core.text()).toBe('﻿x\u{1F600}');
+  expect(core.text(2, 3)).toBe('\uD83D');
+  core.close();
 });
