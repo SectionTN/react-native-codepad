@@ -28,6 +28,15 @@ class MockView {
   apply(edit: () => void) {
     edit();
   }
+  focused = false;
+  focus = jest.fn(() => {
+    this.focused = true;
+    this.options.onFocus?.();
+  });
+  blur = jest.fn(() => {
+    this.focused = false;
+    this.options.onBlur?.();
+  });
   destroy() {}
 }
 
@@ -125,4 +134,21 @@ test('settles a write made after the core failed to load', async () => {
   const write = ref.current?.setText('late');
   await expect(settled(write as Promise<void>)).resolves.toBeUndefined();
   warn.mockRestore();
+});
+
+test('focus and blur reach the view, isFocused reads it, and onFocus and onBlur fire', async () => {
+  const ref = createRef<CodeEditorRef>();
+  const onFocus = jest.fn();
+  const onBlur = jest.fn();
+  await render(<CodeEditor ref={ref} onFocus={onFocus} onBlur={onBlur} />);
+  await act(async () => {
+    mockCore.resolve({});
+    await tick();
+  });
+  await ref.current?.focus();
+  expect(mockViews[0]?.focus).toHaveBeenCalledTimes(1);
+  expect(ref.current?.isFocused()).toBe(true);
+  await ref.current?.blur();
+  expect(ref.current?.isFocused()).toBe(false);
+  expect([onFocus.mock.calls.length, onBlur.mock.calls.length]).toEqual([1, 1]);
 });

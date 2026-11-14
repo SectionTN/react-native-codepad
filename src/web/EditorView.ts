@@ -1,10 +1,12 @@
 /// <reference lib="dom" />
 import { githubLight } from '../themes/githubLight';
-import type { ContentInsets, Rect, Theme } from '../types';
+import type { ContentInsets, Rect, Suggestions, Theme } from '../types';
 import { EditorCore, type WebChange } from './core/EditorCore';
 import { Layout } from './core/Layout';
 import type { CoreModule } from './core/module';
 import { type DecodedFrame, decodeFrame } from './frame';
+import { InputHost } from './input/InputHost';
+import { WebInputSession } from './input/WebInputSession';
 import { ensureInjected, ensureLanguage, onRegistered } from './loader';
 import { registerView, requestPump } from './pump';
 import { type CssTheme, cssTheme } from './theme';
@@ -32,6 +34,10 @@ export type ViewOptions = {
   onFirstDraw?: () => void;
   onChange?: (change: WebChange) => void;
   onSelection?: (anchor: number, head: number, revision: number) => void;
+  suggestions: Suggestions;
+  autoFocus: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
 };
 
 // The defaults of website/docs/reference/props.md.
@@ -53,6 +59,8 @@ export const DEFAULT_OPTIONS: ViewOptions = {
   insertSpaces: true,
   autoIndent: true,
   autoCloseBrackets: true,
+  suggestions: 'off',
+  autoFocus: false,
 };
 
 const MONOSPACE = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
@@ -112,6 +120,21 @@ export class EditorView {
   private readonly offRegistered = onRegistered(() => {
     if (this.missed.size) this.loadMissed();
   });
+  readonly session: WebInputSession;
+  private readonly input: InputHost;
+  private readonly selectionLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
+  private readonly composingLayer = div(
+    'position:absolute;left:0;top:0;z-index:1;pointer-events:none;',
+  );
+  private readonly caretEl = div(
+    'position:absolute;width:2px;z-index:1;pointer-events:none;display:none;animation:codepad-blink 1s steps(1) infinite;',
+  );
+  private inputting = false;
+  private readonly onClickEvent = (e: MouseEvent) => this.click(e);
+  // A press on the text keeps the focus where it is, so a click inside a focused editor does not blur it.
+  private readonly onMouseDownEvent = (e: MouseEvent) => {
+    if (e.button === 0 && this.textLayer.contains(e.target as Node)) e.preventDefault();
+  };
 
   constructor(host: HTMLElement, m: CoreModule, text = '') {
     this.m = m;
@@ -125,7 +148,28 @@ export class EditorView {
     this.textLayer = div('position:absolute;left:0;top:0;width:100%;height:100%;');
     this.activeLine = div('position:absolute;left:0;display:none;');
     this.placeholderEl = div('position:absolute;white-space:pre;display:none;pointer-events:none;');
-    this.textLayer.append(this.activeLine, this.placeholderEl);
+    this.textLayer.append(
+      this.activeLine,
+      this.selectionLayer,
+      this.placeholderEl,
+      this.composingLayer,
+      this.caretEl,
+    );
+    this.textLayer.style.userSelect = 'none';
+    this.textLayer.style.webkitUserSelect = 'none';
+    this.caretEl.dataset.caret = '';
+    this.session = new WebInputSession(this.core, (edit) => this.applyInput(edit));
+    this.input = new InputHost(this.root, this.session, {
+      keyDown: () => false,
+      focusChanged: (focused) => {
+        this.safely(() => (focused ? this.o.onFocus?.() : this.o.onBlur?.()));
+        this.invalidate();
+      },
+      changed: () => this.invalidate(),
+    });
+    this.scroller.addEventListener('click', this.onClickEvent);
+    this.scroller.addEventListener('mousedown', this.onMouseDownEvent);
+    blinkStyle();
     this.content.append(this.gutter, this.textLayer);
     this.scroller.append(this.content);
     this.root.append(this.scroller);
@@ -157,6 +201,8 @@ export class EditorView {
       before.lineNumbers !== this.o.lineNumbers ||
       before.scrollEnabled !== this.o.scrollEnabled;
     if (before.scrollEnabled !== this.o.scrollEnabled) this.listenToPage(!this.o.scrollEnabled);
+    this.input.setSuggestions(this.o.suggestions);
+    this.input.setReadOnly(this.o.readOnly);
     if (
       before.tabSize !== this.o.tabSize ||
       before.insertSpaces !== this.o.insertSpaces ||
@@ -197,16 +243,171 @@ export class EditorView {
   // Runs an edit, then hands its changes and selection to the cache and the listeners.
   apply(edit: () => void): void {
     if (this.destroyed) return;
+    const outside = !this.inputting;
+    // An edit from outside the keyboard ends a composition first, so it undoes on its own.
+    if (outside) this.session.external();
     edit();
     const changes = this.core.takeChanges();
     for (const change of changes) this.changed(change, changes.length);
-    for (const change of changes) this.o.onChange?.(change);
     const s = this.core.selection;
-    if (s.anchor !== this.lastSelection.anchor || s.head !== this.lastSelection.head) {
-      this.lastSelection = s;
-      this.o.onSelection?.(s.anchor, s.head, this.core.revision);
-    }
+    const moved = s.anchor !== this.lastSelection.anchor || s.head !== this.lastSelection.head;
+    if (moved) this.lastSelection = s;
+    if (outside) this.input.write(this.session.sync());
     this.invalidate();
+    // Listeners run last, so one that throws leaves the editor and the textarea in step.
+    for (const change of changes) this.safely(() => this.o.onChange?.(change));
+    if (moved) this.safely(() => this.o.onSelection?.(s.anchor, s.head, this.core.revision));
+  }
+
+  focus(): void {
+    if (this.destroyed) return;
+    this.input.focus();
+  }
+
+  blur(): void {
+    if (this.destroyed) return;
+    this.input.blur();
+  }
+
+  get focused(): boolean {
+    return !this.destroyed && this.input.focused;
+  }
+
+  // The document offset under a page point, or null outside the drawn text.
+  offsetAt(clientX: number, clientY: number): number | null {
+    if (this.destroyed) return null;
+    const d = document as Document & {
+      caretPositionFromPoint?(x: number, y: number): { offsetNode: Node; offset: number } | null;
+      caretRangeFromPoint?(x: number, y: number): Range | null;
+    };
+    let node: Node | null = null;
+    let offset = 0;
+    const position = d.caretPositionFromPoint?.(clientX, clientY);
+    if (position) {
+      node = position.offsetNode;
+      offset = position.offset;
+    } else {
+      const range = d.caretRangeFromPoint?.(clientX, clientY);
+      if (range) {
+        node = range.startContainer;
+        offset = range.startOffset;
+      }
+    }
+    const el = (node instanceof Element ? node : node?.parentElement)?.closest('[data-line]');
+    if (!node || !(el instanceof HTMLElement) || !this.textLayer.contains(el)) {
+      return this.offsetBeside(clientX, clientY);
+    }
+    const line = Number(el.dataset.line);
+    const column = columnOf(el, node, offset);
+    return this.core.lineStart(line) + Math.min(column, this.core.line(line).length);
+  }
+
+  // A point beside the text, past a line's end or in the space below the last line, finds the drawn line by height.
+  private offsetBeside(clientX: number, clientY: number): number | null {
+    let below = true;
+    for (const [line, entry] of this.cache) {
+      if (!this.attached.has(line)) continue;
+      const r = entry.el.getBoundingClientRect();
+      if (clientY >= r.bottom) continue;
+      below = false;
+      if (clientY < r.top) continue;
+      const range = document.createRange();
+      const [node, offset] = textPoint(entry.el, entry.text.length);
+      range.setStart(node, offset);
+      const end = range.getBoundingClientRect().right;
+      return this.core.lineStart(line) + (clientX >= end ? entry.text.length : 0);
+    }
+    return below ? this.core.length : null;
+  }
+
+  private applyInput(edit: () => void): void {
+    this.inputting = true;
+    try {
+      this.apply(edit);
+    } finally {
+      this.inputting = false;
+    }
+  }
+
+  private safely(call: () => void): void {
+    try {
+      call();
+    } catch (e) {
+      queueMicrotask(() => {
+        throw e;
+      });
+    }
+  }
+
+  // A click places the caret and focuses the textarea inside the event, which iOS needs to show its keyboard.
+  private click(e: MouseEvent): void {
+    const offset = this.offsetAt(e.clientX, e.clientY);
+    if (offset !== null) this.apply(() => this.core.setSelection(offset, offset));
+    this.focus();
+  }
+
+  // The caret, the composing underline and the selection, from where the browser drew the text.
+  private drawInput(): void {
+    const box = this.textLayer.getBoundingClientRect();
+    const { anchor, head } = this.core.selection;
+    const caret = this.input.focused ? this.caretRect(head) : null;
+    const rootBox = this.root.getBoundingClientRect();
+    if (caret) {
+      const x = caret.x + rootBox.left - box.left;
+      const y = caret.y + rootBox.top - box.top;
+      const style = this.caretEl.style;
+      style.display = 'block';
+      style.left = `${x}px`;
+      style.top = `${y}px`;
+      style.height = `${caret.height}px`;
+      style.background = this.css.cursor;
+      this.input.place(caret.x, caret.y);
+    } else {
+      this.caretEl.style.display = 'none';
+    }
+    const composing = this.session.composing;
+    this.composingLayer.replaceChildren(
+      ...(composing ? this.rangeRects(composing.start, composing.end) : []).map((r) => {
+        const bar = div(
+          `position:absolute;left:${r.left - box.left}px;top:${r.bottom - box.top - 2}px;width:${r.width}px;height:2px;background:${this.css.cursor};`,
+        );
+        bar.dataset.composing = '';
+        return bar;
+      }),
+    );
+    const from = Math.min(anchor, head);
+    const to = Math.max(anchor, head);
+    this.selectionLayer.replaceChildren(
+      ...(from < to ? this.rangeRects(from, to) : []).map((r) =>
+        div(
+          `position:absolute;left:${r.left - box.left}px;top:${r.top - box.top}px;width:${Math.max(r.width, 4)}px;height:${r.height}px;background:${this.css.selection};`,
+        ),
+      ),
+    );
+  }
+
+  // The page boxes of the document range on the lines that are drawn.
+  private rangeRects(start: number, end: number): DOMRect[] {
+    const out: DOMRect[] = [];
+    const first = this.core.lineAt(start);
+    const last = this.core.lineAt(end);
+    for (let line = first; line <= last; line++) {
+      const entry = this.cache.get(line);
+      if (!entry || !this.attached.has(line)) continue;
+      const lineStart = this.core.lineStart(line);
+      const a = Math.max(start, lineStart) - lineStart;
+      const b = Math.min(end, lineStart + entry.text.length) - lineStart;
+      const range = document.createRange();
+      const [sn, so] = textPoint(entry.el, a);
+      const [en, eo] = textPoint(entry.el, b);
+      range.setStart(sn, so);
+      range.setEnd(en, eo);
+      const rects = [...range.getClientRects()].filter((r) => r.width > 0);
+      // An empty part of a line inside the selection still shows a little.
+      if (rects.length === 0) rects.push(range.getBoundingClientRect());
+      out.push(...rects);
+    }
+    return out;
   }
 
   // Scrolls so the line is at the top of the editor, or of the page when the editor does not scroll.
@@ -284,6 +485,7 @@ export class EditorView {
       const frame = this.readFrame();
       moved = this.prepare(frame);
       this.place(frame);
+      this.drawInput();
     } finally {
       this.layout.endDraw();
     }
@@ -300,6 +502,9 @@ export class EditorView {
     this.destroyed = true;
     this.unregister();
     this.offRegistered();
+    this.input.destroy();
+    this.scroller.removeEventListener('click', this.onClickEvent);
+    this.scroller.removeEventListener('mousedown', this.onMouseDownEvent);
     this.listenToPage(false);
     this.resize?.disconnect();
     document.fonts?.removeEventListener?.('loadingdone', this.remeasureEvent);
@@ -645,6 +850,7 @@ export class EditorView {
     if (!this.drawn) {
       this.drawn = true;
       this.o.onFirstDraw?.();
+      if (this.o.autoFocus) this.focus();
     }
     const x = layout.scrollX;
     const y = this.o.scrollEnabled ? layout.scrollY : 0;
@@ -737,6 +943,41 @@ export class EditorView {
     if (line === kept.line + 1) return kept.tail;
     return null;
   }
+}
+
+// The text node and offset at a column of a line element.
+function textPoint(el: HTMLElement, column: number): [Node, number] {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let at = 0;
+  let last: Text | null = null;
+  for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+    if (column <= at + node.data.length) return [node, column - at];
+    at += node.data.length;
+    last = node;
+  }
+  return last ? [last, last.data.length] : [el, 0];
+}
+
+// The column of a DOM point inside a line element.
+function columnOf(el: HTMLElement, node: Node, offset: number): number {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let at = 0;
+  for (let text = walker.nextNode() as Text | null; text; text = walker.nextNode() as Text | null) {
+    if (text === node) return at + offset;
+    if (node !== el && node.contains(text)) return at;
+    if (node === el && el.childNodes[offset]?.contains(text)) return at;
+    at += text.data.length;
+  }
+  return at;
+}
+
+// The caret's blink, added to the page once.
+function blinkStyle(): void {
+  if (document.getElementById('codepad-blink')) return;
+  const style = document.createElement('style');
+  style.id = 'codepad-blink';
+  style.textContent = '@keyframes codepad-blink { 50% { opacity: 0; } }';
+  document.head.append(style);
 }
 
 function div(css: string): HTMLDivElement {

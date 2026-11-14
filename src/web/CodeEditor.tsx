@@ -82,6 +82,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onChange,
     onChangeText,
     onContentSizeChange,
+    onFocus,
+    onBlur,
   });
   handlers.current = {
     onReady,
@@ -90,6 +92,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onChange,
     onChangeText,
     onContentSizeChange,
+    onFocus,
+    onBlur,
   };
   const initial = useRef(initialValue);
 
@@ -113,6 +117,10 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       insertSpaces,
       autoIndent,
       autoCloseBrackets,
+      suggestions,
+      autoFocus,
+      onFocus: () => handlers.current.onFocus?.(),
+      onBlur: () => handlers.current.onBlur?.(),
       onContentSize: (width, height) => handlers.current.onContentSizeChange?.({ width, height }),
       onScroll: (x, y, contentWidth, contentHeight) =>
         handlers.current.onScroll?.({ x, y, contentWidth, contentHeight }),
@@ -149,6 +157,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       insertSpaces,
       autoIndent,
       autoCloseBrackets,
+      suggestions,
+      autoFocus,
     ],
   );
   const latest = useRef({ options, language });
@@ -196,13 +206,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
 
   useEffect(() => {
     if (avoidKeyboard) notYet('avoidKeyboard');
-    if (autoFocus) notYet('autoFocus');
-    if (suggestions !== 'off') notYet('suggestions');
     if (decorations) notYet('decorations');
     if (onGapLayout) notYet('onGapLayout');
-    if (onFocus) notYet('onFocus');
-    if (onBlur) notYet('onBlur');
-  }, [avoidKeyboard, autoFocus, suggestions, decorations, onGapLayout, onFocus, onBlur]);
+  }, [avoidKeyboard, decorations, onGapLayout]);
 
   useEffect(() => {
     view?.setOptions(options);
@@ -242,7 +248,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       getVisibleLines: () => viewRef.current?.visibleLines() ?? { first: 0, last: 0 },
       canUndo: () => core()?.canUndo ?? false,
       canRedo: () => core()?.canRedo ?? false,
-      isFocused: () => false,
+      isFocused: () => viewRef.current?.focused ?? false,
       setText: (text, opts) => write((v) => v.core.setText(text, opts?.keepHistory ?? false)),
       setSelection: (sel) => write((v) => v.core.setSelection(sel.anchor, sel.head)),
       selectAll: () => write((v) => v.core.selectAll()),
@@ -263,8 +269,14 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       cut: () => later('cut', undefined),
       copy: () => later('copy', undefined),
       paste: () => later('paste', undefined),
-      focus: () => later('focus', undefined),
-      blur: () => later('blur', undefined),
+      focus: () => {
+        viewRef.current?.focus();
+        return Promise.resolve();
+      },
+      blur: () => {
+        viewRef.current?.blur();
+        return Promise.resolve();
+      },
       setSearch: () => later('setSearch', { count: 0, limited: false }),
       findNext: () => later('findNext', null),
       findPrevious: () => later('findPrevious', null),
