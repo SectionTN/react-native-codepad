@@ -142,6 +142,12 @@ class EditorCore(initialText: String = "", clock: (() -> Long)? = null) : AutoCl
 
   fun selectWordAt(offset: Int) = mutate { CoreNative.editorSelectWordAt(it, offset) }
 
+  /** The word [selectWordAt] would select, without moving the selection. */
+  fun wordRangeAt(offset: Int): Range {
+    val packed = CoreNative.docWordAt(handle(), offset)
+    return Range((packed ushr 32).toInt(), packed.toInt())
+  }
+
   /** True when a backspace at [caret] removes an auto closed pair. */
   fun deletesPair(caret: Int): Boolean = CoreNative.editorDeletesPair(handle(), caret)
 

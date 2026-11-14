@@ -31,7 +31,7 @@ internal object CoreNative {
   @JvmStatic external fun docText(editor: Long, start: Int, end: Int): String
   @JvmStatic external fun docPosition(editor: Long, offset: Int): Long
   @JvmStatic external fun docOffset(editor: Long, line: Int, column: Int): Int
-  @JvmStatic external fun docGrapheme(editor: Long, offset: Int, forward: Boolean): Int
+  @JvmStatic external fun docWordAt(editor: Long, offset: Int): Long
   @JvmStatic external fun editorSettings(editor: Long, tabSize: Int, spaces: Boolean, indent: Boolean, close: Boolean)
   @JvmStatic external fun editorReplace(editor: Long, start: Int, end: Int, text: String, origin: Int, typing: Boolean, caretAfter: Boolean)
   @JvmStatic external fun editorSetText(editor: Long, text: String, keepHistory: Boolean)

@@ -94,6 +94,8 @@ CP_API cp_point cp_doc_position(const cp_editor *editor, uint32_t offset);
 CP_API uint32_t cp_doc_offset(const cp_editor *editor, int32_t line, int32_t column);
 // The grapheme boundary after offset, or before it when forward is 0. A line break is a grapheme of its own.
 CP_API uint32_t cp_doc_grapheme(const cp_editor *editor, uint32_t offset, int32_t forward);
+// The word cp_editor_select_word_at selects at offset, without moving the selection.
+CP_API void cp_doc_word_at(const cp_editor *editor, uint32_t offset, uint32_t *start, uint32_t *end);
 // The current text, retained for the caller.
 CP_API cp_text *cp_editor_text(cp_editor *editor);
 

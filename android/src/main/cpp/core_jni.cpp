@@ -389,8 +389,12 @@ FN(docOffset)(JNIEnv *, jclass, jlong editor, jint line, jint column) -> jint {
   return static_cast<jint>(cp_doc_offset(ed(editor), line, column));
 }
 
-FN(docGrapheme)(JNIEnv *, jclass, jlong editor, jint offset, jboolean forward) -> jint {
-  return static_cast<jint>(cp_doc_grapheme(ed(editor), at(offset), forward ? 1 : 0));
+// start in the high 32 bits, end in the low ones.
+FN(docWordAt)(JNIEnv *, jclass, jlong editor, jint offset) -> jlong {
+  uint32_t start = 0;
+  uint32_t end = 0;
+  cp_doc_word_at(ed(editor), at(offset), &start, &end);
+  return static_cast<jlong>(start) << 32 | end;
 }
 
 FN(editorSettings)(JNIEnv *, jclass, jlong editor, jint tab, jboolean spaces, jboolean indent, jboolean close)

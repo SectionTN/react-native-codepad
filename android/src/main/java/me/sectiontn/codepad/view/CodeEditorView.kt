@@ -979,7 +979,7 @@ class CodeEditorView(context: Context) : View(context) {
 
     // The word under the long press stays selected and the far end follows the finger by words.
     override fun extendWords(offset: Int) {
-      val word = TextMovement.wordRangeAt(core.document, offset)
+      val word = core.wordRangeAt(offset)
       if (offset >= wordAnchor.start) {
         core.setSelection(wordAnchor.start, maxOf(word.end, wordAnchor.end))
       } else {

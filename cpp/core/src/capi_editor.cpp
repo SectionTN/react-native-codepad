@@ -86,6 +86,12 @@ uint32_t cp_doc_grapheme(const cp_editor *editor, uint32_t offset, int32_t forwa
                       : codepad::movement::prev_grapheme(editor->doc, offset);
 }
 
+void cp_doc_word_at(const cp_editor *editor, uint32_t offset, uint32_t *start, uint32_t *end) {
+  codepad::movement::Range r = codepad::movement::word_range_at(editor->doc, offset);
+  *start = r.start;
+  *end = r.end;
+}
+
 cp_text *cp_editor_text(cp_editor *editor) { return new cp_text{editor->doc.view()}; }
 
 void cp_editor_set_settings(cp_editor *editor, const cp_settings *s) {
