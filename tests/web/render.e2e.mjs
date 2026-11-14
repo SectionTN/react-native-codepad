@@ -1,7 +1,7 @@
 // The read-only web editor in Chromium and WebKit: yarn prepare, yarn build:web, cpp/web/build.sh --test and
 // yarn build:web-grammars first.
 import assert from 'node:assert/strict';
-import { readFileSync, rmSync } from 'node:fs';
+import { readFileSync, realpathSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import path from 'node:path';
 import { after, before, describe, test } from 'node:test';
@@ -16,6 +16,10 @@ const TYPES = {
   '.json': 'application/json',
 };
 const KEYWORD = 'rgb(207, 34, 46)';
+// The folders the harness page loads from: itself, the built modules and the copied assets.
+const SERVED = ['tests/web/harness', 'lib', 'build/web-e2e'].map(
+  (dir) => path.join(realpathSync(root), dir) + path.sep,
+);
 
 let server;
 let base;
@@ -38,8 +42,10 @@ before(async () => {
       `.${decodeURIComponent(new URL(req.url, 'http://x').pathname)}`,
     );
     try {
-      if (!file.startsWith(root + path.sep)) throw new Error('outside the repository');
-      const body = readFileSync(file);
+      // The real path, so a symlink cannot lead out of the served folders.
+      const real = realpathSync(file);
+      if (!SERVED.some((dir) => real.startsWith(dir))) throw new Error('not served');
+      const body = readFileSync(real);
       res.writeHead(200, {
         'content-type': TYPES[path.extname(file)] ?? 'application/octet-stream',
       });
