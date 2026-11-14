@@ -140,4 +140,27 @@ final class ScrollTests: XCTestCase {
       XCTAssertEqual(editor.viewport.firstVisibleLine(), 50, "animated \(animated)")
     }
   }
+
+  // A document replaced during an animated scrollToLine stays at the top.
+  func testReplacingTheDocumentStopsAnAnimatedScrollToLine() {
+    let long = (0..<600).map { "line \($0)" }.joined(separator: "\n")
+    let replacements: [(String, (CodeEditorView) -> Void)] = [
+      ("setText", { $0.setText(long, keepHistory: false) }),
+      ("setInitialText", { $0.setInitialText(long) }),
+    ]
+    for (name, replace) in replacements {
+      let editor = launch()
+      editor.setInitialText(long)
+      layout(editor)
+      draw(editor)
+      editor.scrollToLine(400, animated: true)
+      spin(until: { editor.contentOffset.y > 0 }, timeout: 1)
+      let target = CGFloat(editor.viewport.rowStart(400) * editor.viewport.rowHeight)
+      XCTAssertTrue(editor.contentOffset.y > 0 && editor.contentOffset.y < target, "\(name): the scroll is animating")
+      replace(editor)
+      spin(until: { false }, timeout: 1)
+      draw(editor)
+      XCTAssertEqual(editor.viewport.scrollY, 0, name)
+    }
+  }
 }

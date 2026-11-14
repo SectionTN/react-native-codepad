@@ -204,6 +204,7 @@ final class CodeEditorView: UIScrollView {
   func setText(_ text: String, keepHistory: Bool) {
     textInput.session.reset()
     core.setText(text, keepHistory: keepHistory)
+    stopLineScroll()
     viewport.scrollTo(0, 0)
     pushScroll()
     setNeedsLayout()
@@ -863,6 +864,7 @@ final class CodeEditorView: UIScrollView {
     cache.clear()
     viewport.widestLine = 0
     updateGutter()
+    stopLineScroll()
     viewport.scrollTo(0, 0)
     pushScroll()
     selectionViewsDirty = true
