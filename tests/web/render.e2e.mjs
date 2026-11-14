@@ -86,6 +86,238 @@ for (const engine of [chromium, webkit]) {
       return { page, warnings, errors };
     }
 
+    // An editor on host id, kept as window.views[id], with its text drawn.
+    async function editor(page, id, text, options = {}) {
+      await page.evaluate(
+        async ([id, text, options]) => {
+          const { EditorView, loadCore, until } = window.codepad;
+          const view = new EditorView(document.getElementById(id), await loadCore(), text);
+          view.setOptions(options);
+          window.views = { ...window.views, [id]: view };
+          await until(() => document.querySelector(`#${id} [data-line="0"]`));
+        },
+        [id, text, options],
+      );
+    }
+
+    // Clicks the left edge of a column in a drawn line.
+    async function clickAt(page, id, line, column) {
+      await page.waitForSelector(`#${id} [data-line="${line}"]`, { state: 'attached' });
+      const { x, y } = await page.evaluate(
+        ([id, line, column]) => {
+          const el = document.querySelector(`#${id} [data-line="${line}"]`);
+          const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          let at = 0;
+          for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            if (column <= at + node.data.length) {
+              const range = document.createRange();
+              range.setStart(node, column - at);
+              range.setEnd(node, column - at);
+              const r = range.getBoundingClientRect();
+              return { x: r.left + 1, y: r.top + r.height / 2 };
+            }
+            at += node.data.length;
+          }
+          const r = el.getBoundingClientRect();
+          return { x: r.right + 4, y: r.top + r.height / 2 };
+        },
+        [id, line, column],
+      );
+      await page.mouse.click(x, y);
+    }
+
+    const textOf = (page, id) => page.evaluate((id) => window.views[id].core.text(), id);
+    const visible = (page, selector) =>
+      page.evaluate((s) => {
+        const el = document.querySelector(s);
+        return !!el && el.style.display !== 'none' && el.getBoundingClientRect().width > 0;
+      }, selector);
+
+    // Starts a composition of text at the caret: the browser's own IME in Chromium, dispatched events in WebKit.
+    async function compose(page, id, text) {
+      if (engine === chromium) {
+        const cdp = await page.context().newCDPSession(page);
+        await cdp.send('Input.imeSetComposition', {
+          text,
+          selectionStart: text.length,
+          selectionEnd: text.length,
+        });
+        return cdp;
+      }
+      await page.evaluate(
+        ([id, text]) => {
+          const ta = document.querySelector(`#${id} textarea`);
+          const at = ta.selectionStart;
+          ta.dispatchEvent(new CompositionEvent('compositionstart', { data: '' }));
+          ta.value = ta.value.slice(0, at) + text + ta.value.slice(at);
+          ta.setSelectionRange(at + text.length, at + text.length);
+          ta.dispatchEvent(
+            new InputEvent('input', {
+              inputType: 'insertCompositionText',
+              data: text,
+              isComposing: true,
+            }),
+          );
+        },
+        [id, text],
+      );
+      return null;
+    }
+
+    async function commit(page, id, cdp, composed, text) {
+      if (cdp) return cdp.send('Input.insertText', { text });
+      await page.evaluate(
+        ([id, composed, text]) => {
+          const ta = document.querySelector(`#${id} textarea`);
+          const end = ta.selectionStart;
+          ta.value = ta.value.slice(0, end - composed.length) + text + ta.value.slice(end);
+          const at = end - composed.length + text.length;
+          ta.setSelectionRange(at, at);
+          ta.dispatchEvent(
+            new InputEvent('input', {
+              inputType: 'insertCompositionText',
+              data: text,
+              isComposing: true,
+            }),
+          );
+          ta.dispatchEvent(new CompositionEvent('compositionend', { data: text }));
+        },
+        [id, composed, text],
+      );
+    }
+
+    test('a click places the caret and typing inserts there', async () => {
+      const { page, errors } = await open();
+      await editor(page, 'a', 'abcdef\nghijkl\n');
+      await clickAt(page, 'a', 1, 3);
+      await page.keyboard.type('xy');
+      assert.equal(await textOf(page, 'a'), 'abcdef\nghixyjkl\n');
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
+
+    test('Enter splits the line and Backspace joins it again', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'ab', { autoIndent: false });
+      await clickAt(page, 'a', 0, 1);
+      await page.keyboard.press('Enter');
+      assert.equal(await textOf(page, 'a'), 'a\nb');
+      await page.keyboard.press('Backspace');
+      assert.equal(await textOf(page, 'a'), 'ab');
+      await page.close();
+    });
+
+    test('a composition shows its underline then commits', async () => {
+      const { page, errors } = await open();
+      await editor(page, 'a', 'ab');
+      await clickAt(page, 'a', 0, 2);
+      const cdp = await compose(page, 'a', 'か');
+      await page.waitForFunction(() => window.views.a.core.text() === 'abか');
+      await page.evaluate(() => window.codepad.frames(2));
+      assert.equal(await visible(page, '#a [data-composing]'), true);
+      await commit(page, 'a', cdp, 'か', '蚊');
+      await page.waitForFunction(() => window.views.a.core.text() === 'ab蚊');
+      await page.evaluate(() => window.codepad.frames(2));
+      assert.equal(await visible(page, '#a [data-composing]'), false);
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
+
+    test('clicking elsewhere mid-composition leaves no underline', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'ab\ncd');
+      await clickAt(page, 'a', 0, 2);
+      await compose(page, 'a', 'か');
+      await page.waitForFunction(() => window.views.a.core.text() === 'abか\ncd');
+      await clickAt(page, 'a', 1, 1);
+      await page.evaluate(() => window.codepad.frames(2));
+      assert.equal(await visible(page, '#a [data-composing]'), false);
+      assert.equal(await textOf(page, 'a'), 'abか\ncd');
+      await page.close();
+    });
+
+    test('readOnly keeps the text and still places the caret', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'abc', { readOnly: true });
+      await clickAt(page, 'a', 0, 1);
+      await page.keyboard.type('x');
+      assert.equal(await textOf(page, 'a'), 'abc');
+      assert.equal(await page.evaluate(() => window.views.a.core.selection.head), 1);
+      await page.close();
+    });
+
+    test('an onChange that throws keeps the edit and the sync', async () => {
+      const { page, errors } = await open();
+      await editor(page, 'a', '');
+      await page.evaluate(() =>
+        window.views.a.setOptions({
+          onChange: () => {
+            throw new Error('boom');
+          },
+        }),
+      );
+      await clickAt(page, 'a', 0, 0);
+      await page.keyboard.type('ab');
+      assert.equal(await textOf(page, 'a'), 'ab');
+      assert.equal(await page.evaluate(() => document.querySelector('#a textarea').value), 'ab');
+      assert.ok(
+        errors.some((e) => /boom/.test(e)),
+        String(errors),
+      );
+      await page.close();
+    });
+
+    test('only the focused editor draws a caret and takes keys', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'one');
+      await editor(page, 'b', 'two');
+      await clickAt(page, 'a', 0, 3);
+      await clickAt(page, 'b', 0, 3);
+      await page.keyboard.type('z');
+      assert.equal(await textOf(page, 'b'), 'twoz');
+      assert.equal(await textOf(page, 'a'), 'one');
+      await page.evaluate(() => window.codepad.frames(2));
+      assert.equal(await visible(page, '#a [data-caret]'), false);
+      assert.equal(await visible(page, '#b [data-caret]'), true);
+      await page.close();
+    });
+
+    test('onFocus and onBlur fire once per change', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'one');
+      await editor(page, 'b', 'two');
+      await page.evaluate(() => {
+        window.counts = { focus: 0, blur: 0 };
+        window.views.a.setOptions({
+          onFocus: () => window.counts.focus++,
+          onBlur: () => window.counts.blur++,
+        });
+      });
+      await clickAt(page, 'a', 0, 1);
+      await clickAt(page, 'a', 0, 2);
+      await clickAt(page, 'b', 0, 1);
+      assert.deepEqual(await page.evaluate(() => window.counts), { focus: 1, blur: 1 });
+      await page.close();
+    });
+
+    test('typing after replaceRange, setText and undo lands at the core caret', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'abc');
+      await clickAt(page, 'a', 0, 3);
+      for (const step of [
+        (v) => v.apply(() => v.core.replace(0, 0, 'Q')),
+        (v) => v.apply(() => v.core.setText('new')),
+        (v) => v.apply(() => v.core.undo()),
+      ]) {
+        await page.evaluate(`(${step})(window.views.a)`);
+        const head = await page.evaluate(() => window.views.a.core.selection.head);
+        const before = await textOf(page, 'a');
+        await page.keyboard.type('z');
+        assert.equal(await textOf(page, 'a'), `${before.slice(0, head)}z${before.slice(head)}`);
+      }
+      await page.close();
+    });
+
     test('colors python keywords', async () => {
       const { page, errors } = await open();
       const color = await page.evaluate(async () => {
