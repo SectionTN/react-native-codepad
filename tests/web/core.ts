@@ -5,41 +5,9 @@ import { join } from 'node:path';
 
 export const ROOT = join(__dirname, '..', '..');
 
-export type RawCore = {
-  FS: { writeFile(path: string, data: Uint8Array): void };
-  HEAPU8: Uint8Array;
-  HEAPU16: Uint16Array;
-  HEAP32: Int32Array;
-  _malloc(size: number): number;
-  _free(ptr: number): void;
-  stringToNewUTF8(s: string): number;
-  UTF8ToString(ptr: number): string;
-  _cpw_language_load(
-    id: number,
-    path: number,
-    symbol: number,
-    highlights: number,
-    injections: number,
-  ): number;
-  _cpw_language_alias(name: number, id: number): void;
-  _cpw_error(): number;
-  _cpw_open(text: number, length: number, budgetMicros: bigint): number;
-  _cpw_close(e: number): void;
-  _cpw_set_language(e: number, id: number): number;
-  _cpw_snapshot(e: number): number;
-  _cpw_pump(budgetMs: number): number;
-  _cp_highlight(
-    snapshot: number,
-    first: number,
-    last: number,
-    start: number,
-    out: number,
-    cap: number,
-  ): number;
-  _cp_snapshot_length(snapshot: number): number;
-  _cp_style_id(name: number): number;
-  _cp_style_name(id: number, out: number, cap: number): number;
-};
+import type { CoreModule } from '../../src/web/core/module';
+
+export type RawCore = CoreModule;
 
 // The folder holding codepad.js and codepad.wasm, or null with a warning when it is not built.
 export function builtCore(dir: string, hint: string): string | null {

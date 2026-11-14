@@ -95,14 +95,15 @@ void on_snapshot(void *ctx, cp_snapshot *snapshot) {
     editors[ed->index].reset();
     return;
   }
+  held++;
   if (ed->closed) {
     cp_engine_release(nullptr, snapshot);
+    held--;
     return;
   }
   release(ed);
   ed->snapshot = snapshot;
   ed->snapshots++;
-  held++;
 }
 
 }  // namespace
