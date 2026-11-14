@@ -86,6 +86,10 @@ int64_t now_micros(void *) {
 const cp_language *resolve(void *ctx, const char *id) {
   JNIEnv *e = env();
   jstring name = java_string(e, id);
+  if (name == nullptr) {
+    clear(e);
+    return nullptr;
+  }
   jlong handle = e->CallLongMethod(static_cast<HostRef *>(ctx)->host, resolve_id, name);
   e->DeleteLocalRef(name);
   if (e->ExceptionCheck()) {
@@ -136,7 +140,7 @@ jint fill(JNIEnv *e, jintArray out, Call call) {
 FN(abiRange)(JNIEnv *e, jclass) -> jintArray {
   jintArray out = e->NewIntArray(2);
   jint v[2] = {cp_abi_min(), cp_abi_max()};
-  e->SetIntArrayRegion(out, 0, 2, v);
+  if (out != nullptr) e->SetIntArrayRegion(out, 0, 2, v);
   return out;
 }
 
@@ -144,6 +148,7 @@ FN(abiRange)(JNIEnv *e, jclass) -> jintArray {
 FN(languageLoad)(JNIEnv *e, jclass, jstring jid, jlong pointer, jbyteArray highlights, jbyteArray injections,
                  jobjectArray error) -> jlong {
   const char *id = e->GetStringUTFChars(jid, nullptr);
+  if (id == nullptr) return 0;
   jsize hn = e->GetArrayLength(highlights);
   jsize in = injections ? e->GetArrayLength(injections) : 0;
   std::vector<char> h(static_cast<size_t>(hn));
@@ -154,12 +159,14 @@ FN(languageLoad)(JNIEnv *e, jclass, jstring jid, jlong pointer, jbyteArray highl
   cp_language *language = cp_language_load(id, ptr<const void>(pointer), h.data(), static_cast<uint32_t>(hn), i.data(),
                                            static_cast<uint32_t>(in), message, sizeof(message));
   e->ReleaseStringUTFChars(jid, id);
-  if (message[0] && error) e->SetObjectArrayElement(error, 0, java_string(e, message));
+  jstring m = message[0] && error ? java_string(e, message) : nullptr;
+  if (m != nullptr) e->SetObjectArrayElement(error, 0, m);
   return handle(language);
 }
 
 FN(styleId)(JNIEnv *e, jclass, jstring jname) -> jint {
   const char *name = e->GetStringUTFChars(jname, nullptr);
+  if (name == nullptr) return 0;
   jint id = cp_style_id(name);
   e->ReleaseStringUTFChars(jname, name);
   return id;
@@ -219,7 +226,7 @@ FN(snapshotChanged)(JNIEnv *e, jclass, jlong snapshot) -> jintArray {
   cp_snapshot_info info{};
   cp_snapshot_info_get(ptr<cp_snapshot>(snapshot), &info);
   jintArray out = e->NewIntArray(static_cast<jsize>(info.changed_len));
-  if (info.changed_len) {
+  if (out != nullptr && info.changed_len) {
     e->SetIntArrayRegion(out, 0, static_cast<jsize>(info.changed_len),
                          reinterpret_cast<const jint *>(cp_snapshot_changed(ptr<cp_snapshot>(snapshot))));
   }
@@ -322,7 +329,9 @@ jstring copy_text(JNIEnv *e, const cp_editor *editor, uint32_t start, uint32_t e
 
 jintArray int_array(JNIEnv *e, const int32_t *values, uint32_t n) {
   jintArray out = e->NewIntArray(static_cast<jsize>(n));
-  if (n > 0) e->SetIntArrayRegion(out, 0, static_cast<jsize>(n), reinterpret_cast<const jint *>(values));
+  if (out != nullptr && n > 0) {
+    e->SetIntArrayRegion(out, 0, static_cast<jsize>(n), reinterpret_cast<const jint *>(values));
+  }
   return out;
 }
 
@@ -493,6 +502,7 @@ FN(editorSetSearch)(JNIEnv *e, jclass, jlong editor, jstring query, jint flags, 
   char message[512] = {0};
   if (cp_editor_set_search(ed(editor), units_of(q), count_of(q), flags, message, sizeof(message)) != 0) return JNI_TRUE;
   jstring m = java_string(e, message);
+  if (m == nullptr) return JNI_FALSE;
   e->SetObjectArrayElement(error, 0, m);
   e->DeleteLocalRef(m);
   return JNI_FALSE;
