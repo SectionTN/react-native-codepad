@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.12 (2026-11-14)
+
+### Editor
+
+- `setSearch()` now resolves with `{ count, limited }`. `limited` is `true` when a very complex regular expression stopped early, so `count` covers only the matches found up to that point and a search bar can show it as partial.
+- An animated `scrollToLine()` now ends with the line at the top when soft wrap is on. Before, it stopped short in long documents with wrapped lines: going to line 1500 could end near line 743.
+- On iOS, `scrollToLine()` now stops a scroll that is still moving, such as a fling. Before, the fling could carry the view away from the line.
+- Calling `setText()` or `setInitialText()` during an animated `scrollToLine()` now leaves the new text at the top. Before, the animation kept going and scrolled the new text away.
+- On Android, dragging after a long press now extends the selection by whole words, with the same word boundaries as the long press. Before, the drag could stop inside a word the long press had selected.
+- On Android, an editor that unmounts while it is still highlighting no longer leaks the last highlighting result.
+- On Android, running out of memory during a call into the native code now reaches the app as a Java `OutOfMemoryError` instead of failing inside the native code.
+- The iOS code no longer uses `String(cString:)`, which recent Swift versions mark as deprecated, so app builds show fewer warnings.
+
 ## 0.1.11 (2026-11-13)
 
 ### Editor
