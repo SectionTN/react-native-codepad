@@ -64,6 +64,7 @@
     "bench:memory": "scripts/bench.sh memory",
     "bench:typing": "scripts/bench.sh typing",
     "ime:record": "scripts/ime-record.sh",
+    "ime:record:web": "node tests/ime-web/recorder/serve.mjs",
     "ime:record:ios": "scripts/ime-record-ios.sh",
     "bench:ios": "scripts/bench-ios.sh",
     "release": "release-it --only-version",
