@@ -93,11 +93,11 @@ final class CoreHighlightTests: XCTestCase {
 
   func testEverySampleMatchesItsGolden() throws {
     let files = try FileManager.default.contentsOfDirectory(atPath: Self.highlightDir.path).filter { $0.hasSuffix(".txt") }.sorted()
-    XCTAssertEqual(files.count, 22)
+    XCTAssertEqual(files.count, 23)
     for file in files {
       let id = String(file.dropLast(4))
       let text = try String(contentsOf: Self.highlightDir.appendingPathComponent(file), encoding: .utf8)
-      let s = snapshot(id, text)
+      let s = snapshot(String(id.prefix { $0 != "." }), text)
       let lines = text.split(separator: "\n", omittingEmptySubsequences: false).count
       let ints = fill { cp_highlight(s, 0, Int32(lines - 1), 0, $0, $1) }
       let expected = try String(contentsOf: Self.highlightDir.appendingPathComponent("\(id).spans"), encoding: .utf8)

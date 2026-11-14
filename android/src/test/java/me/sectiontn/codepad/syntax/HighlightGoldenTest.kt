@@ -11,7 +11,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
-/** Every sample's spans against tests/highlight/<id>.spans; CODEPAD_RECORD_HIGHLIGHT=1 rewrites them. */
+/**
+ * Every sample's spans against tests/highlight/<name>.spans, in the language before the first dot of the name.
+ * CODEPAD_RECORD_HIGHLIGHT=1 rewrites them.
+ */
 @RunWith(Parameterized::class)
 class HighlightGoldenTest(private val id: String) {
   companion object {
@@ -48,7 +51,8 @@ class HighlightGoldenTest(private val id: String) {
     val text = dir.resolve("$id.txt").readText()
     val snapshots = LinkedBlockingQueue<Snapshot>()
     val engine = SyntaxEngine(postToMain = { it.run() }, onSnapshot = { snapshots.add(it) })
-    engine.setLanguage(id)
+    val language = id.substringBefore('.')
+    engine.setLanguage(language)
     val core = EditorCore(text)
     engine.attach(core)
     // setLanguage can publish an empty document snapshot first; wait for the whole text.
@@ -59,7 +63,7 @@ class HighlightGoldenTest(private val id: String) {
       snapshot.close()
     }
     val doc = core.document
-    val lang = checkNotNull(LanguageRegistry.resolve(id))
+    val lang = checkNotNull(LanguageRegistry.resolve(language))
     val actual = render(doc, Highlighter(lang).spans(snapshot, doc, 0, doc.lineCount - 1))
     snapshot.close()
     engine.close()
