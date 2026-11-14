@@ -318,6 +318,144 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    const head = (page) => page.evaluate(() => window.views.a.core.selection.head);
+
+    test('ArrowDown keeps the column across a shorter line', async () => {
+      const { page, errors } = await open();
+      await editor(page, 'a', 'abcdef\nab\nabcdef');
+      await clickAt(page, 'a', 0, 5);
+      await page.keyboard.press('ArrowDown');
+      assert.equal(await head(page), 9);
+      await page.keyboard.press('ArrowDown');
+      assert.equal(await head(page), 15);
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
+
+    test('ArrowDown on the last visible row scrolls and moves', async () => {
+      const { page } = await open();
+      await editor(page, 'a', Array.from({ length: 100 }, (_, i) => `line ${i}`).join('\n'));
+      await clickAt(page, 'a', 0, 2);
+      const rows = await page.evaluate(() => {
+        const v = window.views.a;
+        return Math.ceil(v.layout.viewportHeight / v.layout.rowHeight);
+      });
+      for (let i = 0; i < rows + 3; i++) await page.keyboard.press('ArrowDown');
+      const result = await page.evaluate(async () => {
+        const v = window.views.a;
+        await window.codepad.frames(2);
+        const caret = v.caretRect(v.core.selection.head);
+        return { line: v.core.lineAt(v.core.selection.head), y: caret?.y ?? null };
+      });
+      assert.equal(result.line, rows + 3);
+      assert.ok(result.y !== null && result.y >= 0 && result.y < 300, `caret y ${result.y}`);
+      await page.close();
+    });
+
+    test('Enter on the last visible row keeps the caret in view', async () => {
+      const { page } = await open();
+      await editor(page, 'a', Array.from({ length: 40 }, (_, i) => `line ${i}`).join('\n'));
+      const last = await page.evaluate(() => {
+        const v = window.views.a;
+        return Math.floor(v.layout.viewportHeight / v.layout.rowHeight) - 1;
+      });
+      await clickAt(page, 'a', last, 6);
+      for (let i = 0; i < 3; i++) await page.keyboard.press('Enter');
+      const y = await page.evaluate(async () => {
+        const v = window.views.a;
+        await window.codepad.frames(2);
+        return v.caretRect(v.core.selection.head)?.y ?? null;
+      });
+      assert.ok(y !== null && y >= 0 && y < 300, `caret y ${y}`);
+      await page.close();
+    });
+
+    test('PageDown moves by the visible rows', async () => {
+      const { page } = await open();
+      await editor(page, 'a', Array.from({ length: 100 }, (_, i) => `line ${i}`).join('\n'));
+      await clickAt(page, 'a', 0, 0);
+      await page.keyboard.press('PageDown');
+      const result = await page.evaluate(async () => {
+        const v = window.views.a;
+        await window.codepad.frames(2);
+        const caret = v.caretRect(v.core.selection.head);
+        return {
+          line: v.core.lineAt(v.core.selection.head),
+          page: Math.floor(v.layout.viewportHeight / v.layout.rowHeight),
+          y: caret?.y ?? null,
+        };
+      });
+      assert.equal(result.line, result.page);
+      assert.ok(result.y !== null && result.y >= 0 && result.y < 300, `caret y ${result.y}`);
+      await page.close();
+    });
+
+    test('Shift+ArrowRight draws a selection', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'abcdef');
+      await clickAt(page, 'a', 0, 1);
+      await page.keyboard.press('Shift+ArrowRight');
+      await page.keyboard.press('Shift+ArrowRight');
+      const result = await page.evaluate(async () => {
+        const v = window.views.a;
+        await window.codepad.frames(2);
+        const boxes = [...document.querySelectorAll('#a [data-selection] > div')];
+        return { selection: v.core.selection, width: boxes[0]?.getBoundingClientRect().width ?? 0 };
+      });
+      assert.deepEqual(result.selection, { anchor: 1, head: 3 });
+      assert.ok(result.width > 0, 'no selection drawn');
+      await page.close();
+    });
+
+    test('Tab indents, keeps the focus, and the platform undo key takes it back', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'abc');
+      await clickAt(page, 'a', 0, 0);
+      await page.keyboard.press('Tab');
+      assert.notEqual(await textOf(page, 'a'), 'abc');
+      assert.equal(await page.evaluate(() => document.activeElement?.tagName), 'TEXTAREA');
+      await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+z`);
+      assert.equal(await textOf(page, 'a'), 'abc');
+      await page.close();
+    });
+
+    test('ref typeText auto-closes and moveCaret up keeps the goal column', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'abcdefghij\nab\nabcdef');
+      const result = await page.evaluate(() => {
+        const v = window.views.a;
+        v.apply(() => v.core.setSelection(20, 20));
+        v.typeText('(');
+        const typed = { text: v.core.text(), head: v.core.selection.head };
+        v.moveCaret('up', false);
+        const first = v.core.selection.head;
+        v.moveCaret('up', false);
+        return { typed, first, second: v.core.selection.head };
+      });
+      assert.deepEqual(result, {
+        typed: { text: 'abcdefghij\nab\nabcdef()', head: 21 },
+        first: 13,
+        second: 7,
+      });
+      await page.close();
+    });
+
+    test('the typing ref methods do nothing under readOnly while moveCaret still moves', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'abc', { readOnly: true });
+      const result = await page.evaluate(() => {
+        const v = window.views.a;
+        v.apply(() => v.core.setSelection(1, 1));
+        v.typeText('x');
+        v.deleteBackward();
+        v.deleteForward();
+        v.moveCaret('right', true);
+        return { text: v.core.text(), selection: v.core.selection };
+      });
+      assert.deepEqual(result, { text: 'abc', selection: { anchor: 1, head: 2 } });
+      await page.close();
+    });
+
     test('colors python keywords', async () => {
       const { page, errors } = await open();
       const color = await page.evaluate(async () => {

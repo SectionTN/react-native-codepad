@@ -1,11 +1,13 @@
 /// <reference lib="dom" />
 import { githubLight } from '../themes/githubLight';
-import type { ContentInsets, Rect, Suggestions, Theme } from '../types';
-import { EditorCore, type WebChange } from './core/EditorCore';
+import type { CaretDirection, ContentInsets, Rect, Suggestions, Theme } from '../types';
+import { EditorCore, type MoveUnit, type WebChange } from './core/EditorCore';
 import { Layout } from './core/Layout';
 import type { CoreModule } from './core/module';
 import { type DecodedFrame, decodeFrame } from './frame';
+import { CaretMover, type LineGeometry } from './input/CaretMover';
 import { InputHost } from './input/InputHost';
+import { keyCommand } from './input/keys';
 import { WebInputSession } from './input/WebInputSession';
 import { ensureInjected, ensureLanguage, onRegistered } from './loader';
 import { registerView, requestPump } from './pump';
@@ -65,6 +67,17 @@ export const DEFAULT_OPTIONS: ViewOptions = {
 
 const MONOSPACE = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
 const SNAPSHOT_INFO_INTS = 7;
+const MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+const MOVES: Partial<Record<CaretDirection, [MoveUnit, boolean]>> = {
+  left: ['char', false],
+  right: ['char', true],
+  wordLeft: ['word', false],
+  wordRight: ['word', true],
+  lineStart: ['lineStart', false],
+  lineEnd: ['lineEnd', true],
+  documentStart: ['docStart', false],
+  documentEnd: ['docEnd', true],
+};
 
 type Entry = {
   el: HTMLDivElement;
@@ -130,6 +143,19 @@ export class EditorView {
     'position:absolute;width:2px;z-index:1;pointer-events:none;display:none;animation:codepad-blink 1s steps(1) infinite;',
   );
   private inputting = false;
+  private readonly mover = new CaretMover();
+  private movingVertically = false;
+  // The caret scrolls into view on the next draw, before the page paints.
+  private revealing = false;
+  // Hidden copies of lines a caret move measured, dropped on the next draw.
+  private readonly measuring = new Map<number, HTMLDivElement>();
+  private readonly geometry: LineGeometry = {
+    rows: (line) => Math.max(1, Math.round(this.lineEl(line).offsetHeight / this.rowHeight)),
+    rowOf: (line, column) =>
+      Math.min(this.pointIn(this.lineEl(line), column).row, this.geometry.rows(line) - 1),
+    caretX: (line, column) => this.pointIn(this.lineEl(line), column).x,
+    columnAt: (line, row, x) => this.columnAt(line, row, x),
+  };
   private readonly onClickEvent = (e: MouseEvent) => this.click(e);
   // A press on the text keeps the focus where it is, so a click inside a focused editor does not blur it.
   private readonly onMouseDownEvent = (e: MouseEvent) => {
@@ -158,9 +184,10 @@ export class EditorView {
     this.textLayer.style.userSelect = 'none';
     this.textLayer.style.webkitUserSelect = 'none';
     this.caretEl.dataset.caret = '';
+    this.selectionLayer.dataset.selection = '';
     this.session = new WebInputSession(this.core, (edit) => this.applyInput(edit));
     this.input = new InputHost(this.root, this.session, {
-      keyDown: () => false,
+      keyDown: (e) => this.keyDown(e),
       focusChanged: (focused) => {
         this.safely(() => (focused ? this.o.onFocus?.() : this.o.onBlur?.()));
         this.invalidate();
@@ -252,6 +279,7 @@ export class EditorView {
     const s = this.core.selection;
     const moved = s.anchor !== this.lastSelection.anchor || s.head !== this.lastSelection.head;
     if (moved) this.lastSelection = s;
+    if (moved && !this.movingVertically) this.mover.reset();
     if (outside) this.input.write(this.session.sync());
     this.invalidate();
     // Listeners run last, so one that throws leaves the editor and the textarea in step.
@@ -320,13 +348,149 @@ export class EditorView {
     return below ? this.core.length : null;
   }
 
+  // A keyboard edit or caret move shows the caret, a selection the page wrote back does not.
   private applyInput(edit: () => void): void {
+    const revision = this.core.revision;
+    const before = this.core.selection;
     this.inputting = true;
     try {
       this.apply(edit);
     } finally {
       this.inputting = false;
     }
+    const after = this.core.selection;
+    if (
+      this.core.revision !== revision ||
+      after.anchor !== before.anchor ||
+      after.head !== before.head
+    )
+      this.revealing = true;
+  }
+
+  // A hardware key the editor runs itself. True when the browser must not act on it.
+  private keyDown(e: KeyboardEvent): boolean {
+    if (this.destroyed) return false;
+    const command = keyCommand(e, MAC);
+    if (!command) return false;
+    switch (command.kind) {
+      case 'move':
+        this.perform(() => this.core.move(command.unit, command.forward, command.extend));
+        return true;
+      case 'vertical':
+        this.vertical(command.by === 'page', command.forward, command.extend);
+        return true;
+      case 'selectAll':
+        this.apply(() => this.core.selectAll());
+        return true;
+    }
+    if (this.o.readOnly) return false;
+    const kind = command.kind;
+    this.perform(() => {
+      if (kind === 'tab') this.core.tab();
+      else if (kind === 'shiftTab') this.core.shiftTab();
+      else if (kind === 'undo') this.core.undo();
+      else this.core.redo();
+    });
+    return true;
+  }
+
+  // Runs an edit or a move from a key or the ref, then shows the caret.
+  private perform(edit: () => void): void {
+    this.revealing = true;
+    this.apply(edit);
+  }
+
+  // Moves the caret by rows or by a page of rows, back to the same x after a shorter line.
+  private vertical(page: boolean, forward: boolean, extend: boolean): void {
+    const pageRows = Math.max(1, Math.floor(this.layout.viewportHeight / this.rowHeight));
+    const rows = (page ? pageRows : 1) * (forward ? 1 : -1);
+    const { anchor, head } = this.core.selection;
+    const target = this.mover.target(this.core, this.geometry, head, rows);
+    this.movingVertically = true;
+    try {
+      this.perform(() => this.core.setSelection(extend ? anchor : target, target));
+    } finally {
+      this.movingVertically = false;
+    }
+  }
+
+  // As typed on the keyboard: auto close, indentation on a newline. Nothing under readOnly.
+  typeText(text: string): void {
+    if (this.destroyed || this.o.readOnly || text === '') return;
+    this.perform(() => this.core.typeText(text));
+  }
+
+  // Backspace, an empty auto closed pair in one go. Nothing under readOnly.
+  deleteBackward(): void {
+    if (this.destroyed || this.o.readOnly) return;
+    this.perform(() => this.core.backspace());
+  }
+
+  deleteForward(): void {
+    if (this.destroyed || this.o.readOnly) return;
+    this.perform(() => this.core.delete());
+  }
+
+  // Moves the caret like the matching key, under readOnly too.
+  moveCaret(direction: CaretDirection, extend: boolean): void {
+    if (this.destroyed) return;
+    const move = MOVES[direction];
+    if (move) {
+      this.perform(() => this.core.move(move[0], move[1], extend));
+      return;
+    }
+    const page = direction === 'pageUp' || direction === 'pageDown';
+    this.vertical(page, direction === 'down' || direction === 'pageDown', extend);
+  }
+
+  // The column nearest x on a row of a line, x in pixels from the line's left edge. Lays the line out when it is
+  // not drawn.
+  columnAt(line: number, rowInLine: number, x: number): number {
+    if (this.destroyed) return 0;
+    const el = this.lineEl(line);
+    const text = this.core.line(line);
+    const length = text.length;
+    const rowOf = (c: number) => this.pointIn(el, c).row;
+    const xOf = (c: number) => this.pointIn(el, c).x;
+    // Rows only grow along a line, and x along a row.
+    const first = firstWhere(0, length + 1, (c) => rowOf(c) >= rowInLine);
+    if (first > length) return length;
+    const last = firstWhere(first, length + 1, (c) => rowOf(c) > rowInLine) - 1;
+    const at = firstWhere(first, last + 1, (c) => xOf(c) >= x);
+    let column = at;
+    if (at > last) column = last;
+    else if (at > first && x - xOf(at - 1) < xOf(at) - x) column = at - 1;
+    const unit = text.charCodeAt(column);
+    // Never between the two halves of an emoji.
+    if (column > 0 && unit >= 0xdc00 && unit <= 0xdfff) column--;
+    return column;
+  }
+
+  // The element a line is measured in: the drawn one when it holds the current text, else a hidden copy.
+  private lineEl(line: number): HTMLDivElement {
+    const text = this.core.line(line);
+    const entry = this.cache.get(line);
+    if (entry && this.attached.has(line) && entry.text === text) return entry.el;
+    let el = this.measuring.get(line);
+    if (!el) {
+      el = this.makeLine();
+      this.paint(el, text, null);
+      el.style.visibility = 'hidden';
+      el.style.top = '0px';
+      el.style.left = `${this.layout.textAreaLeft + this.layout.textPadding}px`;
+      el.style.width = this.o.softWrap ? `${this.layout.wrapWidth}px` : '';
+      this.textLayer.append(el);
+      this.measuring.set(line, el);
+    }
+    return el;
+  }
+
+  // The caret at a column of a line element, in pixels from its left edge and in rows from its top.
+  private pointIn(el: HTMLElement, column: number): { x: number; row: number } {
+    const box = el.getBoundingClientRect();
+    const edge = caretEdge(el, column);
+    const middle = edge.top + edge.height / 2 - box.top;
+    return { x: edge.x - box.left, row: Math.max(0, Math.floor(middle / this.rowHeight)) };
   }
 
   private safely(call: () => void): void {
@@ -425,6 +589,12 @@ export class EditorView {
   // Scrolls the least that shows the caret.
   revealSelection(): void {
     if (this.destroyed) return;
+    this.revealing = true;
+    this.invalidate();
+  }
+
+  // Scrolls the least that shows the caret, by its line's row while the line is not drawn. True when it scrolled.
+  private revealCaret(): boolean {
     const caret = this.caretRect(this.core.selection.head);
     const line = this.core.lineAt(this.core.selection.head);
     let row = this.layout.rowStart(line);
@@ -436,8 +606,7 @@ export class EditorView {
     }
     const top = row * this.rowHeight;
     const x = caret ? caret.x - this.layout.textLeft : 0;
-    if (this.layout.reveal(x, top, x + 1, top + this.rowHeight)) this.syncScroll();
-    this.invalidate();
+    return this.layout.reveal(x, top, x + 1, top + this.rowHeight);
   }
 
   // The caret at offset in view coordinates, or null when its line is not drawn.
@@ -446,18 +615,8 @@ export class EditorView {
     const line = this.core.lineAt(offset);
     const entry = this.cache.get(line);
     if (!entry || !this.attached.has(line)) return null;
-    const column = offset - this.core.lineStart(line);
     const box = this.root.getBoundingClientRect();
-    const lineBox = entry.el.getBoundingClientRect();
-    // The base direction is left to right: the caret sits at the leading edge of the next character unless it
-    // reads right to left, then at the trailing edge of the previous one, so Chromium and WebKit agree.
-    const next = charRect(entry.el, column, true);
-    const prev = charRect(entry.el, column, false);
-    let edge: { x: number; top: number } = { x: lineBox.left, top: lineBox.top };
-    if (next && !next.rtl) edge = { x: next.rect.left, top: next.rect.top };
-    else if (prev && !prev.rtl) edge = { x: prev.rect.right, top: prev.rect.top };
-    else if (next) edge = { x: next.rect.right, top: next.rect.top };
-    else if (prev) edge = { x: prev.rect.left, top: prev.rect.top };
+    const edge = caretEdge(entry.el, offset - this.core.lineStart(line));
     return { x: edge.x - box.left, y: edge.top - box.top, width: 1, height: this.rowHeight };
   }
 
@@ -476,25 +635,41 @@ export class EditorView {
     }
     if (!this.dirty) return;
     this.dirty = false;
+    for (const el of this.measuring.values()) el.remove();
+    this.measuring.clear();
     this.configure();
     this.restaleRefreshed();
-    const [sx, sy] = this.scrollPosition();
-    this.layout.beginDraw(sx, sy);
-    let moved = false;
-    try {
-      const frame = this.readFrame();
-      moved = this.prepare(frame);
-      this.place(frame);
-      this.drawInput();
-    } finally {
-      this.layout.endDraw();
+    let moved = this.frame();
+    // A caret moved off screen scrolls into view in the same task, so no frame paints without it. A caret line that
+    // was not drawn is revealed by its row first, then again by its x once drawn.
+    for (let pass = 0; this.revealing && pass < 2; pass++) {
+      if (this.caretRect(this.core.selection.head)) this.revealing = false;
+      if (!this.revealCaret()) break;
+      this.syncScroll();
+      moved = this.frame();
     }
+    this.revealing = false;
     if (moved) {
       this.syncScroll();
       this.dirty = true;
     }
     this.report();
     if (this.dirty) requestPump();
+  }
+
+  // Lays out and places the visible lines at the current scroll. True when measuring moved the layout's scroll.
+  private frame(): boolean {
+    const [sx, sy] = this.scrollPosition();
+    this.layout.beginDraw(sx, sy);
+    try {
+      const frame = this.readFrame();
+      const moved = this.prepare(frame);
+      this.place(frame);
+      this.drawInput();
+      return moved;
+    } finally {
+      this.layout.endDraw();
+    }
   }
 
   destroy(): void {
@@ -1014,6 +1189,33 @@ function sameSpans(a: Int32Array | null, b: Int32Array | null): boolean {
 }
 
 const RTL = /^[֐-ࣿיִ-﷿ﹰ-﻿]/;
+
+// Where the caret at a column of a line element sits, in page coordinates. The base direction is left to right: the
+// caret is at the leading edge of the next character unless it reads right to left, then at the trailing edge of the
+// previous one, so Chromium and WebKit agree.
+function caretEdge(el: HTMLElement, column: number): { x: number; top: number; height: number } {
+  const next = charRect(el, column, true);
+  const prev = charRect(el, column, false);
+  const at = (x: number, r: DOMRect) => ({ x, top: r.top, height: r.height });
+  if (next && !next.rtl) return at(next.rect.left, next.rect);
+  if (prev && !prev.rtl) return at(prev.rect.right, prev.rect);
+  if (next) return at(next.rect.right, next.rect);
+  if (prev) return at(prev.rect.left, prev.rect);
+  const box = el.getBoundingClientRect();
+  return { x: box.left, top: box.top, height: 0 };
+}
+
+// The first integer in [lo, hi) where test holds, or hi, for a test that stays true once it holds.
+function firstWhere(lo: number, hi: number, test: (n: number) => boolean): number {
+  let a = lo;
+  let b = hi;
+  while (a < b) {
+    const mid = (a + b) >>> 1;
+    if (test(mid)) b = mid;
+    else a = mid + 1;
+  }
+  return a;
+}
 
 // The box of the character after column (forward) or before it, and whether it reads right to left.
 function charRect(

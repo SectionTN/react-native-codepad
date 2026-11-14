@@ -182,7 +182,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
         v.setLanguage(latest.current.language);
         viewRef.current = v;
         for (const write of queued.current.splice(0)) {
-          v.apply(() => write.edit(v));
+          write.edit(v);
           write.done();
         }
         setView(v);
@@ -221,12 +221,15 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   // Reads see an empty document until the core loads and after unmount. Writes made before the load wait for it.
   useImperativeHandle(ref, () => {
     const core = () => viewRef.current?.core;
-    const write = (edit: (v: EditorView) => void): Promise<void> => {
+    // Runs on the view now, or once the core loads when the call comes before it.
+    const run = (call: (v: EditorView) => void): Promise<void> => {
       const v = viewRef.current;
-      if (v) v.apply(() => edit(v));
-      else if (!gone.current) return new Promise((done) => queued.current.push({ edit, done }));
+      if (v) call(v);
+      else if (!gone.current)
+        return new Promise((done) => queued.current.push({ edit: call, done }));
       return Promise.resolve();
     };
+    const write = (edit: (v: EditorView) => void) => run((v) => v.apply(() => edit(v)));
     return {
       getText: () => core()?.text() ?? '',
       getTextInRange: (range) => core()?.text(range.start, range.end) ?? '',
@@ -283,10 +286,10 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       replaceCurrent: () => later('replaceCurrent', false),
       replaceAll: () => later('replaceAll', 0),
       clearSearch: () => later('clearSearch', undefined),
-      moveCaret: () => later('moveCaret', undefined),
-      typeText: () => later('typeText', undefined),
-      deleteBackward: () => later('deleteBackward', undefined),
-      deleteForward: () => later('deleteForward', undefined),
+      moveCaret: (direction, opts) => run((v) => v.moveCaret(direction, opts?.select ?? false)),
+      typeText: (text) => run((v) => v.typeText(text)),
+      deleteBackward: () => run((v) => v.deleteBackward()),
+      deleteForward: () => run((v) => v.deleteForward()),
     };
   }, []);
 

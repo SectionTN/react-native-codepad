@@ -37,6 +37,10 @@ class MockView {
     this.focused = false;
     this.options.onBlur?.();
   });
+  typeText = jest.fn();
+  deleteBackward = jest.fn();
+  deleteForward = jest.fn();
+  moveCaret = jest.fn();
   destroy() {}
 }
 
@@ -151,4 +155,25 @@ test('focus and blur reach the view, isFocused reads it, and onFocus and onBlur 
   await ref.current?.blur();
   expect(ref.current?.isFocused()).toBe(false);
   expect([onFocus.mock.calls.length, onBlur.mock.calls.length]).toEqual([1, 1]);
+});
+
+test('typeText, deleteBackward, deleteForward and moveCaret made before the core loads reach the view', async () => {
+  const ref = createRef<CodeEditorRef>();
+  await render(<CodeEditor ref={ref} />);
+  const calls = [
+    ref.current?.typeText('x'),
+    ref.current?.deleteBackward(),
+    ref.current?.deleteForward(),
+    ref.current?.moveCaret('pageDown', { select: true }),
+  ];
+  await act(async () => {
+    mockCore.resolve({});
+    await tick();
+  });
+  await expect(settled(Promise.all(calls))).resolves.not.toBe('hung');
+  const view = mockViews[0] as MockView;
+  expect(view.typeText).toHaveBeenCalledWith('x');
+  expect(view.deleteBackward).toHaveBeenCalledTimes(1);
+  expect(view.deleteForward).toHaveBeenCalledTimes(1);
+  expect(view.moveCaret).toHaveBeenCalledWith('pageDown', true);
 });
