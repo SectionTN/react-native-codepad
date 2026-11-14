@@ -119,6 +119,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       autoCloseBrackets,
       suggestions,
       autoFocus,
+      avoidKeyboard,
       onFocus: () => handlers.current.onFocus?.(),
       onBlur: () => handlers.current.onBlur?.(),
       onContentSize: (width, height) => handlers.current.onContentSizeChange?.({ width, height }),
@@ -159,6 +160,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       autoCloseBrackets,
       suggestions,
       autoFocus,
+      avoidKeyboard,
     ],
   );
   const latest = useRef({ options, language });
@@ -205,10 +207,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
   }, []);
 
   useEffect(() => {
-    if (avoidKeyboard) notYet('avoidKeyboard');
     if (decorations) notYet('decorations');
     if (onGapLayout) notYet('onGapLayout');
-  }, [avoidKeyboard, decorations, onGapLayout]);
+  }, [decorations, onGapLayout]);
 
   useEffect(() => {
     view?.setOptions(options);
