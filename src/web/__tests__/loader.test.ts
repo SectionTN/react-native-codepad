@@ -61,6 +61,7 @@ function fakeModule(loaded: string[]): CoreModule {
 let loader: Loader;
 let missing: Set<string>;
 let offline: Set<string>;
+let dropped: Set<string>;
 let scriptFails: number;
 let manifestText: string;
 let appended: number;
@@ -72,6 +73,7 @@ beforeEach(() => {
   loader = require('../loader') as Loader;
   missing = new Set();
   offline = new Set();
+  dropped = new Set();
   scriptFails = 0;
   manifestText = JSON.stringify(MANIFEST);
   appended = 0;
@@ -91,8 +93,14 @@ beforeEach(() => {
     return {
       ok: true,
       status: 200,
-      text: async () => body,
-      arrayBuffer: async () => new ArrayBuffer(8),
+      text: async () => {
+        if (dropped.has(file)) throw new TypeError('network error');
+        return body;
+      },
+      arrayBuffer: async () => {
+        if (dropped.has(file)) throw new TypeError('network error');
+        return new ArrayBuffer(8);
+      },
     };
   });
   g.createCodepadCore = undefined;
@@ -200,4 +208,21 @@ test('injects the core script once for two editors', async () => {
   const [a, b] = await Promise.all([loader.loadCore(), loader.loadCore()]);
   expect(a).toBe(b);
   expect(appended).toBe(1);
+});
+
+test('retries a grammar whose body was cut off by a network error', async () => {
+  dropped.add('python.wasm');
+  const m = await loader.loadCore();
+  await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(false);
+  dropped.clear();
+  await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(true);
+  expect(loaded).toEqual(['python']);
+});
+
+test('retries languages.json when its body was cut off by a network error', async () => {
+  dropped.add('languages.json');
+  const m = await loader.loadCore();
+  await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(false);
+  dropped.clear();
+  await expect(loader.ensureLanguage(m, 'python')).resolves.toBe(true);
 });

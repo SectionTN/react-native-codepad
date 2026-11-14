@@ -191,16 +191,32 @@ async function loadLanguage(m: CoreModule, id: string): Promise<string[] | null>
 
 async function fetchText(url: string): Promise<string | null> {
   const response = await request(url);
-  return response ? response.text() : null;
+  return response ? readBody(url, () => response.text()) : null;
 }
 
 async function fetchBytes(url: string): Promise<Uint8Array | null> {
   const response = await request(url);
-  return response ? new Uint8Array(await response.arrayBuffer()) : null;
+  return response ? new Uint8Array(await readBody(url, () => response.arrayBuffer())) : null;
+}
+
+// A body cut off by the network is a network error too.
+async function readBody<T>(url: string, read: () => Promise<T>): Promise<T> {
+  try {
+    return await read();
+  } catch (e) {
+    throw offline(url, e);
+  }
 }
 
 // A fetch that never reached the server, which a later load may get past.
 class Offline extends Error {}
+
+// Warns once for the url and returns the error a later load may get past.
+function offline(url: string, e: unknown): Offline {
+  const message = `[codepad] could not load ${url}: ${e instanceof Error ? e.message : String(e)}`;
+  console.warn(message);
+  return new Offline(message);
+}
 
 // The response, or null after a warning for an HTTP error. Throws Offline after a warning for a network error.
 async function request(url: string): Promise<Response | null> {
@@ -208,9 +224,7 @@ async function request(url: string): Promise<Response | null> {
   try {
     response = await fetch(url);
   } catch (e) {
-    const message = `[codepad] could not load ${url}: ${e instanceof Error ? e.message : String(e)}`;
-    console.warn(message);
-    throw new Offline(message);
+    throw offline(url, e);
   }
   if (response.ok) return response;
   console.warn(`[codepad] could not load ${url}: ${response.status}`);
