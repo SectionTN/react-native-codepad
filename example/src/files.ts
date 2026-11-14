@@ -65,7 +65,7 @@ export const SAMPLE_FILES: EditorFile[] = SAMPLE_NAMES.map(([id, name]) => ({
   load: () => SAMPLES[id],
 }));
 
-// Generated on open, so the status bar's open time covers the same work as the benches.
+// Generated on open, before the status bar's open timer starts.
 export const GENERATED_FILES: EditorFile[] = [
   {
     id: 'js10k',

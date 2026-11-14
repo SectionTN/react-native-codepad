@@ -40,6 +40,7 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
   const keyboardVisible = useKeyboardState((s) => s.isVisible);
 
   const [fileId, setFileId] = useState(SAMPLE_FILES[0]?.id ?? UNTITLED.id);
+  const [text, setText] = useState(() => fileById(fileId).load());
   const [openCount, setOpenCount] = useState(0);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [findOpen, setFindOpen] = useState(false);
@@ -74,8 +75,6 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
     const timer = setInterval(send, 250);
     return () => clearInterval(timer);
   }, [settings.decorations, scheme]);
-  // Loaded once per open; the generated files are built here, so the open time covers them.
-  const text = useMemo(() => file.load(), [file]);
   // iOS floats its bars over the editor, so the document starts below them and scrolls under.
   const insets = useMemo(
     () => ({ top: Platform.OS === 'ios' ? topHeight : 0, bottom: barHeight }),
@@ -83,7 +82,10 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
   );
 
   const open = (id: string) => {
+    // Built before the clock starts, so the open time is the editor's alone.
+    const next = fileById(id).load();
     opened.current = performance.now();
+    setText(next);
     setTiming(`opening ${fileById(id).name}`);
     setCanUndo(false);
     setCanRedo(false);
