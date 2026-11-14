@@ -67,6 +67,7 @@
     "ime:record:web": "node tests/ime-web/recorder/serve.mjs",
     "ime:record:ios": "scripts/ime-record-ios.sh",
     "bench:ios": "scripts/bench-ios.sh",
+    "bench:web": "node scripts/bench-web.mjs",
     "release": "release-it --only-version",
     "docs": "yarn workspace react-native-codepad-website dev",
     "docs:build": "yarn workspace react-native-codepad-website build",
