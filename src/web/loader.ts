@@ -21,7 +21,8 @@ const INJECTION_LANGUAGE = /#set!\s+injection\.language\s+"([^"]+)"/g;
 let core: Promise<CoreModule> | null = null;
 let manifest: Promise<Manifest | null> | null = null;
 let ids: string[] = [];
-const languages = new Map<string, Promise<boolean>>();
+// Each language registered on its own, resolving to the ids its injection query names, or null when it failed.
+const languages = new Map<string, Promise<string[] | null>>();
 
 // The page's one core, injected by a script tag from the assets folder on first use.
 export function loadCore(): Promise<CoreModule> {
@@ -59,9 +60,16 @@ export function availableLanguages(): string[] {
 
 function loadManifest(): Promise<Manifest | null> {
   if (!manifest) {
-    manifest = fetchText(`${webAssetsUrl()}languages.json`).then((text) => {
+    const url = `${webAssetsUrl()}languages.json`;
+    manifest = fetchText(url).then((text) => {
       if (text === null) return null;
-      const parsed = JSON.parse(text) as Manifest;
+      const parsed = parseManifest(text);
+      if (!parsed) {
+        console.warn(
+          `[codepad] ${url} is not the file the web command writes. Run npx react-native-codepad web <public-dir>.`,
+        );
+        return null;
+      }
       ids = parsed.languages.map((l) => l.id);
       return parsed;
     });
@@ -69,43 +77,66 @@ function loadManifest(): Promise<Manifest | null> {
   return manifest;
 }
 
-// Loads a language and every language its injection query names, those first. False, with one warning, when the
-// manifest lacks the id or a file does not load: the editor then draws plain text.
-export function ensureLanguage(m: CoreModule, id: string): Promise<boolean> {
-  return load(m, id, []);
+// A dev server answers a missing file with its index page, so the text may not be JSON at all.
+function parseManifest(text: string): Manifest | null {
+  try {
+    const parsed = JSON.parse(text) as Partial<Manifest> | null;
+    return Array.isArray(parsed?.languages) ? (parsed as Manifest) : null;
+  } catch {
+    return null;
+  }
 }
 
-function load(m: CoreModule, id: string, chain: string[]): Promise<boolean> {
+// True once the language and all it injects, at any depth, are registered. False and one warning when it fails.
+export async function ensureLanguage(m: CoreModule, id: string): Promise<boolean> {
+  const seen = new Set([id]);
+  const host = loadOne(m, id);
+  let wave = [host];
+  while (wave.length > 0) {
+    const next: Promise<string[] | null>[] = [];
+    for (const names of await Promise.all(wave)) {
+      for (const name of names ?? []) {
+        if (seen.has(name)) continue;
+        seen.add(name);
+        next.push(loadOne(m, name));
+      }
+    }
+    wave = next;
+  }
+  return (await host) !== null;
+}
+
+// Registers one language without waiting for the ones it injects: the engine resolves those when it parses.
+function loadOne(m: CoreModule, id: string): Promise<string[] | null> {
   let pending = languages.get(id);
   if (!pending) {
-    pending = loadLanguage(m, id, [...chain, id]);
+    pending = loadLanguage(m, id);
     languages.set(id, pending);
   }
   return pending;
 }
 
-async function loadLanguage(m: CoreModule, id: string, chain: string[]): Promise<boolean> {
+async function loadLanguage(m: CoreModule, id: string): Promise<string[] | null> {
   const base = webAssetsUrl();
   const list = await loadManifest();
-  if (!list) return false;
+  if (!list) return null;
   const entry = list.languages.find((l) => l.id === id);
   if (!entry) {
     console.warn(`[codepad] language "${id}" is not in ${base}languages.json`);
-    return false;
+    return null;
   }
   const [wasm, highlights, injections] = await Promise.all([
     fetchBytes(base + entry.wasm),
     entry.highlights ? fetchText(base + entry.highlights) : '',
     entry.injections ? fetchText(base + entry.injections) : '',
   ]);
-  if (wasm === null || highlights === null || injections === null) return false;
+  if (wasm === null || highlights === null || injections === null) return null;
   const installed = (name: string) => list.languages.some((l) => l.id === name);
   const injected = new Set<string>();
   for (const [, name] of injections.matchAll(INJECTION_LANGUAGE)) {
     const target = canonicalInjectionId(name as string, installed);
-    if (target && installed(target) && !chain.includes(target)) injected.add(target);
+    if (target && target !== id && installed(target)) injected.add(target);
   }
-  await Promise.all([...injected].map((target) => load(m, target, chain)));
   const path = `/${id}.so`;
   const compiled = await new Promise<boolean>((resolve) =>
     m.FS.createPreloadedFile(
@@ -120,7 +151,7 @@ async function loadLanguage(m: CoreModule, id: string, chain: string[]): Promise
   );
   if (!compiled) {
     console.warn(`[codepad] could not compile ${base}${entry.wasm}`);
-    return false;
+    return null;
   }
   const ok = withCString(m, id, (i) =>
     withCString(m, path, (p) =>
@@ -135,8 +166,9 @@ async function loadLanguage(m: CoreModule, id: string, chain: string[]): Promise
     console.warn(
       `[codepad] could not load ${base}${entry.wasm}: ${m.UTF8ToString(m._cpw_error())}`,
     );
+    return null;
   }
-  return ok === 1;
+  return [...injected];
 }
 
 async function fetchText(url: string): Promise<string | null> {
