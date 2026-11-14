@@ -57,7 +57,7 @@ export function Screen() {
 - **Reads are sync, writes are async.** `getText()`, `getSelection()`, `getLine()`, `getCursorRect()` return directly; `setText()`, `replaceRange()`, `insertText()`, `undo()`, `setSearch()` and the rest return promises. Ref calls are valid from `onReady`; before it they act on an empty document.
 - **Offsets are UTF-16 code units**, like JavaScript string indices. Lines and columns start at 0, ranges are `[start, end)`. Convert with `offsetToPosition()` and `positionToOffset()`.
 - **`onChange` carries a delta** (`start`, `end`, `text`, `origin`, `revision`). `onChangeText` copies the whole document on every keystroke; use it only for small documents, and `getText()` on save otherwise.
-- **`typeText()` vs `insertText()`.** `typeText()` and `deleteBackward()` take the keyboard path (auto close, auto indent, undo coalescing, origin `input`, no-op under `readOnly`). `insertText()` and `replaceRange()` are raw edits with origin `api`. Toolbar keys want `typeText()`.
+- **`typeText()` vs `insertText()`.** `typeText()` and `deleteBackward()` take the keyboard path (auto close, auto indent, typing grouped into one undo step, origin `input`, no-op under `readOnly`). `insertText()` and `replaceRange()` are raw edits with origin `api`. Toolbar keys want `typeText()`.
 - **`readOnly`** blocks the keyboard, the keyboard path methods, `cut()` and `paste()`. `setText()`, `replaceRange()`, `insertText()` and search replace still edit; selection, `copy()` and `moveCaret()` keep working.
 
 ## Gotchas

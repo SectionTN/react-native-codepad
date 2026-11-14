@@ -18,7 +18,7 @@ A native code editor for React Native. It runs one C++ core on both platforms, d
 - Tree-sitter highlighting with one npm package per language, nineteen to pick from
 - Selection handles, the edit menu, undo and redo, auto indent and auto closing brackets
 - Find and replace with literal or regular expression queries and every match painted
-- Hardware keyboards, a toolbar API and three themes keyed by capture name
+- Hardware keyboards, a toolbar API and three themes that set a color for each kind of code, such as `keyword` or `string`
 - An editor that follows the keyboard animation frame by frame
 - Underlines, line tints and space under a line for your own view, kept on their text through every edit
 - The same engine and the same test vectors on both platforms
@@ -86,7 +86,7 @@ export function Screen() {
 | `autoIndent` | `boolean` | `true` | A newline keeps the line's indentation and adds a level inside an open bracket. |
 | `insertSpaces` | `boolean` | `true` | Indents with spaces. Off indents with tabs. |
 | `tabSize` | `number` | `4` | The width of one indentation level. |
-| `suggestions` | `Suggestions` | `'off'` | `'on'` allows autocorrect. `'forceOff'` also stops composition on most Android keyboards. |
+| `suggestions` | `Suggestions` | `'off'` | `'on'` allows autocorrect. `'forceOff'` also makes most Android keyboards type each letter straight in, without an underlined word in progress. |
 | `autoFocus` | `boolean` | `false` | Focuses the editor and shows the keyboard once the view is attached. |
 | `scrollEnabled` | `boolean` | `true` | Off sends vertical drags to a parent `ScrollView`. Lines wider than the view still scroll sideways. |
 | `contentInsets` | `ContentInsets` | all 0 | The padding inside the scrollable area. Style padding on the view is ignored. |
