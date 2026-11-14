@@ -29,6 +29,11 @@ final class TestHost: @unchecked Sendable {
 
   init(threaded: Bool) { self.threaded = threaded }
 
+  // Runs an engine call that belongs on the main thread where this host runs its posts, as an app does.
+  func onMain(_ body: () -> Void) {
+    if threaded { main.sync(execute: body) } else { body() }
+  }
+
   func register(_ id: String, _ language: OpaquePointer) { lock.withLock { languages[id] = language } }
 
   func host() -> cp_host {
@@ -277,7 +282,7 @@ final class CoreEngineTests: XCTestCase {
     while host.waitDelivery(2) {
       for s in host.takeSnapshots() { cp_engine_release(engine, s) }
     }
-    cp_engine_close(engine)
+    host.onMain { cp_engine_close(engine) }
     XCTAssertTrue(host.waitDelivery())
     for s in host.takeSnapshots() { cp_engine_release(nil, s) }
     XCTAssertEqual(host.finalPosts, 1)
@@ -288,7 +293,7 @@ final class CoreEngineTests: XCTestCase {
     let engine = engine(host, budget: 50)
     cp_engine_set_language(engine, Self.javascript)
     attach(engine, String(repeating: "let a = [1, 2, 3];\n", count: 50_000))
-    cp_engine_close(engine)
+    host.onMain { cp_engine_close(engine) }
     while host.waitDelivery() {
       if host.finalPosts == 1 { break }
     }
