@@ -1,4 +1,5 @@
-// The read-only web editor in Chromium and WebKit: yarn prepare, yarn build:web, yarn build:web-grammars first.
+// The read-only web editor in Chromium and WebKit: yarn prepare, yarn build:web, cpp/web/build.sh --test and
+// yarn build:web-grammars first.
 import assert from 'node:assert/strict';
 import { readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -32,8 +33,12 @@ before(async () => {
     path.join(root, 'build/web-test'),
   );
   server = createServer((req, res) => {
-    const file = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    const file = path.resolve(
+      root,
+      `.${decodeURIComponent(new URL(req.url, 'http://x').pathname)}`,
+    );
     try {
+      if (!file.startsWith(root + path.sep)) throw new Error('outside the repository');
       const body = readFileSync(file);
       res.writeHead(200, {
         'content-type': TYPES[path.extname(file)] ?? 'application/octet-stream',
@@ -44,8 +49,8 @@ before(async () => {
       res.end();
     }
   });
-  await new Promise((resolve) => server.listen(0, resolve));
-  base = `http://localhost:${server.address().port}`;
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  base = `http://127.0.0.1:${server.address().port}`;
 });
 
 after(() => server.close());
@@ -411,7 +416,8 @@ for (const engine of [chromium, webkit]) {
 
     test('a missing grammar draws plain text', async () => {
       const { page, warnings, errors } = await open('missing');
-      const result = await page.evaluate(async () => {
+      const warned = page.waitForEvent('console', (m) => /python\.wasm/.test(m.text()));
+      await page.evaluate(async () => {
         const { EditorView, loadCore, until } = window.codepad;
         const view = new EditorView(
           document.getElementById('a'),
@@ -420,7 +426,10 @@ for (const engine of [chromium, webkit]) {
         );
         view.setLanguage('python');
         await until(() => document.querySelector('#a [data-line="0"]')?.textContent === 'def f():');
-        await new Promise((r) => setTimeout(r, 300));
+      });
+      await warned;
+      const result = await page.evaluate(async () => {
+        await window.codepad.frames(2);
         return document.querySelectorAll('#a [data-line] span').length;
       });
       assert.equal(result, 0);
