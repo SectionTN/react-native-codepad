@@ -34,13 +34,18 @@ function language(args: string[]): number {
   const [grammarDir, ...extra] = parsed.positionals;
   if (!grammarDir || extra.length > 0) return usage();
   try {
-    const { id, npmName, outDir } = emitCustomLanguage({
+    const { id, npmName, outDir, webSkipped } = emitCustomLanguage({
       grammarDir,
       outDir: parsed.values.out,
       id: parsed.values.id,
       name: parsed.values.name,
       web: !parsed.values['no-web'],
     });
+    if (webSkipped) {
+      process.stderr.write(
+        `warning: skipped the web build. ${webSkipped}\nThe native package is complete. The web command stops on it until it has a web build. Pass --no-web when the app does not run on web.\n`,
+      );
+    }
     process.stdout.write(
       `Wrote ${npmName} to ${outDir}.\nRebuild the app (run pod install first on iOS) and pass language="${id}" to CodeEditor.\n`,
     );

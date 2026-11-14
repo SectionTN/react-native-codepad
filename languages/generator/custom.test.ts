@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
@@ -47,7 +48,12 @@ function rejects(fn: () => unknown, message: RegExp): void {
 test('emits a private package from the fixture', () => {
   const out = path.join(temp(), 'pkg');
   const r = emitCustomLanguage({ web: false, grammarDir: FIXTURE, outDir: out });
-  assert.deepEqual(r, { id: 'kv_lite', npmName: 'codepad-lang-kv_lite', outDir: out });
+  assert.deepEqual(r, {
+    id: 'kv_lite',
+    npmName: 'codepad-lang-kv_lite',
+    outDir: out,
+    webSkipped: null,
+  });
   const pkg = json(out, 'package.json');
   assert.equal(pkg.name, 'codepad-lang-kv_lite');
   assert.equal(pkg.private, true);
@@ -85,7 +91,7 @@ test('--id and --name rename the package, not the C entry point', () => {
     id: 'kv',
     name: '@acme/kv',
   });
-  assert.deepEqual(r, { id: 'kv', npmName: '@acme/kv', outDir: out });
+  assert.deepEqual(r, { id: 'kv', npmName: '@acme/kv', outDir: out, webSkipped: null });
   assert.equal(json(out, 'package.json').name, '@acme/kv');
   assert.match(read(out, 'ios/CPLangKv.swift'), /tree_sitter_kv_lite\(\)/);
   assert.match(read(out, 'ios/CPLangKv.swift'), /public let id: String = "kv"/);
@@ -296,23 +302,60 @@ test('refuses a grammar whose C name is a grammar CodePad ships', () => {
   );
 });
 
-test('builds the web grammar and fails naming an import the core lacks', () => {
-  const ok = emitCustomLanguage({
+test('builds the web grammar when the core provides its imports', () => {
+  const r = emitCustomLanguage({
     grammarDir: FIXTURE,
     outDir: path.join(temp(), 'pkg'),
     buildWasm: (_dir, out) => writeFileSync(out, wasmImporting(['malloc'])),
     allowedImports: ['malloc'],
   });
-  assert.ok(existsSync(path.join(ok.outDir, 'web/kv_lite.wasm')));
-  rejects(
-    () =>
-      emitCustomLanguage({
-        grammarDir: FIXTURE,
-        outDir: path.join(temp(), 'pkg'),
-        buildWasm: (_dir, out) => writeFileSync(out, wasmImporting(['malloc', 'qsort'])),
-        allowedImports: ['malloc'],
-      }),
+  assert.ok(existsSync(path.join(r.outDir, 'web/kv_lite.wasm')));
+  assert.equal(r.webSkipped, null);
+});
+
+// Each web build problem leaves the native package written and the web folder out, with the reason.
+function skipsWeb(opts: Partial<Parameters<typeof emitCustomLanguage>[0]>, reason: RegExp): void {
+  const r = emitCustomLanguage({ grammarDir: FIXTURE, outDir: path.join(temp(), 'pkg'), ...opts });
+  assert.ok(existsSync(path.join(r.outDir, 'package.json')));
+  assert.ok(existsSync(path.join(r.outDir, 'grammar/src/parser.c')));
+  assert.equal(existsSync(path.join(r.outDir, 'web')), false);
+  assert.match(r.webSkipped ?? '', reason);
+}
+
+test('skips the web build naming an import the core lacks', () => {
+  skipsWeb(
+    {
+      buildWasm: (_dir, out) => writeFileSync(out, wasmImporting(['malloc', 'qsort'])),
+      allowedImports: ['malloc'],
+    },
     /kv_lite\.wasm imports qsort, which the web core does not provide/,
+  );
+});
+
+test('skips the web build when grammar.js is missing', () => {
+  const dir = fixtureCopy();
+  rmSync(path.join(dir, 'grammar.js'));
+  skipsWeb({ grammarDir: dir, allowedImports: ['malloc'] }, /grammar\.js/);
+});
+
+test('skips the web build when the web core is not built', () => {
+  const coreRoot = temp();
+  const header = 'cpp/tree-sitter/lib/include/tree_sitter/api.h';
+  cpSync(path.join(repoRoot, 'package.json'), path.join(coreRoot, 'package.json'));
+  mkdirSync(path.dirname(path.join(coreRoot, header)), { recursive: true });
+  cpSync(path.join(repoRoot, header), path.join(coreRoot, header));
+  skipsWeb({ coreRoot, buildWasm: () => {} }, /lib\/web/);
+});
+
+test('skips the web build when the wasm build fails', () => {
+  skipsWeb(
+    {
+      buildWasm: () => {
+        throw new Error('network down');
+      },
+      allowedImports: ['malloc'],
+    },
+    /tree-sitter build --wasm failed/,
   );
 });
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -13,6 +13,19 @@ test('language writes the package and returns 0', () => {
   const dir = out();
   assert.equal(main(['language', FIXTURE, '--out', dir, '--no-web']), 0);
   assert.ok(existsSync(path.join(dir, 'package.json')));
+});
+
+test('language warns and returns 0 when it skips the web build', (t) => {
+  const grammar = path.join(mkdtempSync(path.join(tmpdir(), 'codepad-bin-')), 'kv_lite');
+  cpSync(FIXTURE, grammar, { recursive: true });
+  rmSync(path.join(grammar, 'grammar.js'));
+  const written: string[] = [];
+  t.mock.method(process.stderr, 'write', (s: string) => written.push(s) > 0);
+  t.mock.method(process.stdout, 'write', () => true);
+  const dir = out();
+  assert.equal(main(['language', grammar, '--out', dir]), 0);
+  assert.ok(existsSync(path.join(dir, 'package.json')));
+  assert.match(written.join(''), /^warning: .*grammar\.js.*--no-web/s);
 });
 
 test('a refused grammar or id returns 1', () => {

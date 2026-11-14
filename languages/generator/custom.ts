@@ -70,7 +70,13 @@ export type CustomOptions = {
   allowedImports?: readonly string[];
 };
 
-export type CustomResult = { id: string; npmName: string; outDir: string };
+// webSkipped says why the web build was left out, null when it was built or not asked for.
+export type CustomResult = {
+  id: string;
+  npmName: string;
+  outDir: string;
+  webSkipped: string | null;
+};
 
 function fail(message: string): never {
   throw new CustomLanguageError(message);
@@ -225,10 +231,14 @@ export function emitCustomLanguage(opts: CustomOptions): CustomResult {
   const highlightsFile = path.join(grammarDir, 'queries/highlights.scm');
   if (!existsSync(highlightsFile)) fail('queries/highlights.scm not found.');
   const web = opts.web ?? true;
+  let webSkipped: string | null = null;
   if (web && !opts.buildWasm && !existsSync(path.join(grammarDir, 'grammar.js'))) {
-    fail('grammar.js not found. The web build needs it next to src/. Pass --no-web to skip it.');
+    webSkipped = 'grammar.js is not next to src/, and the web build needs it.';
   }
-  const allowed = web ? (opts.allowedImports ?? coreImports(coreRoot)) : [];
+  const allowed = web && !webSkipped ? (opts.allowedImports ?? coreImports(coreRoot)) : null;
+  if (web && !webSkipped && !allowed) {
+    webSkipped = 'react-native-codepad has no web core build (lib/web).';
+  }
   const injectionsFile = path.join(grammarDir, 'queries/injections.scm');
   const queries: GrammarQueries = {
     highlights: customQuery(highlightsFile, 'queries/highlights.scm', false),
@@ -285,49 +295,45 @@ export function emitCustomLanguage(opts: CustomOptions): CustomResult {
       podFallbacks: true,
     },
   });
-  if (web) buildWeb(grammarDir, outDir, id, allowed, opts.buildWasm ?? treeSitterWasm);
-  return { id, npmName, outDir };
+  if (allowed && !webSkipped) {
+    webSkipped = buildWeb(grammarDir, outDir, id, allowed, opts.buildWasm ?? treeSitterWasm);
+  }
+  return { id, npmName, outDir, webSkipped };
 }
 
 // The C functions the web core exports to grammars, written by cpp/web/build.sh.
-function coreImports(coreRoot: string): string[] {
+function coreImports(coreRoot: string): string[] | null {
   const list = readJson(path.join(coreRoot, 'lib/web/grammar-imports.json'));
-  if (!Array.isArray(list)) {
-    fail(
-      'react-native-codepad has no web core build (lib/web). Pass --no-web to skip the web build.',
-    );
-  }
-  return list as string[];
+  return Array.isArray(list) ? (list as string[]) : null;
 }
 
 // tree-sitter's own CLI builds the grammar with a compiler it downloads, so no Emscripten is needed here.
 function treeSitterWasm(grammarDir: string, out: string): void {
-  try {
-    execFileSync(
-      'npx',
-      ['--yes', 'tree-sitter-cli@0.26', 'build', '--wasm', '-o', out, grammarDir],
-      {
-        stdio: 'inherit',
-      },
-    );
-  } catch {
-    fail('tree-sitter build --wasm failed. Pass --no-web to skip the web build.');
-  }
+  execFileSync('npx', ['--yes', 'tree-sitter-cli@0.26', 'build', '--wasm', '-o', out, grammarDir], {
+    stdio: 'inherit',
+  });
 }
 
+// Builds web/<id>.wasm and returns null, or removes the web folder and returns why it could not.
 function buildWeb(
   grammarDir: string,
   outDir: string,
   id: string,
   allowed: readonly string[],
   build: (grammarDir: string, out: string) => void,
-): void {
-  const out = path.join(outDir, 'web', `${id}.wasm`);
-  mkdirSync(path.dirname(out), { recursive: true });
-  build(grammarDir, out);
-  const extra = grammarImportsOutside(readFileSync(out), allowed);
-  if (extra.length > 0) {
-    rmSync(out);
-    fail(`${id}.wasm imports ${extra.join(', ')}, which the web core does not provide.`);
+): string | null {
+  const dir = path.join(outDir, 'web');
+  const out = path.join(dir, `${id}.wasm`);
+  mkdirSync(dir, { recursive: true });
+  let extra: string[];
+  try {
+    build(grammarDir, out);
+    extra = grammarImportsOutside(readFileSync(out), allowed);
+  } catch {
+    rmSync(dir, { recursive: true, force: true });
+    return 'tree-sitter build --wasm failed.';
   }
+  if (extra.length === 0) return null;
+  rmSync(dir, { recursive: true, force: true });
+  return `${id}.wasm imports ${extra.join(', ')}, which the web core does not provide.`;
 }
