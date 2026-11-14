@@ -107,6 +107,11 @@ export function copyWebAssets(
           .sort()
       : [];
     for (const grammar of grammars) {
+      if (grammar === 'codepad') {
+        throw new WebAssetsError(
+          `${name} has a grammar named codepad, the name of the core's files. Build it with another --id.`,
+        );
+      }
       const wasm = path.join(dir, 'web', `${grammar}.wasm`);
       if (!existsSync(wasm)) {
         throw new WebAssetsError(

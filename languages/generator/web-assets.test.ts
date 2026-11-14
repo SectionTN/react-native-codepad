@@ -116,3 +116,23 @@ test('a custom package renamed with --id keeps its grammar entry point', () => {
   const kv = copyWebAssets(app, out, core).languages.find((l) => l.id === 'kv');
   assert.equal(kv?.symbol, 'tree_sitter_kv_lite');
 });
+
+test('refuses a grammar named codepad, which would replace the core', () => {
+  const { app, core, out } = fakeApp();
+  const local = path.join(app, 'modules/codepad-lang-codepad');
+  write(
+    path.join(local, 'package.json'),
+    JSON.stringify({ name: 'codepad-lang-codepad', codepad: {} }),
+  );
+  write(path.join(local, 'web/codepad.wasm'), 'grammar');
+  write(path.join(local, 'queries/codepad/highlights.scm'), '(x) @codepad');
+  assert.throws(
+    () => copyWebAssets(app, out, core),
+    (e: unknown) => {
+      assert.ok(e instanceof WebAssetsError);
+      assert.match(e.message, /codepad-lang-codepad.*codepad/);
+      return true;
+    },
+  );
+  assert.equal(readFileSync(path.join(out, 'codepad/codepad.wasm'), 'utf8'), 'wasm');
+});
