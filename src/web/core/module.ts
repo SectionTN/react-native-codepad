@@ -74,6 +74,9 @@ export interface CoreModule {
   _cp_editor_type(ed: Ptr, text: Ptr, length: number): void;
   _cp_editor_command(ed: Ptr, command: number): number;
   _cp_editor_set_selection(ed: Ptr, anchor: number, head: number): void;
+  _cp_editor_begin_group(ed: Ptr): void;
+  _cp_editor_end_group(ed: Ptr): void;
+  _cp_editor_deletes_pair(ed: Ptr, caret: number): number;
   _cp_editor_move(ed: Ptr, unit: number, forward: number, extend: number): void;
   _cp_editor_select_word_at(ed: Ptr, offset: number): void;
   _cp_editor_selection(ed: Ptr): bigint;

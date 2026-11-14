@@ -305,6 +305,19 @@ export class EditorCore {
     this.m._cp_editor_set_selection(this.handle, clampInt(anchor), clampInt(head));
   }
 
+  // Edits between beginGroup and endGroup undo as one step, as a keyboard's composed word does.
+  beginGroup(): void {
+    this.m._cp_editor_begin_group(this.handle);
+  }
+  endGroup(): void {
+    this.m._cp_editor_end_group(this.handle);
+  }
+
+  // True when a backspace at caret would take an auto-closed pair, like the caret between ( and ).
+  deletesPair(caret: number): boolean {
+    return this.m._cp_editor_deletes_pair(this.handle, clampUnsigned(caret)) !== 0;
+  }
+
   move(unit: MoveUnit, forward: boolean, extend: boolean): void {
     this.m._cp_editor_move(this.handle, MOVES.indexOf(unit), forward ? 1 : 0, extend ? 1 : 0);
   }
