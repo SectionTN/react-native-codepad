@@ -89,3 +89,7 @@ languages/.cache/
 # Swift package build
 .build/
 .swiftpm/
+
+# Grammar side modules for the web, built before publishing
+languages/*/web/
+example/modules/*/web/

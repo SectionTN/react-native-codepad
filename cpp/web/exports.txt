@@ -30,3 +30,6 @@ tolower
 toupper
 strchr
 bsearch
+fwrite
+exit
+stderr

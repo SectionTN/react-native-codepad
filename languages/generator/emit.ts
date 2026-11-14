@@ -321,6 +321,7 @@ function shippedPackageJson(a: ShippedArgs): string {
         'ios',
         'grammar',
         'queries',
+        'web',
         '*.podspec',
         'THIRD_PARTY_NOTICES.md',
         '!android/build',

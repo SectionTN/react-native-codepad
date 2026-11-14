@@ -37,6 +37,19 @@ test('a shipped package publishes its third party notices', () => {
   assert.ok((identity.packageJson.files as string[]).includes('THIRD_PARTY_NOTICES.md'));
 });
 
+// The browser loads each grammar from web/<grammar>.wasm, built before publishing.
+test('shipped package files include web', () => {
+  const entry = { id: 'ini', repo: 'r', rev: 'x', grammars: [{ name: 'ini', src: 'src' }] };
+  const identity = shippedIdentity({
+    entry,
+    version: '1.2.3',
+    queries: {},
+    grammarLicense: null,
+    nvimRev: 'n',
+  });
+  assert.ok((identity.packageJson.files as string[]).includes('web'));
+});
+
 test('jniName escapes underscores in package segments', () => {
   assert.equal(
     jniName(

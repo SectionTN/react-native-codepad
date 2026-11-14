@@ -250,6 +250,7 @@ export function emitCustomLanguage(opts: CustomOptions): CustomResult {
       'ios',
       'grammar',
       'queries',
+      'web',
       '*.podspec',
       '!android/build',
       '!android/.cxx',

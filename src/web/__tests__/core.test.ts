@@ -18,7 +18,7 @@ if (dir && !ready) console.warn('python grammar not built, run cpp/web/build.sh 
 
 (ready ? test : test.skip)('the core parses python and highlights in wasm', async () => {
   const m = await loadCore(dir as string);
-  loadGrammar(m, python, 'python', 'python');
+  loadGrammar(m, python, 'python', join(ROOT, 'languages/python/queries/python'));
   const e = utf16(m, 'def greet(name):\n    return name\n', (p, n) => m._cpw_open(p, n, 8000n));
   expect(cstring(m, 'python', (id) => m._cpw_set_language(e, id))).toBe(1);
   pumpAll(m);

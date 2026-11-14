@@ -10,6 +10,7 @@
     "ios",
     "grammar",
     "queries",
+    "web",
     "*.podspec",
     "THIRD_PARTY_NOTICES.md",
     "!android/build",

@@ -3,6 +3,7 @@
 #include <dlfcn.h>
 #include <emscripten/emscripten.h>
 
+#include <cctype>
 #include <cstring>
 #include <deque>
 #include <map>
@@ -35,6 +36,8 @@ struct Editor {
 std::deque<Work> worker_q;
 std::deque<Work> main_q;
 std::map<std::string, const cp_language *> languages;
+// Injection names mapped to language ids, empty for a name that never injects.
+std::map<std::string, std::string> aliases;
 std::string last_error;
 // Snapshots the host holds, for the leak checks of the test build.
 int32_t held = 0;
@@ -55,9 +58,18 @@ int64_t now_millis(void *ctx) {
   return static_cast<int64_t>(clock >= 0 ? clock : emscripten_get_now());
 }
 
-const cp_language *resolve(void *, const char *id) {
-  auto it = languages.find(id ? id : "");
+const cp_language *find(const std::string &id) {
+  auto it = languages.find(id);
   return it == languages.end() ? nullptr : it->second;
+}
+
+// An injection name, lowercased. A loaded id wins over the aliases, like LanguageRegistry.canonicalInjectionId.
+const cp_language *resolve(void *, const char *name) {
+  std::string lower(name ? name : "");
+  for (char &c : lower) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+  if (const cp_language *language = find(lower)) return language;
+  auto it = aliases.find(lower);
+  return it == aliases.end() || it->second.empty() ? nullptr : find(it->second);
 }
 
 void on_change(void *ctx, const cp_change *c, const cp_unit *removed, const cp_unit *inserted, int32_t origin) {
@@ -124,6 +136,9 @@ CPW int32_t cpw_language_load(const char *id, const char *path, const char *symb
   return 1;
 }
 
+// Maps an injection name to a language id. An empty id makes the name never inject.
+CPW void cpw_language_alias(const char *name, const char *id) { aliases[name] = id; }
+
 // Opens an editor with its engine and layout attached and returns its index.
 CPW int32_t cpw_open(const cp_unit *text, uint32_t length, int64_t budget_micros) {
   int32_t index = 0;
@@ -164,7 +179,7 @@ CPW void cpw_close(int32_t e) {
 CPW int32_t cpw_set_language(int32_t e, const char *id) {
   Editor *ed = at(e);
   if (!ed) return 0;
-  const cp_language *language = resolve(nullptr, id);
+  const cp_language *language = find(id ? id : "");
   cp_engine_set_language(ed->engine, language);
   return language ? 1 : 0;
 }
