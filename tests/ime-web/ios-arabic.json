@@ -1,0 +1,396 @@
+{
+  "name": "ios-arabic",
+  "browser": "safari-ios",
+  "keyboard": "Arabic, iOS 27.2 simulator",
+  "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1",
+  "recordedAt": "2026-11-14T21:46:48.133Z",
+  "settings": {
+    "autoCloseBrackets": false,
+    "autoIndent": false
+  },
+  "initial": {
+    "text": "def step_0(value):\n    total = value + 1\n    total = value + 2\n    total = value + 3\n    total = value + 4\ndef step_5(value):\n    total = value + 6\n    total = value + 7\n    total = value + 8\n    total = value + 9\ndef step_10(value):\n    total = value + 11\n    total = value + 12\n    total = value + 13\n    total = value + 14\ndef step_15(value):\n    total = value + 16\n    total = value + 17\n    total = value + 18\n    total = value + 19\ndef step_20(value):\n    total = value + 21\n    total = value + 22\n    total = value + 23\n    total = value + 24\ndef step_25(value):\n    total = value + 26\n    total = value + 27\n    total = value + 28\n    total = value + 29",
+    "selection": [233, 233]
+  },
+  "events": [
+    {
+      "t": 2,
+      "type": "sync",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 11434,
+      "type": "focus",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 0,
+        "end": 0
+      }
+    },
+    {
+      "t": 39940,
+      "type": "keydown",
+      "key": "م",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 40007,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "م",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):\n    total = value + 11",
+        "start": 41,
+        "end": 41
+      }
+    },
+    {
+      "t": 40066,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "م",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):م\n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 40075,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):م\n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 40240,
+      "type": "keydown",
+      "key": "ر",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):م\n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 40249,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "ر",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):م\n    total = value + 11",
+        "start": 42,
+        "end": 42
+      }
+    },
+    {
+      "t": 40250,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "ر",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مر\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 40250,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مر\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 40640,
+      "type": "keydown",
+      "key": "ح",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مر\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 40646,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "ح",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مر\n    total = value + 11",
+        "start": 43,
+        "end": 43
+      }
+    },
+    {
+      "t": 40647,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "ح",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرح\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 40647,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرح\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 41056,
+      "type": "keydown",
+      "key": "ب",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرح\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 41064,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "ب",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرح\n    total = value + 11",
+        "start": 44,
+        "end": 44
+      }
+    },
+    {
+      "t": 41064,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "ب",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحب\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 41065,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحب\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 41476,
+      "type": "keydown",
+      "key": "ا",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحب\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 41485,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": "ا",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحب\n    total = value + 11",
+        "start": 45,
+        "end": 45
+      }
+    },
+    {
+      "t": 41486,
+      "type": "input",
+      "inputType": "insertText",
+      "data": "ا",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا\n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 41486,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا\n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 42123,
+      "type": "keydown",
+      "key": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا\n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 42228,
+      "type": "beforeinput",
+      "inputType": "insertText",
+      "data": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا\n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 42228,
+      "type": "input",
+      "inputType": "insertText",
+      "data": " ",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا \n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 42231,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا \n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 44022,
+      "type": "keydown",
+      "key": "Backspace",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا \n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 44036,
+      "type": "beforeinput",
+      "inputType": "deleteContentBackward",
+      "data": null,
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا \n    total = value + 11",
+        "start": 47,
+        "end": 47
+      }
+    },
+    {
+      "t": 44036,
+      "type": "input",
+      "inputType": "deleteContentBackward",
+      "data": null,
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا\n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 44037,
+      "type": "selectionchange",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا\n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    },
+    {
+      "t": 44977,
+      "type": "blur",
+      "isComposing": false,
+      "windowStart": 192,
+      "ta": {
+        "value": "    total = value + 9\ndef step_10(value):مرحبا\n    total = value + 11",
+        "start": 46,
+        "end": 46
+      }
+    }
+  ],
+  "expected": {
+    "text": "def step_0(value):\n    total = value + 1\n    total = value + 2\n    total = value + 3\n    total = value + 4\ndef step_5(value):\n    total = value + 6\n    total = value + 7\n    total = value + 8\n    total = value + 9\ndef step_10(value):مرحبا\n    total = value + 11\n    total = value + 12\n    total = value + 13\n    total = value + 14\ndef step_15(value):\n    total = value + 16\n    total = value + 17\n    total = value + 18\n    total = value + 19\ndef step_20(value):\n    total = value + 21\n    total = value + 22\n    total = value + 23\n    total = value + 24\ndef step_25(value):\n    total = value + 26\n    total = value + 27\n    total = value + 28\n    total = value + 29"
+  }
+}
