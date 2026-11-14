@@ -25,6 +25,7 @@ export type {
   Theme,
   TokenStyle,
 } from './types';
+export { CodeEditor } from './web/CodeEditor';
 export { configureWeb } from './web/configure';
 
 // The languages the web command found in the app, once languages.json loaded.

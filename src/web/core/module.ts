@@ -166,6 +166,8 @@ export interface CoreModule {
     cap: number,
   ): number;
   _cp_snapshot_length(snapshot: Ptr): number;
+  // revision, based_on, latency_ms, fresh, reused, carried, changed_len
+  _cp_snapshot_info_get(snapshot: Ptr, out: Ptr): void;
   _cp_style_id(name: Ptr): number;
   _cp_style_name(id: number, out: Ptr, cap: number): number;
 }

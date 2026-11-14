@@ -1,0 +1,783 @@
+/// <reference lib="dom" />
+import { githubLight } from '../themes/githubLight';
+import type { ContentInsets, Rect, Theme } from '../types';
+import { EditorCore, type WebChange } from './core/EditorCore';
+import { Layout } from './core/Layout';
+import type { CoreModule } from './core/module';
+import { type DecodedFrame, decodeFrame } from './frame';
+import { ensureLanguage } from './loader';
+import { registerView, requestPump } from './pump';
+import { type CssTheme, cssTheme } from './theme';
+
+export type ViewOptions = {
+  theme: Theme;
+  fontFamily: string;
+  fontSize: number;
+  lineHeight: number;
+  lineNumbers: boolean;
+  softWrap: boolean;
+  highlightActiveLine: boolean;
+  matchBrackets: boolean;
+  textPadding: number;
+  contentInsets: ContentInsets;
+  scrollEnabled: boolean;
+  placeholder: string;
+  readOnly: boolean;
+  tabSize: number;
+  insertSpaces: boolean;
+  autoIndent: boolean;
+  autoCloseBrackets: boolean;
+  onContentSize?: (width: number, height: number) => void;
+  onScroll?: (x: number, y: number) => void;
+  onFirstDraw?: () => void;
+  onChange?: (change: WebChange) => void;
+  onSelection?: (anchor: number, head: number, revision: number) => void;
+};
+
+// The defaults of website/docs/reference/props.md.
+export const DEFAULT_OPTIONS: ViewOptions = {
+  theme: githubLight,
+  fontFamily: '',
+  fontSize: 14,
+  lineHeight: 1.4,
+  lineNumbers: true,
+  softWrap: false,
+  highlightActiveLine: true,
+  matchBrackets: true,
+  textPadding: 8,
+  contentInsets: {},
+  scrollEnabled: true,
+  placeholder: '',
+  readOnly: false,
+  tabSize: 4,
+  insertSpaces: true,
+  autoIndent: true,
+  autoCloseBrackets: true,
+};
+
+const MONOSPACE = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
+const SNAPSHOT_INFO_INTS = 7;
+
+type Entry = {
+  el: HTMLDivElement;
+  revision: number;
+  spans: Int32Array | null;
+  text: string;
+};
+
+// The edited line's previous spans moved along an edit that stayed inside it, kept until a parse lands.
+type Kept = { line: number; revision: number; spans: Int32Array | null; tail: Int32Array | null };
+
+// One editor drawn as DOM lines from the core, outside React's render. The web twin of CodeEditorView.swift.
+export class EditorView {
+  readonly core: EditorCore;
+  readonly layout: Layout;
+  private readonly m: CoreModule;
+  private o: ViewOptions = DEFAULT_OPTIONS;
+  private css: CssTheme = cssTheme(githubLight);
+  private readonly root: HTMLDivElement;
+  private readonly scroller: HTMLDivElement;
+  private readonly content: HTMLDivElement;
+  private readonly gutter: HTMLDivElement;
+  private readonly textLayer: HTMLDivElement;
+  private readonly activeLine: HTMLDivElement;
+  private readonly placeholderEl: HTMLDivElement;
+  private readonly unregister: () => void;
+  private readonly resize: ResizeObserver | null;
+  private readonly cache = new Map<number, Entry>();
+  private readonly attached = new Set<number>();
+  private readonly gutterLines = new Map<number, HTMLDivElement>();
+  private kept: Kept | null = null;
+  private language = '';
+  private languageReady = false;
+  private appliedRevision = -1;
+  private seenSnapshots = 0;
+  private dirty = true;
+  private destroyed = false;
+  private drawn = false;
+  private rowHeight = 0;
+  private charWidth = 0;
+  private lastContent = { width: -1, height: -1 };
+  private lastScroll = { x: 0, y: 0 };
+  private lastSelection = { anchor: 0, head: 0 };
+  private frameInts = 0;
+  private frameIntsCap = 0;
+  private frameText = 0;
+  private frameTextCap = 0;
+  private readonly onScrollEvent = () => this.invalidate();
+
+  constructor(host: HTMLElement, m: CoreModule, text = '') {
+    this.m = m;
+    this.core = new EditorCore(m, text);
+    this.layout = new Layout(this.core);
+    this.root = div('position:relative;overflow:hidden;width:100%;height:100%;direction:ltr;');
+    this.scroller = div('position:absolute;inset:0;overflow:auto;');
+    this.scroller.dataset.scroller = '';
+    this.content = div('position:relative;');
+    this.gutter = div('position:sticky;left:0;top:0;z-index:2;');
+    this.textLayer = div('position:absolute;left:0;top:0;width:100%;height:100%;');
+    this.activeLine = div('position:absolute;left:0;display:none;');
+    this.placeholderEl = div('position:absolute;white-space:pre;display:none;pointer-events:none;');
+    this.textLayer.append(this.activeLine, this.placeholderEl);
+    this.content.append(this.gutter, this.textLayer);
+    this.scroller.append(this.content);
+    this.root.append(this.scroller);
+    host.append(this.root);
+    this.scroller.addEventListener('scroll', this.onScrollEvent, { passive: true });
+    this.resize =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => this.invalidate());
+    this.resize?.observe(this.root);
+    document.fonts?.ready.then(() => this.remeasure());
+    document.fonts?.addEventListener?.('loadingdone', this.remeasureEvent);
+    this.lastSelection = this.core.selection;
+    this.applyOptions(true);
+    this.unregister = registerView(this);
+  }
+
+  setOptions(next: Partial<ViewOptions>): void {
+    const before = this.o;
+    this.o = { ...this.o, ...next };
+    const metrics =
+      before.fontFamily !== this.o.fontFamily ||
+      before.fontSize !== this.o.fontSize ||
+      before.lineHeight !== this.o.lineHeight ||
+      before.tabSize !== this.o.tabSize ||
+      before.softWrap !== this.o.softWrap;
+    const looks =
+      metrics || before.theme !== this.o.theme || before.lineNumbers !== this.o.lineNumbers;
+    if (before.scrollEnabled !== this.o.scrollEnabled) this.listenToPage(!this.o.scrollEnabled);
+    if (
+      before.tabSize !== this.o.tabSize ||
+      before.insertSpaces !== this.o.insertSpaces ||
+      before.autoIndent !== this.o.autoIndent ||
+      before.autoCloseBrackets !== this.o.autoCloseBrackets
+    ) {
+      this.core.settings = {
+        tabSize: this.o.tabSize,
+        insertSpaces: this.o.insertSpaces,
+        autoIndent: this.o.autoIndent,
+        autoCloseBrackets: this.o.autoCloseBrackets,
+      };
+    }
+    if (looks) this.applyOptions(metrics);
+    this.invalidate();
+  }
+
+  // Draws plain text until the language and the languages it injects have loaded, then colors.
+  setLanguage(id: string): void {
+    if (id === this.language) return;
+    this.language = id;
+    this.languageReady = false;
+    this.core.setLanguage('');
+    this.invalidate();
+    if (!id) return;
+    ensureLanguage(this.m, id).then((ok) => {
+      if (this.destroyed || this.language !== id || !ok) return;
+      this.languageReady = this.core.setLanguage(id);
+      this.invalidate();
+    });
+  }
+
+  // Runs an edit, then hands its changes and selection to the cache and the listeners.
+  apply(edit: () => void): void {
+    edit();
+    const changes = this.core.takeChanges();
+    for (const change of changes) this.changed(change, changes.length);
+    for (const change of changes) this.o.onChange?.(change);
+    const s = this.core.selection;
+    if (s.anchor !== this.lastSelection.anchor || s.head !== this.lastSelection.head) {
+      this.lastSelection = s;
+      this.o.onSelection?.(s.anchor, s.head, this.core.revision);
+    }
+    this.invalidate();
+  }
+
+  // Scrolls so the line is at the top of the editor, or of the page when the editor does not scroll.
+  scrollToLine(line: number): void {
+    const top = this.layout.insetTop + this.layout.rowStart(line) * this.rowHeight;
+    if (this.o.scrollEnabled) {
+      this.scroller.scrollTop = top - this.layout.insetTop;
+    } else {
+      window.scrollTo({ top: this.root.getBoundingClientRect().top + window.scrollY + top });
+    }
+    this.invalidate();
+  }
+
+  // Scrolls the least that shows the caret.
+  revealSelection(): void {
+    const caret = this.caretRect(this.core.selection.head);
+    const line = this.core.lineAt(this.core.selection.head);
+    const top = this.layout.rowStart(line) * this.rowHeight;
+    const x = caret ? caret.x - this.layout.textLeft : 0;
+    if (this.layout.reveal(x, top, x + 1, top + this.rowHeight)) this.syncScroll();
+    this.invalidate();
+  }
+
+  // The caret at offset in view coordinates, or null when its line is not drawn.
+  caretRect(offset: number): Rect | null {
+    const line = this.core.lineAt(offset);
+    const entry = this.cache.get(line);
+    if (!entry || !this.attached.has(line)) return null;
+    const column = offset - this.core.lineStart(line);
+    const box = this.root.getBoundingClientRect();
+    const lineBox = entry.el.getBoundingClientRect();
+    // The base direction is left to right: the caret sits at the leading edge of the next character unless it
+    // reads right to left, then at the trailing edge of the previous one, so Chromium and WebKit agree.
+    const next = charRect(entry.el, column, true);
+    const prev = charRect(entry.el, column, false);
+    let edge: { x: number; top: number } = { x: lineBox.left, top: lineBox.top };
+    if (next && !next.rtl) edge = { x: next.rect.left, top: next.rect.top };
+    else if (prev && !prev.rtl) edge = { x: prev.rect.right, top: prev.rect.top };
+    else if (next) edge = { x: next.rect.right, top: next.rect.top };
+    else if (prev) edge = { x: prev.rect.left, top: prev.rect.top };
+    return { x: edge.x - box.left, y: edge.top - box.top, width: 1, height: this.rowHeight };
+  }
+
+  visibleLines(): { first: number; last: number } {
+    return { first: this.layout.firstVisibleLine(), last: this.layout.lastVisibleLine() };
+  }
+
+  // One page frame: drawn only when something changed since the last one.
+  draw(): void {
+    if (this.destroyed) return;
+    if (this.core.snapshotCount !== this.seenSnapshots) {
+      this.seenSnapshots = this.core.snapshotCount;
+      this.dirty = true;
+    }
+    if (!this.dirty) return;
+    this.dirty = false;
+    this.configure();
+    const [sx, sy] = this.scrollPosition();
+    this.layout.beginDraw(sx, sy);
+    let moved = false;
+    try {
+      const frame = this.readFrame();
+      moved = this.prepare(frame);
+      this.place(frame);
+    } finally {
+      this.layout.endDraw();
+    }
+    if (moved) {
+      this.syncScroll();
+      this.dirty = true;
+    }
+    this.report();
+    if (this.dirty) requestPump();
+  }
+
+  destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.unregister();
+    this.listenToPage(false);
+    this.resize?.disconnect();
+    document.fonts?.removeEventListener?.('loadingdone', this.remeasureEvent);
+    this.scroller.removeEventListener('scroll', this.onScrollEvent);
+    this.root.remove();
+    if (this.frameInts) this.m._free(this.frameInts);
+    if (this.frameText) this.m._free(this.frameText);
+    this.core.close();
+  }
+
+  private invalidate(): void {
+    if (this.destroyed) return;
+    this.dirty = true;
+    requestPump();
+  }
+
+  private readonly remeasureEvent = () => this.remeasure();
+
+  // A web font finished loading: every line is measured again.
+  private remeasure(): void {
+    if (this.destroyed) return;
+    this.applyOptions(true);
+    this.invalidate();
+  }
+
+  private listening = false;
+
+  private listenToPage(on: boolean): void {
+    if (on === this.listening) return;
+    this.listening = on;
+    const method = on ? 'addEventListener' : 'removeEventListener';
+    window[method]('scroll', this.onScrollEvent, {
+      capture: true,
+      passive: true,
+    } as AddEventListenerOptions);
+    window[method]('resize', this.onScrollEvent);
+  }
+
+  private applyOptions(metrics: boolean): void {
+    const o = this.o;
+    this.css = cssTheme(o.theme);
+    const font = o.fontFamily ? `"${o.fontFamily}", ${MONOSPACE}` : MONOSPACE;
+    this.rowHeight = Math.max(1, Math.round(o.fontSize * o.lineHeight));
+    Object.assign(this.root.style, {
+      background: this.css.background,
+      color: this.css.foreground,
+      fontFamily: font,
+      fontSize: `${o.fontSize}px`,
+      lineHeight: `${this.rowHeight}px`,
+      tabSize: String(o.tabSize),
+      height: o.scrollEnabled ? '100%' : this.root.style.height,
+    });
+    this.scroller.style.overflowY = o.scrollEnabled ? 'auto' : 'hidden';
+    this.scroller.style.overflowX = o.softWrap ? 'hidden' : 'auto';
+    Object.assign(this.gutter.style, {
+      background: this.css.gutterBackground,
+      color: this.css.gutterForeground,
+      display: o.lineNumbers ? 'block' : 'none',
+    });
+    this.activeLine.style.background = this.css.activeLine;
+    this.placeholderEl.style.color = this.css.gutterForeground;
+    if (metrics) {
+      this.charWidth = measureChar(this.root);
+      this.layout.rowHeight = this.rowHeight;
+      this.layout.wrap = o.softWrap;
+      this.relayout();
+    } else {
+      for (const entry of this.cache.values()) this.paint(entry.el, entry.text, entry.spans);
+    }
+  }
+
+  // Every line is laid out again on the next draw.
+  private relayout(): void {
+    for (const entry of this.cache.values()) entry.el.remove();
+    this.cache.clear();
+    this.attached.clear();
+    this.layout.resetRows();
+  }
+
+  private configure(): void {
+    const o = this.o;
+    const insets = o.contentInsets;
+    const width = Math.round(this.root.clientWidth);
+    const height = o.scrollEnabled ? Math.round(this.root.clientHeight) : window.innerHeight;
+    const digits = Math.max(2, String(this.core.lineCount).length);
+    const gutter = o.lineNumbers ? Math.ceil(this.charWidth * (digits + 2)) : 0;
+    const before = this.layout.textAreaWidth;
+    if (this.layout.gutterWidth !== gutter) this.layout.gutterWidth = gutter;
+    if (this.layout.textPadding !== o.textPadding) this.layout.textPadding = o.textPadding;
+    this.layout.resize(width, height);
+    this.layout.setInsets(insets.top ?? 0, insets.bottom ?? 0, insets.left ?? 0, insets.right ?? 0);
+    if (o.softWrap && this.layout.textAreaWidth !== before) this.relayout();
+  }
+
+  // The scroll the core draws at: the editor's own, or with scrolling off where the page shows the editor.
+  private scrollPosition(): [number, number] {
+    if (this.o.scrollEnabled) return [this.scroller.scrollLeft, this.scroller.scrollTop];
+    const top = this.root.getBoundingClientRect().top;
+    return [this.scroller.scrollLeft, Math.max(0, Math.round(-top))];
+  }
+
+  private syncScroll(): void {
+    if (this.o.scrollEnabled) this.scroller.scrollTop = this.layout.scrollY;
+    this.scroller.scrollLeft = this.layout.scrollX;
+  }
+
+  private snapshotInfo(snapshot: number): { revision: number; basedOn: number } {
+    const out = this.m._malloc(SNAPSHOT_INFO_INTS * 4);
+    this.m._cp_snapshot_info_get(snapshot, out);
+    const revision = this.m.HEAP32[out >> 2] as number;
+    const basedOn = this.m.HEAP32[(out >> 2) + 1] as number;
+    this.m._free(out);
+    return { revision, basedOn };
+  }
+
+  // The draw's one frame call: the layout picks the lines, the frame says which need a layout and brings them.
+  private readFrame(): DecodedFrame {
+    const m = this.m;
+    const snapshot = this.languageReady ? this.core.snapshot : 0;
+    const info = snapshot ? this.snapshotInfo(snapshot) : null;
+    const incremental = info !== null && info.basedOn >= 0 && info.basedOn === this.appliedRevision;
+    const pairs: number[] = [];
+    for (const [line, entry] of this.cache) pairs.push(line, entry.revision);
+    const entries = m._malloc(Math.max(1, pairs.length) * 4);
+    m.HEAP32.set(pairs, entries >> 2);
+    const lenPtr = m._malloc(4);
+    try {
+      for (;;) {
+        if (!this.frameInts) this.growFrame(4096, 16384);
+        const needed =
+          m._cp_editor_frame(
+            this.core.handle,
+            this.layout.handle,
+            snapshot,
+            this.appliedRevision,
+            incremental ? 1 : 0,
+            entries,
+            pairs.length / 2,
+            this.frameInts,
+            this.frameIntsCap,
+            this.frameText,
+            this.frameTextCap,
+            lenPtr,
+          ) >>> 0;
+        const textLength = (m.HEAP32[lenPtr >> 2] as number) >>> 0;
+        if (needed <= this.frameIntsCap && textLength <= this.frameTextCap) {
+          const ints = m.HEAP32.subarray(this.frameInts >> 2, (this.frameInts >> 2) + needed);
+          const text = m.HEAPU16.subarray(this.frameText >> 1, (this.frameText >> 1) + textLength);
+          return decodeFrame(ints, text);
+        }
+        this.growFrame(
+          Math.max(needed, this.frameIntsCap),
+          Math.max(textLength, this.frameTextCap),
+        );
+      }
+    } finally {
+      m._free(entries);
+      m._free(lenPtr);
+    }
+  }
+
+  private growFrame(ints: number, units: number): void {
+    const m = this.m;
+    if (ints > this.frameIntsCap) {
+      if (this.frameInts) m._free(this.frameInts);
+      this.frameIntsCap = ints;
+      this.frameInts = m._malloc(ints * 4);
+    }
+    if (units > this.frameTextCap) {
+      if (this.frameText) m._free(this.frameText);
+      this.frameTextCap = units;
+      this.frameText = m._malloc(Math.max(2, units * 2));
+    }
+  }
+
+  // Builds the lines the frame marks dirty and ends with the draw's measure call. True when it moved the scroll.
+  private prepare(frame: DecodedFrame): boolean {
+    const snapshot = this.languageReady ? this.core.snapshot : 0;
+    const consistent = snapshot !== 0 && this.snapshotInfo(snapshot).revision === frame.revision;
+    const revision = consistent ? frame.revision : -1;
+    const pairs: number[] = [];
+    const fresh: [number, Entry][] = [];
+    for (const run of frame.runs) {
+      for (let line = run.lo; line <= run.hi; line++) {
+        const data = run.lines[line - run.lo];
+        if (!data) continue;
+        const entry = this.cache.get(line);
+        let spans: Int32Array | null = null;
+        if (consistent) {
+          spans = data.spans.length > 0 ? data.spans : null;
+          if (entry && entry.text === data.text && sameSpans(entry.spans, spans)) {
+            entry.revision = revision;
+            continue;
+          }
+        } else {
+          spans = this.keptSpans(line, frame.revision);
+        }
+        const el = entry?.el ?? this.makeLine();
+        el.dataset.line = String(line);
+        this.paint(el, data.text, spans);
+        const next = { el, revision, spans, text: data.text };
+        this.cache.delete(line);
+        this.cache.set(line, next);
+        if (!el.isConnected) this.textLayer.append(el);
+        fresh.push([line, next]);
+      }
+    }
+    for (let line = frame.first; line <= frame.last; line++) {
+      const entry = this.cache.get(line);
+      if (entry && revision >= 0 && entry.revision !== revision && !inRuns(frame, line))
+        entry.revision = revision;
+    }
+    if (revision >= 0) {
+      this.appliedRevision = revision;
+      this.kept = null;
+    }
+    let widest = -1;
+    for (const [line, entry] of fresh) {
+      const rows = this.o.softWrap
+        ? Math.max(1, Math.round(entry.el.offsetHeight / this.rowHeight))
+        : 1;
+      pairs.push(line, rows);
+      if (!this.o.softWrap) widest = Math.max(widest, Math.ceil(entry.el.offsetWidth));
+    }
+    return this.layout.measure(pairs, widest, frame.first, frame.last);
+  }
+
+  // Places the window's lines, numbers and active line, and takes every other line out of the page.
+  private place(frame: DecodedFrame): void {
+    const layout = this.layout;
+    const scrollY = layout.scrollY;
+    const left = layout.textAreaLeft + layout.textPadding;
+    const width = layout.textAreaLeft + layout.contentWidth + layout.insetRight;
+    const height = layout.insetTop + layout.contentHeight + layout.insetBottom;
+    this.content.style.width = `${width}px`;
+    this.content.style.height = `${height}px`;
+    this.gutter.style.width = `${layout.insetLeft + layout.gutterWidth}px`;
+    this.gutter.style.height = `${height}px`;
+    if (!this.o.scrollEnabled) this.root.style.height = `${height}px`;
+    const visible = new Set<number>();
+    for (let line = frame.first; line <= frame.last; line++) {
+      const entry = this.cache.get(line);
+      if (!entry) continue;
+      visible.add(line);
+      const top = layout.lineTop(line) + scrollY;
+      const s = entry.el.style;
+      s.top = `${top}px`;
+      s.left = `${left}px`;
+      s.width = this.o.softWrap ? `${layout.wrapWidth}px` : '';
+      if (!entry.el.isConnected) this.textLayer.append(entry.el);
+      this.attached.add(line);
+      this.number(line, top, frame.caretLine === line);
+    }
+    for (const line of this.attached) {
+      if (visible.has(line)) continue;
+      this.cache.get(line)?.el.remove();
+      this.attached.delete(line);
+    }
+    for (const [line, el] of this.gutterLines) {
+      if (visible.has(line)) continue;
+      el.remove();
+      this.gutterLines.delete(line);
+    }
+    this.evict(visible);
+    const collapsed = frame.anchor === frame.head;
+    const showActive = this.o.highlightActiveLine && collapsed && visible.has(frame.caretLine);
+    this.activeLine.style.display = showActive ? 'block' : 'none';
+    if (showActive) {
+      this.activeLine.style.top = `${layout.lineTop(frame.caretLine) + scrollY}px`;
+      this.activeLine.style.height = `${layout.rows(frame.caretLine) * this.rowHeight}px`;
+      this.activeLine.style.width = `${width}px`;
+    }
+    const empty = frame.length === 0 && this.o.placeholder !== '';
+    this.placeholderEl.style.display = empty ? 'block' : 'none';
+    if (empty) {
+      this.placeholderEl.textContent = this.o.placeholder;
+      this.placeholderEl.style.top = `${layout.insetTop}px`;
+      this.placeholderEl.style.left = `${left}px`;
+    }
+  }
+
+  private number(line: number, top: number, active: boolean): void {
+    if (!this.o.lineNumbers) return;
+    let el = this.gutterLines.get(line);
+    if (!el) {
+      el = div('position:absolute;left:0;text-align:right;');
+      this.gutter.append(el);
+      this.gutterLines.set(line, el);
+    }
+    el.textContent = String(line + 1);
+    el.style.top = `${top}px`;
+    el.style.width = `${this.layout.insetLeft + this.layout.gutterWidth - this.charWidth}px`;
+    el.style.color = active ? this.css.gutterActiveForeground : '';
+  }
+
+  // Keeps about three screens of laid out lines.
+  private evict(visible: Set<number>): void {
+    const cap = Math.max(64, 3 * (visible.size + 1));
+    for (const line of this.cache.keys()) {
+      if (this.cache.size <= cap) break;
+      if (!visible.has(line)) this.cache.delete(line);
+    }
+  }
+
+  // Fires the events of this draw: content size, the first draw, then scroll.
+  private report(): void {
+    const layout = this.layout;
+    const width = layout.textAreaLeft + layout.contentWidth + layout.insetRight;
+    const height = layout.insetTop + layout.contentHeight + layout.insetBottom;
+    if (width !== this.lastContent.width || height !== this.lastContent.height) {
+      this.lastContent = { width, height };
+      this.o.onContentSize?.(width, height);
+    }
+    if (!this.drawn) {
+      this.drawn = true;
+      this.o.onFirstDraw?.();
+    }
+    const x = layout.scrollX;
+    const y = layout.scrollY;
+    if (x !== this.lastScroll.x || y !== this.lastScroll.y) {
+      this.lastScroll = { x, y };
+      this.o.onScroll?.(x, y);
+    }
+  }
+
+  private makeLine(): HTMLDivElement {
+    return div('position:absolute;direction:ltr;');
+  }
+
+  // Fills a line element with its text, one span per styled run.
+  private paint(el: HTMLDivElement, text: string, spans: Int32Array | null): void {
+    el.style.whiteSpace = this.o.softWrap ? 'pre-wrap' : 'pre';
+    el.style.overflowWrap = this.o.softWrap ? 'anywhere' : 'normal';
+    el.replaceChildren();
+    let at = 0;
+    if (spans) {
+      for (let i = 0; i + 2 < spans.length; i += 3) {
+        const start = Math.max(at, spans[i] as number);
+        const end = Math.min(text.length, spans[i + 1] as number);
+        if (end <= start) continue;
+        if (start > at) el.append(text.slice(at, start));
+        const style = this.css.token(styleName(this.m, spans[i + 2] as number));
+        const span = document.createElement('span');
+        span.textContent = text.slice(start, end);
+        if (style) {
+          span.style.color = style.color;
+          if (style.bold) span.style.fontWeight = 'bold';
+          if (style.italic) span.style.fontStyle = 'italic';
+        }
+        el.append(span);
+        at = end;
+      }
+    }
+    if (at < text.length) el.append(text.slice(at));
+  }
+
+  // Moves the cache along an edit and keeps the edited line's spans shifted until the parse catches up.
+  private changed(change: WebChange, count: number): void {
+    if (count > 1) {
+      this.kept = null;
+      this.relayout();
+      return;
+    }
+    const first = this.core.lineAt(change.start);
+    const oldCount = lineSpan(change.removed);
+    const newCount = lineSpan(change.inserted);
+    this.keepSpans(first, oldCount, newCount, change);
+    const delta = newCount - oldCount;
+    const moved: [number, Entry][] = [];
+    for (const [line, entry] of this.cache) {
+      if (line < first) moved.push([line, entry]);
+      else if (line >= first + oldCount) moved.push([line + delta, entry]);
+      else entry.el.remove();
+    }
+    this.cache.clear();
+    this.attached.clear();
+    for (const [line, entry] of moved) {
+      entry.el.dataset.line = String(line);
+      this.cache.set(line, entry);
+      if (entry.el.isConnected) this.attached.add(line);
+    }
+  }
+
+  private keepSpans(first: number, oldCount: number, newCount: number, change: WebChange): void {
+    this.kept = null;
+    const spans = this.cache.get(first)?.spans;
+    if (oldCount !== 1 || !spans) return;
+    const column = change.start - this.core.lineStart(first);
+    const revision = this.core.revision;
+    if (newCount === 1) {
+      const kept = shiftSpans(this.m, spans, column, change.removedLength, change.insertedLength);
+      this.kept = { line: first, revision, spans: kept, tail: null };
+    } else if (newCount === 2 && change.removedLength === 0 && change.inserted.startsWith('\n')) {
+      const added = change.insertedLength - 1;
+      const tail = shiftSpans(this.m, spans, 0, column, added);
+      const lineLength = this.core.lineEnd(first + 1) - this.core.lineStart(first + 1);
+      const head = shiftSpans(this.m, spans, column, lineLength - added, 0);
+      this.kept = { line: first, revision, spans: head, tail };
+    }
+  }
+
+  private keptSpans(line: number, revision: number): Int32Array | null {
+    const kept = this.kept;
+    if (!kept || kept.revision !== revision) return null;
+    if (line === kept.line) return kept.spans;
+    if (line === kept.line + 1) return kept.tail;
+    return null;
+  }
+}
+
+function div(css: string): HTMLDivElement {
+  const el = document.createElement('div');
+  el.style.cssText = css;
+  return el;
+}
+
+function measureChar(root: HTMLElement): number {
+  const probe = document.createElement('span');
+  probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;';
+  probe.textContent = '0000000000';
+  root.append(probe);
+  const width = probe.getBoundingClientRect().width / 10;
+  probe.remove();
+  return width || 8;
+}
+
+function lineSpan(text: string): number {
+  let n = 1;
+  for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) === 10) n++;
+  return n;
+}
+
+function inRuns(frame: DecodedFrame, line: number): boolean {
+  return frame.runs.some((r) => line >= r.lo && line <= r.hi);
+}
+
+function sameSpans(a: Int32Array | null, b: Int32Array | null): boolean {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+const RTL = /^[֐-ࣿיִ-﷿ﹰ-﻿]/;
+
+// The box of the character after column (forward) or before it, and whether it reads right to left.
+function charRect(
+  el: HTMLElement,
+  column: number,
+  forward: boolean,
+): { rect: DOMRect; rtl: boolean } | null {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let at = 0;
+  for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+    const length = node.data.length;
+    const inside = forward
+      ? column >= at && column < at + length
+      : column > at && column <= at + length;
+    if (inside) {
+      const i = column - at;
+      const low = (c: number) => c >= 0xdc00 && c <= 0xdfff;
+      const start = forward ? i : low(node.data.charCodeAt(i - 1)) && i > 1 ? i - 2 : i - 1;
+      const end = forward ? (low(node.data.charCodeAt(i + 1)) ? i + 2 : i + 1) : i;
+      const range = document.createRange();
+      range.setStart(node, start);
+      range.setEnd(node, end);
+      const rect = range.getClientRects()[0] ?? range.getBoundingClientRect();
+      return { rect, rtl: RTL.test(node.data.slice(start, end)) };
+    }
+    at += length;
+  }
+  return null;
+}
+
+const styleNames = new WeakMap<CoreModule, Map<number, string>>();
+
+function styleName(m: CoreModule, id: number): string {
+  let names = styleNames.get(m);
+  if (!names) {
+    names = new Map();
+    styleNames.set(m, names);
+  }
+  const cached = names.get(id);
+  if (cached !== undefined) return cached;
+  const out = m._malloc(256);
+  const length = m._cp_style_name(id, out, 256);
+  const name = m.UTF8ToString(out, Math.min(length, 255));
+  m._free(out);
+  names.set(id, name);
+  return name;
+}
+
+function shiftSpans(
+  m: CoreModule,
+  spans: Int32Array,
+  start: number,
+  removed: number,
+  inserted: number,
+): Int32Array | null {
+  const cap = spans.length + 6;
+  const input = m._malloc(Math.max(1, spans.length) * 4);
+  const out = m._malloc(cap * 4);
+  try {
+    m.HEAP32.set(spans, input >> 2);
+    const n = m._cp_shift_spans(input, spans.length, start, removed, inserted, out, cap) >>> 0;
+    if (n > cap) return null;
+    return m.HEAP32.slice(out >> 2, (out >> 2) + n);
+  } finally {
+    m._free(input);
+    m._free(out);
+  }
+}
