@@ -6,7 +6,7 @@ sidebar_position: 1
 
 The editor engine is one C++ core under `cpp/core`, shared by Android and iOS. It holds the document, the selection, undo, the editing commands, decorations, search, the tree-sitter parsing and the rows and scroll of the layout, behind a C API that Kotlin calls through JNI and Swift calls directly. Each platform keeps its own view, line layout, input and drawing, in Kotlin and in Swift, with the same layers and the same names, and it is bound to React Native through Nitro Views. The TypeScript wrapper, the core, the tree-sitter runtime, the grammars and the test vectors are shared.
 
-## Why an own engine
+## Why CodePad has its own engine
 
 A `TextInput` is one field stretched over a document: no gutter, no horizontal scroll, no control over undo and a layout of the whole text on every edit. A WebView pays a bridge and a second runtime per keystroke. The core stores the document, and each platform draws it through its own text layout API (`StaticLayout` on Android, Core Text on iOS), one visible line at a time. The soft keyboard talks to it through the platform's input protocol, so composition, suggestions and swipe typing work as in any text field.
 

@@ -6,7 +6,7 @@ sidebar_position: 7
 
 CodePad is built to handle large files without making every keystroke or scroll more expensive as the document grows.
 
-This guide covers how the editor handles large documents, what to watch out for when using its API, and how to run the benchmarks yourself.
+This guide covers how the editor handles large documents, what to watch out for when using its API, and how to run the benchmarks yourself. Every number on this page was measured before version 0.1.0.
 
 ## Large files
 
@@ -103,8 +103,6 @@ Keep this in mind when measuring startup performance. A first run and a subseque
 Search performance depends on the document and the number of matches.
 
 In the 100,000-line benchmark, literal search found 274,316 matches in 165 ms. Regex search found 54,864 matches in 103 ms.
-
-Memory usage is another consideration. Loading the 100,000-line document increased Java heap usage by 14.3 MB for 6.6 MB of text.
 
 These are benchmark results, not fixed limits. Use your own documents when evaluating search and memory performance in your application.
 

@@ -1,39 +1,39 @@
 ---
 title: Events
-description: The callback props, what they carry and when they fire.
+description: The callback props, what each one receives and when it's called.
 sidebar_position: 2
 ---
 
-Every callback is wrapped once by the component, so an inline arrow function is fine. The payload types are on the [types page](/reference/types/).
+The component wraps each callback once, so an inline arrow function is fine. The payload types are on the [types page](/reference/types/).
 
 ## `onReady`
 
-`() => void`. Fires once, after the first draw with `initialValue` applied. Ref methods are valid from here, and a call before it operates on an empty document.
+`() => void`. Called once, after the first draw with `initialValue` applied. You can call the ref methods from here on. A call before it works on an empty document.
 
 ## `onChange`
 
-`(e: ChangeEvent) => void`. Fires once per committed change, composition updates included, with a delta: `[start, end)` was replaced with `text`. `revision` grows by one per change. `origin` is `input` for the keyboard, the edit menu and the toolbar methods, `api` for `setText()`, `replaceRange()` and `insertText()`, and `undo` or `redo` for history.
+`(e: ChangeEvent) => void`. Called once for each change, including each update of a word the keyboard is still composing. The event says that the text from `start` to `end` was replaced with `text`. `revision` grows by one with each change. `origin` is `input` for the keyboard, the edit menu, `indent()`, `outdent()` and the toolbar input methods. It's `api` for `setText()`, `replaceRange()`, `insertText()`, `cut()`, `paste()`, `replaceCurrent()` and `replaceAll()`, and `undo` or `redo` for the history.
 
 ## `onChangeText`
 
-`(text: string) => void`. The full document after every change, at the cost of one copy per edit. Prefer `onChange` on large documents.
+`(text: string) => void`. Called with the whole document after each change. It copies the document on every edit, so use `onChange` for large documents.
 
 ## `onSelectionChange`
 
-`(s: SelectionChangeEvent) => void`. The anchor and head in UTF-16 units plus their revision. At most one event per frame.
+`(s: SelectionChangeEvent) => void`. Called when the selection changes, with its anchor and head in UTF-16 code units and the revision of the text. It's called at most once per frame.
 
 ## `onScroll`
 
-`(e: ScrollEvent) => void`. The scroll offset and the content extent in dp, without insets. At most one event per frame.
+`(e: ScrollEvent) => void`. Called when the editor scrolls, with the scroll offset and the content size, without the insets. It's called at most once per frame.
 
 ## `onFocus` and `onBlur`
 
-`() => void`. Focus follows the native view: a tap, `focus()`, `blur()`, or the keyboard closing.
+`() => void`. Called when the editor gains or loses focus: after a tap, `focus()`, `blur()`, or the keyboard closing.
 
 ## `onContentSizeChange`
 
-`(e: ContentSizeEvent) => void`. The view size at which nothing scrolls, `contentInsets` included, in dp. Sent after a draw whose content size changed, at most once per frame, and the first time before `onReady`. With soft wrap the value converges over a few frames as lines are measured. The keyboard overlap from `avoidKeyboard` is not included. See [nested in a ScrollView](/guides/nested-scroll/).
+`(e: ContentSizeEvent) => void`. Called with the size at which nothing scrolls, `contentInsets` included. It's called after a draw in which that size changed, at most once per frame, and a first time before `onReady`. With `softWrap` on, the value settles over a few frames as the editor measures the lines. The height doesn't include the keyboard that `avoidKeyboard` adds. See [nested in a ScrollView](/guides/nested-scroll/).
 
 ## `onGapLayout`
 
-`(e: GapLayoutEvent) => void`. Fires after a draw in which a gap appeared, moved or went away, scrolling included, and once after the first array with gaps is applied. `gaps` holds every gap sorted by line, in the view coordinates of `getCursorRect()`. Place a note view from it, as the [decorations guide](/guides/decorations/#a-note-under-a-line) shows.
+`(e: GapLayoutEvent) => void`. Called after a draw in which a gap appeared, moved or was removed, scrolling included, and once after the first array with gaps is applied. `gaps` lists every gap sorted by line, in the same coordinates as `getCursorRect()`. Place a note view from it, as the [decorations guide](/guides/decorations/#a-note-under-a-line) shows.

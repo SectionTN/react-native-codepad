@@ -1,12 +1,12 @@
 ---
 title: Nested in a ScrollView
-description: An auto height editor inside a page that scrolls.
+description: An editor that grows with its text inside a page that scrolls.
 sidebar_position: 4
 ---
 
-A form, a note, a snippet in a list: sometimes the editor is inside a page that scrolls and must not scroll up and down on its own. One prop and one event do it.
+When the editor is inside a page that scrolls, such as a form or a list of snippets, it can grow with its text instead of scrolling on its own. One prop and one event do that:
 
-```tsx
+```tsx title="SnippetPage.tsx"
 import { useState } from 'react';
 import { ScrollView, TextInput } from 'react-native';
 import { CodeEditor } from 'react-native-codepad';
@@ -28,14 +28,14 @@ export function SnippetPage() {
 }
 ```
 
-- `scrollEnabled={false}` leaves vertical drags to the page, so a drag over the editor scrolls the page. A mostly horizontal drag over lines wider than the editor scrolls them sideways. Taps, long presses and handle drags still work.
-- Add `softWrap` instead to wrap long lines within the page width. The editor then never scrolls sideways.
-- `onContentSizeChange` reports the size at which nothing scrolls, insets included. Feed its height back into `style`. With soft wrap a tall document converges over a few frames as lines are measured, and `Math.ceil` avoids a one pixel scroll.
-- `keyboardShouldPersistTaps="handled"` lets a tap place the caret without the page dismissing the keyboard first.
+- `scrollEnabled={false}` leaves vertical drags to the page, so a drag over the editor scrolls the page. A mostly horizontal drag over lines wider than the editor scrolls them sideways. Taps, touch and hold, and handle drags still work.
+- Add `softWrap` instead to wrap long lines to the page width. The editor then never scrolls sideways.
+- `onContentSizeChange` reports the size at which nothing scrolls, insets included. Feed its height back into `style`. With `softWrap` on, the height of a long document settles over a few frames as the editor measures its lines. `Math.ceil` rounds the height up, so the editor never scrolls by a fraction of a pixel.
+- `keyboardShouldPersistTaps="handled"` lets a tap place the caret without the page closing the keyboard first.
 
-## Caret reveal is yours
+## Keep the caret on screen
 
-The editor scrolls sideways to keep the caret in view, but it cannot scroll the page. In `onSelectionChange`, read `getCursorRect()` (view coordinates, in dp), add the editor's offset in the page from its `onLayout`, and scroll the page when the caret leaves the visible band:
+The editor scrolls sideways to keep the caret in view, but it can't scroll the page. In `onSelectionChange`, read `getCursorRect()`, add the editor's position in the page from its `onLayout`, and scroll the page when the caret leaves the visible part:
 
 ```tsx
 onSelectionChange={() => {
@@ -48,8 +48,8 @@ onSelectionChange={() => {
 }}
 ```
 
-Leave `avoidKeyboard` off here: an editor that does not scroll has nothing to inset. Let the page handle the keyboard with a `KeyboardAvoidingView` or keyboard-controller's `KeyboardAwareScrollView`.
+Leave `avoidKeyboard` off here. An editor that doesn't scroll can't move its text above the keyboard, so let the page handle the keyboard with a `KeyboardAvoidingView` or the `KeyboardAwareScrollView` from react-native-keyboard-controller.
 
 ## Keep nested documents small
 
-An auto height editor lays out and draws every line. A few hundred lines is fine, a 10k line file belongs in a scrolling editor with a fixed height.
+An editor that grows with its text lays out and draws every line. A few hundred lines are fine. A 10,000-line file belongs in a scrolling editor with a fixed height.

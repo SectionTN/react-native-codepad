@@ -4,14 +4,14 @@ description: The keys CodePad handles on each platform, and how to drive the sam
 sidebar_position: 6
 ---
 
-CodePad handles the keys below from any hardware keyboard: Bluetooth or USB, a Chromebook, an iPad keyboard, or the Mac keyboard on the simulator. Every other key goes to the platform, and printable keys type through the normal path, with auto close and typing coalescing.
+CodePad handles the keys in the following table on any hardware keyboard, whether it's a Bluetooth or USB keyboard, a Chromebook, an iPad keyboard, or the Mac keyboard on the simulator. Every other key goes to the platform. Letters and symbols type like the soft keyboard: brackets close on their own, and typing groups into one undo step.
 
 | Action | Android | iOS |
 | --- | --- | --- |
-| Move by one grapheme cluster | Left, Right | Left, Right |
+| Move by one character, where an emoji counts as one | Left, Right | Left, Right |
 | Move by one word | Ctrl+Left, Ctrl+Right | Option+Left, Option+Right |
-| Move by one visual row, keeping the goal column | Up, Down | Up, Down |
-| Move by one viewport height | Page Up, Page Down | Page Up, Page Down |
+| Move up or down one row, back to the same column after a shorter line | Up, Down | Up, Down |
+| Move by one screen of text | Page Up, Page Down | Page Up, Page Down |
 | Line start, line end | Home, End | Home, End, Cmd+Left, Cmd+Right |
 | Document start, document end | Ctrl+Home, Ctrl+End | Cmd+Home, Cmd+End, Cmd+Up, Cmd+Down |
 | Extend the selection | Shift with any of the above | Shift with any of the above |
@@ -26,13 +26,13 @@ CodePad handles the keys below from any hardware keyboard: Bluetooth or USB, a C
 | Copy, cut, paste | Ctrl+C, Ctrl+X, Ctrl+V, the dedicated keys | Cmd+C, Cmd+X, Cmd+V |
 | Collapse the selection to the caret | Escape | Escape |
 
-Under `readOnly`, movement, selection, select all, copy and Escape still work, and the editing keys do nothing. Word movement uses runs of `[A-Za-z0-9_]` and falls back to the platform's word breaks. A paste reports origin `input` in `onChange`, and undo and redo report `undo` and `redo`.
+When `readOnly` is on, movement, selection, select all, copy and Escape still work, and the editing keys do nothing. Moving by word skips spaces, then jumps over a run of ASCII letters, digits and `_`. Any other character, such as `é` or an emoji, is a step of its own. A paste reports the origin `input` in `onChange`, and undo and redo report `undo` and `redo`.
 
-Android leaves Alt and Meta combinations and Ctrl+Tab to the platform. iOS leaves Control combinations, and Option with any key other than Left and Right, to UIKit. The editor's commands win over UIKit's own text navigation.
+Android leaves Alt and Meta combinations and Ctrl+Tab to the system. iOS leaves Control combinations, and Option with any key other than Left and Right, to the system. When the editor and iOS both handle a key, the editor's command runs.
 
-## The undo stack on iOS
+## Undo on iOS
 
-The editor's history is the responder chain's `undoManager`, so Cmd+Z, shake to undo and the three finger gestures run the same undo groups as `undo()` and `redo()`. On Android the history is reached through the key table and the ref.
+On iOS, Cmd+Z, shake to undo and the three-finger undo gestures undo the same steps as `undo()` and `redo()`. On Android, the keys in the table and the ref methods are the way to undo.
 
 ## The same table from JavaScript
 
@@ -51,4 +51,4 @@ The editor's history is the responder chain's `undoManager`, so Cmd+Z, shake to 
 
 ## Testing without a keyboard
 
-On an Android emulator with `hw.keyboard=yes` the host keyboard types into the editor, and `adb shell input keyevent` sends keys from a script. On the iOS simulator the Mac keyboard types into the editor, and with Connect Hardware Keyboard on, Cmd and Option chords reach the table.
+On an Android emulator with `hw.keyboard=yes` the host keyboard types into the editor, and `adb shell input keyevent` sends keys from a script. On the iOS simulator the Mac keyboard types into the editor, and with Connect Hardware Keyboard on, the Cmd and Option shortcuts work too.

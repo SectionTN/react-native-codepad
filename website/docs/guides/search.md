@@ -1,10 +1,10 @@
 ---
 title: Search
-description: How to set a query, walk the matches and replace them, and how matches are painted.
+description: How to set a query, move through the matches and replace them, and how matches are painted.
 sidebar_position: 5
 ---
 
-Search runs in the native engine. You set a query, the editor paints every match and keeps them current through edits, and the ref walks and replaces them. A search bar in JavaScript is a few async calls.
+The editor searches the document natively. You set a query, and the editor paints every match and keeps the matches up to date as the text changes. You move through them and replace them with the ref, so a search bar in JavaScript takes a few async calls.
 
 ## Query
 
@@ -19,34 +19,35 @@ const { count, limited } = await editor.current.setSearch({
 
 `setSearch` resolves with the match count once the matches are painted.
 
-- `regex` uses PCRE2 on both platforms, built into the shared core, so Unicode `\w` and `\b`, lookahead, bounded lookbehind and named groups behave the same. A pattern that does not compile rejects the promise and clears the search, so your bar can show the error while the user keeps typing. When a pattern backtracks too much, such as `(a+)+$` over a long run of `a`, the search stops at PCRE2's match limit and keeps the matches it found before that point. The promise then resolves with `limited: true`, so your bar can show the count as incomplete.
+- `regex` turns the query into a regular expression. Regular expressions work the same on both platforms, with lookahead, lookbehind of a limited length and named groups. `\w` and `\b` work with letters from every language. A pattern that doesn't compile rejects the promise and clears the search, so your bar can show the error while the user keeps typing.
+- A very complex pattern, such as `(a+)+$` over a long run of `a`, can stop early. The promise then resolves with `limited: true`, and `count` covers only the matches found so far. Your bar can show the count as incomplete.
 - `caseSensitive` is off by default.
-- `wholeWord` wants identifier boundaries (`[A-Za-z0-9_]`) on both ends.
+- `wholeWord` keeps only the matches with no ASCII letter, digit or `_` right before or after them.
 
-Matches never overlap and empty matches are skipped, so `a*` on `aaa` is one match. The replacement text is literal: no `$1`.
+Matches never overlap, and the editor skips empty matches, so `a*` on `aaa` is one match. The replacement text is used as is, so `$1` stays `$1`.
 
-## Walking the matches
+## Next and previous match
 
-`findNext()` and `findPrevious()` select the next or previous match from the caret, wrapping around, reveal it, and resolve with `{ index, total }` (`index` is 0 based). Without a query or without matches they resolve with `null`. Right after `setSearch`, `findNext()` lands on the match nearest the caret.
+`findNext()` and `findPrevious()` select the next or previous match from the caret, wrapping around, and scroll to it. They resolve with `{ index, total }`, where `index` counts from 0, or with `null` when there is no query or no match. Right after `setSearch`, `findNext()` selects the first match at or after the caret.
 
 ```ts
 const hit = await editor.current.findNext();
 setLabel(hit ? `${hit.index + 1}/${hit.total}` : '0/0');
 ```
 
-## Replacing
+## Replace
 
-`replaceCurrent(text)` replaces the selected match, selects the next one and resolves with `true`. When the selection is not a match it resolves with `false` and doesn't change the document, so call `findNext()` first. `replaceAll(text)` replaces every match in one undo group and resolves with the count.
+`replaceCurrent(text)` replaces the selected match, selects the next one and resolves with `true`. When the selection isn't a match, it resolves with `false` and leaves the document as it is, so call `findNext()` first. `replaceAll(text)` replaces every match in one undo step and resolves with the number of replacements.
 
-`clearSearch()` drops the query and the highlights. Search and replace work under `readOnly`, which only blocks user input.
+`clearSearch()` clears the query and the highlights. Search, `replaceCurrent()` and `replaceAll()` also work when `readOnly` is on.
 
-## Painting
+## Match colors
 
-Matches are filled with the theme's `searchMatch`, the selected one with `searchMatchActive`. After an edit the previous matches remain painted, shifted through the change, until the fresh ones arrive on the next frame.
+The editor fills each match with the theme's `searchMatch` color and the selected match with `searchMatchActive`. After an edit, the old matches stay painted and move with the text until the new ones arrive on the next frame.
 
 ## A find bar
 
-The example app's find bar is one effect per query change and a few buttons. The `live` flag drops a stale result when the query changed while a search was running.
+The example app's find bar runs one effect per query change. The `live` flag drops a result that arrives after the query changed again:
 
 ```tsx
 useEffect(() => {
@@ -72,4 +73,4 @@ useEffect(() => {
 }, [text, regex, caseSensitive, wholeWord]);
 ```
 
-The full component is in the repository under `example/src/components/FindBar.tsx`. A literal query with a quarter million matches on a 100,000-line file resolves in under 200 ms. The [performance guide](/guides/performance/) has the numbers.
+The example keeps this logic in `example/src/chrome/useFind.ts` in the repository. On an Android emulator, a literal search with a quarter million matches in a 100,000-line file resolves in under 200 ms. The [performance guide](/guides/performance/) has more numbers.

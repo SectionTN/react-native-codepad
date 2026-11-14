@@ -1,12 +1,12 @@
 ---
 title: Themes
-description: The three built-in themes, the Theme shape and how to write your own.
+description: The three built-in themes, the Theme object and how to write your own.
 sidebar_position: 2
 ---
 
-CodePad ships with 3 themes: `githubLight` (the default), `githubDark` and `oneDark`. Each one is a plain object passed as `theme`.
+CodePad ships with three themes: `githubLight` (the default), `githubDark` and `oneDark`. Each one is a plain object passed as `theme`.
 
-```tsx
+```tsx title="Editor.tsx"
 import { useColorScheme } from 'react-native';
 import { CodeEditor, githubDark, githubLight } from 'react-native-codepad';
 
@@ -16,7 +16,7 @@ export function Editor() {
 }
 ```
 
-## The shape
+## The theme object
 
 ```ts
 interface Theme {
@@ -37,19 +37,19 @@ interface Theme {
 type TokenStyle = string | { color: string; bold?: boolean; italic?: boolean };
 ```
 
-Colors are `#rrggbb` or `#rrggbbaa`. `selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` are drawn under the text, so give them some alpha. The [theme tokens reference](/reference/theme-tokens/) lists every value of the three themes.
+Colors take `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`, `rgb()` and `rgba()`. The editor draws `selection`, `matchingBracket`, `searchMatch` and `searchMatchActive` under the text, and the selection over the search matches. Give the selection some transparency, such as `#0969da33`, so a search match still shows through it. The [theme tokens reference](/reference/theme-tokens/) lists every value of the three themes.
 
-## Token lookup
+## Token colors
 
-`tokens` is keyed by tree-sitter capture names such as `keyword`, `keyword.return`, `punctuation.bracket` or `markup.heading.1`. The lookup walks the dotted prefixes from the longest one down and ends at `foreground`, so a theme only needs the root names and can add a leaf wherever it wants a distinction.
+The highlighter gives each piece of code a name, such as `keyword`, `keyword.return`, `punctuation.bracket` or `markup.heading.1`. `tokens` maps those names to colors. When a name has no entry, the editor drops its last part and tries again, so `keyword.return` falls back to `keyword`. A name with no match at all paints in `foreground`. A theme only needs the short root names, and it can add a longer name wherever it wants a different color.
 
-The built-in themes cover every capture the nineteen packages produce. A theme from the nvim-treesitter ecosystem ports by renaming its keys: `@keyword.return` becomes `keyword.return`.
+The built-in themes have a color for every name the nineteen language packages produce. To reuse a Neovim theme, drop the `@` from its keys: `@keyword.return` becomes `keyword.return`.
 
 ## A custom theme
 
 Spread a built-in theme and override what you want:
 
-```ts
+```ts title="midnight.ts"
 import { githubDark, type Theme } from 'react-native-codepad';
 
 export const midnight: Theme = {
@@ -65,8 +65,10 @@ export const midnight: Theme = {
 };
 ```
 
-Hoist the object out of the render. The prop is compared by identity, so a literal written in JSX crosses to native on every render.
+Define the theme outside your component. The editor compares the `theme` prop by reference, so an object written inline in JSX is sent to the native editor again on every render.
 
-A theme built from scratch needs the root names: `comment`, `keyword`, `string`, `number`, `function`, `variable`, `type`, `operator`, `punctuation`, `tag`, `attribute`, `constant`, `boolean`, `property`, `module`, `label`, `constructor`, `character` and the `markup.*` keys. A missing root paints in `foreground`.
+A theme built from scratch needs the root names: `comment`, `keyword`, `string`, `number`, `function`, `variable`, `type`, `operator`, `punctuation`, `tag`, `attribute`, `constant`, `boolean`, `property`, `module`, `label`, `constructor`, `character` and the `markup.*` keys. Code with a missing root name paints in `foreground`.
 
-Bold and italic need a font that has those faces. The defaults, `monospace` on Android and `Menlo` on iOS, do.
+A color that doesn't parse paints magenta on Android and logs a warning. On iOS an editor color that doesn't parse takes the matching `githubLight` color, and a token color takes the `githubLight` text color, which is hard to read on a dark background. iOS doesn't log a warning, so check a new theme on both platforms.
+
+Bold and italic need a font that has those styles. The default fonts, `monospace` on Android and `Menlo` on iOS, have them.

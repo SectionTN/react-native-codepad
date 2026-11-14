@@ -6,14 +6,14 @@ sidebar_position: 3
 
 This is a simple CodePad usage: one screen with the editor, an undo button on the ref and a status line fed by `onChange`.
 
-```tsx
+```tsx title="EditorScreen.tsx"
 import { useRef, useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 import { CodeEditor, type CodeEditorRef, githubDark } from 'react-native-codepad';
 
 const INITIAL = ['export function greet(name) {', '  return `Hello, ${name}`;', '}'].join('\n');
 
-// Object props are compared by identity; hoist them out of the render.
+// Object props are compared by reference, so define them outside the component.
 const INSETS = { bottom: 24 };
 
 export function EditorScreen() {
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
 - `initialValue` sets the initial text of the editor. It is read once, so use `setText()` to replace the document later.
 - `language` is the id of an installed language package. Without the package the editor shows plain text.
 - `theme` defaults to `githubLight`. The [themes guide](/guides/themes/) has the other two and shows how to write your own.
-- `onChange` gives you one delta per change. `onChangeText` gives you the whole text after every change, so keep it for small documents.
-- The ref reads synchronously (`getText()`, `getSelection()`, `getCursorRect()`) and writes asynchronously (`setText()`, `replaceRange()`, `undo()`). Everything is valid from `onReady`.
+- `onChange` tells you what changed in each edit. `onChangeText` gives you the whole text after every change, so keep it for small documents.
+- The ref's readers, such as `getText()`, `getSelection()` and `getCursorRect()`, return right away. Its writers, such as `setText()`, `replaceRange()` and `undo()`, return a promise. You can call all of them once `onReady` fires.
 
 Offsets count UTF-16 code units. Lines and columns start at `0`, and ranges include the start but exclude the end, just like JavaScript strings.

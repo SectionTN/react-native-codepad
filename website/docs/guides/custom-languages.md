@@ -24,7 +24,7 @@ my-grammar/
     injections.scm      optional
 ```
 
-The parser must use ABI 13 to 15, which is what tree-sitter 0.26 writes. A scanner must be written in C, and every file it includes, directly or through a header, must be inside `src/`.
+A scanner must be written in C, and every file it includes, directly or through a header, must be inside `src/`.
 
 ## Build the package
 
@@ -50,6 +50,7 @@ The command stops with a message, and doesn't write anything, when:
 - the id is a Kotlin or Java keyword, or the id of a language CodePad ships
 - the grammar has the name of a language CodePad ships, as a fork of one does (rename it in `grammar.js` and generate again)
 - a query uses a predicate the editor can't run, or starts with an `; inherits:` line
+- the parser comes from a tree-sitter version the editor can't load (generate it again with tree-sitter 0.26)
 - the scanner is C++ (`scanner.cc`), or a file in `src/` includes one from outside it
 - the output folder exists and the command didn't write it
 
@@ -87,8 +88,4 @@ The editor runs `eq?`, `match?` and `contains?` with their `not-` and `any-` for
 
 A highlights query that references a node the grammar doesn't have makes the whole language fall back to plain text. Check each query against a sample file with `tree-sitter query queries/highlights.scm sample.mylang` before you build.
 
-`injections.scm` can hand a range to any installed language. A custom language whose id is `bash`, `graphql`, `cpp` or another name CodePad never injects on its own is injected too, for example in a Markdown code block.
-
-## Class names
-
-The editor looks for a class named after the id: `me.sectiontn.codepad.lang.<id>.<Id>Language` on Android and `CPLang<Id>` on iOS, where `<Id>` is the id in PascalCase, split on `_`. The command writes both, so a package built with it needs nothing else.
+`injections.scm` can mark code inside your language as another installed language. Your language also shows up inside other languages: with the id `bash`, `graphql` or `cpp`, for example, it highlights the matching code blocks in Markdown.
