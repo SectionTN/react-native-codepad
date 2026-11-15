@@ -53,12 +53,12 @@ export class InputHost {
       this.hooks.changed();
     });
     this.on(ta, 'compositionend', () => {
-      const value = ta.value;
-      const next = this.session.compositionEnd(this.state());
+      this.session.compositionEnd();
       this.hooks.changed();
-      // A browser may still send the composition's last input after this event.
+      // A browser may still send the composition's last input after this event, so the window moves a task later.
       setTimeout(() => {
-        if (ta.value === value && !this.session.composing) this.write(next);
+        this.write(this.session.settle(this.state()));
+        this.hooks.changed();
       }, 0);
     });
     this.on(ta, 'keydown', (e) => {

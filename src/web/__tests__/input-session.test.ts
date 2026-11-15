@@ -91,7 +91,7 @@ run('a composed word undoes in one step', async () => {
   s.beforeInput(ta('abk', 2, 3));
   expect(s.input(composed('か'), ta('abか', 3))).toBeNull();
   expect(s.composing).toEqual({ start: 2, end: 3 });
-  s.compositionEnd(ta('abか', 3));
+  s.compositionEnd();
   expect(s.composing).toBeNull();
   core.undo();
   expect(core.text()).toBe('ab');
@@ -179,3 +179,22 @@ run('a caret moved away and back to where sync put it is followed', async () => 
   s.selectionChange(ta('abc', 2));
   expect(core.selection.head).toBe(2);
 });
+
+run(
+  'an input sent after compositionend maps onto the window the textarea still holds',
+  async () => {
+    const text = ['a', 'b', 'c'].map((c) => c.repeat(6000)).join('\n');
+    const { core, s } = await open(text, 0);
+    core.setSelection(core.lineStart(1) + 3000, core.lineStart(2) + 3000);
+    const w = s.sync() as TextareaState;
+    s.compositionStart(w);
+    const after = ta(`${w.value.slice(0, w.start)}X${w.value.slice(w.end)}`, w.start + 1);
+    s.beforeInput(w);
+    s.input(composed('X'), after);
+    s.compositionEnd();
+    const committed = core.text();
+    s.beforeInput(after);
+    s.input(typed('X'), after);
+    expect(core.text()).toBe(committed);
+  },
+);

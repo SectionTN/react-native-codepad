@@ -89,7 +89,8 @@ for (const file of files) {
       } else if (e.type === 'compositionstart') {
         session.compositionStart(e.ta);
       } else if (e.type === 'compositionend') {
-        pending = session.compositionEnd(e.ta) ?? pending;
+        session.compositionEnd();
+        pending = session.settle(e.ta) ?? pending;
       } else if (e.type === 'selectionchange') {
         pending = session.selectionChange(e.ta) ?? pending;
       } else if (e.type === 'blur') {
