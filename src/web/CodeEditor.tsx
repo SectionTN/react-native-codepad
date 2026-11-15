@@ -273,14 +273,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       cut: () => later('cut', undefined),
       copy: () => later('copy', undefined),
       paste: () => later('paste', undefined),
-      focus: () => {
-        viewRef.current?.focus();
-        return Promise.resolve();
-      },
-      blur: () => {
-        viewRef.current?.blur();
-        return Promise.resolve();
-      },
+      focus: () => run((v) => v.focus()),
+      blur: () => run((v) => v.blur()),
       setSearch: () => later('setSearch', { count: 0, limited: false }),
       findNext: () => later('findNext', null),
       findPrevious: () => later('findPrevious', null),
