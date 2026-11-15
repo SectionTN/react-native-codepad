@@ -23,6 +23,7 @@ export class InputHost {
   readonly textarea: HTMLTextAreaElement;
   // iOS reports the selection as 0,0 for a moment after focus, so selection changes wait a frame.
   private settling = false;
+  private settleTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly listeners: [EventTarget, string, EventListener][] = [];
 
   constructor(
@@ -58,7 +59,9 @@ export class InputHost {
       this.session.compositionEnd();
       this.hooks.changed();
       // A browser may still send the composition's last input after this event, so the window moves a task later.
-      setTimeout(() => {
+      clearTimeout(this.settleTimer);
+      this.settleTimer = setTimeout(() => {
+        this.settleTimer = undefined;
         this.write(this.session.settle(this.state()));
         this.hooks.changed();
       }, 0);
@@ -133,6 +136,7 @@ export class InputHost {
   }
 
   destroy(): void {
+    clearTimeout(this.settleTimer);
     for (const [target, type, fn] of this.listeners) target.removeEventListener(type, fn);
     this.textarea.remove();
   }
