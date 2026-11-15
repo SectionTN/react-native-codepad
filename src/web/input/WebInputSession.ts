@@ -142,9 +142,14 @@ export class WebInputSession {
     this.core.beginGroup();
   }
 
-  compositionEnd(ta: TextareaState): TextareaState | null {
+  // The window stays as the textarea shows it, since a browser may still send the composition's last input.
+  compositionEnd(): void {
     this.finishComposition();
-    return this.follow(ta);
+  }
+
+  // After compositionend has settled: a new window when the caret left the window's middle line.
+  settle(ta: TextareaState): TextareaState | null {
+    return this.composed ? null : this.follow(ta);
   }
 
   // The user moved the caret, ignored while composing and for the echo of what sync wrote.
