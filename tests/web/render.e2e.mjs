@@ -538,6 +538,49 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('a caret move after an edit to a line not drawn measures its new text', async () => {
+      const { page } = await open();
+      await editor(page, 'a', Array.from({ length: 100 }, (_, i) => `line ${i}`).join('\n'), {
+        softWrap: true,
+      });
+      const line = await page.evaluate(() => {
+        const v = window.views.a;
+        v.moveCaret('pageDown', false);
+        v.moveCaret('pageDown', false);
+        const at = v.core.lineAt(v.core.selection.head);
+        const start = v.core.lineStart(at);
+        v.apply(() => v.core.replace(start, v.core.lineEnd(at), 'x'.repeat(300)));
+        v.apply(() => v.core.setSelection(start + 20, start + 20));
+        v.moveCaret('down', false);
+        return { at, now: v.core.lineAt(v.core.selection.head) };
+      });
+      assert.equal(line.now, line.at);
+      await page.close();
+    });
+
+    test('ArrowDown into right-to-left text lands on the nearest column', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'abcdefghijklmnopq\nab مرحبا بالعالم cd');
+      const columns = await page.evaluate(() => {
+        const v = window.views.a;
+        const out = [];
+        for (let c = 4; c <= 15; c++) {
+          v.apply(() => v.core.setSelection(c, c));
+          const goal = v.caretRect(c).x;
+          v.moveCaret('down', false);
+          const start = v.core.lineStart(1);
+          const x = (o) => v.caretRect(o).x;
+          let best = Infinity;
+          for (let o = start; o <= v.core.lineEnd(1); o++)
+            best = Math.min(best, Math.abs(x(o) - goal));
+          out.push(Math.abs(x(v.core.selection.head) - goal) - best);
+        }
+        return out;
+      });
+      assert.ok(Math.max(...columns) < 1, `extra distance ${columns}`);
+      await page.close();
+    });
+
     test('Shift+ArrowRight draws a selection', async () => {
       const { page } = await open();
       await editor(page, 'a', 'abcdef');

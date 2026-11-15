@@ -71,6 +71,8 @@ export const DEFAULT_OPTIONS: ViewOptions = {
 const MONOSPACE = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
 const SNAPSHOT_INFO_INTS = 7;
 const MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+// A run of Hebrew or Arabic script anywhere in a row.
+const RTL_TEXT = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
 const MOVES: Partial<Record<CaretDirection, [MoveUnit, boolean]>> = {
   left: ['char', false],
   right: ['char', true],
@@ -160,7 +162,7 @@ export class EditorView {
   // The row of the drawn caret inside its wrapped line.
   private drawnCaretRow = 0;
   // Hidden copies of lines a caret move measured, dropped on the next draw.
-  private readonly measuring = new Map<number, HTMLDivElement>();
+  private readonly measuring = new Map<number, { el: HTMLDivElement; text: string }>();
   private readonly geometry: LineGeometry = {
     rows: (line) => Math.max(1, Math.round(this.lineEl(line).offsetHeight / this.rowHeight)),
     rowOf: (line, column) =>
@@ -489,10 +491,17 @@ export class EditorView {
     const first = firstWhere(0, length + 1, (c) => rowOf(c) >= rowInLine);
     if (first > length) return length;
     const last = firstWhere(first, length + 1, (c) => rowOf(c) > rowInLine) - 1;
-    const at = firstWhere(first, last + 1, (c) => xOf(c) >= x);
-    let column = at;
-    if (at > last) column = last;
-    else if (at > first && x - xOf(at - 1) < xOf(at) - x) column = at - 1;
+    let column = first;
+    if (RTL_TEXT.test(text.slice(first, last + 1))) {
+      // x does not grow along a row that holds right to left text, so every column is measured.
+      for (let c = first + 1; c <= last; c++)
+        if (Math.abs(xOf(c) - x) < Math.abs(xOf(column) - x)) column = c;
+    } else {
+      const at = firstWhere(first, last + 1, (c) => xOf(c) >= x);
+      column = at;
+      if (at > last) column = last;
+      else if (at > first && x - xOf(at - 1) < xOf(at) - x) column = at - 1;
+    }
     const unit = text.charCodeAt(column);
     // Never between the two halves of an emoji.
     if (column > 0 && unit >= 0xdc00 && unit <= 0xdfff) column--;
@@ -504,18 +513,23 @@ export class EditorView {
     const text = this.core.line(line);
     const entry = this.cache.get(line);
     if (entry && this.attached.has(line) && entry.text === text) return entry.el;
-    let el = this.measuring.get(line);
-    if (!el) {
-      el = this.makeLine();
+    let copy = this.measuring.get(line);
+    if (copy && copy.text !== text) {
+      copy.el.remove();
+      copy = undefined;
+    }
+    if (!copy) {
+      const el = this.makeLine();
       this.paint(el, text, null);
       el.style.visibility = 'hidden';
       el.style.top = '0px';
       el.style.left = `${this.layout.textAreaLeft + this.layout.textPadding}px`;
       el.style.width = this.o.softWrap ? `${this.layout.wrapWidth}px` : '';
       this.textLayer.append(el);
-      this.measuring.set(line, el);
+      copy = { el, text };
+      this.measuring.set(line, copy);
     }
-    return el;
+    return copy.el;
   }
 
   // The caret at a column of a line element, in pixels from its left edge and in rows from its top.
@@ -680,7 +694,7 @@ export class EditorView {
     }
     if (!this.dirty) return;
     this.dirty = false;
-    for (const el of this.measuring.values()) el.remove();
+    for (const copy of this.measuring.values()) copy.el.remove();
     this.measuring.clear();
     this.configure();
     this.restaleRefreshed();
