@@ -8,12 +8,13 @@ type Range = { start: number; end: number };
 
 const codePoints = (s: string) => [...s].length;
 
-// Maps a hidden textarea that holds a window of the document onto the core, the web twin of ImeSession.
-// Every method that can move the window returns the textarea state to write, or null.
+// The web twin of ImeSession: maps a textarea holding a window of the document onto the core.
 export class WebInputSession {
   private win = { start: 0, value: '', line: 0 };
   private before: Range | null = null;
   private composed: Range | null = null;
+  // The textarea state sync last handed out.
+  private written: TextareaState | null = null;
 
   constructor(
     private readonly core: EditorCore,
@@ -37,11 +38,12 @@ export class WebInputSession {
     this.win = { start, value: this.core.text(start, end), line: this.core.lineAt(head) };
     // A selection longer than the window shows as the whole window selected.
     const clamp = (offset: number) => Math.min(Math.max(offset - start, 0), end - start);
-    return {
+    this.written = {
       value: this.win.value,
       start: clamp(Math.min(anchor, head)),
       end: clamp(Math.max(anchor, head)),
     };
+    return { ...this.written };
   }
 
   // The selection the edit replaces, which a diff alone cannot place (Enter before a newline).
@@ -137,9 +139,11 @@ export class WebInputSession {
     return this.follow(ta);
   }
 
-  // The user moved the caret in the textarea. Ignored while composing.
+  // The user moved the caret, ignored while composing and for the echo of what sync wrote.
   selectionChange(ta: TextareaState): TextareaState | null {
     if (this.composed || ta.value !== this.win.value) return null;
+    const w = this.written;
+    if (w && ta.value === w.value && ta.start === w.start && ta.end === w.end) return null;
     const ws = this.win.start;
     this.apply(() => this.select(ws + ta.start, ws + ta.end));
     return this.follow(ta);
