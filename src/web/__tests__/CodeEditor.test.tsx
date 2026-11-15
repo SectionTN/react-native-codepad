@@ -177,3 +177,15 @@ test('typeText, deleteBackward, deleteForward and moveCaret made before the core
   expect(view.deleteForward).toHaveBeenCalledTimes(1);
   expect(view.moveCaret).toHaveBeenCalledWith('pageDown', true);
 });
+
+test('focus called before the core loads focuses the editor once it does', async () => {
+  const ref = createRef<CodeEditorRef>();
+  await render(<CodeEditor ref={ref} />);
+  const focused = ref.current?.focus();
+  await act(async () => {
+    mockCore.resolve({});
+    await tick();
+  });
+  await expect(settled(focused as Promise<void>)).resolves.toBeUndefined();
+  expect(mockViews[0]?.focus).toHaveBeenCalledTimes(1);
+});
