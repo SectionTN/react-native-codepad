@@ -300,6 +300,42 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('select all then Backspace empties a file longer than the textarea window', async () => {
+      const { page } = await open();
+      await editor(
+        page,
+        'a',
+        Array.from({ length: 3000 }, (_, i) => `line number ${i}`).join('\n'),
+      );
+      await clickAt(page, 'a', 0, 0);
+      await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+a`);
+      await page.evaluate(() => window.codepad.frames(3));
+      await page.keyboard.press('Backspace');
+      assert.equal(await textOf(page, 'a'), '');
+      await page.close();
+    });
+
+    test('a click on a line number keeps the focus where it is', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'one\ntwo');
+      await page.evaluate(() => {
+        window.counts = { focus: 0, blur: 0 };
+        window.views.a.setOptions({
+          onFocus: () => window.counts.focus++,
+          onBlur: () => window.counts.blur++,
+        });
+      });
+      await clickAt(page, 'a', 0, 1);
+      const { x, y } = await page.evaluate(() => {
+        const host = document.getElementById('a').getBoundingClientRect();
+        const line = document.querySelector('#a [data-line="1"]').getBoundingClientRect();
+        return { x: host.left + 4, y: line.top + line.height / 2 };
+      });
+      await page.mouse.click(x, y);
+      assert.deepEqual(await page.evaluate(() => window.counts), { focus: 1, blur: 0 });
+      await page.close();
+    });
+
     test('typing after replaceRange, setText and undo lands at the core caret', async () => {
       const { page } = await open();
       await editor(page, 'a', 'abc');
@@ -411,6 +447,44 @@ for (const engine of [chromium, webkit]) {
         enter: 1,
         join: 1,
         text: 'def a():x\n    return b\n',
+      });
+      await page.close();
+    });
+
+    test('two edits before a frame and a join under a blank line keep the keyword colors', async () => {
+      const { page } = await open();
+      const result = await page.evaluate(async (keyword) => {
+        const { EditorView, ensureLanguage, frames, loadCore, until } = window.codepad;
+        await ensureLanguage('python');
+        const host = document.getElementById('a');
+        const v = new EditorView(
+          host,
+          await loadCore(),
+          'def a():\n    pass\n\ndef c():\n    pass\n',
+        );
+        v.setLanguage('python');
+        await until(() => host.querySelector('[data-line="3"] span'));
+        const colored = (line) =>
+          [...host.querySelectorAll(`[data-line="${line}"] span`)].filter(
+            (s) => getComputedStyle(s).color === keyword,
+          ).length;
+        const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+        v.apply(() => v.core.setSelection(8, 8));
+        await frames(2);
+        v.apply(() => v.core.typeText('x'));
+        v.apply(() => v.core.typeText('y'));
+        await nextFrame();
+        const twice = colored(0);
+        await frames(3);
+        const blank = v.core.lineEnd(2);
+        v.apply(() => v.core.replace(blank, blank + 1, ''));
+        await nextFrame();
+        return { twice, join: colored(2), text: v.core.text() };
+      }, KEYWORD);
+      assert.deepEqual(result, {
+        twice: 1,
+        join: 1,
+        text: 'def a():xy\n    pass\ndef c():\n    pass\n',
       });
       await page.close();
     });

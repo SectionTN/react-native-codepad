@@ -169,9 +169,11 @@ export class EditorView {
     columnAt: (line, row, x) => this.columnAt(line, row, x),
   };
   private readonly onClickEvent = (e: MouseEvent) => this.click(e);
-  // A press on the text keeps the focus where it is, so a click inside a focused editor does not blur it.
+  // A press on the text or the line numbers keeps the focus, so a click in a focused editor never blurs it.
   private readonly onMouseDownEvent = (e: MouseEvent) => {
-    if (e.button === 0 && this.textLayer.contains(e.target as Node)) e.preventDefault();
+    const target = e.target as Node;
+    const inside = this.textLayer.contains(target) || this.gutter.contains(target);
+    if (e.button === 0 && inside) e.preventDefault();
   };
 
   constructor(host: HTMLElement, m: CoreModule, text = '') {
@@ -463,8 +465,7 @@ export class EditorView {
     this.vertical(page, direction === 'down' || direction === 'pageDown', extend);
   }
 
-  // The column nearest x on a row of a line, x in pixels from the line's left edge. Lays the line out when it is
-  // not drawn.
+  // The column nearest x (pixels from the line's left) on a row of a line, laid out first when not drawn.
   columnAt(line: number, rowInLine: number, x: number): number {
     if (this.destroyed) return 0;
     const el = this.lineEl(line);
@@ -530,8 +531,7 @@ export class EditorView {
     this.focus();
   }
 
-  // The caret, the composing underline and the selection, from where the browser drew the text.
-  // Every read comes before every write, so a draw lays the page out once.
+  // The caret, composing underline and selection, every read before every write so the page lays out once.
   private drawInput(): void {
     const box = this.textLayer.getBoundingClientRect();
     const { anchor, head } = this.core.selection;
@@ -673,8 +673,7 @@ export class EditorView {
     this.configure();
     this.restaleRefreshed();
     let moved = this.frame();
-    // A caret moved off screen scrolls into view in the same task, so no frame paints without it. A caret line that
-    // was not drawn is revealed by its row first, then again by its x once drawn.
+    // A caret moved off screen scrolls into view before the paint: by row while its line is not drawn, then by x.
     for (let pass = 0; this.revealing && pass < 2; pass++) {
       if (this.drawnCaret) this.revealing = false;
       if (!this.revealCaret()) break;
@@ -737,8 +736,7 @@ export class EditorView {
     requestPump();
   }
 
-  // A new snapshot at the drawn revision comes from a refresh: its colors changed with no edit, so every cached line
-  // is queried again, since the frame skips a line already at the snapshot's revision.
+  // A new snapshot at the drawn revision is a refresh, so every cached line is queried again.
   private restaleRefreshed(): void {
     const snapshot = this.languageReady ? this.core.snapshot : 0;
     if (snapshot === this.drawnSnapshot) return;
@@ -747,8 +745,7 @@ export class EditorView {
     for (const entry of this.cache.values()) entry.revision = -1;
   }
 
-  // Loads the languages the engine could not find, like a Markdown fence's, then has it look them up again.
-  // It refreshes once per language that registered, so a name that never resolves cannot loop.
+  // Loads languages the engine could not find, like a fence's, and refreshes once per language that registered.
   private loadMissed(): void {
     for (const name of this.core.takeMissedLanguages()) this.missed.add(name);
     if (!this.missed.size) return;
@@ -1122,9 +1119,18 @@ export class EditorView {
     const first = this.core.lineAt(change.start);
     const oldCount = lineSpan(change.removed);
     const newCount = lineSpan(change.inserted);
-    const hadSpans = this.cache.get(first)?.spans != null;
+    // Colors the edited lines show, from the cache or from an earlier edit since the last frame.
+    const inside = (line: number) => line >= first && line < first + oldCount;
+    const kept = this.kept;
+    let colored =
+      kept !== null &&
+      ((inside(kept.line) && kept.spans !== null) || (inside(kept.line + 1) && kept.tail !== null));
+    for (const [line, entry] of this.cache) {
+      if (colored) break;
+      colored = inside(line) && entry.spans !== null;
+    }
     this.keepSpans(first, oldCount, newCount, change);
-    if (hadSpans && this.kept === null) this.urgent = true;
+    if (colored && this.kept === null) this.urgent = true;
     const delta = newCount - oldCount;
     const moved: [number, Entry][] = [];
     for (const [line, entry] of this.cache) {
@@ -1141,9 +1147,19 @@ export class EditorView {
     }
   }
 
+  // The spans a line shows now: its cache entry, else what an edit since the last frame kept for it.
+  private shownSpans(line: number): Int32Array | null {
+    const entry = this.cache.get(line);
+    if (entry) return entry.spans;
+    const kept = this.kept;
+    if (!kept) return null;
+    if (line === kept.line) return kept.spans;
+    return line === kept.line + 1 ? kept.tail : null;
+  }
+
   private keepSpans(first: number, oldCount: number, newCount: number, change: WebChange): void {
+    const spans = this.shownSpans(first);
     this.kept = null;
-    const spans = this.cache.get(first)?.spans;
     if (oldCount !== 1 || !spans) return;
     const column = change.start - this.core.lineStart(first);
     const revision = this.core.revision;
@@ -1238,9 +1254,7 @@ function sameSpans(a: Int32Array | null, b: Int32Array | null): boolean {
 
 const RTL = /^[֐-ࣿיִ-﷿ﹰ-﻿]/;
 
-// Where the caret at a column of a line element sits, in page coordinates. The base direction is left to right: the
-// caret is at the leading edge of the next character unless it reads right to left, then at the trailing edge of the
-// previous one, so Chromium and WebKit agree.
+// The caret at a column in page coordinates: the leading edge of the next character unless it reads right to left.
 function caretEdge(el: HTMLElement, column: number): { x: number; top: number; height: number } {
   const next = charRect(el, column, true);
   const prev = charRect(el, column, false);
@@ -1255,8 +1269,7 @@ function caretEdge(el: HTMLElement, column: number): { x: number; top: number; h
 
 const written = new WeakMap<HTMLElement, Record<string, string>>();
 
-// Sets a style, or the text with key text, only when it differs from what this last set, so a draw that moves
-// nothing leaves the page's layout valid.
+// Writes a style, or the text under key text, only when it changed, so an unchanged draw keeps the layout valid.
 function put(el: HTMLElement, key: string, value: string): void {
   let last = written.get(el);
   if (!last) {
