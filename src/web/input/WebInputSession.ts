@@ -7,6 +7,8 @@ export type InputLike = { inputType: string; data: string | null; isComposing: b
 type Range = { start: number; end: number };
 
 const codePoints = (s: string) => [...s].length;
+// Input that auto-closes and indents as typing does. A paste or a replacement goes in as written.
+const TYPED = new Set(['insertText', 'insertLineBreak', 'insertParagraph']);
 
 // The web twin of ImeSession: maps a textarea holding a window of the document onto the core.
 export class WebInputSession {
@@ -52,6 +54,9 @@ export class WebInputSession {
   }
 
   input(e: InputLike, ta: TextareaState): TextareaState | null {
+    this.written = null;
+    const typing = TYPED.has(e.inputType);
+    let grown = false;
     const old = this.win.value;
     const next = ta.value;
     const ws = this.win.start;
@@ -79,6 +84,7 @@ export class WebInputSession {
       end >= Math.min(selEnd, winEnd)
     ) {
       start = Math.min(start, selStart);
+      grown = true;
       end = Math.max(end, selEnd);
     }
     const composing = this.composed !== null || e.isComposing;
@@ -91,11 +97,11 @@ export class WebInputSession {
         if (this.composed) this.composed = { start, end: start + inserted.length };
         this.select(start + inserted.length, start + inserted.length);
         coreCaret = true;
-      } else if (start === end && inserted === '\n') {
+      } else if (typing && start === end && inserted === '\n') {
         this.select(start, start);
         this.core.insertNewline();
         coreCaret = true;
-      } else if (start === end && codePoints(inserted) === 1) {
+      } else if (typing && start === end && codePoints(inserted) === 1) {
         this.select(start, start);
         this.core.typeText(inserted);
         coreCaret = true;
@@ -111,7 +117,9 @@ export class WebInputSession {
       } else {
         this.core.inputReplace(start, end, inserted, inserted === '' && codePoints(removed) === 1);
       }
-      if (!coreCaret) this.select(ws + ta.start, ws + ta.end);
+      const caret = start + inserted.length;
+      if (grown) this.select(caret, caret);
+      else if (!coreCaret) this.select(ws + ta.start, ws + ta.end);
     });
     const coreWindow = this.core.text(ws, winEnd + this.core.length - lengthBefore);
     const caret = this.core.selection;
@@ -145,6 +153,7 @@ export class WebInputSession {
     const w = this.written;
     if (w && ta.value === w.value && ta.start === w.start && ta.end === w.end) return null;
     const ws = this.win.start;
+    this.written = null;
     this.apply(() => this.select(ws + ta.start, ws + ta.end));
     return this.follow(ta);
   }

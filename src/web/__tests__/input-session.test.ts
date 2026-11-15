@@ -148,3 +148,34 @@ run('the browser echoing a clamped select all leaves the whole document selected
   expect(s.selectionChange(written)).toBeNull();
   expect(core.selection).toEqual({ anchor: 0, head: core.length });
 });
+
+const paste: InputLike = { inputType: 'insertFromPaste', data: null, isComposing: false };
+
+run('a pasted ( and a pasted newline stay literal', async () => {
+  const { core, s } = await open('  a', 3);
+  s.beforeInput(ta('  a', 3));
+  s.input(paste, ta('  a(', 4));
+  expect(core.text()).toBe('  a(');
+  s.beforeInput(ta('  a(', 4));
+  s.input(paste, ta('  a(\n', 5));
+  expect(core.text()).toBe('  a(\n');
+});
+
+run('typing over a selection starting before the window puts the caret after it', async () => {
+  const { core, s } = await open('a'.repeat(50000), 0);
+  core.setSelection(1000, 21000);
+  const w = s.sync() as TextareaState;
+  expect(s.windowStart).toBeGreaterThan(1000);
+  s.beforeInput(w);
+  s.input(typed('x'), ta(`x${w.value.slice(w.end)}`, 1));
+  expect(core.text()).toBe(`${'a'.repeat(1000)}x${'a'.repeat(29000)}`);
+  expect(core.selection).toEqual({ anchor: 1001, head: 1001 });
+});
+
+run('a caret moved away and back to where sync put it is followed', async () => {
+  const { core, s } = await open('abc', 2);
+  s.selectionChange(ta('abc', 1));
+  expect(core.selection.head).toBe(1);
+  s.selectionChange(ta('abc', 2));
+  expect(core.selection.head).toBe(2);
+});
