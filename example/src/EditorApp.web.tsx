@@ -23,6 +23,7 @@ export function EditorApp() {
   const [fileId, setFileId] = useState('python');
   const [themeIndex, setThemeIndex] = useState(0);
   const [scrollEnabled, setScrollEnabled] = useState(true);
+  const [suggestions, setSuggestions] = useState<'on' | 'off'>('off');
   const [demo, setDemo] = useState<Demo>('editor');
   const theme = THEMES[themeIndex % THEMES.length]?.theme;
   // Lines of the generated JavaScript file the typing bench opened, 0 for a picked file.
@@ -59,7 +60,7 @@ export function EditorApp() {
 
   return (
     <View style={[styles.page, { backgroundColor: theme?.background }]}>
-      <View style={styles.bar}>
+      <View style={[styles.bar, styles.wrap]}>
         {(['editor', 'nested', 'two'] as Demo[]).map((d) => (
           <Chip key={d} label={d} on={demo === d} onPress={() => pick(setDemo, d)} />
         ))}
@@ -72,6 +73,11 @@ export function EditorApp() {
           label={`scrollEnabled ${scrollEnabled}`}
           on={!scrollEnabled}
           onPress={() => setScrollEnabled((s) => !s)}
+        />
+        <Chip
+          label={`suggestions ${suggestions}`}
+          on={suggestions === 'on'}
+          onPress={() => setSuggestions((s) => (s === 'on' ? 'off' : 'on'))}
         />
       </View>
       <ScrollView horizontal style={styles.files} contentContainerStyle={styles.bar}>
@@ -97,6 +103,7 @@ export function EditorApp() {
           theme={theme}
           fontFamily={FONT}
           scrollEnabled={scrollEnabled}
+          suggestions={suggestions}
           avoidKeyboard
           onReady={ready(benchLines ? `bench ${benchLines}` : (file?.name ?? ''))}
         />
@@ -142,6 +149,7 @@ export function EditorApp() {
 const styles = StyleSheet.create({
   page: { flex: 1, height: '100%' },
   bar: { flexDirection: 'row', gap: 8, padding: 8, alignItems: 'center' },
+  wrap: { flexWrap: 'wrap' },
   files: { flexGrow: 0 },
   chip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, backgroundColor: '#8884' },
   chipOn: { backgroundColor: '#0969da' },
