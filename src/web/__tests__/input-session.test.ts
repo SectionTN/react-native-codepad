@@ -136,3 +136,15 @@ run('blur mid-composition keeps the text and closes the group', async () => {
   core.undo();
   expect(core.text()).toBe('abか');
 });
+
+run('the browser echoing a clamped select all leaves the whole document selected', async () => {
+  const text = 'x'
+    .repeat(40)
+    .concat('\n')
+    .repeat(Math.ceil((WINDOW_CAP * 3) / 41));
+  const { core, s } = await open(text, 0);
+  core.selectAll();
+  const written = s.sync() as TextareaState;
+  expect(s.selectionChange(written)).toBeNull();
+  expect(core.selection).toEqual({ anchor: 0, head: core.length });
+});
