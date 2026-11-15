@@ -114,7 +114,7 @@ export class WebInputSession {
       ) {
         this.core.inputReplace(start, end + 1, '', true);
         coreCaret = true;
-      } else {
+      } else if (start !== end || inserted !== '') {
         this.core.inputReplace(start, end, inserted, inserted === '' && codePoints(removed) === 1);
       }
       const caret = start + inserted.length;

@@ -97,6 +97,21 @@ run('a composed word undoes in one step', async () => {
   expect(core.text()).toBe('ab');
 });
 
+run(
+  'an input with no change after compositionend leaves the composition one undo away',
+  async () => {
+    const { core, s } = await open('ab', 2);
+    s.compositionStart(ta('ab', 2));
+    s.beforeInput(ta('ab', 2));
+    s.input(composed('か'), ta('abか', 3));
+    s.compositionEnd();
+    s.beforeInput(ta('abか', 3));
+    s.input(typed('か'), ta('abか', 3));
+    core.undo();
+    expect(core.text()).toBe('ab');
+  },
+);
+
 run('a quote typed inside a composition does not auto-close', async () => {
   const { core, s } = await open('', 0);
   s.compositionStart(ta('', 0));
