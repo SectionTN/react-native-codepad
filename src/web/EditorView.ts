@@ -202,6 +202,7 @@ export class EditorView {
     this.session = new WebInputSession(this.core, (edit) => this.applyInput(edit));
     this.input = new InputHost(this.root, this.session, {
       keyDown: (e) => this.keyDown(e),
+      clipboard: (cut) => this.clipboard(cut),
       focusChanged: (focused) => {
         this.safely(() => (focused ? this.o.onFocus?.() : this.o.onBlur?.()));
         this.invalidate();
@@ -387,6 +388,17 @@ export class EditorView {
       return;
     this.revealing = true;
     if (probing) probeKey(this, performance.now() - start);
+  }
+
+  // The selected text for copy or cut. A cut deletes it, except under readOnly.
+  private clipboard(cut: boolean): string | null {
+    const { anchor, head } = this.core.selection;
+    const from = Math.min(anchor, head);
+    const to = Math.max(anchor, head);
+    if (this.destroyed || from === to) return null;
+    const text = this.core.text(from, to);
+    if (cut && !this.o.readOnly) this.perform(() => this.core.inputReplace(from, to, ''));
+    return text;
   }
 
   // A hardware key the editor runs itself. True when the browser must not act on it.

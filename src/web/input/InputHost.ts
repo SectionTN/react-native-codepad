@@ -5,6 +5,8 @@ import type { TextareaState, WebInputSession } from './WebInputSession';
 export type InputHooks = {
   // True when the key ran an editor command, so the browser must not act on it.
   keyDown(e: KeyboardEvent): boolean;
+  // The selected text for the clipboard, deleted first for a cut. Null leaves the event to the browser.
+  clipboard(cut: boolean): string | null;
   focusChanged(focused: boolean): void;
   changed(): void;
 };
@@ -61,6 +63,8 @@ export class InputHost {
         this.hooks.changed();
       }, 0);
     });
+    this.on(ta, 'copy', (e) => this.clip(e as ClipboardEvent, false));
+    this.on(ta, 'cut', (e) => this.clip(e as ClipboardEvent, true));
     this.on(ta, 'keydown', (e) => {
       if (this.hooks.keyDown(e as KeyboardEvent)) e.preventDefault();
     });
@@ -131,6 +135,14 @@ export class InputHost {
   destroy(): void {
     for (const [target, type, fn] of this.listeners) target.removeEventListener(type, fn);
     this.textarea.remove();
+  }
+
+  // The textarea holds only a window, so the clipboard takes the editor's whole selection.
+  private clip(e: ClipboardEvent, cut: boolean): void {
+    const text = this.hooks.clipboard(cut);
+    if (text === null || !e.clipboardData) return;
+    e.clipboardData.setData('text/plain', text);
+    e.preventDefault();
   }
 
   private on(target: EventTarget, type: string, fn: EventListener): void {
