@@ -101,8 +101,12 @@ export class InputHost {
 
   // Keeps the textarea at the caret, so the keyboard's candidate window opens there.
   place(x: number, y: number): void {
-    this.textarea.style.left = `${Math.round(x)}px`;
-    this.textarea.style.top = `${Math.round(y)}px`;
+    const s = this.textarea.style;
+    const left = `${Math.round(x)}px`;
+    const top = `${Math.round(y)}px`;
+    // An unchanged write still invalidates the page's layout.
+    if (s.left !== left) s.left = left;
+    if (s.top !== top) s.top = top;
   }
 
   focus(): void {
