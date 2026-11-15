@@ -119,6 +119,8 @@ export class EditorView {
   private seenSnapshots = 0;
   private dirty = true;
   private destroyed = false;
+  // The next frame parses before it draws: the lines on screen lost colors an edit could not keep, or none came yet.
+  urgent = false;
   private drawn = false;
   private rowHeight = 0;
   private charWidth = 0;
@@ -277,6 +279,7 @@ export class EditorView {
     ensureLanguage(this.m, id).then((ok) => {
       if (this.destroyed || this.language !== id || !ok) return;
       this.languageReady = this.core.setLanguage(id);
+      this.urgent = this.languageReady;
       this.invalidate();
     });
   }
@@ -723,6 +726,11 @@ export class EditorView {
     requestPump();
   }
 
+  // True when the next frame has something to draw: a change, or a snapshot not drawn yet.
+  pending(): boolean {
+    return !this.destroyed && (this.dirty || this.core.snapshotCount !== this.seenSnapshots);
+  }
+
   private invalidate(): void {
     if (this.destroyed) return;
     this.dirty = true;
@@ -959,6 +967,7 @@ export class EditorView {
     }
     if (revision >= 0) {
       this.appliedRevision = revision;
+      this.urgent = false;
       this.kept = null;
     }
     let widest = -1;
@@ -1105,6 +1114,7 @@ export class EditorView {
   // Moves the cache along an edit and keeps the edited line's spans shifted until the parse catches up.
   private changed(change: WebChange, count: number): void {
     if (count > 1) {
+      this.urgent = this.languageReady;
       this.kept = null;
       this.relayout();
       return;
@@ -1112,7 +1122,9 @@ export class EditorView {
     const first = this.core.lineAt(change.start);
     const oldCount = lineSpan(change.removed);
     const newCount = lineSpan(change.inserted);
+    const hadSpans = this.cache.get(first)?.spans != null;
     this.keepSpans(first, oldCount, newCount, change);
+    if (hadSpans && this.kept === null) this.urgent = true;
     const delta = newCount - oldCount;
     const moved: [number, Entry][] = [];
     for (const [line, entry] of this.cache) {

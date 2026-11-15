@@ -54,7 +54,8 @@ try {
   for (const part of ['work', 'handler', 'engine', 'draw']) {
     console.log(`  ${part.padEnd(8)}${stats(probe[part])}`);
   }
-  console.log(`  largest pump ${ms(Math.max(0, ...probe.pumps))} of ${probe.pumps.length}`);
+  console.log(`  largest frame ${ms(Math.max(0, ...probe.pumps))} of ${probe.pumps.length}`);
+  console.log(`  engine tasks ${stats(probe.tasks)} of ${probe.tasks.length}`);
   await page.evaluate(() => localStorage.removeItem('codepad_debug'));
 } finally {
   await browser.close();
