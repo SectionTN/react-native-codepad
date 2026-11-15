@@ -370,6 +370,51 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('the frame after a letter, an Enter and a joining Backspace keeps the keyword colors', async () => {
+      const { page } = await open();
+      await page.evaluate(async () => {
+        const { EditorView, ensureLanguage, loadCore, until } = window.codepad;
+        await ensureLanguage('python');
+        const host = document.getElementById('a');
+        const view = new EditorView(host, await loadCore(), 'def a():\n    return b\n');
+        view.setLanguage('python');
+        window.views = { a: view };
+        await until(() => host.querySelector('[data-line="1"] span'));
+      });
+      await clickAt(page, 'a', 0, 8);
+      const result = await page.evaluate(async (keyword) => {
+        const v = window.views.a;
+        const colored = (line) =>
+          [...document.querySelectorAll(`#a [data-line="${line}"] span`)].filter(
+            (s) => getComputedStyle(s).color === keyword,
+          ).length;
+        const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+        const out = {};
+        v.apply(() => v.core.typeText('x'));
+        await nextFrame();
+        out.letter = colored(0);
+        v.apply(() => v.core.setSelection(20, 20));
+        await window.codepad.frames(2);
+        v.apply(() => v.core.insertNewline());
+        await nextFrame();
+        out.enter = colored(1);
+        await window.codepad.frames(2);
+        const joinFrom = v.core.lineEnd(1);
+        v.apply(() => v.core.replace(joinFrom, v.core.selection.head, ''));
+        await nextFrame();
+        out.join = colored(1);
+        out.text = v.core.text();
+        return out;
+      }, KEYWORD);
+      assert.deepEqual(result, {
+        letter: 1,
+        enter: 1,
+        join: 1,
+        text: 'def a():x\n    return b\n',
+      });
+      await page.close();
+    });
+
     test('PageDown moves by the visible rows', async () => {
       const { page } = await open();
       await editor(page, 'a', Array.from({ length: 100 }, (_, i) => `line ${i}`).join('\n'));
