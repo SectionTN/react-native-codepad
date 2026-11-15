@@ -246,10 +246,13 @@ struct Engine : std::enable_shared_from_this<Engine> {
         it = resolved.erase(it);
         forgot = true;
       }
-      if (!forgot || !text) return;
-      dirty.push_back(0);
-      dirty.push_back(static_cast<int32_t>(text->length()));
-      reparse();
+      if (!text) return;
+      if (forgot) {
+        dirty.push_back(0);
+        dirty.push_back(static_cast<int32_t>(text->length()));
+      }
+      // A refresh queued behind another one finds no names left, so it runs the pass the first one deferred.
+      if (!dirty.empty()) reparse();
     });
   }
 

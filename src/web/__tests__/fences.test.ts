@@ -52,6 +52,26 @@ const FENCE = '```python\ndef f(): pass\n```\n';
   pumpAll(m);
 });
 
+(ready ? test : test.skip)('two refreshes queued before a pump still color the fence', async () => {
+  const m = await loadCore(dir as string);
+  loadGrammar(m, markdown.wasm, 'markdown', markdown.queries);
+  loadGrammar(m, inline.wasm, 'markdown_inline', inline.queries);
+  const core = new EditorCore(m, FENCE);
+  const keyword = cstring(m, 'keyword.function', (name) => m._cp_style_id(name));
+  expect(core.setLanguage('markdown')).toBe(true);
+  pumpAll(m);
+  loadGrammar(m, python.wasm, 'python', python.queries);
+  core.refreshInjections();
+  core.refreshInjections();
+  pumpAll(m);
+  const line = highlight(m, core.snapshot, 1, 1, core.lineStart(1))[0] as number[];
+  const triples = [];
+  for (let i = 0; i + 2 < line.length; i += 3) triples.push(line.slice(i, i + 3));
+  expect(triples).toContainEqual([0, 3, keyword]);
+  core.close();
+  pumpAll(m);
+});
+
 // The loader refreshes only after a new language registers, since a refresh looks the names up again.
 (ready ? test : test.skip)(
   'a refresh while the language is still missing reports it again',
