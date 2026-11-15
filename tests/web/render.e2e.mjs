@@ -315,6 +315,30 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('copy and cut after select all carry the whole document', async () => {
+      const { page } = await open();
+      const text = Array.from({ length: 3000 }, (_, i) => `line number ${i}`).join('\n');
+      await editor(page, 'a', text);
+      await clickAt(page, 'a', 0, 0);
+      await page.keyboard.press(`${process.platform === 'darwin' ? 'Meta' : 'Control'}+a`);
+      const result = await page.evaluate(async () => {
+        await window.codepad.frames(2);
+        const ta = document.querySelector('#a textarea');
+        const clip = (type) => {
+          const data = new DataTransfer();
+          ta.dispatchEvent(
+            new ClipboardEvent(type, { clipboardData: data, bubbles: true, cancelable: true }),
+          );
+          return data.getData('text/plain').length;
+        };
+        const copied = clip('copy');
+        const cut = clip('cut');
+        return { copied, cut, left: window.views.a.core.length };
+      });
+      assert.deepEqual(result, { copied: text.length, cut: text.length, left: 0 });
+      await page.close();
+    });
+
     test('a click on a line number keeps the focus where it is', async () => {
       const { page } = await open();
       await editor(page, 'a', 'one\ntwo');
