@@ -717,6 +717,32 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('a composition ended just before unmount reads nothing from the closed core', async () => {
+      const { page, errors } = await open();
+      const reads = await page.evaluate(async () => {
+        const { EditorView, loadCore, until } = window.codepad;
+        const m = await loadCore();
+        const a = new EditorView(document.getElementById('a'), m, 'first');
+        await until(() => document.querySelector('#a [data-line="0"]'));
+        const ta = document.querySelector('#a textarea');
+        ta.dispatchEvent(new CompositionEvent('compositionstart'));
+        ta.dispatchEvent(new CompositionEvent('compositionend'));
+        a.destroy();
+        let count = 0;
+        Object.defineProperty(a.core, 'selection', {
+          get: () => {
+            count++;
+            return { anchor: 0, head: 0 };
+          },
+        });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return count;
+      });
+      assert.equal(reads, 0);
+      assert.deepEqual(errors, []);
+      await page.close();
+    });
+
     test('unmounting during a parse closes the engine and keeps no snapshot', async () => {
       const { page, errors } = await open('test');
       const result = await page.evaluate(async () => {
