@@ -57,8 +57,7 @@ export function registerView(view: View): () => void {
   };
 }
 
-// One shared frame: every view draws, then the engine runs in a task after the page paints, so a key's frame never
-// waits for a parse. A view whose lines would lose their colors makes the frame run the engine first.
+// One shared frame: every view draws, then the engine runs after the paint unless a view is urgent.
 export function requestPump(): void {
   if (scheduled) return;
   scheduled = true;

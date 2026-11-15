@@ -1,6 +1,4 @@
-// Typing bench for the web editor in Chrome on an Android phone: yarn bench:web [lines] [port].
-// First: yarn example web --port <port>, adb reverse tcp:<port> tcp:<port>, the example open in Chrome on the phone.
-// The port is the example's, 8082 by default.
+// Typing bench in Chrome on a phone: yarn bench:web [lines] [port], the example served on that port through adb reverse.
 import { execFileSync } from 'node:child_process';
 import { chromium } from 'playwright';
 
