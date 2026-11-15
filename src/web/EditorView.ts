@@ -153,6 +153,10 @@ export class EditorView {
   private movingVertically = false;
   // The caret scrolls into view on the next draw, before the page paints.
   private revealing = false;
+  // The caret as the last frame measured it, null while its line is not drawn.
+  private drawnCaret: Rect | null = null;
+  // The row of the drawn caret inside its wrapped line.
+  private drawnCaretRow = 0;
   // Hidden copies of lines a caret move measured, dropped on the next draw.
   private readonly measuring = new Map<number, HTMLDivElement>();
   private readonly geometry: LineGeometry = {
@@ -524,43 +528,58 @@ export class EditorView {
   }
 
   // The caret, the composing underline and the selection, from where the browser drew the text.
+  // Every read comes before every write, so a draw lays the page out once.
   private drawInput(): void {
     const box = this.textLayer.getBoundingClientRect();
     const { anchor, head } = this.core.selection;
-    const caret = this.input.focused ? this.caretRect(head) : null;
+    const caret = this.caretRect(head);
+    this.drawnCaret = caret;
     const rootBox = this.root.getBoundingClientRect();
-    if (caret) {
-      const x = caret.x + rootBox.left - box.left;
-      const y = caret.y + rootBox.top - box.top;
-      const style = this.caretEl.style;
-      style.display = 'block';
-      style.left = `${x}px`;
-      style.top = `${y}px`;
-      style.height = `${caret.height}px`;
-      style.background = this.css.cursor;
-      this.input.place(caret.x, caret.y);
-    } else {
-      this.caretEl.style.display = 'none';
-    }
+    const caretLine = this.cache.get(this.core.lineAt(head))?.el;
+    this.drawnCaretRow =
+      caret && caretLine
+        ? Math.max(
+            0,
+            Math.round(
+              (caret.y + rootBox.top - caretLine.getBoundingClientRect().top) / this.rowHeight,
+            ),
+          )
+        : 0;
     const composing = this.session.composing;
-    this.composingLayer.replaceChildren(
-      ...(composing ? this.rangeRects(composing.start, composing.end) : []).map((r) => {
-        const bar = div(
-          `position:absolute;left:${r.left - box.left}px;top:${r.bottom - box.top - 2}px;width:${r.width}px;height:2px;background:${this.css.cursor};`,
-        );
-        bar.dataset.composing = '';
-        return bar;
-      }),
-    );
+    const bars = composing ? this.rangeRects(composing.start, composing.end) : [];
     const from = Math.min(anchor, head);
     const to = Math.max(anchor, head);
-    this.selectionLayer.replaceChildren(
-      ...(from < to ? this.rangeRects(from, to) : []).map((r) =>
-        div(
-          `position:absolute;left:${r.left - box.left}px;top:${r.top - box.top}px;width:${Math.max(r.width, 4)}px;height:${r.height}px;background:${this.css.selection};`,
+    const selected = from < to ? this.rangeRects(from, to) : [];
+    if (caret && this.input.focused) {
+      put(this.caretEl, 'display', 'block');
+      put(this.caretEl, 'left', `${caret.x + rootBox.left - box.left}px`);
+      put(this.caretEl, 'top', `${caret.y + rootBox.top - box.top}px`);
+      put(this.caretEl, 'height', `${caret.height}px`);
+      put(this.caretEl, 'background', this.css.cursor);
+      this.input.place(caret.x, caret.y);
+    } else {
+      put(this.caretEl, 'display', 'none');
+    }
+    if (bars.length || this.composingLayer.childElementCount) {
+      this.composingLayer.replaceChildren(
+        ...bars.map((r) => {
+          const bar = div(
+            `position:absolute;left:${r.left - box.left}px;top:${r.bottom - box.top - 2}px;width:${r.width}px;height:2px;background:${this.css.cursor};`,
+          );
+          bar.dataset.composing = '';
+          return bar;
+        }),
+      );
+    }
+    if (selected.length || this.selectionLayer.childElementCount) {
+      this.selectionLayer.replaceChildren(
+        ...selected.map((r) =>
+          div(
+            `position:absolute;left:${r.left - box.left}px;top:${r.top - box.top}px;width:${Math.max(r.width, 4)}px;height:${r.height}px;background:${this.css.selection};`,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   // The page boxes of the document range on the lines that are drawn.
@@ -608,14 +627,12 @@ export class EditorView {
 
   // Scrolls the least that shows the caret, by its line's row while the line is not drawn. True when it scrolled.
   private revealCaret(): boolean {
-    const caret = this.caretRect(this.core.selection.head);
+    const caret = this.drawnCaret;
     const line = this.core.lineAt(this.core.selection.head);
     let row = this.layout.rowStart(line);
-    const el = this.cache.get(line)?.el;
-    if (caret && el) {
+    if (caret) {
       // The caret's row inside a wrapped line, from where the browser drew it.
-      const lineY = el.getBoundingClientRect().top - this.root.getBoundingClientRect().top;
-      row += Math.max(0, Math.round((caret.y - lineY) / this.rowHeight));
+      row += this.drawnCaretRow;
     }
     const top = row * this.rowHeight;
     const x = caret ? caret.x - this.layout.textLeft : 0;
@@ -656,7 +673,7 @@ export class EditorView {
     // A caret moved off screen scrolls into view in the same task, so no frame paints without it. A caret line that
     // was not drawn is revealed by its row first, then again by its x once drawn.
     for (let pass = 0; this.revealing && pass < 2; pass++) {
-      if (this.caretRect(this.core.selection.head)) this.revealing = false;
+      if (this.drawnCaret) this.revealing = false;
       if (!this.revealCaret()) break;
       this.syncScroll();
       moved = this.frame();
@@ -962,10 +979,10 @@ export class EditorView {
     const left = layout.textAreaLeft + layout.textPadding;
     const width = layout.textAreaLeft + layout.contentWidth + layout.insetRight;
     const height = layout.insetTop + layout.contentHeight + layout.insetBottom;
-    this.content.style.width = `${width}px`;
-    this.content.style.height = `${height}px`;
-    this.gutter.style.width = `${layout.insetLeft + layout.gutterWidth}px`;
-    this.gutter.style.height = `${height}px`;
+    put(this.content, 'width', `${width}px`);
+    put(this.content, 'height', `${height}px`);
+    put(this.gutter, 'width', `${layout.insetLeft + layout.gutterWidth}px`);
+    put(this.gutter, 'height', `${height}px`);
     if (!this.o.scrollEnabled) this.root.style.height = `${height}px`;
     const visible = new Set<number>();
     for (let line = frame.first; line <= frame.last; line++) {
@@ -973,10 +990,9 @@ export class EditorView {
       if (!entry) continue;
       visible.add(line);
       const top = layout.lineTop(line) + scrollY;
-      const s = entry.el.style;
-      s.top = `${top}px`;
-      s.left = `${left}px`;
-      s.width = this.o.softWrap ? `${layout.wrapWidth}px` : '';
+      put(entry.el, 'top', `${top}px`);
+      put(entry.el, 'left', `${left}px`);
+      put(entry.el, 'width', this.o.softWrap ? `${layout.wrapWidth}px` : '');
       if (!entry.el.isConnected) this.textLayer.append(entry.el);
       this.attached.add(line);
       this.number(line, top, frame.caretLine === line);
@@ -994,14 +1010,14 @@ export class EditorView {
     this.evict(visible);
     const collapsed = frame.anchor === frame.head;
     const showActive = this.o.highlightActiveLine && collapsed && visible.has(frame.caretLine);
-    this.activeLine.style.display = showActive ? 'block' : 'none';
+    put(this.activeLine, 'display', showActive ? 'block' : 'none');
     if (showActive) {
-      this.activeLine.style.top = `${layout.lineTop(frame.caretLine) + scrollY}px`;
-      this.activeLine.style.height = `${layout.rows(frame.caretLine) * this.rowHeight}px`;
-      this.activeLine.style.width = `${width}px`;
+      put(this.activeLine, 'top', `${layout.lineTop(frame.caretLine) + scrollY}px`);
+      put(this.activeLine, 'height', `${layout.rows(frame.caretLine) * this.rowHeight}px`);
+      put(this.activeLine, 'width', `${width}px`);
     }
     const empty = frame.length === 0 && this.o.placeholder !== '';
-    this.placeholderEl.style.display = empty ? 'block' : 'none';
+    put(this.placeholderEl, 'display', empty ? 'block' : 'none');
     if (empty) {
       this.placeholderEl.textContent = this.o.placeholder;
       this.placeholderEl.style.top = `${layout.insetTop}px`;
@@ -1017,10 +1033,10 @@ export class EditorView {
       this.gutter.append(el);
       this.gutterLines.set(line, el);
     }
-    el.textContent = String(line + 1);
-    el.style.top = `${top}px`;
-    el.style.width = `${this.layout.insetLeft + this.layout.gutterWidth - this.charWidth}px`;
-    el.style.color = active ? this.css.gutterActiveForeground : '';
+    put(el, 'text', String(line + 1));
+    put(el, 'top', `${top}px`);
+    put(el, 'width', `${this.layout.insetLeft + this.layout.gutterWidth - this.charWidth}px`);
+    put(el, 'color', active ? this.css.gutterActiveForeground : '');
   }
 
   // Keeps about three screens of laid out lines.
@@ -1223,6 +1239,22 @@ function caretEdge(el: HTMLElement, column: number): { x: number; top: number; h
   if (prev) return at(prev.rect.left, prev.rect);
   const box = el.getBoundingClientRect();
   return { x: box.left, top: box.top, height: 0 };
+}
+
+const written = new WeakMap<HTMLElement, Record<string, string>>();
+
+// Sets a style, or the text with key text, only when it differs from what this last set, so a draw that moves
+// nothing leaves the page's layout valid.
+function put(el: HTMLElement, key: string, value: string): void {
+  let last = written.get(el);
+  if (!last) {
+    last = {};
+    written.set(el, last);
+  }
+  if (last[key] === value) return;
+  last[key] = value;
+  if (key === 'text') el.textContent = value;
+  else el.style.setProperty(key, value);
 }
 
 // The first integer in [lo, hi) where test holds, or hi, for a test that stays true once it holds.
