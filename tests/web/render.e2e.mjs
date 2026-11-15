@@ -493,6 +493,12 @@ for (const engine of [chromium, webkit]) {
       const { page } = await open();
       await editor(page, 'a', Array.from({ length: 100 }, (_, i) => `line ${i}`).join('\n'));
       await clickAt(page, 'a', 0, 0);
+      // The page the key moves by, read once the first frames have settled the scrollbars.
+      const rows = await page.evaluate(async () => {
+        await window.codepad.frames(3);
+        const v = window.views.a;
+        return Math.floor(v.layout.viewportHeight / v.layout.rowHeight);
+      });
       await page.keyboard.press('PageDown');
       const result = await page.evaluate(async () => {
         const v = window.views.a;
@@ -500,11 +506,10 @@ for (const engine of [chromium, webkit]) {
         const caret = v.caretRect(v.core.selection.head);
         return {
           line: v.core.lineAt(v.core.selection.head),
-          page: Math.floor(v.layout.viewportHeight / v.layout.rowHeight),
           y: caret?.y ?? null,
         };
       });
-      assert.equal(result.line, result.page);
+      assert.equal(result.line, rows);
       assert.ok(result.y !== null && result.y >= 0 && result.y < 300, `caret y ${result.y}`);
       await page.close();
     });
