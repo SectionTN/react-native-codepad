@@ -71,21 +71,25 @@ function frame(): void {
   const left = core && urgent ? core._cpw_pump(PUMP_BUDGET_MS) : 0;
   const pumped = probe ? performance.now() - start : 0;
   for (const view of [...views]) {
-    const drawStart = probe ? performance.now() : 0;
-    view.draw();
-    if (probe && view === keyView) {
-      const drawn = performance.now() - drawStart;
-      probe.work.push(keyMs + pumped + drawn);
-      probe.handler.push(keyMs);
-      probe.engine.push(pumped);
-      probe.draw.push(drawn);
-      keyView = null;
-      keyMs = 0;
-    }
+    if (probe && view === keyView) drawKeyed(probe, view, pumped);
+    else view.draw();
   }
   if (probe) probe.pumps.push(performance.now() - start);
   if (left > 0) requestPump();
   else postEngine();
+}
+
+// The draw the bench counts as a key's work, a named call so a profile can tell it from other frames.
+function drawKeyed(p: Probe, view: View, pumped: number): void {
+  const drawStart = performance.now();
+  view.draw();
+  const drawn = performance.now() - drawStart;
+  p.work.push(keyMs + pumped + drawn);
+  p.handler.push(keyMs);
+  p.engine.push(pumped);
+  p.draw.push(drawn);
+  keyView = null;
+  keyMs = 0;
 }
 
 let channel: MessageChannel | null = null;

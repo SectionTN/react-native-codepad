@@ -3,6 +3,7 @@
 #   cpp/web/build.sh                          lib/web/codepad.{js,wasm} and lib/web/grammar-imports.json
 #   cpp/web/build.sh --test                   build/web-test/codepad.{js,wasm} with the test hooks
 #   cpp/web/build.sh --grammar <src> <out>    one grammar side module from <src>/parser.c and scanner.c
+#   cpp/web/build.sh --names                  lib/web with WASM function names, for bench profiles only
 set -euo pipefail
 
 EMSCRIPTEN_VERSION=7.0.0
@@ -36,6 +37,11 @@ fi
 OUT=$ROOT/lib/web
 OBJ=$ROOT/build/web/obj
 CORE_DEFS=
+LINK_EXTRA=
+if [ "${1:-}" = --names ]; then
+  LINK_EXTRA=--profiling-funcs
+  echo "Building lib/web with function names for bench profiles. Run cpp/web/build.sh again before shipping." >&2
+fi
 if [ "${1:-}" = --test ]; then
   OUT=$ROOT/build/web-test
   OBJ=$ROOT/build/web-test/obj
@@ -67,7 +73,7 @@ export OBJ OPT TS PC CORE ROOT CORE_DEFS
   xargs -P 8 -I{} bash -c 'compile "$1"' _ {}
 
 exports=$(sed 's/^/_/' "$WEB/exports.txt" | paste -sd, -)
-em++ $OPT -sMAIN_MODULE=2 -sALLOW_MEMORY_GROWTH=1 -sFORCE_FILESYSTEM=1 -sMODULARIZE=1 \
+em++ $OPT $LINK_EXTRA -sMAIN_MODULE=2 -sALLOW_MEMORY_GROWTH=1 -sFORCE_FILESYSTEM=1 -sMODULARIZE=1 \
   -sEXPORT_NAME=createCodepadCore -sENVIRONMENT=web,node \
   -sEXPORTED_FUNCTIONS="$exports" \
   -sEXPORTED_RUNTIME_METHODS=FS,HEAPU8,HEAPU16,HEAP32,UTF8ToString,stringToNewUTF8 \
