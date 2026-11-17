@@ -16,7 +16,8 @@ const now = () => Number(process.hrtime.bigint()) / 1e6;
 (ready ? test : test.skip)('one pump starts no second parse slice', async () => {
   const m = await loadCore(dir as string);
   loadGrammar(m, javascript, 'javascript', join(ROOT, 'languages/javascript/queries/javascript'));
-  const core = new EditorCore(m, generateJavaScript(100_000), 4000);
+  // 2 ms slices with the pump told 4: the old rule starts three in 6 ms, the new one only the first.
+  const core = new EditorCore(m, generateJavaScript(100_000), 2000);
   expect(core.setLanguage('javascript')).toBe(true);
   const took: number[] = [];
   for (let i = 0; i < 30; i++) {
@@ -27,8 +28,7 @@ const now = () => Number(process.hrtime.bigint()) / 1e6;
   }
   expect(took.length).toBe(30);
   took.sort((a, b) => a - b);
-  // One 4 ms slice a call; two slices take about 8.
-  expect(took[15]).toBeLessThan(5.5);
+  expect(took[15]).toBeLessThan(4);
   core.close();
   pumpAll(m);
 });
