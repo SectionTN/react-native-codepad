@@ -96,3 +96,13 @@ test('keys the textarea handles itself, and every key while composing, give null
   expect(keyCommand(key('z', { metaKey: true }), false)).toBeNull();
   expect(keyCommand(key('ArrowLeft', { altKey: true }), false)).toBeNull();
 });
+
+test('a shortcut on a layout that prints ASCII there keeps that key, not the physical one', () => {
+  // Dvorak types ; where QWERTY has Z.
+  expect(keyCommand(key(';', { ctrlKey: true, code: 'KeyZ' }), false)).toBeNull();
+  expect(keyCommand(key(';', { metaKey: true, code: 'KeyZ' }), true)).toBeNull();
+});
+
+test('a shortcut on a layout without Latin letters falls back to the physical key', () => {
+  expect(keyCommand(key('я', { ctrlKey: true, code: 'KeyZ' }), false)).toEqual({ kind: 'undo' });
+});

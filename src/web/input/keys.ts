@@ -19,10 +19,11 @@ export type KeyCommand =
 // Keydown 229 is a key the keyboard's composition takes.
 const COMPOSING_KEY_CODE = 229;
 
-// The letter of a shortcut, from the physical key when the layout's key is not a Latin letter.
+// The letter of a shortcut, from the physical key when the layout's key is not ASCII.
 function letter(k: KeyLike): string {
   const key = k.key.toLowerCase();
-  if (/^[a-z]$/.test(key)) return key;
+  // A layout that prints ASCII there keeps its key, as Dvorak's ; where QWERTY has Z.
+  if (/^[\x20-\x7e]$/.test(key)) return key;
   return /^Key[A-Z]$/.test(k.code ?? '') ? (k.code as string).slice(3).toLowerCase() : key;
 }
 
