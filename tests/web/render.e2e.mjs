@@ -944,7 +944,7 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
-    // Every 'ab' on every drawn line of host a has a match mark on it, and the second one an underline.
+    // Every 'ab' on the drawn lines of host a has a match mark on it and the second 'ab' of a line an underline, and no mark sits anywhere else.
     async function marksOnText(page) {
       return page.evaluate(() => {
         const marks = (s) =>
@@ -952,9 +952,12 @@ for (const engine of [chromium, webkit]) {
         const matches = marks('[data-match]');
         const unders = marks('[data-underline]');
         let missing = 0;
+        let wantMatches = 0;
+        let wantUnders = 0;
         for (const el of document.querySelectorAll('#a [data-line]')) {
           const text = el.textContent;
-          for (let col = text.indexOf('ab'); col >= 0; col = text.indexOf('ab', col + 2)) {
+          let nth = 0;
+          for (let col = text.indexOf('ab'); col >= 0; col = text.indexOf('ab', col + 2), nth++) {
             const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
             const range = document.createRange();
             let at = 0;
@@ -964,38 +967,42 @@ for (const engine of [chromium, webkit]) {
               at += n.data.length;
             }
             const r = range.getBoundingClientRect();
+            wantMatches++;
             if (!matches.some((m) => Math.abs(m.left - r.left) < 1 && Math.abs(m.top - r.top) < 1))
               missing++;
-            const under = col === 3;
-            if (
-              under &&
-              !unders.some(
-                (u) => Math.abs(u.left - r.left) < 1 && u.top >= r.top && u.top < r.bottom + 8,
-              )
-            )
-              missing++;
+            if (nth !== 1) continue;
+            wantUnders++;
+            const under = (u) =>
+              Math.abs(u.left - r.left) < 1 && u.top >= r.top && u.top < r.bottom + 8;
+            if (!unders.some(under)) missing++;
           }
         }
-        return missing;
+        return {
+          missing,
+          extraMatches: matches.length - wantMatches,
+          extraUnders: unders.length - wantUnders,
+        };
       });
     }
+    const ON_TEXT = { missing: 0, extraMatches: 0, extraUnders: 0 };
 
-    // Underlines the second 'ab' of every line of host a and searches 'ab'.
+    // Lines of 'ab ab' indented by 0 to 3 spaces, so a mark left on another row misses its text, the second 'ab' underlined, and a search for 'ab'.
     async function markEveryLine(page, lines) {
-      await editor(page, 'a', Array(lines).fill('ab ab').join('\n'));
-      await page.evaluate(async (lines) => {
+      const rows = Array.from({ length: lines }, (_, i) => `${' '.repeat(i % 4)}ab ab`);
+      await editor(page, 'a', rows.join('\n'));
+      await page.evaluate(async (rows) => {
         const v = window.views.a;
         const items = [];
-        for (let i = 0; i < lines; i++)
-          items.push({
-            kind: 'underline',
-            range: { start: i * 6 + 3, end: i * 6 + 5 },
-            color: '#00f',
-          });
+        let start = 0;
+        for (const row of rows) {
+          const at = start + row.lastIndexOf('ab');
+          items.push({ kind: 'underline', range: { start: at, end: at + 2 }, color: '#00f' });
+          start += row.length + 1;
+        }
         v.setDecorations(items, v.core.revision);
         await v.setSearch({ text: 'ab' });
         await window.codepad.frames(2);
-      }, lines);
+      }, rows);
     }
 
     test('a typed letter keeps the match and underline marks of the other lines', async () => {
@@ -1006,32 +1013,33 @@ for (const engine of [chromium, webkit]) {
         const all = () => [...document.querySelectorAll('#a [data-match], #a [data-underline]')];
         const before = all();
         for (const m of before) m.__kept = true;
-        v.apply(() => v.core.replace(12, 12, 'x'));
+        const at = v.core.lineStart(2);
+        v.apply(() => v.core.replace(at, at, 'x'));
         await window.codepad.frames(3);
         return [before.length, all().filter((m) => m.__kept).length];
       });
       assert.deepEqual(kept, [18, 15]);
-      assert.equal(await marksOnText(page), 0);
+      assert.deepEqual(await marksOnText(page), ON_TEXT);
       await page.close();
     });
 
     test('marks sit on their text in the frame after an Enter above, a gap and a scroll out and back', async () => {
       const { page } = await open();
       await markEveryLine(page, 40);
-      assert.equal(await marksOnText(page), 0);
+      assert.deepEqual(await marksOnText(page), ON_TEXT);
       await page.evaluate(() => {
         const v = window.views.a;
         v.apply(() => v.core.replace(0, 0, '\n'));
         v.draw();
       });
-      assert.equal(await marksOnText(page), 0, 'after an Enter above');
+      assert.deepEqual(await marksOnText(page), ON_TEXT, 'after an Enter above');
       await page.evaluate(() => {
         const v = window.views.a;
         const items = v.core.decorations();
         v.setDecorations([...items, { kind: 'gap', line: 0, rows: 2 }], v.core.revision);
         v.draw();
       });
-      assert.equal(await marksOnText(page), 0, 'after a gap');
+      assert.deepEqual(await marksOnText(page), ON_TEXT, 'after a gap');
       await page.evaluate(async () => {
         const v = window.views.a;
         v.scroller.scrollTop = 100000;
@@ -1040,7 +1048,7 @@ for (const engine of [chromium, webkit]) {
         v.scroller.scrollTop = 0;
         v.draw();
       });
-      assert.equal(await marksOnText(page), 0, 'after a scroll out and back');
+      assert.deepEqual(await marksOnText(page), ON_TEXT, 'after a scroll out and back');
       await page.close();
     });
 
