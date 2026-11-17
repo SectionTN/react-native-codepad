@@ -41,6 +41,8 @@ class MockView {
   deleteBackward = jest.fn();
   deleteForward = jest.fn();
   moveCaret = jest.fn();
+  setDecorations = jest.fn();
+  gapRect = jest.fn(() => null);
   destroy() {}
 }
 
@@ -188,4 +190,24 @@ test('focus called before the core loads focuses the editor once it does', async
   });
   await expect(settled(focused as Promise<void>)).resolves.toBeUndefined();
   expect(mockViews[0]?.focus).toHaveBeenCalledTimes(1);
+});
+
+test('decorations passed before the core loads apply once it does', async () => {
+  const items = [{ kind: 'gap' as const, line: 0, rows: 2 }];
+  await render(<CodeEditor decorations={items} decorationsRevision={3} />);
+  await act(async () => {
+    mockCore.resolve({});
+    await tick();
+  });
+  expect(mockViews[0]?.setDecorations).toHaveBeenCalledWith(items, 3);
+});
+
+test('decorations without a revision are for the current text', async () => {
+  const items = [{ kind: 'lineBackground' as const, line: 1, color: 'red' }];
+  await render(<CodeEditor decorations={items} />);
+  await act(async () => {
+    mockCore.resolve({});
+    await tick();
+  });
+  expect(mockViews[0]?.setDecorations).toHaveBeenCalledWith(items, -1);
 });

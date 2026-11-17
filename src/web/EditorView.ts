@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 import { githubLight } from '../themes/githubLight';
-import type { CaretDirection, ContentInsets, Rect, Suggestions, Theme } from '../types';
+import type { CaretDirection, ContentInsets, Decoration, Rect, Suggestions, Theme } from '../types';
 import { EditorCore, type MoveUnit, type WebChange } from './core/EditorCore';
 import { Layout } from './core/Layout';
 import type { CoreModule } from './core/module';
+import { measureBaseline, solidTop, waveAmplitude, wavePath } from './decorations';
 import { type DecodedFrame, decodeFrame } from './frame';
 import { CaretMover, type LineGeometry } from './input/CaretMover';
 import { InputHost } from './input/InputHost';
@@ -42,7 +43,10 @@ export type ViewOptions = {
   avoidKeyboard: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
+  onGapLayout?: (gaps: GapRect[]) => void;
 };
+
+export type GapRect = { line: number; rect: Rect };
 
 // The defaults of website/docs/reference/props.md.
 export const DEFAULT_OPTIONS: ViewOptions = {
@@ -70,6 +74,7 @@ export const DEFAULT_OPTIONS: ViewOptions = {
 
 const MONOSPACE = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
 const SNAPSHOT_INFO_INTS = 7;
+const SVG = 'http://www.w3.org/2000/svg';
 const MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 // A run of Hebrew or Arabic script anywhere in a row.
 const RTL_TEXT = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
@@ -147,6 +152,14 @@ export class EditorView {
   });
   readonly session: WebInputSession;
   private readonly input: InputHost;
+  // The app's line backgrounds over the active line, and its underlines under the text.
+  private readonly lineBackgroundLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
+  private readonly underlineLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
+  private decorationsKey = '';
+  private baseline = 0;
+  private drawnWindow = { first: 0, last: -1 };
+  private drawnGaps: GapRect[] = [];
+  private reportedGaps = '[]';
   private readonly selectionLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
   private readonly composingLayer = div(
     'position:absolute;left:0;top:0;z-index:1;pointer-events:none;',
@@ -194,7 +207,9 @@ export class EditorView {
     this.placeholderEl = div('position:absolute;white-space:pre;display:none;pointer-events:none;');
     this.textLayer.append(
       this.activeLine,
+      this.lineBackgroundLayer,
       this.selectionLayer,
+      this.underlineLayer,
       this.placeholderEl,
       this.composingLayer,
       this.caretEl,
@@ -203,6 +218,7 @@ export class EditorView {
     this.textLayer.style.webkitUserSelect = 'none';
     this.caretEl.dataset.caret = '';
     this.selectionLayer.dataset.selection = '';
+    this.activeLine.dataset.activeLine = '';
     this.session = new WebInputSession(this.core, (edit) => this.applyInput(edit));
     this.input = new InputHost(this.root, this.session, {
       keyDown: (e) => this.keyDown(e),
@@ -554,6 +570,7 @@ export class EditorView {
 
   // A click places the caret and focuses the textarea inside the event, which iOS needs to show its keyboard.
   private click(e: MouseEvent): void {
+    if (this.inGap(e.clientY)) return;
     const offset = this.offsetAt(e.clientX, e.clientY);
     if (offset !== null) this.apply(() => this.core.setSelection(offset, offset));
     this.focus();
@@ -582,6 +599,7 @@ export class EditorView {
     const from = Math.min(anchor, head);
     const to = Math.max(anchor, head);
     const selected = from < to ? this.rangeRects(from, to) : [];
+    const writeDecorations = this.planDecorations(box);
     if (caret && this.input.focused) {
       put(this.caretEl, 'display', 'block');
       put(this.caretEl, 'left', `${caret.x + rootBox.left - box.left}px`);
@@ -612,6 +630,7 @@ export class EditorView {
         ),
       );
     }
+    writeDecorations();
   }
 
   // The page boxes of the document range on the lines that are drawn.
@@ -655,6 +674,147 @@ export class EditorView {
     if (this.destroyed) return;
     this.revealing = true;
     this.invalidate();
+  }
+
+  // Decorations for the text at revision, below zero for the current text. An unknown revision keeps the set.
+  setDecorations(items: Decoration[], revision: number): void {
+    if (this.destroyed) return;
+    this.core.setDecorations(items, revision);
+    this.invalidate();
+  }
+
+  // The gap under line from the last draw, in the coordinates of caretRect, or null.
+  gapRect(line: number): Rect | null {
+    return this.drawnGaps.find((g) => g.line === line)?.rect ?? null;
+  }
+
+  // Every gap as the full width rows under its line, in the coordinates of caretRect.
+  private gapRects(): GapRect[] {
+    const layout = this.layout;
+    const shift = this.o.scrollEnabled ? 0 : layout.scrollY;
+    return layout.gaps().map((g) => ({
+      line: g.line,
+      rect: { x: 0, y: g.top + shift, width: layout.width, height: g.rows * this.rowHeight },
+    }));
+  }
+
+  // True when a page y falls in a gap, which belongs to the app's view there.
+  private inGap(clientY: number): boolean {
+    if (this.drawnGaps.length === 0) return false;
+    const y = clientY - this.root.getBoundingClientRect().top;
+    return this.drawnGaps.some((g) => y >= g.rect.y && y < g.rect.y + g.rect.height);
+  }
+
+  // Reads the decorations' geometry now and returns their writes, so the draw keeps one read phase.
+  private planDecorations(box: DOMRect): () => void {
+    const items = this.core.decorations();
+    const { first, last } = this.drawnWindow;
+    const key =
+      items.length === 0
+        ? ''
+        : [
+            this.core.decorationsVersion,
+            this.core.revision,
+            this.appliedRevision,
+            first,
+            last,
+            this.layout.wrapWidth,
+            this.rowHeight,
+            this.baseline,
+          ].join(':');
+    if (key === this.decorationsKey) return () => {};
+    this.decorationsKey = key;
+    const layout = this.layout;
+    const backgrounds: Element[] = [];
+    const underlines: Element[] = [];
+    const windowStart = this.core.lineStart(first);
+    const windowEnd = this.core.lineEnd(last);
+    for (const d of items) {
+      if (d.kind === 'lineBackground') {
+        if (d.line < first || d.line > last) continue;
+        const el = div(
+          `position:absolute;left:${layout.textAreaLeft}px;top:${layout.lineTop(d.line) + layout.scrollY}px;width:${layout.contentWidth + layout.insetRight}px;height:${layout.rows(d.line) * this.rowHeight}px;background:${d.color};`,
+        );
+        el.dataset.lineBackground = '';
+        backgrounds.push(el);
+      } else if (d.kind === 'underline') {
+        if (d.range.end < windowStart || d.range.start > windowEnd) continue;
+        for (const r of this.rowRects(d.range.start, d.range.end)) {
+          underlines.push(
+            this.underline(d, r.left - box.left, r.right - box.left, r.top - box.top),
+          );
+        }
+      }
+    }
+    return () => {
+      this.lineBackgroundLayer.replaceChildren(...backgrounds);
+      this.underlineLayer.replaceChildren(...underlines);
+    };
+  }
+
+  // The range's page boxes on drawn lines, merged to one per row, with the top of that row.
+  private rowRects(start: number, end: number): { left: number; right: number; top: number }[] {
+    const out: { left: number; right: number; top: number }[] = [];
+    const last = this.core.lineAt(end);
+    for (let line = this.core.lineAt(start); line <= last; line++) {
+      const entry = this.cache.get(line);
+      if (!entry || entry.stale || !this.attached.has(line)) continue;
+      const lineStart = this.core.lineStart(line);
+      const a = Math.max(start, lineStart) - lineStart;
+      const b = Math.min(end, lineStart + entry.text.length) - lineStart;
+      if (b <= a) continue;
+      const range = document.createRange();
+      const [sn, so] = textPoint(entry.el, a);
+      const [en, eo] = textPoint(entry.el, b);
+      range.setStart(sn, so);
+      range.setEnd(en, eo);
+      const lineTop = entry.el.getBoundingClientRect().top;
+      const rows = new Map<number, { left: number; right: number; top: number }>();
+      for (const r of range.getClientRects()) {
+        if (r.width <= 0) continue;
+        const row = Math.floor((r.top + r.height / 2 - lineTop) / this.rowHeight);
+        const seen = rows.get(row);
+        if (seen) {
+          seen.left = Math.min(seen.left, r.left);
+          seen.right = Math.max(seen.right, r.right);
+        } else rows.set(row, { left: r.left, right: r.right, top: lineTop + row * this.rowHeight });
+      }
+      out.push(...rows.values());
+    }
+    return out;
+  }
+
+  // One underline piece on a row, solid as a bar or wavy as a clipped path, as DecorationPainter.kt draws them.
+  private underline(
+    d: Extract<Decoration, { kind: 'underline' }>,
+    left: number,
+    right: number,
+    rowTop: number,
+  ): Element {
+    const thickness = d.thickness ?? 1;
+    const offset = d.offset ?? 2;
+    if (d.style !== 'wavy') {
+      const bar = div(
+        `position:absolute;left:${left}px;top:${solidTop(rowTop, this.baseline, offset)}px;width:${right - left}px;height:${Math.max(1, Math.round(thickness))}px;background:${d.color};`,
+      );
+      bar.dataset.underline = '';
+      return bar;
+    }
+    // The wave's centre sits a thickness below a solid line's top, and the box clips it like native.
+    const pad = waveAmplitude(thickness) + thickness;
+    const centre = rowTop + this.baseline + offset + thickness;
+    const svg = document.createElementNS(SVG, 'svg');
+    svg.setAttribute('width', String(right - left));
+    svg.setAttribute('height', String(2 * pad));
+    svg.style.cssText = `position:absolute;left:${left}px;top:${centre - pad}px;overflow:hidden;`;
+    const path = document.createElementNS(SVG, 'path');
+    path.setAttribute('d', wavePath(0, right - left, pad, thickness));
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', d.color);
+    path.setAttribute('stroke-width', String(thickness));
+    svg.append(path);
+    svg.dataset.underline = '';
+    return svg;
   }
 
   // Scrolls the least that shows the caret, by its line's row while the line is not drawn. True when it scrolled.
@@ -735,6 +895,7 @@ export class EditorView {
       const frame = this.readFrame();
       const moved = this.prepare(frame);
       this.place(frame);
+      this.drawnGaps = this.gapRects();
       this.drawInput();
       return moved;
     } finally {
@@ -846,6 +1007,7 @@ export class EditorView {
     this.placeholderEl.style.color = this.css.gutterForeground;
     if (metrics) {
       this.charWidth = measureChar(this.root);
+      this.baseline = measureBaseline(this.root);
       this.layout.rowHeight = this.rowHeight;
       this.layout.wrap = o.softWrap;
       this.relayout();
@@ -1019,6 +1181,7 @@ export class EditorView {
   // Places the window's lines, numbers and active line, and takes every other line out of the page.
   private place(frame: DecodedFrame): void {
     const layout = this.layout;
+    this.drawnWindow = { first: frame.first, last: frame.last };
     const scrollY = layout.scrollY;
     const left = layout.textAreaLeft + layout.textPadding;
     const width = layout.textAreaLeft + layout.contentWidth + layout.insetRight;
@@ -1101,6 +1264,11 @@ export class EditorView {
     if (width !== this.lastContent.width || height !== this.lastContent.height) {
       this.lastContent = { width, height };
       this.o.onContentSize?.(width, height);
+    }
+    const gaps = JSON.stringify(this.drawnGaps);
+    if (gaps !== this.reportedGaps) {
+      this.reportedGaps = gaps;
+      this.o.onGapLayout?.(this.drawnGaps);
     }
     if (!this.drawn) {
       this.drawn = true;

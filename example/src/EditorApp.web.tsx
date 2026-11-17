@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CodeEditor, Codepad } from 'react-native-codepad';
+import { CodeEditor, type CodeEditorRef, Codepad, type Decoration } from 'react-native-codepad';
 import { generateJavaScript } from './bench/generate';
+import { schemeFor } from './chrome/theme';
+import { buildDemoDecorations } from './decorations';
 import { GENERATED_FILES, SAMPLE_FILES } from './files';
 import { NESTED_SNIPPET } from './screens/nestedSnippet';
 import { THEMES } from './themes';
@@ -9,6 +11,7 @@ import { THEMES } from './themes';
 type Demo = 'editor' | 'nested' | 'two';
 const FILES = [...SAMPLE_FILES, ...GENERATED_FILES.filter((f) => f.id === 'js10k')];
 const FONT = 'JetBrainsMono_400Regular';
+const NO_DECORATIONS: { items: Decoration[]; revision: number } = { items: [], revision: -1 };
 
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   return (
@@ -24,6 +27,9 @@ export function EditorApp() {
   const [themeIndex, setThemeIndex] = useState(0);
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const [suggestions, setSuggestions] = useState<'on' | 'off'>('off');
+  const [decorate, setDecorate] = useState(false);
+  const [decorations, setDecorations] = useState(NO_DECORATIONS);
+  const editor = useRef<CodeEditorRef>(null);
   const [demo, setDemo] = useState<Demo>('editor');
   const theme = THEMES[themeIndex % THEMES.length]?.theme;
   // Lines of the generated JavaScript file the typing bench opened, 0 for a picked file.
@@ -40,6 +46,26 @@ export function EditorApp() {
     setBenchLines(0);
     set(value);
   };
+
+  // The demo re-sends a fresh array four times a second, as a debounced checker would, tagged with its revision.
+  useEffect(() => {
+    if (!decorate) {
+      setDecorations(NO_DECORATIONS);
+      return;
+    }
+    const scheme = theme ? schemeFor(theme) : 'light';
+    const send = () => {
+      const ed = editor.current;
+      if (ed)
+        setDecorations({
+          items: buildDemoDecorations(ed.getText(), scheme),
+          revision: ed.getRevision(),
+        });
+    };
+    send();
+    const timer = setInterval(send, 250);
+    return () => clearInterval(timer);
+  }, [decorate, theme]);
 
   // scripts/bench-web.mjs opens its file through this hook.
   useEffect(() => {
@@ -79,6 +105,7 @@ export function EditorApp() {
           on={suggestions === 'on'}
           onPress={() => setSuggestions((s) => (s === 'on' ? 'off' : 'on'))}
         />
+        <Chip label="decorations" on={decorate} onPress={() => setDecorate((d) => !d)} />
       </View>
       <ScrollView horizontal style={styles.files} contentContainerStyle={styles.bar}>
         {FILES.map((f) => (
@@ -97,6 +124,9 @@ export function EditorApp() {
       {demo === 'editor' ? (
         <CodeEditor
           key={benchLines ? `bench-${benchLines}` : file?.id}
+          ref={editor}
+          decorations={decorations.items}
+          decorationsRevision={decorations.revision}
           style={styles.editor}
           initialValue={text}
           language={benchLines ? 'javascript' : file?.language}

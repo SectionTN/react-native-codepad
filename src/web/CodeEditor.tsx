@@ -63,7 +63,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onBlur,
     onContentSizeChange,
     decorations,
-    decorationsRevision: _decorationsRevision,
+    decorationsRevision,
     onGapLayout,
     ...viewProps
   },
@@ -84,6 +84,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onContentSizeChange,
     onFocus,
     onBlur,
+    onGapLayout,
   });
   handlers.current = {
     onReady,
@@ -94,6 +95,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onContentSizeChange,
     onFocus,
     onBlur,
+    onGapLayout,
   };
   const initial = useRef(initialValue);
 
@@ -126,6 +128,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       onScroll: (x, y, contentWidth, contentHeight) =>
         handlers.current.onScroll?.({ x, y, contentWidth, contentHeight }),
       onFirstDraw: () => handlers.current.onReady?.(),
+      onGapLayout: (gaps) => handlers.current.onGapLayout?.({ gaps }),
       onChange: (c) => {
         const h = handlers.current;
         h.onChange?.({
@@ -206,10 +209,13 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     };
   }, []);
 
+  // Decorations reach the view once it exists. A prop that goes away clears them.
+  const decorated = useRef(false);
   useEffect(() => {
-    if (decorations) notYet('decorations');
-    if (onGapLayout) notYet('onGapLayout');
-  }, [decorations, onGapLayout]);
+    if (!view || (!decorations && !decorated.current)) return;
+    decorated.current = decorations !== undefined;
+    view.setDecorations(decorations ?? [], decorationsRevision ?? -1);
+  }, [view, decorations, decorationsRevision]);
 
   useEffect(() => {
     view?.setOptions(options);
@@ -245,10 +251,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
         const v = viewRef.current;
         return v ? v.caretRect(v.core.selection.head) : null;
       },
-      getGapRect: () => {
-        notYet('getGapRect');
-        return null;
-      },
+      getGapRect: (line) => viewRef.current?.gapRect(line) ?? null,
       getVisibleLines: () => viewRef.current?.visibleLines() ?? { first: 0, last: 0 },
       canUndo: () => core()?.canUndo ?? false,
       canRedo: () => core()?.canRedo ?? false,

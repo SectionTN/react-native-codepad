@@ -475,6 +475,223 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    // The box of a line element and the underline bars, relative to the editor's root.
+    const boxes = (page, id, selector) =>
+      page.evaluate(
+        async ([id, selector]) => {
+          await window.codepad.frames(2);
+          const root = document.getElementById(id).firstElementChild.getBoundingClientRect();
+          return [...document.querySelectorAll(`#${id} ${selector}`)].map((el) => {
+            const r = el.getBoundingClientRect();
+            return {
+              top: r.top - root.top,
+              bottom: r.bottom - root.top,
+              left: r.left - root.left,
+              right: r.right - root.left,
+            };
+          });
+        },
+        [id, selector],
+      );
+
+    test('a solid underline sits under its range, one bar per wrapped row', async () => {
+      const { page } = await open();
+      await editor(page, 'a', `${'word '.repeat(60)}\nnext`, { softWrap: true });
+      await page.evaluate(() =>
+        window.views.a.setDecorations(
+          [{ kind: 'underline', range: { start: 10, end: 200 }, color: 'red' }],
+          -1,
+        ),
+      );
+      const bars = await boxes(page, 'a', '[data-underline]');
+      const [line] = await boxes(page, 'a', '[data-line="0"]');
+      const row = await page.evaluate(() => window.views.a.layout.rowHeight);
+      assert.ok(bars.length >= 2, `${bars.length} bars`);
+      for (const b of bars) {
+        assert.ok(b.top > line.top && b.bottom <= line.bottom + 1, JSON.stringify({ b, line }));
+        assert.ok(
+          b.left >= line.left - 1 && b.right <= line.right + 1,
+          JSON.stringify({ b, line }),
+        );
+        assert.equal(Math.round(b.top - bars[0].top) % row, 0);
+      }
+      await page.close();
+    });
+
+    test('a wavy underline draws one path per row clipped to its range', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'let total = 1');
+      await page.evaluate(() =>
+        window.views.a.setDecorations(
+          [{ kind: 'underline', range: { start: 4, end: 9 }, color: 'blue', style: 'wavy' }],
+          -1,
+        ),
+      );
+      const [wave] = await boxes(page, 'a', 'svg[data-underline]');
+      const width = await page.evaluate(() => {
+        const el = document.querySelector('#a [data-line="0"]');
+        const range = document.createRange();
+        range.setStart(el.firstChild, 4);
+        range.setEnd(el.firstChild, 9);
+        return range.getBoundingClientRect().width;
+      });
+      assert.ok(wave, 'no wave');
+      assert.ok(
+        Math.abs(wave.right - wave.left - width) <= 1,
+        `${wave.right - wave.left} for ${width}`,
+      );
+      assert.equal(
+        await page.evaluate(() => document.querySelectorAll('#a svg[data-underline] path').length),
+        1,
+      );
+      await page.close();
+    });
+
+    test('a line background tints every row of its line above the active line', async () => {
+      const { page } = await open();
+      await editor(page, 'a', `one\n${'word '.repeat(60)}\nthree`, { softWrap: true });
+      await page.evaluate(() =>
+        window.views.a.setDecorations(
+          [{ kind: 'lineBackground', line: 1, color: 'rgb(255, 0, 0)' }],
+          -1,
+        ),
+      );
+      const [bg] = await boxes(page, 'a', '[data-line-background]');
+      const [line] = await boxes(page, 'a', '[data-line="1"]');
+      assert.ok(
+        Math.abs(bg.top - line.top) <= 1 && Math.abs(bg.bottom - line.bottom) <= 1,
+        JSON.stringify({ bg, line }),
+      );
+      const above = await page.evaluate(() => {
+        const active = document.querySelector('#a [data-active-line]');
+        const tint = document.querySelector('#a [data-line-background]');
+        return !!(active.compareDocumentPosition(tint) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+      assert.equal(above, true);
+      await page.close();
+    });
+
+    test('a gap pushes the next line down by rows times the row height and onGapLayout reports it', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'a\nb\nc');
+      await page.evaluate(() => {
+        window.gapsSeen = [];
+        window.views.a.setOptions({ onGapLayout: (gaps) => window.gapsSeen.push(gaps) });
+        window.views.a.setDecorations([{ kind: 'gap', line: 0, rows: 2 }], -1);
+      });
+      const [first] = await boxes(page, 'a', '[data-line="0"]');
+      const [second] = await boxes(page, 'a', '[data-line="1"]');
+      const row = await page.evaluate(() => window.views.a.layout.rowHeight);
+      assert.ok(
+        Math.abs(second.top - first.top - 3 * row) <= 1,
+        `${second.top - first.top} for ${3 * row}`,
+      );
+      const last = await page.evaluate(() => window.gapsSeen.at(-1));
+      assert.equal(last.length, 1);
+      assert.equal(last[0].line, 0);
+      assert.ok(Math.abs(last[0].rect.y - (first.top + row)) <= 1, JSON.stringify(last[0]));
+      assert.equal(last[0].rect.height, 2 * row);
+      assert.equal(last[0].rect.x, 0);
+      await page.close();
+    });
+
+    test('a gap scrolled into view fires onGapLayout again', async () => {
+      const { page } = await open();
+      await editor(page, 'a', Array.from({ length: 200 }, (_, i) => `line ${i}`).join('\n'));
+      const before = await page.evaluate(async () => {
+        window.gapsSeen = [];
+        window.views.a.setOptions({ onGapLayout: (gaps) => window.gapsSeen.push(gaps) });
+        window.views.a.setDecorations([{ kind: 'gap', line: 150, rows: 2 }], -1);
+        await window.codepad.frames(2);
+        return { count: window.gapsSeen.length, y: window.gapsSeen.at(-1)[0].rect.y };
+      });
+      const after = await page.evaluate(async () => {
+        window.views.a.scrollToLine(140);
+        await window.codepad.frames(3);
+        return { count: window.gapsSeen.length, y: window.gapsSeen.at(-1)[0].rect.y };
+      });
+      assert.ok(after.count > before.count, JSON.stringify({ before, after }));
+      assert.ok(after.y < before.y, JSON.stringify({ before, after }));
+      await page.close();
+    });
+
+    test('getGapRect is null for a line with no gap', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'a\nb\nc');
+      const rects = await page.evaluate(async () => {
+        window.views.a.setDecorations([{ kind: 'gap', line: 0, rows: 1 }], -1);
+        await window.codepad.frames(2);
+        return [window.views.a.gapRect(0), window.views.a.gapRect(1)];
+      });
+      assert.notEqual(rects[0], null);
+      assert.equal(rects[1], null);
+      await page.close();
+    });
+
+    test('a gap under the last line grows the content height', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'a\nb');
+      const grew = await page.evaluate(async () => {
+        const v = window.views.a;
+        await window.codepad.frames(1);
+        const before = v.layout.contentHeight;
+        v.setDecorations([{ kind: 'gap', line: 1, rows: 3 }], -1);
+        await window.codepad.frames(2);
+        return { before, after: v.layout.contentHeight, row: v.layout.rowHeight };
+      });
+      assert.equal(grew.after - grew.before, 3 * grew.row);
+      await page.close();
+    });
+
+    test('a click inside a gap leaves the caret where it was', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'abc\ndef');
+      await page.evaluate(async () => {
+        const v = window.views.a;
+        v.setDecorations([{ kind: 'gap', line: 0, rows: 3 }], -1);
+        v.apply(() => v.core.setSelection(1, 1));
+        await window.codepad.frames(2);
+      });
+      const [first] = await boxes(page, 'a', '[data-line="0"]');
+      const row = await page.evaluate(() => window.views.a.layout.rowHeight);
+      const root = await page.evaluate(() => {
+        const r = document.getElementById('a').firstElementChild.getBoundingClientRect();
+        return { left: r.left, top: r.top };
+      });
+      await page.mouse.click(root.left + first.left + 10, root.top + first.top + 2.5 * row);
+      assert.equal(await page.evaluate(() => window.views.a.core.selection.head), 1);
+      await page.close();
+    });
+
+    test('decorations made for an older revision follow the edits since', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'hello world');
+      const range = await page.evaluate(() => {
+        const v = window.views.a;
+        const old = v.core.revision;
+        v.apply(() => v.core.replace(0, 0, 'XX'));
+        v.setDecorations([{ kind: 'underline', range: { start: 6, end: 11 }, color: 'red' }], old);
+        return v.core.decorations()[0].range;
+      });
+      assert.deepEqual(range, { start: 8, end: 13 });
+      await page.close();
+    });
+
+    test('decorations for a revision more than 256 edits back keep the current set', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'hello');
+      const kept = await page.evaluate(() => {
+        const v = window.views.a;
+        const old = v.core.revision;
+        v.setDecorations([{ kind: 'lineBackground', line: 0, color: 'red' }], -1);
+        for (let i = 0; i < 300; i++) v.apply(() => v.core.replace(0, 0, 'x'));
+        v.setDecorations([{ kind: 'gap', line: 0, rows: 2 }], old);
+        return v.core.decorations().map((d) => d.kind);
+      });
+      assert.deepEqual(kept, ['lineBackground']);
+      await page.close();
+    });
+
     test('the frame after a letter, an Enter and a joining Backspace keeps the keyword colors', async () => {
       const { page } = await open();
       await page.evaluate(async () => {
