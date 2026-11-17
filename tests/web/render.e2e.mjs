@@ -901,7 +901,7 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
-    test('matches, the bracket pair and underlines follow the text when the gutter, a gap, the font size or the theme changes', async () => {
+    test('matches, the bracket pair and underlines follow the text when the gutter, a gap, the font size, the top inset or the theme changes', async () => {
       const { page } = await open();
       await editor(page, 'a', 'x\n(ab) ab', { lineNumbers: false });
       const drift = await page.evaluate(async () => {
@@ -954,15 +954,22 @@ for (const engine of [chromium, webkit]) {
         v.setOptions({ fontSize: 22 });
         await frames(2);
         const font = off();
+        const textTop = textBox(1, 3).top;
+        v.setOptions({ contentInsets: { top: 30 } });
+        await frames(2);
+        const inset = off();
+        const moved = textBox(1, 3).top - textTop;
         v.setOptions({ theme: { ...githubLight, searchMatch: '#ff0000' } });
         await frames(2);
         const color = getComputedStyle(document.querySelector('#a [data-match]')).backgroundColor;
-        return { before, gutter, gap, font, color };
+        return { before, gutter, gap, font, inset, moved, color };
       });
       assert.ok(drift.before < 1, `before ${drift.before}`);
       assert.ok(drift.gutter < 1, `after the gutter ${drift.gutter}`);
       assert.ok(drift.gap < 1, `after the gap ${drift.gap}`);
       assert.ok(drift.font < 1, `after the font size ${drift.font}`);
+      assert.equal(Math.round(drift.moved), 30);
+      assert.ok(drift.inset < 1, `after the top inset ${drift.inset}`);
       assert.equal(drift.color, 'rgb(255, 0, 0)');
       await page.close();
     });
