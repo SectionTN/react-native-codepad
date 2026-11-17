@@ -125,5 +125,5 @@ export function highlight(
 }
 
 export function pumpAll(m: RawCore, budgetMs = 8): void {
-  for (let i = 0; i < 100000 && m._cpw_pump(budgetMs) > 0; i++);
+  for (let i = 0; i < 100000 && m._cpw_pump(budgetMs, 0) > 0; i++);
 }

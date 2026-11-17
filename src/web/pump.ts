@@ -1,7 +1,10 @@
+import { DEFAULT_BUDGET_MICROS } from './core/EditorCore';
 import type { CoreModule } from './core/module';
 
 // The engine's share of a task, so a key still draws soon after it.
 export const PUMP_BUDGET_MS = 6;
+// An engine step can run one parse slice, so the pump starts one only while a slice still fits.
+const PARSE_SLICE_MS = DEFAULT_BUDGET_MICROS / 1000;
 
 // urgent: the view's next frame waits for the parse. pending: it has something to draw.
 type View = { draw(): void; readonly urgent: boolean; pending(): boolean };
@@ -68,7 +71,7 @@ function frame(): void {
   scheduled = false;
   const start = probe ? performance.now() : 0;
   const urgent = [...views].some((v) => v.urgent);
-  const left = core && urgent ? core._cpw_pump(PUMP_BUDGET_MS) : 0;
+  const left = core && urgent ? core._cpw_pump(PUMP_BUDGET_MS, PARSE_SLICE_MS) : 0;
   const pumped = probe ? performance.now() - start : 0;
   for (const view of [...views]) {
     if (probe && view === keyView) drawKeyed(probe, view, pumped);
@@ -111,7 +114,7 @@ function runEngine(): void {
   engineQueued = false;
   if (!core) return;
   const start = probe ? performance.now() : 0;
-  const left = core._cpw_pump(PUMP_BUDGET_MS);
+  const left = core._cpw_pump(PUMP_BUDGET_MS, PARSE_SLICE_MS);
   if (probe) probe.tasks.push(performance.now() - start);
   if ([...views].some((v) => v.pending())) requestPump();
   if (left > 0) postEngine();

@@ -238,10 +238,13 @@ CPW void cpw_set_clock(int32_t e, double millis) {
   if (Editor *ed = at(e)) ed->clock = millis;
 }
 
-// Runs worker work, then main work, until both queues are empty or budget_ms is spent. Returns the items left.
-CPW int32_t cpw_pump(double budget_ms) {
+// Runs worker work, then main work, until both queues are empty or budget_ms is spent. After the first item, another
+// starts only while a parse slice of slice_ms still fits. Returns the items left.
+CPW int32_t cpw_pump(double budget_ms, double slice_ms) {
   double end = emscripten_get_now() + budget_ms;
-  while ((!worker_q.empty() || !main_q.empty()) && emscripten_get_now() < end) {
+  bool first = true;
+  while ((!worker_q.empty() || !main_q.empty()) && (first || emscripten_get_now() + slice_ms < end)) {
+    first = false;
     std::deque<Work> &q = !worker_q.empty() ? worker_q : main_q;
     Work w = q.front();
     q.pop_front();

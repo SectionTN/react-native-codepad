@@ -424,8 +424,8 @@ if (dir && !existsSync(javascript))
     pumpAll(m);
     expect(core.snapshot).not.toBe(0);
     core.setText(js10k);
-    m._cpw_pump(1);
-    expect(m._cpw_pump(0)).toBeGreaterThan(0);
+    m._cpw_pump(1, 0);
+    expect(m._cpw_pump(0, 0)).toBeGreaterThan(0);
     core.close();
     pumpAll(m);
     expect(m._cpw_test_held_snapshots()).toBe(0);

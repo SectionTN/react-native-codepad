@@ -36,7 +36,8 @@ export interface CoreModule {
   _cpw_take_missed(e: number, out: Ptr, cap: number): number;
   _cpw_refresh(e: number): void;
   _cpw_set_clock(e: number, millis: number): void;
-  _cpw_pump(budgetMs: number): number;
+  // Starts another queued item only while sliceMs still fits before budgetMs runs out.
+  _cpw_pump(budgetMs: number, sliceMs: number): number;
   _cpw_take_changes(
     e: number,
     out: Ptr,

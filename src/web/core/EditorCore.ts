@@ -31,7 +31,7 @@ export type WebChange = {
 export class SearchError extends Error {}
 
 // The engine's parse budget per slice, so the page's pump stays inside a frame.
-export const DEFAULT_BUDGET_MICROS = 4000;
+export const DEFAULT_BUDGET_MICROS = 3000;
 
 const ORIGINS: ChangeOrigin[] = ['input', 'api', 'undo', 'redo'];
 const MOVES: MoveUnit[] = ['char', 'word', 'lineStart', 'lineEnd', 'docStart', 'docEnd'];
