@@ -2,6 +2,7 @@
 import {
   type ComponentRef,
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -166,10 +167,20 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       avoidKeyboard,
     ],
   );
-  const latest = useRef({ options, language });
-  latest.current = { options, language };
+  const latest = useRef({ options, language, decorations, decorationsRevision });
+  latest.current = { options, language, decorations, decorationsRevision };
+  // The decorations last sent, so the view gets them before its first draw and a repeat is not mapped twice.
+  const sent = useRef<{ items?: typeof decorations; revision?: number }>({});
+  const sendDecorations = useCallback((v: EditorView) => {
+    const { decorations: items, decorationsRevision: revision } = latest.current;
+    const last = sent.current;
+    if (items === last.items && revision === last.revision) return;
+    sent.current = { items, revision };
+    // A prop that goes away clears for the current text, and one that never came sends nothing.
+    if (items || last.items) v.setDecorations(items ?? [], items ? (revision ?? -1) : -1);
+  }, []);
 
-  // Options and language reach the view before its first draw, which the pump runs before React commits.
+  // Options, language and decorations reach the view before its first draw, which the pump runs before React commits.
   useEffect(() => {
     let alive = true;
     let created: EditorView | null = null;
@@ -185,6 +196,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
         created = v;
         v.setOptions(latest.current.options);
         v.setLanguage(latest.current.language);
+        sent.current = {};
+        sendDecorations(v);
         viewRef.current = v;
         for (const write of queued.current.splice(0)) {
           write.edit(v);
@@ -207,14 +220,11 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       // A StrictMode remount runs the effect again before this fires and keeps the waiting writes.
       setTimeout(() => gone.current && drop(), 0);
     };
-  }, []);
+  }, [sendDecorations]);
 
-  // Decorations reach the view once it exists. A prop that goes away clears them for the current text.
-  const decorated = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sendDecorations reads the props through latest.
   useEffect(() => {
-    if (!view || (!decorations && !decorated.current)) return;
-    decorated.current = decorations !== undefined;
-    view.setDecorations(decorations ?? [], decorations ? (decorationsRevision ?? -1) : -1);
+    if (view) sendDecorations(view);
   }, [view, decorations, decorationsRevision]);
 
   useEffect(() => {

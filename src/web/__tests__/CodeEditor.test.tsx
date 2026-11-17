@@ -202,6 +202,21 @@ test('decorations passed before the core loads apply once it does', async () => 
   expect(mockViews[0]?.setDecorations).toHaveBeenCalledWith(items, 3);
 });
 
+test('decorations passed at mount are on the view when it first draws, and sent once', async () => {
+  const items = [{ kind: 'gap' as const, line: 0, rows: 2 }];
+  let atReady: unknown[][] = [];
+  const onReady = () => {
+    atReady = [...(mockViews[0]?.setDecorations.mock.calls ?? [])];
+  };
+  await render(<CodeEditor decorations={items} decorationsRevision={3} onReady={onReady} />);
+  await act(async () => {
+    mockCore.resolve({});
+    await tick();
+  });
+  expect(atReady).toEqual([[items, 3]]);
+  expect(mockViews[0]?.setDecorations).toHaveBeenCalledTimes(1);
+});
+
 test('decorations without a revision are for the current text', async () => {
   const items = [{ kind: 'lineBackground' as const, line: 1, color: 'red' }];
   await render(<CodeEditor decorations={items} />);
