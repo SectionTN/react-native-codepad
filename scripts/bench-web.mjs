@@ -17,13 +17,25 @@ let profile = false;
 let keys = 60;
 let search = '';
 let decorate = false;
+// A bad operand stops the bench before a browser opens.
+const fail = (message) => {
+  console.error(`bench-web: ${message}`);
+  process.exit(1);
+};
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--profile') profile = true;
-  else if (args[i] === '--keys') keys = Number(args[++i]);
-  else if (args[i] === '--search') search = args[++i] ?? '';
-  else if (args[i] === '--decorate') decorate = true;
+  else if (args[i] === '--keys') {
+    keys = Number(args[++i]);
+    if (!Number.isSafeInteger(keys) || keys < 1) fail('--keys takes a whole number, 1 or more');
+  } else if (args[i] === '--search') {
+    search = args[++i] ?? '';
+    if (!search) fail('--search takes the text to search for');
+  } else if (args[i] === '--decorate') decorate = true;
   else if (args[i] === '--desktop') {
-    desktop = /^\d+(\.\d+)?$/.test(args[i + 1] ?? '') ? Number(args[++i]) : DEFAULT_RATE;
+    // The rate is optional, so the next operand is one unless it is another flag.
+    const next = args[i + 1];
+    desktop = next === undefined || next.startsWith('--') ? DEFAULT_RATE : Number(args[++i]);
+    if (!(desktop >= 1)) fail('--desktop takes a CPU slowdown rate of 1 or more');
   } else positional.push(args[i]);
 }
 const lines = Number(positional[0] ?? 300);
