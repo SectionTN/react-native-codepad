@@ -14,6 +14,19 @@ function finish(c: SearchController, budgetMs = 1): number {
   return steps;
 }
 
+// The pairs a second core finds for text in one call, so the sliced scan is checked against an independent result.
+function matchesOf(
+  m: ConstructorParameters<typeof EditorCore>[0],
+  text: string,
+  query: string,
+): number[] {
+  const ref = new EditorCore(m, text);
+  ref.setSearch({ text: query, regex: false, caseSensitive: false, wholeWord: false });
+  const pairs = ref.matches;
+  ref.close();
+  return pairs;
+}
+
 test('mapThrough keeps pairs before a change, shifts pairs after it and drops pairs it touches', () => {
   const pairs = [0, 2, 5, 7, 10, 12, 4, 6];
   // Three units inserted at 6: [5, 7) is cut, [4, 6) ends where it starts and stays.
@@ -28,21 +41,24 @@ test('firstEndingAfter finds the first match ending past an offset', () => {
   expect(firstEndingAfter([], 0)).toBe(0);
 });
 
-run('a scan sliced at 1 ms over js10k finds the same pairs as cp_editor_matches', async () => {
-  const m = await loadCore(dir as string);
-  const core = new EditorCore(m, generateJavaScript(10_000));
-  const c = new SearchController(core, () => {});
-  c.setQuery({ text: 'cache' });
-  expect(core.searchStale).toBe(true);
-  finish(c);
-  expect(core.searchStale).toBe(false);
-  const sliced = c.matchesForPaint();
-  expect(sliced.length).toBeGreaterThan(1000);
-  expect(sliced).toEqual(core.matches);
-  expect(core.matchCount).toBe(sliced.length / 2);
-  c.close();
-  core.close();
-});
+run(
+  'a scan over more matches than one batch holds finds the same pairs as one full search',
+  async () => {
+    const m = await loadCore(dir as string);
+    const core = new EditorCore(m, generateJavaScript(10_000));
+    const c = new SearchController(core, () => {});
+    c.setQuery({ text: 'e' });
+    expect(core.searchStale).toBe(true);
+    expect(finish(c)).toBeGreaterThan(0);
+    expect(core.searchStale).toBe(false);
+    const sliced = c.matchesForPaint();
+    expect(sliced.length).toBeGreaterThan(2 * 4096);
+    expect(sliced).toEqual(matchesOf(m, core.text(), 'e'));
+    expect(core.matchCount).toBe(sliced.length / 2);
+    c.close();
+    core.close();
+  },
+);
 
 run('an edit during a scan drops it and the accepted result is for the new revision', async () => {
   const m = await loadCore(dir as string);
@@ -56,7 +72,7 @@ run('an edit during a scan drops it and the accepted result is for the new revis
   finish(c);
   expect(core.searchStale).toBe(false);
   expect(c.matchesForPaint().slice(0, 2)).toEqual([0, 5]);
-  expect(c.matchesForPaint()).toEqual(core.matches);
+  expect(c.matchesForPaint()).toEqual(matchesOf(m, core.text(), 'value'));
   c.close();
   core.close();
 });
