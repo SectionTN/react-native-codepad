@@ -430,6 +430,45 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test("a typed letter keeps its line's element", async () => {
+      const { page } = await open();
+      await page.evaluate(() => window.codepad.ensureLanguage('python'));
+      await editor(page, 'a', 'def a():\n    return b\n');
+      await page.evaluate(async () => {
+        window.views.a.setLanguage('python');
+        await window.codepad.until(() => window.views.a.core.snapshot !== 0);
+      });
+      await clickAt(page, 'a', 1, 12);
+      await page.evaluate(() => {
+        window.kept = document.querySelector('#a [data-line="1"]');
+      });
+      await page.keyboard.type('x');
+      const same = await page.evaluate(async () => {
+        const v = window.views.a;
+        await window.codepad.until(() => v.core.snapshot !== 0 && v.core.revision > 0);
+        await window.codepad.frames(3);
+        return document.querySelector('#a [data-line="1"]') === window.kept;
+      });
+      assert.equal(await textOf(page, 'a'), 'def a():\n    return bx\n');
+      assert.equal(same, true);
+      await page.close();
+    });
+
+    test('typing past the right edge keeps the caret in view without soft wrap', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'x');
+      await clickAt(page, 'a', 0, 1);
+      await page.keyboard.type('a'.repeat(90));
+      const { x, width } = await page.evaluate(async () => {
+        const v = window.views.a;
+        await window.codepad.frames(2);
+        const caret = v.caretRect(v.core.selection.head);
+        return { x: caret?.x ?? -1, width: document.getElementById('a').clientWidth };
+      });
+      assert.ok(x >= 0 && x <= width, `caret x ${x} of ${width}`);
+      await page.close();
+    });
+
     test('the frame after a letter, an Enter and a joining Backspace keeps the keyword colors', async () => {
       const { page } = await open();
       await page.evaluate(async () => {

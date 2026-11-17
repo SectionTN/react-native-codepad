@@ -89,6 +89,8 @@ type Entry = {
   revision: number;
   spans: Int32Array | null;
   text: string;
+  // Edited since its last draw: the element is reused, but the frame reads the line again.
+  stale?: boolean;
 };
 
 // The edited line's previous spans moved along an edit that stayed inside it, kept until a parse lands.
@@ -673,7 +675,7 @@ export class EditorView {
     if (this.destroyed) return null;
     const line = this.core.lineAt(offset);
     const entry = this.cache.get(line);
-    if (!entry || !this.attached.has(line)) return null;
+    if (!entry || entry.stale || !this.attached.has(line)) return null;
     const box = this.root.getBoundingClientRect();
     const edge = caretEdge(entry.el, offset - this.core.lineStart(line));
     return { x: edge.x - box.left, y: edge.top - box.top, width: 1, height: this.rowHeight };
@@ -896,7 +898,7 @@ export class EditorView {
     const info = snapshot ? this.snapshotInfo(snapshot) : null;
     const incremental = info !== null && info.basedOn >= 0 && info.basedOn === this.appliedRevision;
     const pairs: number[] = [];
-    for (const [line, entry] of this.cache) pairs.push(line, entry.revision);
+    for (const [line, entry] of this.cache) if (!entry.stale) pairs.push(line, entry.revision);
     const entries = m._malloc(Math.max(1, pairs.length) * 4);
     m.HEAP32.set(pairs, entries >> 2);
     const lenPtr = m._malloc(4);
@@ -1162,7 +1164,10 @@ export class EditorView {
     for (const [line, entry] of this.cache) {
       if (line < first) moved.push([line, entry]);
       else if (line >= first + oldCount) moved.push([line + delta, entry]);
-      else entry.el.remove();
+      else if (oldCount === 1 && newCount === 1) {
+        entry.stale = true;
+        moved.push([line, entry]);
+      } else entry.el.remove();
     }
     this.cache.clear();
     this.attached.clear();
@@ -1176,7 +1181,7 @@ export class EditorView {
   // The spans a line shows now: its cache entry, else what an edit since the last frame kept for it.
   private shownSpans(line: number): Int32Array | null {
     const entry = this.cache.get(line);
-    if (entry) return entry.spans;
+    if (entry && !entry.stale) return entry.spans;
     const kept = this.kept;
     if (!kept) return null;
     if (line === kept.line) return kept.spans;
