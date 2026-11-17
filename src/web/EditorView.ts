@@ -120,6 +120,12 @@ type Entry = {
   stale?: boolean;
 };
 
+// One layer's marks on a line, in a box placed where the line is, kept while the line and its marks stay the same.
+type LineMarks = { line: number; desc: string; box: HTMLElement };
+
+// An underline's part on one line, as columns of that line.
+type LineUnderline = { d: Extract<Decoration, { kind: 'underline' }>; a: number; b: number };
+
 // The edited line's previous spans moved along an edit that stayed inside it, kept until a parse lands.
 type Kept = { line: number; revision: number; spans: Int32Array | null; tail: Int32Array | null };
 
@@ -180,16 +186,22 @@ export class EditorView {
   // Search matches under the selection, the selected match in the active color.
   private readonly matchLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
   private readonly bracketLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
-  private bracketsKey = '';
+  // The bracket pair for a revision, caret and snapshot, so a scroll does not look it up again.
+  private bracketPair: { key: string; pair: number[] | null } = { key: '', pair: null };
+  private readonly bracketMarks = new Map<Entry, LineMarks>();
   // An animated scrollToLine: the scroll it started from, when, and the line it ends on.
   private lineScroll: { line: number; from: number; start: number } | null = null;
   private readonly stopLineScrollEvent = () => {
     this.lineScroll = null;
   };
-  private matchesKey = '';
-  private paintedPairs: number[] | null = null;
+  private readonly matchMarks = new Map<Entry, LineMarks>();
   private readonly search: SearchController;
-  private decorationsKey = '';
+  private readonly underlineMarks = new Map<Entry, LineMarks>();
+  private underlines: { key: string; lines: Map<number, LineUnderline[]> } = {
+    key: '',
+    lines: new Map(),
+  };
+  private readonly backgroundEls: HTMLElement[] = [];
   // Bumped when the theme, the font or the text's place changes, so every overlay is planned again.
   private overlayVersion = 0;
   private placedAt = '';
@@ -649,9 +661,9 @@ export class EditorView {
     const from = Math.min(anchor, head);
     const to = Math.max(anchor, head);
     const selected = from < to ? this.rangeRects(from, to) : [];
-    const writeDecorations = this.planDecorations(box);
-    const writeMatches = this.planMatches(box, rootBox, from, to);
-    const writeBrackets = this.planBrackets(box);
+    const writeDecorations = this.planDecorations();
+    const writeMatches = this.planMatches(rootBox, from, to);
+    const writeBrackets = this.planBrackets();
     if (caret && this.input.focused) {
       put(this.caretEl, 'display', 'block');
       put(this.caretEl, 'left', `${caret.x + rootBox.left - box.left}px`);
@@ -698,17 +710,62 @@ export class EditorView {
       const lineStart = this.core.lineStart(line);
       const a = Math.max(start, lineStart) - lineStart;
       const b = Math.min(end, lineStart + entry.text.length) - lineStart;
-      const range = document.createRange();
-      const [sn, so] = textPoint(entry.el, a);
-      const [en, eo] = textPoint(entry.el, b);
-      range.setStart(sn, so);
-      range.setEnd(en, eo);
-      const rects = [...range.getClientRects()].filter((r) => r.width > 0);
-      // An empty part of a line inside the selection still shows a little.
-      if (rects.length === 0) rects.push(range.getBoundingClientRect());
-      out.push(...rects);
+      out.push(...this.columnRects(entry, a, b));
     }
     return out;
+  }
+
+  // The page boxes of columns a to b of a drawn line.
+  private columnRects(entry: Entry, a: number, b: number): DOMRect[] {
+    const range = document.createRange();
+    const [sn, so] = textPoint(entry.el, a);
+    const [en, eo] = textPoint(entry.el, b);
+    range.setStart(sn, so);
+    range.setEnd(en, eo);
+    const rects = [...range.getClientRects()].filter((r) => r.width > 0);
+    // An empty part of a line inside the selection still shows a little.
+    if (rects.length === 0) rects.push(range.getBoundingClientRect());
+    return rects;
+  }
+
+  // Plans one layer line by line: a line whose element and marks are unchanged keeps its box and moves with the line.
+  private planLines(
+    layer: HTMLElement,
+    marks: Map<Entry, LineMarks>,
+    wanted: Map<number, string>,
+    build: (line: number, entry: Entry, lineBox: DOMRect) => Element[],
+  ): () => void {
+    const old = new Map(marks);
+    const added: HTMLElement[] = [];
+    marks.clear();
+    for (const [line, desc] of wanted) {
+      const entry = this.cache.get(line);
+      if (!entry || entry.stale || !this.attached.has(line)) continue;
+      const prev = old.get(entry);
+      if (prev && prev.desc === desc) {
+        old.delete(entry);
+        prev.line = line;
+        marks.set(entry, prev);
+        continue;
+      }
+      const box = div('position:absolute;');
+      box.append(...build(line, entry, entry.el.getBoundingClientRect()));
+      marks.set(entry, { line, desc, box });
+      added.push(box);
+    }
+    const layout = this.layout;
+    const left = `${layout.textAreaLeft + layout.textPadding}px`;
+    const places = [...marks.values()].map(
+      (m) => [m.box, `${layout.lineTop(m.line) + layout.scrollY}px`] as const,
+    );
+    return () => {
+      for (const m of old.values()) m.box.remove();
+      for (const [box, top] of places) {
+        put(box, 'top', top);
+        put(box, 'left', left);
+      }
+      if (added.length > 0) layer.append(...added);
+    };
   }
 
   // Scrolls so the line is at the top of the editor, or of the page when the editor does not scroll.
@@ -793,40 +850,41 @@ export class EditorView {
     return this.core.text(Math.min(anchor, head), Math.max(anchor, head));
   }
 
-  // Reads the bracket pair's boxes now and returns their writes, keyed as BracketHighlight.kt keys its cache.
-  private planBrackets(box: DOMRect): () => void {
+  // Reads the bracket pair's boxes where it changed and returns the writes, the pair cached as BracketHighlight.kt does.
+  private planBrackets(): () => void {
     const snapshot = this.languageReady ? this.core.snapshot : 0;
     const head = this.core.selection.head;
-    const { first, last } = this.drawnWindow;
-    const key = this.o.matchBrackets
-      ? [
-          this.overlayVersion,
-          this.core.revision,
-          head,
-          snapshot,
-          first,
-          last,
-          this.layout.wrapWidth,
-          this.css.matchingBracket,
-        ].join(':')
-      : '';
-    if (key === this.bracketsKey) return () => {};
-    this.bracketsKey = key;
-    // A snapshot of the current text skips brackets in strings and comments. Without one every bracket counts.
-    const consistent =
-      snapshot !== 0 && this.snapshotInfo(snapshot).revision === this.core.revision ? snapshot : 0;
-    const pair = key ? this.core.bracketMatch(consistent) : null;
-    const marks: HTMLElement[] = [];
-    for (const at of pair ?? []) {
-      for (const r of this.rangeRects(at, at + 1)) {
-        const mark = div(
-          `position:absolute;left:${r.left - box.left}px;top:${r.top - box.top}px;width:${r.width}px;height:${r.height}px;background:${this.css.matchingBracket};`,
-        );
-        mark.dataset.bracket = '';
-        marks.push(mark);
-      }
+    const key = this.o.matchBrackets ? `${this.core.revision}:${head}:${snapshot}` : '';
+    if (key !== this.bracketPair.key) {
+      // A snapshot of the current text skips brackets in strings and comments. Without one every bracket counts.
+      const consistent =
+        snapshot !== 0 && this.snapshotInfo(snapshot).revision === this.core.revision
+          ? snapshot
+          : 0;
+      this.bracketPair = { key, pair: key ? this.core.bracketMatch(consistent) : null };
     }
-    return () => this.bracketLayer.replaceChildren(...marks);
+    const columns = new Map<number, number[]>();
+    for (const at of this.bracketPair.pair ?? []) {
+      const line = this.core.lineAt(at);
+      columns.set(line, [...(columns.get(line) ?? []), at - this.core.lineStart(line)]);
+    }
+    const wanted = new Map<number, string>();
+    for (const [line, cols] of columns) {
+      wanted.set(line, `${this.overlayVersion}|${this.css.matchingBracket}|${cols.join(',')}`);
+    }
+    return this.planLines(this.bracketLayer, this.bracketMarks, wanted, (line, entry, lineBox) => {
+      const marks: Element[] = [];
+      for (const col of columns.get(line) ?? []) {
+        for (const r of this.columnRects(entry, col, col + 1)) {
+          const mark = div(
+            `position:absolute;left:${r.left - lineBox.left}px;top:${r.top - lineBox.top}px;width:${r.width}px;height:${r.height}px;background:${this.css.matchingBracket};`,
+          );
+          mark.dataset.bracket = '';
+          marks.push(mark);
+        }
+      }
+      return marks;
+    });
   }
 
   // Scrolls the least that shows the caret.
@@ -939,95 +997,155 @@ export class EditorView {
     return this.drawnGaps.some((g) => y >= g.rect.y && y < g.rect.y + g.rect.height);
   }
 
-  // Reads the decorations' geometry now and returns their writes, so the draw keeps one read phase.
-  private planDecorations(box: DOMRect): () => void {
+  // Reads the underlines' boxes on the lines where they changed and returns the writes, so the draw keeps one read phase.
+  private planDecorations(): () => void {
     const items = this.core.decorations();
     const { first, last } = this.drawnWindow;
-    const key =
-      items.length === 0
-        ? ''
-        : [
-            this.overlayVersion,
-            this.core.decorationsVersion,
-            this.core.revision,
-            this.appliedRevision,
-            first,
-            last,
-            this.layout.wrapWidth,
-            this.rowHeight,
-            this.baseline,
-          ].join(':');
-    if (key === this.decorationsKey) return () => {};
-    this.decorationsKey = key;
     const layout = this.layout;
-    const backgrounds: Element[] = [];
-    const underlines: Element[] = [];
-    const windowStart = this.core.lineStart(first);
-    const windowEnd = this.core.lineEnd(last);
+    const backgrounds: [string, string, string, string, string][] = [];
     for (const d of items) {
-      if (d.kind === 'lineBackground') {
-        if (d.line < first || d.line > last) continue;
-        const el = div(
-          `position:absolute;left:${layout.textAreaLeft}px;top:${layout.lineTop(d.line) + layout.scrollY}px;width:${layout.contentWidth + layout.insetRight}px;height:${layout.rows(d.line) * this.rowHeight}px;background:${d.color};`,
-        );
-        el.dataset.lineBackground = '';
-        backgrounds.push(el);
-      } else if (d.kind === 'underline') {
-        if (d.range.end < windowStart || d.range.start > windowEnd) continue;
-        for (const r of this.rowRects(d.range.start, d.range.end)) {
-          underlines.push(
-            this.underline(d, r.left - box.left, r.right - box.left, r.top - box.top),
-          );
-        }
-      }
+      if (d.kind !== 'lineBackground' || d.line < first || d.line > last) continue;
+      backgrounds.push([
+        `${layout.textAreaLeft}px`,
+        `${layout.lineTop(d.line) + layout.scrollY}px`,
+        `${layout.contentWidth + layout.insetRight}px`,
+        `${layout.rows(d.line) * this.rowHeight}px`,
+        d.color,
+      ]);
     }
+    const byLine = this.underlinesByLine(items);
+    const wanted = new Map<number, string>();
+    for (let line = first; line <= last; line++) {
+      const list = byLine.get(line);
+      if (!list) continue;
+      const parts = list.map(
+        (u) => `${u.a},${u.b},${u.d.color},${u.d.style},${u.d.thickness},${u.d.offset}`,
+      );
+      wanted.set(line, `${this.overlayVersion}|${parts.join(';')}`);
+    }
+    const writeUnderlines = this.planLines(
+      this.underlineLayer,
+      this.underlineMarks,
+      wanted,
+      (line, entry, lineBox) => {
+        const out: Element[] = [];
+        for (const u of byLine.get(line) ?? []) {
+          for (const r of this.rowSpans(entry, u.a, u.b, lineBox)) {
+            out.push(this.underline(u.d, r.left, r.right, r.top));
+          }
+        }
+        return out;
+      },
+    );
     return () => {
-      this.lineBackgroundLayer.replaceChildren(...backgrounds);
-      this.underlineLayer.replaceChildren(...underlines);
+      // Each background keeps its element, so a wider line or a moved one is a style write.
+      const els = this.backgroundEls;
+      while (els.length > backgrounds.length) els.pop()?.remove();
+      backgrounds.forEach(([left, top, width, height, color], i) => {
+        let el = els[i];
+        if (!el) {
+          el = div('position:absolute;');
+          el.dataset.lineBackground = '';
+          this.lineBackgroundLayer.append(el);
+          els.push(el);
+        }
+        put(el, 'left', left);
+        put(el, 'top', top);
+        put(el, 'width', width);
+        put(el, 'height', height);
+        put(el, 'background', color);
+      });
+      writeUnderlines();
     };
   }
 
-  // Reads the visible matches' boxes now and returns their writes, the selected match in the active color.
-  private planMatches(box: DOMRect, rootBox: DOMRect, from: number, to: number): () => void {
-    const pairs = this.search.matchesForPaint();
-    // The window clips the painted span, so a page scroll draws again while matches are painted.
-    this.listenToPage(!this.o.scrollEnabled || pairs.length > 0);
-    const [windowStart, windowEnd] = pairs.length ? this.visibleSpan(rootBox) : [0, -1];
-    const { first, last } = this.drawnWindow;
-    const key =
-      pairs.length === 0
-        ? ''
-        : [
-            this.overlayVersion,
-            this.core.revision,
-            this.appliedRevision,
-            first,
-            last,
-            windowStart,
-            windowEnd,
-            from,
-            to,
-            this.layout.scrollX,
-          ].join(':');
-    if (key === this.matchesKey && pairs === this.paintedPairs) return () => {};
-    this.matchesKey = key;
-    this.paintedPairs = pairs;
-    const marks: HTMLElement[] = [];
-    for (let i = firstEndingAfter(pairs, windowStart); i * 2 < pairs.length; i++) {
-      const s = pairs[i * 2] as number;
-      const e = pairs[i * 2 + 1] as number;
-      if (s > windowEnd) break;
-      const active = from < to && s === from && e === to;
-      for (const r of this.rangeRects(s, e)) {
-        const mark = div(
-          `position:absolute;left:${r.left - box.left}px;top:${r.top - box.top}px;width:${Math.max(r.width, 2)}px;height:${r.height}px;background:${active ? this.css.searchMatchActive : this.css.searchMatch};`,
-        );
-        mark.dataset.match = '';
-        if (active) mark.dataset.matchActive = '';
-        marks.push(mark);
+  // The underlines on each line as columns of that line, for the current decorations and text.
+  private underlinesByLine(items: Decoration[]): Map<number, LineUnderline[]> {
+    const key = `${this.core.decorationsVersion}:${this.core.revision}`;
+    if (key === this.underlines.key) return this.underlines.lines;
+    const lines = new Map<number, LineUnderline[]>();
+    for (const d of items) {
+      if (d.kind !== 'underline') continue;
+      const last = this.core.lineAt(d.range.end);
+      for (let line = this.core.lineAt(d.range.start); line <= last; line++) {
+        const start = this.core.lineStart(line);
+        const a = Math.max(d.range.start, start) - start;
+        const b = Math.min(d.range.end, this.core.lineEnd(line)) - start;
+        if (b <= a) continue;
+        const list = lines.get(line);
+        if (list) list.push({ d, a, b });
+        else lines.set(line, [{ d, a, b }]);
       }
     }
-    return () => this.matchLayer.replaceChildren(...marks);
+    this.underlines = { key, lines };
+    return lines;
+  }
+
+  // Reads the matches' boxes on the lines where they changed and returns the writes, the selected match in the active color.
+  private planMatches(rootBox: DOMRect, from: number, to: number): () => void {
+    const pairs = this.search.matchesForPaint();
+    const { first, last } = this.drawnWindow;
+    const parts = new Map<number, [number, number, boolean][]>();
+    let clipped = false;
+    if (pairs.length > 0 && last >= first) {
+      const lo = this.core.lineStart(first);
+      const hi = this.core.lineEnd(last);
+      const layout = this.layout;
+      // A line longer than the screen holds paints only the matches in view.
+      const screen =
+        Math.ceil(layout.textAreaWidth / Math.max(1, this.charWidth)) *
+        Math.ceil(layout.viewportHeight / this.rowHeight);
+      let span: [number, number] | null = null;
+      for (let i = firstEndingAfter(pairs, lo); i * 2 < pairs.length; i++) {
+        const s = pairs[i * 2] as number;
+        const e = pairs[i * 2 + 1] as number;
+        if (s > hi) break;
+        const active = from < to && s === from && e === to;
+        const end = Math.min(this.core.lineAt(e), last);
+        for (let line = Math.max(this.core.lineAt(s), first); line <= end; line++) {
+          const start = this.core.lineStart(line);
+          const stop = this.core.lineEnd(line);
+          if (stop - start > screen) {
+            clipped = true;
+            span ??= this.visibleSpan(rootBox);
+            if (e < span[0] || s > span[1]) continue;
+          }
+          const part: [number, number, boolean] = [
+            Math.max(s, start) - start,
+            Math.min(e, stop) - start,
+            active,
+          ];
+          const list = parts.get(line);
+          if (list) list.push(part);
+          else parts.set(line, [part]);
+        }
+      }
+    }
+    // A clipped long line follows the window, so a page scroll draws again.
+    this.listenToPage(!this.o.scrollEnabled || clipped);
+    const css = this.css;
+    const wanted = new Map<number, string>();
+    for (const [line, list] of parts) {
+      const marks = list.map(([a, b, active]) => `${a},${b},${active ? 1 : 0}`).join(';');
+      wanted.set(
+        line,
+        `${this.overlayVersion}|${css.searchMatch}|${css.searchMatchActive}|${marks}`,
+      );
+    }
+    return this.planLines(this.matchLayer, this.matchMarks, wanted, (line, entry, lineBox) => {
+      const marks: Element[] = [];
+      for (const [a, b, active] of parts.get(line) ?? []) {
+        for (const r of this.columnRects(entry, a, b)) {
+          const mark = div(
+            `position:absolute;left:${r.left - lineBox.left}px;top:${r.top - lineBox.top}px;width:${Math.max(r.width, 2)}px;height:${r.height}px;background:${active ? css.searchMatchActive : css.searchMatch};`,
+          );
+          mark.dataset.match = '';
+          if (active) mark.dataset.matchActive = '';
+          marks.push(mark);
+        }
+      }
+      return marks;
+    });
   }
 
   // The first and last offsets on screen, so a long line paints only the matches in view.
@@ -1049,36 +1167,26 @@ export class EditorView {
     return [a === null ? lo : Math.max(lo, a), b === null ? hi : Math.min(hi, b)];
   }
 
-  // The range's page boxes on drawn lines, merged to one per row, with the top of that row.
-  private rowRects(start: number, end: number): { left: number; right: number; top: number }[] {
-    const out: { left: number; right: number; top: number }[] = [];
-    const last = this.core.lineAt(end);
-    for (let line = this.core.lineAt(start); line <= last; line++) {
-      const entry = this.cache.get(line);
-      if (!entry || entry.stale || !this.attached.has(line)) continue;
-      const lineStart = this.core.lineStart(line);
-      const a = Math.max(start, lineStart) - lineStart;
-      const b = Math.min(end, lineStart + entry.text.length) - lineStart;
-      if (b <= a) continue;
-      const range = document.createRange();
-      const [sn, so] = textPoint(entry.el, a);
-      const [en, eo] = textPoint(entry.el, b);
-      range.setStart(sn, so);
-      range.setEnd(en, eo);
-      const lineTop = entry.el.getBoundingClientRect().top;
-      const rows = new Map<number, { left: number; right: number; top: number }>();
-      for (const r of range.getClientRects()) {
-        if (r.width <= 0) continue;
-        const row = Math.floor((r.top + r.height / 2 - lineTop) / this.rowHeight);
-        const seen = rows.get(row);
-        if (seen) {
-          seen.left = Math.min(seen.left, r.left);
-          seen.right = Math.max(seen.right, r.right);
-        } else rows.set(row, { left: r.left, right: r.right, top: lineTop + row * this.rowHeight });
-      }
-      out.push(...rows.values());
+  // Columns a to b of a drawn line merged to one box per row, relative to the line's top left.
+  private rowSpans(
+    entry: Entry,
+    a: number,
+    b: number,
+    lineBox: DOMRect,
+  ): { left: number; right: number; top: number }[] {
+    const rows = new Map<number, { left: number; right: number; top: number }>();
+    for (const r of this.columnRects(entry, a, b)) {
+      if (r.width <= 0) continue;
+      const row = Math.floor((r.top + r.height / 2 - lineBox.top) / this.rowHeight);
+      const left = r.left - lineBox.left;
+      const right = r.right - lineBox.left;
+      const seen = rows.get(row);
+      if (seen) {
+        seen.left = Math.min(seen.left, left);
+        seen.right = Math.max(seen.right, right);
+      } else rows.set(row, { left, right, top: row * this.rowHeight });
     }
-    return out;
+    return [...rows.values()];
   }
 
   // One underline piece on a row, solid as a bar or wavy as a clipped path, as DecorationPainter.kt draws them.

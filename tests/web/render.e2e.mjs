@@ -547,6 +547,24 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('a line background keeps its element and grows when a key widens the text', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'ab\ncd');
+      const kept = await page.evaluate(async () => {
+        const v = window.views.a;
+        v.setDecorations([{ kind: 'lineBackground', line: 1, color: '#ff0000' }], v.core.revision);
+        await window.codepad.frames(2);
+        const before = document.querySelector('#a [data-line-background]');
+        const width = before.getBoundingClientRect().width;
+        v.apply(() => v.core.replace(2, 2, 'x'.repeat(200)));
+        await window.codepad.frames(2);
+        const after = document.querySelector('#a [data-line-background]');
+        return [after === before, after.getBoundingClientRect().width > width];
+      });
+      assert.deepEqual(kept, [true, true]);
+      await page.close();
+    });
+
     test('a line background tints every row of its line above the active line', async () => {
       const { page } = await open();
       await editor(page, 'a', `one\n${'word '.repeat(60)}\nthree`, { softWrap: true });
@@ -860,15 +878,15 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
-    test('matches and the bracket pair follow the text when the gutter, theme or font size changes', async () => {
+    test('matches, the bracket pair and underlines follow the text when the gutter, a gap, the font size or the theme changes', async () => {
       const { page } = await open();
-      await editor(page, 'a', '(ab) ab', { lineNumbers: false });
+      await editor(page, 'a', 'x\n(ab) ab', { lineNumbers: false });
       const drift = await page.evaluate(async () => {
         const v = window.views.a;
         const { frames, githubLight } = window.codepad;
-        // The page box of the text from start to end on line 0.
+        // The page box of the text from column start to end on line 1.
         const textBox = (start, end) => {
-          const node = document.querySelector('#a [data-line="0"]');
+          const node = document.querySelector('#a [data-line="1"]');
           const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
           const range = document.createRange();
           let at = 0;
@@ -882,54 +900,175 @@ for (const engine of [chromium, webkit]) {
         const off = () => {
           const match = document.querySelector('#a [data-match]').getBoundingClientRect();
           const bracket = document.querySelector('#a [data-bracket]').getBoundingClientRect();
+          const line = document.querySelector('#a [data-underline]').getBoundingClientRect();
           const ab = textBox(1, 3);
           const open = textBox(0, 1);
+          const under = textBox(5, 7);
           return Math.max(
             Math.abs(match.left - ab.left),
+            Math.abs(match.top - ab.top),
             Math.abs(match.width - ab.width),
             Math.abs(bracket.left - open.left),
+            Math.abs(bracket.top - open.top),
             Math.abs(bracket.height - open.height),
+            Math.abs(line.left - under.left),
+            Math.abs(line.width - under.width),
+            line.top > under.bottom + 8 || line.top < under.top ? 99 : 0,
           );
         };
+        const underline = { kind: 'underline', range: { start: 7, end: 9 }, color: '#0000ff' };
+        v.setDecorations([underline], v.core.revision);
         await v.setSearch({ text: 'ab' });
-        v.apply(() => v.core.setSelection(1, 1));
+        v.apply(() => v.core.setSelection(3, 3));
         await frames(2);
         const before = off();
         v.setOptions({ lineNumbers: true });
         await frames(2);
         const gutter = off();
+        v.setDecorations([underline, { kind: 'gap', line: 0, rows: 2 }], v.core.revision);
+        await frames(2);
+        const gap = off();
         v.setOptions({ fontSize: 22 });
         await frames(2);
         const font = off();
         v.setOptions({ theme: { ...githubLight, searchMatch: '#ff0000' } });
         await frames(2);
         const color = getComputedStyle(document.querySelector('#a [data-match]')).backgroundColor;
-        return { before, gutter, font, color };
+        return { before, gutter, gap, font, color };
       });
       assert.ok(drift.before < 1, `before ${drift.before}`);
       assert.ok(drift.gutter < 1, `after the gutter ${drift.gutter}`);
+      assert.ok(drift.gap < 1, `after the gap ${drift.gap}`);
       assert.ok(drift.font < 1, `after the font size ${drift.font}`);
       assert.equal(drift.color, 'rgb(255, 0, 0)');
       await page.close();
     });
 
-    test('matches below the page fold paint once the page scrolls to them', async () => {
+    // Every 'ab' on every drawn line of host a has a match mark on it, and the second one an underline.
+    async function marksOnText(page) {
+      return page.evaluate(() => {
+        const marks = (s) =>
+          [...document.querySelectorAll(`#a ${s}`)].map((m) => m.getBoundingClientRect());
+        const matches = marks('[data-match]');
+        const unders = marks('[data-underline]');
+        let missing = 0;
+        for (const el of document.querySelectorAll('#a [data-line]')) {
+          const text = el.textContent;
+          for (let col = text.indexOf('ab'); col >= 0; col = text.indexOf('ab', col + 2)) {
+            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+            const range = document.createRange();
+            let at = 0;
+            for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+              if (col >= at && col <= at + n.data.length) range.setStart(n, col - at);
+              if (col + 2 >= at && col + 2 <= at + n.data.length) range.setEnd(n, col + 2 - at);
+              at += n.data.length;
+            }
+            const r = range.getBoundingClientRect();
+            if (!matches.some((m) => Math.abs(m.left - r.left) < 1 && Math.abs(m.top - r.top) < 1))
+              missing++;
+            const under = col === 3;
+            if (
+              under &&
+              !unders.some(
+                (u) => Math.abs(u.left - r.left) < 1 && u.top >= r.top && u.top < r.bottom + 8,
+              )
+            )
+              missing++;
+          }
+        }
+        return missing;
+      });
+    }
+
+    // Underlines the second 'ab' of every line of host a and searches 'ab'.
+    async function markEveryLine(page, lines) {
+      await editor(page, 'a', Array(lines).fill('ab ab').join('\n'));
+      await page.evaluate(async (lines) => {
+        const v = window.views.a;
+        const items = [];
+        for (let i = 0; i < lines; i++)
+          items.push({
+            kind: 'underline',
+            range: { start: i * 6 + 3, end: i * 6 + 5 },
+            color: '#00f',
+          });
+        v.setDecorations(items, v.core.revision);
+        await v.setSearch({ text: 'ab' });
+        await window.codepad.frames(2);
+      }, lines);
+    }
+
+    test('a typed letter keeps the match and underline marks of the other lines', async () => {
+      const { page } = await open();
+      await markEveryLine(page, 6);
+      const kept = await page.evaluate(async () => {
+        const v = window.views.a;
+        const all = () => [...document.querySelectorAll('#a [data-match], #a [data-underline]')];
+        const before = all();
+        for (const m of before) m.__kept = true;
+        v.apply(() => v.core.replace(12, 12, 'x'));
+        await window.codepad.frames(3);
+        return [before.length, all().filter((m) => m.__kept).length];
+      });
+      assert.deepEqual(kept, [18, 15]);
+      assert.equal(await marksOnText(page), 0);
+      await page.close();
+    });
+
+    test('marks sit on their text in the frame after an Enter above, a gap and a scroll out and back', async () => {
+      const { page } = await open();
+      await markEveryLine(page, 40);
+      assert.equal(await marksOnText(page), 0);
+      await page.evaluate(() => {
+        const v = window.views.a;
+        v.apply(() => v.core.replace(0, 0, '\n'));
+        v.draw();
+      });
+      assert.equal(await marksOnText(page), 0, 'after an Enter above');
+      await page.evaluate(() => {
+        const v = window.views.a;
+        const items = v.core.decorations();
+        v.setDecorations([...items, { kind: 'gap', line: 0, rows: 2 }], v.core.revision);
+        v.draw();
+      });
+      assert.equal(await marksOnText(page), 0, 'after a gap');
+      await page.evaluate(async () => {
+        const v = window.views.a;
+        v.scroller.scrollTop = 100000;
+        v.draw();
+        await window.codepad.frames(1);
+        v.scroller.scrollTop = 0;
+        v.draw();
+      });
+      assert.equal(await marksOnText(page), 0, 'after a scroll out and back');
+      await page.close();
+    });
+
+    test('a long line below the page fold paints its matches once the page scrolls to them', async () => {
       const { page } = await open();
       await page.evaluate(() => {
         document.body.style.paddingTop = `${window.innerHeight - 100}px`;
       });
-      await editor(page, 'a', Array(10).fill('ab ab').join('\n'));
-      const counts = await page.evaluate(async () => {
+      await editor(page, 'a', 'ab '.repeat(3000), { softWrap: true });
+      const low = await page.evaluate(async () => {
         const v = window.views.a;
+        // Marks in the lowest 60 px of the editor.
+        const low = () => {
+          const root = document.getElementById('a').getBoundingClientRect();
+          return [...document.querySelectorAll('#a [data-match]')].filter((m) => {
+            const r = m.getBoundingClientRect();
+            return r.top > root.bottom - 60 && r.top < root.bottom;
+          }).length;
+        };
         await v.setSearch({ text: 'ab' });
         await window.codepad.frames(2);
-        const folded = document.querySelectorAll('#a [data-match]').length;
+        const folded = low();
         window.scrollTo(0, 400);
         await window.codepad.frames(3);
-        return [folded, document.querySelectorAll('#a [data-match]').length];
+        return [folded, low()];
       });
-      assert.ok(counts[0] < 20, `before the scroll ${counts[0]}`);
-      assert.equal(counts[1], 20);
+      assert.equal(low[0], 0, 'below the fold before the scroll');
+      assert.ok(low[1] > 0, `after the scroll ${low[1]}`);
       await page.close();
     });
 
