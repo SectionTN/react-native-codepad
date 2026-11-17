@@ -1160,6 +1160,12 @@ export class EditorView {
     this.keepSpans(first, oldCount, newCount, change);
     if (colored && this.kept === null) this.urgent = true;
     const delta = newCount - oldCount;
+    // An edit inside one line moves no other line.
+    if (oldCount === 1 && newCount === 1) {
+      const entry = this.cache.get(first);
+      if (entry) entry.stale = true;
+      return;
+    }
     const moved: [number, Entry][] = [];
     for (const [line, entry] of this.cache) {
       if (line < first) moved.push([line, entry]);
