@@ -247,6 +247,24 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       return Promise.resolve();
     };
     const write = (edit: (v: EditorView) => void) => run((v) => v.apply(() => edit(v)));
+    // A call with a result: on the view now, once it loads, or the fallback when no view comes.
+    const ask = <T,>(call: (v: EditorView) => Promise<T>, fallback: T): Promise<T> => {
+      const v = viewRef.current;
+      if (v) return call(v);
+      if (gone.current) return Promise.resolve(fallback);
+      return new Promise<T>((resolve, reject) => {
+        let started = false;
+        queued.current.push({
+          edit: (view) => {
+            started = true;
+            call(view).then(resolve, reject);
+          },
+          done: () => {
+            if (!started) resolve(fallback);
+          },
+        });
+      });
+    };
     return {
       getText: () => core()?.text() ?? '',
       getTextInRange: (range) => core()?.text(range.start, range.end) ?? '',
@@ -288,12 +306,12 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       paste: () => later('paste', undefined),
       focus: () => run((v) => v.focus()),
       blur: () => run((v) => v.blur()),
-      setSearch: () => later('setSearch', { count: 0, limited: false }),
-      findNext: () => later('findNext', null),
-      findPrevious: () => later('findPrevious', null),
-      replaceCurrent: () => later('replaceCurrent', false),
-      replaceAll: () => later('replaceAll', 0),
-      clearSearch: () => later('clearSearch', undefined),
+      setSearch: (query) => ask((v) => v.setSearch(query), { count: 0, limited: false }),
+      findNext: () => ask((v) => v.findNext(), null),
+      findPrevious: () => ask((v) => v.findPrevious(), null),
+      replaceCurrent: (text) => ask((v) => v.replaceCurrent(text), false),
+      replaceAll: (text) => ask((v) => v.replaceAll(text), 0),
+      clearSearch: () => ask((v) => v.clearSearch(), undefined),
       moveCaret: (direction, opts) => run((v) => v.moveCaret(direction, opts?.select ?? false)),
       typeText: (text) => run((v) => v.typeText(text)),
       deleteBackward: () => run((v) => v.deleteBackward()),

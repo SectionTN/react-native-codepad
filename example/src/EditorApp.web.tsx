@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CodeEditor, type CodeEditorRef, Codepad, type Decoration } from 'react-native-codepad';
 import { generateJavaScript } from './bench/generate';
+import { FindBar } from './chrome/FindBar';
 import { schemeFor } from './chrome/theme';
 import { buildDemoDecorations } from './decorations';
 import { GENERATED_FILES, SAMPLE_FILES } from './files';
@@ -28,6 +29,8 @@ export function EditorApp() {
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const [suggestions, setSuggestions] = useState<'on' | 'off'>('off');
   const [decorate, setDecorate] = useState(false);
+  const [finding, setFinding] = useState(false);
+  const [status, setStatus] = useState('');
   const [decorations, setDecorations] = useState(NO_DECORATIONS);
   const editor = useRef<CodeEditorRef>(null);
   const [demo, setDemo] = useState<Demo>('editor');
@@ -106,6 +109,8 @@ export function EditorApp() {
           onPress={() => setSuggestions((s) => (s === 'on' ? 'off' : 'on'))}
         />
         <Chip label="decorations" on={decorate} onPress={() => setDecorate((d) => !d)} />
+        <Chip label="find" on={finding} onPress={() => setFinding((f) => !f)} />
+        {status ? <Text style={styles.chipText}>{status}</Text> : null}
       </View>
       <ScrollView horizontal style={styles.files} contentContainerStyle={styles.bar}>
         {FILES.map((f) => (
@@ -121,6 +126,14 @@ export function EditorApp() {
           />
         ))}
       </ScrollView>
+      {finding && demo === 'editor' ? (
+        <FindBar
+          scheme={theme ? schemeFor(theme) : 'light'}
+          editor={editor}
+          onStatus={setStatus}
+          onClose={() => setFinding(false)}
+        />
+      ) : null}
       {demo === 'editor' ? (
         <CodeEditor
           key={benchLines ? `bench-${benchLines}` : file?.id}

@@ -69,6 +69,7 @@ export function requestPump(): void {
 
 function frame(): void {
   scheduled = false;
+  lastFrame = performance.now();
   const start = probe ? performance.now() : 0;
   const urgent = [...views].some((v) => v.urgent);
   const left = core && urgent ? core._cpw_pump(PUMP_BUDGET_MS, PARSE_SLICE_MS) : 0;
@@ -95,7 +96,22 @@ function drawKeyed(p: Probe, view: View, pumped: number): void {
   keyMs = 0;
 }
 
+type Task = { step(budgetMs: number): boolean };
+const tasks = new Set<Task>();
+
+// Adds work the engine task slices after the engine's own, until the returned removal.
+export function registerTask(task: Task): () => void {
+  tasks.add(task);
+  if (core) postEngine();
+  return () => {
+    tasks.delete(task);
+  };
+}
+
 let channel: MessageChannel | null = null;
+// Engine time with no frame between, after which the engine waits for a frame: Safari paints only between task chains.
+const ENGINE_BEFORE_FRAME_MS = 2 * PUMP_BUDGET_MS;
+let lastFrame = 0;
 let engineQueued = false;
 
 function postEngine(): void {
@@ -113,9 +129,15 @@ function postEngine(): void {
 function runEngine(): void {
   engineQueued = false;
   if (!core) return;
-  const start = probe ? performance.now() : 0;
-  const left = core._cpw_pump(PUMP_BUDGET_MS, PARSE_SLICE_MS);
+  const start = performance.now();
+  let left = core._cpw_pump(PUMP_BUDGET_MS, PARSE_SLICE_MS);
+  // Work outside the engine, like a search scan, takes what the frame has left, at least 1 ms each.
+  for (const task of [...tasks]) {
+    if (task.step(Math.max(1, PUMP_BUDGET_MS - (performance.now() - start)))) left++;
+  }
   if (probe) probe.tasks.push(performance.now() - start);
   if ([...views].some((v) => v.pending())) requestPump();
-  if (left > 0) postEngine();
+  if (left === 0) return;
+  if (performance.now() - lastFrame < ENGINE_BEFORE_FRAME_MS) postEngine();
+  else requestPump();
 }

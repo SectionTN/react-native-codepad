@@ -101,6 +101,20 @@ export interface CoreModule {
   _cp_editor_match_limited(ed: Ptr): number;
   _cp_editor_matches(ed: Ptr, out: Ptr, cap: number): number;
   _cp_editor_find(ed: Ptr, forward: number, index: Ptr, total: Ptr): number;
+  // The compiled query and a text snapshot, each retained for the caller, and matches found on them.
+  _cp_editor_search_query(ed: Ptr): Ptr;
+  _cp_editor_text(ed: Ptr): Ptr;
+  _cp_text_release(text: Ptr): void;
+  _cp_search_release(search: Ptr): void;
+  // scan points at three ints: next, limited, budget_ms. Returns the ints written to out.
+  _cp_search_find(search: Ptr, text: Ptr, scan: Ptr, out: Ptr, cap: number): number;
+  _cp_editor_accept_matches(
+    ed: Ptr,
+    revision: number,
+    pairs: Ptr,
+    count: number,
+    limited: number,
+  ): number;
   _cp_editor_replace_current(ed: Ptr, text: Ptr, length: number): number;
   _cp_editor_replace_all(ed: Ptr, text: Ptr, length: number): number;
 

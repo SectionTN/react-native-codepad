@@ -692,6 +692,142 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('matches paint under the text and the one equal to the selection in the active color', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'ab ab ab');
+      const painted = await page.evaluate(async () => {
+        const v = window.views.a;
+        await v.setSearch({ text: 'ab' });
+        await v.findNext();
+        await window.codepad.frames(2);
+        return {
+          all: document.querySelectorAll('#a [data-match]').length,
+          active: document.querySelectorAll('#a [data-match-active]').length,
+        };
+      });
+      assert.deepEqual(painted, { all: 3, active: 1 });
+      await page.close();
+    });
+
+    test('setSearch resolves the count and limited', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'ab ab ab');
+      const result = await page.evaluate(() => window.views.a.setSearch({ text: 'ab' }));
+      assert.deepEqual(result, { count: 3, limited: false });
+      await page.close();
+    });
+
+    test('setSearch with a bad regex rejects with the message, clears the painted matches, and findNext then resolves null', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'ab ab ab');
+      const out = await page.evaluate(async () => {
+        const v = window.views.a;
+        await v.setSearch({ text: 'ab' });
+        let message = '';
+        try {
+          await v.setSearch({ text: '(', regex: true });
+        } catch (e) {
+          message = e.message;
+        }
+        await window.codepad.frames(2);
+        return {
+          message,
+          painted: document.querySelectorAll('#a [data-match]').length,
+          hit: await v.findNext(),
+        };
+      });
+      assert.ok(out.message.length > 0, 'no message');
+      assert.equal(out.painted, 0);
+      assert.equal(out.hit, null);
+      await page.close();
+    });
+
+    test('findNext after an edit waits for fresh matches and selects one in the new text', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'x ab');
+      const out = await page.evaluate(async () => {
+        const v = window.views.a;
+        await v.setSearch({ text: 'ab' });
+        v.apply(() => v.core.replace(0, 0, 'ab '));
+        v.apply(() => v.core.setSelection(0, 0));
+        const hit = await v.findNext();
+        return { hit, selection: v.core.selection };
+      });
+      assert.deepEqual(out.hit, { index: 0, total: 2 });
+      assert.deepEqual(out.selection, { anchor: 0, head: 2 });
+      await page.close();
+    });
+
+    test('replaceAll is one undo step and resolves with the count', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'ab ab ab');
+      const out = await page.evaluate(async () => {
+        const v = window.views.a;
+        await v.setSearch({ text: 'ab' });
+        const n = await v.replaceAll('X');
+        const after = v.core.text();
+        v.apply(() => v.core.undo());
+        return { n, after, undone: v.core.text() };
+      });
+      assert.deepEqual(out, { n: 3, after: 'X X X', undone: 'ab ab ab' });
+      await page.close();
+    });
+
+    test('replaceCurrent is false when the selection is not a match', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'ab ab');
+      const replaced = await page.evaluate(async () => {
+        const v = window.views.a;
+        await v.setSearch({ text: 'ab' });
+        return v.replaceCurrent('X');
+      });
+      assert.equal(replaced, false);
+      assert.equal(await textOf(page, 'a'), 'ab ab');
+      await page.close();
+    });
+
+    test('clearSearch removes the painted matches', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'ab ab');
+      const painted = await page.evaluate(async () => {
+        const v = window.views.a;
+        await v.setSearch({ text: 'ab' });
+        await window.codepad.frames(2);
+        const before = document.querySelectorAll('#a [data-match]').length;
+        await v.clearSearch();
+        await window.codepad.frames(2);
+        return [before, document.querySelectorAll('#a [data-match]').length];
+      });
+      assert.deepEqual(painted, [2, 0]);
+      await page.close();
+    });
+
+    test('frames keep landing while another editor scans a long text', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'one');
+      await editor(page, 'b', Array.from({ length: 20000 }, () => 'word '.repeat(20)).join('\n'));
+      const out = await page.evaluate(async () => {
+        let frames = 0;
+        let longest = 0;
+        let last = performance.now();
+        let counting = true;
+        const tick = (t) => {
+          frames++;
+          longest = Math.max(longest, t - last);
+          last = t;
+          if (counting) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        const result = await window.views.b.setSearch({ text: '\\w+', regex: true });
+        counting = false;
+        return { frames, longest, count: result.count };
+      });
+      assert.equal(out.count, 400000);
+      assert.ok(out.frames >= 5, JSON.stringify(out));
+      assert.ok(out.longest < 100, JSON.stringify(out));
+      await page.close();
+    });
+
     test('the frame after a letter, an Enter and a joining Backspace keeps the keyword colors', async () => {
       const { page } = await open();
       await page.evaluate(async () => {

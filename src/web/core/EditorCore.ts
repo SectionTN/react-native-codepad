@@ -412,6 +412,31 @@ export class EditorCore {
     return this.m._cp_editor_replace_all(this.handle, this.heap.units(text), text.length);
   }
 
+  // The compiled query, retained for the caller, or 0 without a search.
+  searchQuery(): number {
+    return this.m._cp_editor_search_query(this.handle);
+  }
+
+  // The text as it is now, retained for the caller, so a scan outlives later edits.
+  textSnapshot(): number {
+    return this.m._cp_editor_text(this.handle);
+  }
+
+  // Matches a scan found on the text at revision. False when the document moved on.
+  acceptMatches(revision: number, pairs: number[], limited: boolean): boolean {
+    const ptr = this.heap.ints32(Math.max(1, pairs.length));
+    this.m.HEAP32.set(pairs, ptr >> 2);
+    return (
+      this.m._cp_editor_accept_matches(
+        this.handle,
+        revision,
+        ptr,
+        pairs.length,
+        limited ? 1 : 0,
+      ) !== 0
+    );
+  }
+
   // A language id the page has not loaded clears the language, so the editor draws plain text.
   setLanguage(id: string): boolean {
     return withCString(this.m, id, (ptr) => this.m._cpw_set_language(this.index, ptr)) !== 0;

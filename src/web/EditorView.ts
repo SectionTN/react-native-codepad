@@ -1,6 +1,15 @@
 /// <reference lib="dom" />
 import { githubLight } from '../themes/githubLight';
-import type { CaretDirection, ContentInsets, Decoration, Rect, Suggestions, Theme } from '../types';
+import type {
+  CaretDirection,
+  ContentInsets,
+  Decoration,
+  Rect,
+  SearchHit,
+  SearchQuery,
+  Suggestions,
+  Theme,
+} from '../types';
 import { EditorCore, type MoveUnit, type WebChange } from './core/EditorCore';
 import { Layout } from './core/Layout';
 import type { CoreModule } from './core/module';
@@ -13,6 +22,7 @@ import { keyCommand } from './input/keys';
 import { WebInputSession } from './input/WebInputSession';
 import { ensureInjected, ensureLanguage, onRegistered } from './loader';
 import { probeKey, probing, registerView, requestPump } from './pump';
+import { firstEndingAfter, SearchController } from './search';
 import { type CssTheme, cssTheme } from './theme';
 
 export type ViewOptions = {
@@ -155,6 +165,11 @@ export class EditorView {
   // The app's line backgrounds over the active line, and its underlines under the text.
   private readonly lineBackgroundLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
   private readonly underlineLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
+  // Search matches under the selection, the selected match in the active color.
+  private readonly matchLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
+  private matchesKey = '';
+  private paintedPairs: number[] | null = null;
+  private readonly search: SearchController;
   private decorationsKey = '';
   private baseline = 0;
   private drawnWindow = { first: 0, last: -1 };
@@ -196,6 +211,7 @@ export class EditorView {
   constructor(host: HTMLElement, m: CoreModule, text = '') {
     this.m = m;
     this.core = new EditorCore(m, text);
+    this.search = new SearchController(this.core, () => this.invalidate());
     this.layout = new Layout(this.core);
     this.root = div('position:relative;overflow:hidden;width:100%;height:100%;direction:ltr;');
     this.scroller = div('position:absolute;inset:0;overflow:auto;');
@@ -208,6 +224,7 @@ export class EditorView {
     this.textLayer.append(
       this.activeLine,
       this.lineBackgroundLayer,
+      this.matchLayer,
       this.selectionLayer,
       this.underlineLayer,
       this.placeholderEl,
@@ -315,7 +332,10 @@ export class EditorView {
     if (outside) this.session.external();
     edit();
     const changes = this.core.takeChanges();
-    for (const change of changes) this.changed(change, changes.length);
+    for (const change of changes) {
+      this.search.onChange(change);
+      this.changed(change, changes.length);
+    }
     const s = this.core.selection;
     const moved = s.anchor !== this.lastSelection.anchor || s.head !== this.lastSelection.head;
     if (moved) this.lastSelection = s;
@@ -600,6 +620,7 @@ export class EditorView {
     const to = Math.max(anchor, head);
     const selected = from < to ? this.rangeRects(from, to) : [];
     const writeDecorations = this.planDecorations(box);
+    const writeMatches = this.planMatches(box, rootBox, from, to);
     if (caret && this.input.focused) {
       put(this.caretEl, 'display', 'block');
       put(this.caretEl, 'left', `${caret.x + rootBox.left - box.left}px`);
@@ -631,6 +652,7 @@ export class EditorView {
       );
     }
     writeDecorations();
+    writeMatches();
   }
 
   // The page boxes of the document range on the lines that are drawn.
@@ -681,6 +703,80 @@ export class EditorView {
     if (this.destroyed) return;
     this.core.setDecorations(items, revision);
     this.invalidate();
+  }
+
+  // Resolves with the count once the scan is fresh. Rejects with PCRE2's message for an invalid regex.
+  setSearch(query: SearchQuery): Promise<{ count: number; limited: boolean }> {
+    if (this.destroyed) return Promise.resolve({ count: 0, limited: false });
+    try {
+      this.search.setQuery(query);
+    } catch (e) {
+      this.invalidate();
+      return Promise.reject(e);
+    }
+    this.invalidate();
+    return this.whenFresh(() => ({ count: this.core.matchCount, limited: this.core.matchLimited }));
+  }
+
+  clearSearch(): Promise<void> {
+    if (!this.destroyed) {
+      this.search.setQuery(null);
+      this.invalidate();
+    }
+    return Promise.resolve();
+  }
+
+  findNext(): Promise<SearchHit | null> {
+    return this.whenFresh(() => this.find(true));
+  }
+
+  findPrevious(): Promise<SearchHit | null> {
+    return this.whenFresh(() => this.find(false));
+  }
+
+  // Replaces the selected match and selects the next one. False when the selection is not a match.
+  replaceCurrent(text: string): Promise<boolean> {
+    return this.whenFresh(() => {
+      let replaced = false as boolean;
+      this.apply(() => {
+        replaced = this.core.replaceCurrent(text);
+      });
+      if (replaced) this.revealSelection();
+      return replaced;
+    });
+  }
+
+  // Every match replaced as one undo step. Resolves with the count.
+  replaceAll(text: string): Promise<number> {
+    return this.whenFresh(() => {
+      let count = 0;
+      this.apply(() => {
+        count = this.core.replaceAll(text);
+      });
+      return count;
+    });
+  }
+
+  private find(forward: boolean): SearchHit | null {
+    let hit = null as SearchHit | null;
+    this.apply(() => {
+      hit = forward ? this.core.findNext() : this.core.findPrevious();
+    });
+    if (hit) this.revealSelection();
+    return hit;
+  }
+
+  // Runs once the matches belong to the current text, as native's whenSearchFresh.
+  private whenFresh<T>(run: () => T): Promise<T> {
+    return new Promise((resolve, reject) =>
+      this.search.whenFresh(() => {
+        try {
+          resolve(run());
+        } catch (e) {
+          reject(e);
+        }
+      }),
+    );
   }
 
   // The gap under line from the last draw, in the coordinates of caretRect, or null.
@@ -750,6 +846,57 @@ export class EditorView {
       this.lineBackgroundLayer.replaceChildren(...backgrounds);
       this.underlineLayer.replaceChildren(...underlines);
     };
+  }
+
+  // Reads the visible matches' boxes now and returns their writes, the selected match in the active color.
+  private planMatches(box: DOMRect, rootBox: DOMRect, from: number, to: number): () => void {
+    const pairs = this.search.matchesForPaint();
+    const { first, last } = this.drawnWindow;
+    const key =
+      pairs.length === 0
+        ? ''
+        : [
+            this.core.revision,
+            this.appliedRevision,
+            first,
+            last,
+            from,
+            to,
+            this.layout.wrapWidth,
+            this.layout.scrollX,
+          ].join(':');
+    if (key === this.matchesKey && pairs === this.paintedPairs) return () => {};
+    this.matchesKey = key;
+    this.paintedPairs = pairs;
+    const [windowStart, windowEnd] = pairs.length ? this.visibleSpan(rootBox) : [0, -1];
+    const marks: HTMLElement[] = [];
+    for (let i = firstEndingAfter(pairs, windowStart); i * 2 < pairs.length; i++) {
+      const s = pairs[i * 2] as number;
+      const e = pairs[i * 2 + 1] as number;
+      if (s > windowEnd) break;
+      const active = from < to && s === from && e === to;
+      for (const r of this.rangeRects(s, e)) {
+        const mark = div(
+          `position:absolute;left:${r.left - box.left}px;top:${r.top - box.top}px;width:${Math.max(r.width, 2)}px;height:${r.height}px;background:${active ? this.css.searchMatchActive : this.css.searchMatch};`,
+        );
+        mark.dataset.match = '';
+        if (active) mark.dataset.matchActive = '';
+        marks.push(mark);
+      }
+    }
+    return () => this.matchLayer.replaceChildren(...marks);
+  }
+
+  // The first and last offsets on screen, so a long line paints only the matches in view.
+  private visibleSpan(rootBox: DOMRect): [number, number] {
+    const { first, last } = this.drawnWindow;
+    const lo = this.core.lineStart(first);
+    const hi = this.core.lineEnd(last);
+    const top = Math.max(rootBox.top, 0) + 1;
+    const bottom = Math.min(rootBox.bottom, window.innerHeight) - 2;
+    const a = this.offsetAt(rootBox.left + this.layout.textAreaLeft + 1, top);
+    const b = this.offsetAt(rootBox.right - 2, bottom);
+    return [a === null ? lo : Math.max(lo, a), b === null ? hi : Math.min(hi, b)];
   }
 
   // The range's page boxes on drawn lines, merged to one per row, with the top of that row.
@@ -919,6 +1066,7 @@ export class EditorView {
     this.root.remove();
     if (this.frameInts) this.m._free(this.frameInts);
     if (this.frameText) this.m._free(this.frameText);
+    this.search.close();
     this.core.close();
     // The engine finishes closing in the pump, which may have no other editor to run for.
     requestPump();
