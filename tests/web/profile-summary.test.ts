@@ -59,3 +59,14 @@ test('each group lists at most top functions, largest self time first', () => {
     { fn: 'b', selfMs: 2 },
   ]);
 });
+
+test('a frame named like an Object method stays in its root group', () => {
+  const nodes = [
+    node(1, '(root)', [2]),
+    node(2, 'runEngine', [3, 4]),
+    node(3, 'constructor'),
+    node(4, 'toString'),
+  ];
+  const out = summarize(profile(nodes, [3, 4], 1000), ROOTS, 12);
+  assert.deepEqual(Object.keys(out), ['engine']);
+});

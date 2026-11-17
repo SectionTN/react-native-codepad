@@ -19,7 +19,9 @@ export function summarize(profile, roots, top) {
     if (known) return known;
     const name = byId.get(id)?.callFrame.functionName;
     const up = parent.get(id);
-    const found = roots[name] ?? (up === undefined ? 'other' : group(up));
+    let found = 'other';
+    if (Object.hasOwn(roots, name)) found = roots[name];
+    else if (up !== undefined) found = group(up);
     groupOf.set(id, found);
     return found;
   };
