@@ -35,7 +35,8 @@ for (let i = 0; i < args.length; i++) {
     // The rate is optional, so the next operand is one unless it is another flag.
     const next = args[i + 1];
     desktop = next === undefined || next.startsWith('--') ? DEFAULT_RATE : Number(args[++i]);
-    if (!(desktop >= 1)) fail('--desktop takes a CPU slowdown rate of 1 or more');
+    if (!Number.isFinite(desktop) || desktop < 1)
+      fail('--desktop takes a finite CPU slowdown rate of 1 or more');
   } else positional.push(args[i]);
 }
 const lines = Number(positional[0] ?? 300);
