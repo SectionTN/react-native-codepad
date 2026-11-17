@@ -761,7 +761,13 @@ export class EditorView {
     if (this.o.readOnly) return;
     const text = this.selectedText();
     if (!text) return;
+    const { anchor, head } = this.core.selection;
+    const revision = this.core.revision;
     await browserClipboard().writeText(text);
+    // The delete waits on the clipboard, so it skips a selection or text that changed meanwhile.
+    if (this.destroyed || this.o.readOnly || this.core.revision !== revision) return;
+    const now = this.core.selection;
+    if (now.anchor !== anchor || now.head !== head) return;
     this.apply(() => this.core.insertText('', 'api'));
   }
 
@@ -769,7 +775,9 @@ export class EditorView {
   async pasteClipboard(): Promise<void> {
     if (this.o.readOnly) return;
     const text = await browserClipboard().readText();
-    if (text) this.apply(() => this.core.insertText(text, 'api'));
+    if (text && !this.destroyed && !this.o.readOnly) {
+      this.apply(() => this.core.insertText(text, 'api'));
+    }
   }
 
   private selectedText(): string {

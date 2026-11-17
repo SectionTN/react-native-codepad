@@ -876,6 +876,61 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    // Swaps the page clipboard for one whose write and read wait until window.release() runs.
+    const slowClipboard = (page) =>
+      page.evaluate(() => {
+        let release = () => {};
+        window.release = () => release();
+        const wait = (value) =>
+          new Promise((resolve) => {
+            release = () => resolve(value);
+          });
+        Object.defineProperty(navigator, 'clipboard', {
+          configurable: true,
+          value: { writeText: () => wait(undefined), readText: () => wait('XYZ') },
+        });
+      });
+
+    test('ref cut deletes nothing when the selection moves while the clipboard write is pending', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'hello world');
+      await slowClipboard(page);
+      const text = await page.evaluate(async () => {
+        const v = window.views.a;
+        v.apply(() => v.core.setSelection(0, 5));
+        const cut = v.cutSelection();
+        v.apply(() => v.core.setSelection(6, 11));
+        window.release();
+        await cut;
+        return v.core.text();
+      });
+      assert.equal(text, 'hello world');
+      await page.close();
+    });
+
+    test('ref cut and paste edit nothing when readOnly turns on while the clipboard is pending', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'hello world');
+      await slowClipboard(page);
+      const texts = await page.evaluate(async () => {
+        const v = window.views.a;
+        v.apply(() => v.core.setSelection(0, 5));
+        const cut = v.cutSelection();
+        v.setOptions({ readOnly: true });
+        window.release();
+        await cut;
+        const afterCut = v.core.text();
+        v.setOptions({ readOnly: false });
+        const paste = v.pasteClipboard();
+        v.setOptions({ readOnly: true });
+        window.release();
+        await paste;
+        return [afterCut, v.core.text()];
+      });
+      assert.deepEqual(texts, ['hello world', 'hello world']);
+      await page.close();
+    });
+
     test('ref cut under readOnly changes nothing', async () => {
       const { page } = await open();
       await editor(page, 'a', 'hello world', { readOnly: true });
