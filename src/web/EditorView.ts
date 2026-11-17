@@ -1448,6 +1448,7 @@ export class EditorView {
           spans = data.spans.length > 0 ? data.spans : null;
           if (entry && entry.text === data.text && sameSpans(entry.spans, spans)) {
             entry.revision = revision;
+            entry.stale = false;
             continue;
           }
         } else {

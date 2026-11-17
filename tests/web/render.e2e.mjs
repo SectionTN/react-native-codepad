@@ -959,6 +959,27 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('replacing a match with the same text keeps a caret on its line', async () => {
+      const { page } = await open();
+      await page.evaluate(() => window.codepad.ensureLanguage('python'));
+      await editor(page, 'a', 'foo = 1\nbar = foo\n');
+      const caret = await page.evaluate(async () => {
+        const v = window.views.a;
+        v.setLanguage('python');
+        await window.codepad.until(() => v.core.snapshot !== 0);
+        await window.codepad.frames(2);
+        v.apply(() => v.core.replace(0, 3, 'foo'));
+        // The parse of the new revision lands before the next frame draws.
+        while (v.core.m._cpw_pump(1000, 0) > 0);
+        await window.codepad.frames(3);
+        v.apply(() => v.core.setSelection(2, 2));
+        await window.codepad.frames(2);
+        return v.caretRect(2);
+      });
+      assert.notEqual(caret, null);
+      await page.close();
+    });
+
     test('ref copy puts the selection on the clipboard', async () => {
       // Playwright grants clipboard permissions in Chromium only.
       if (engine !== chromium) return;
