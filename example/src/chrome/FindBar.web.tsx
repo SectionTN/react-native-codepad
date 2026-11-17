@@ -7,8 +7,15 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
   const find = useFind(editor, onStatus);
   const color = scheme === 'dark' ? '#e6edf3' : '#1f2328';
   const field = [styles.field, { color }];
-  const button = (label: string, onPress: () => void, on = false) => (
-    <Pressable onPress={onPress} style={[styles.button, on && styles.on]}>
+  // An option passes its state as aria-pressed, which react-native-web forwards but React Native's types lack.
+  const button = (label: string, name: string, onPress: () => void, on?: boolean) => (
+    <Pressable
+      onPress={onPress}
+      role="button"
+      aria-label={name}
+      {...((on === undefined ? {} : { 'aria-pressed': on }) as object)}
+      style={[styles.button, on && styles.on]}
+    >
       <Text style={[styles.label, { color: on ? '#fff' : color }]}>{label}</Text>
     </Pressable>
   );
@@ -19,15 +26,15 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
       <Text style={[styles.label, { color }]}>
         {count ? `${index || '-'} of ${count}` : 'no results'}
       </Text>
-      {button('.*', () => find.toggle('regex'), find.options.regex)}
-      {button('Aa', () => find.toggle('caseSensitive'), find.options.caseSensitive)}
-      {button('W', () => find.toggle('wholeWord'), find.options.wholeWord)}
-      {button('prev', find.previous)}
-      {button('next', find.next)}
+      {button('.*', 'Regular expression', () => find.toggle('regex'), find.options.regex)}
+      {button('Aa', 'Match case', () => find.toggle('caseSensitive'), find.options.caseSensitive)}
+      {button('W', 'Whole word', () => find.toggle('wholeWord'), find.options.wholeWord)}
+      {button('prev', 'Previous match', find.previous)}
+      {button('next', 'Next match', find.next)}
       <TextInput placeholder="Replace" style={field} onChangeText={find.setReplacement} />
-      {button('replace', find.replaceOne)}
-      {button('all', find.replaceAll)}
-      {button('close', onClose)}
+      {button('replace', 'Replace', find.replaceOne)}
+      {button('all', 'Replace all', find.replaceAll)}
+      {button('close', 'Close find', onClose)}
     </View>
   );
 }
