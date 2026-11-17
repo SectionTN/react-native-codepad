@@ -1096,6 +1096,7 @@ export class EditorView {
         Math.ceil(layout.textAreaWidth / Math.max(1, this.charWidth)) *
         Math.ceil(layout.viewportHeight / this.rowHeight);
       let span: [number, number] | null = null;
+      const shown = new Map<number, [number, number]>();
       for (let i = firstEndingAfter(pairs, lo); i * 2 < pairs.length; i++) {
         const s = pairs[i * 2] as number;
         const e = pairs[i * 2 + 1] as number;
@@ -1107,8 +1108,16 @@ export class EditorView {
           const stop = this.core.lineEnd(line);
           if (stop - start > screen) {
             clipped = true;
-            span ??= this.visibleSpan(rootBox);
-            if (e < span[0] || s > span[1]) continue;
+            let view: [number, number] | undefined;
+            if (layout.wrapWidth > 0) view = span ??= this.visibleSpan(rootBox);
+            else {
+              view = shown.get(line);
+              if (!view) {
+                view = this.shownColumns(line, start, rootBox);
+                shown.set(line, view);
+              }
+            }
+            if (e < view[0] || s > view[1]) continue;
           }
           const part: [number, number, boolean] = [
             Math.max(s, start) - start,
@@ -1148,15 +1157,15 @@ export class EditorView {
     });
   }
 
-  // The first and last offsets on screen, so a long line paints only the matches in view.
+  // The first and last offsets on screen with wrap on, so a long wrapped line paints only the matches in view.
   private visibleSpan(rootBox: DOMRect): [number, number] {
     const { first, last } = this.drawnWindow;
     const lo = this.core.lineStart(first);
     const hi = this.core.lineEnd(last);
     const layout = this.layout;
     const left = rootBox.left + layout.textAreaLeft;
-    const right = left + (layout.wrapWidth > 0 ? layout.wrapWidth : layout.textAreaWidth) - 2;
-    // The last drawn line's bottom, so a single long row is hit on its text and not below it.
+    const right = left + layout.wrapWidth - 2;
+    // The last drawn line's bottom, so a short document is hit on its text and not below it.
     const lastEl = this.attached.has(last) ? this.cache.get(last)?.el : undefined;
     const lastBottom = lastEl ? lastEl.getBoundingClientRect().bottom : Number.POSITIVE_INFINITY;
     const top = Math.max(rootBox.top, 0) + 1;
@@ -1165,6 +1174,17 @@ export class EditorView {
     const a = this.offsetAt(left + 1, top);
     const b = this.offsetAt(right, bottom);
     return [a === null ? lo : Math.max(lo, a), b === null ? hi : Math.min(hi, b)];
+  }
+
+  // The offsets of an unwrapped line between the text area's edges. Right-to-left text keeps the whole line.
+  private shownColumns(line: number, start: number, rootBox: DOMRect): [number, number] {
+    const entry = this.attached.has(line) ? this.cache.get(line) : undefined;
+    if (!entry) return [0, -1];
+    if (RTL_TEXT.test(entry.text)) return [start, start + entry.text.length];
+    const runs = textRuns(entry.el);
+    const left = rootBox.left + this.layout.textAreaLeft;
+    const right = left + this.layout.textAreaWidth;
+    return [start + columnEndingAfter(runs, left), start + columnEndingAfter(runs, right) + 1];
   }
 
   // Columns a to b of a drawn line merged to one box per row, relative to the line's top left.
@@ -1814,6 +1834,44 @@ export class EditorView {
     if (line === kept.line + 1) return kept.tail;
     return null;
   }
+}
+
+// The non-empty text nodes of a line element with the column each starts at.
+function textRuns(el: HTMLElement): { node: Text; at: number }[] {
+  const runs: { node: Text; at: number }[] = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let at = 0;
+  for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+    if (node.data.length === 0) continue;
+    runs.push({ node, at });
+    at += node.data.length;
+  }
+  return runs;
+}
+
+// The first column whose box ends right of page x, or the line length, by bisecting one-column boxes.
+function columnEndingAfter(runs: { node: Text; at: number }[], x: number): number {
+  const tail = runs[runs.length - 1];
+  let lo = 0;
+  let hi = tail ? tail.at + tail.node.data.length : 0;
+  const range = document.createRange();
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    let k = 0;
+    for (let a = 0, b = runs.length - 1; a <= b; ) {
+      const m = (a + b) >> 1;
+      if ((runs[m] as { at: number }).at <= mid) {
+        k = m;
+        a = m + 1;
+      } else b = m - 1;
+    }
+    const { node, at } = runs[k] as { node: Text; at: number };
+    range.setStart(node, mid - at);
+    range.setEnd(node, mid - at + 1);
+    if (range.getBoundingClientRect().right <= x) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
 }
 
 // The text node and offset at a column of a line element.

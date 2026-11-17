@@ -1080,29 +1080,41 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
-    test('a long line paints only the matches in view, and new ones as the editor scrolls', async () => {
+    test('long lines paint only the matches in view, and new ones as the editor scrolls', async () => {
       const { page } = await open();
       await editor(page, 'a', 'ab '.repeat(3000), { softWrap: true });
-      await editor(page, 'b', 'ab '.repeat(3000));
+      // Three unwrapped lines, so the middle one sits between the first and last offsets on screen.
+      await editor(page, 'b', Array(3).fill('ab '.repeat(3000)).join('\n'));
       const painted = await page.evaluate(async () => {
         const { a, b } = window.views;
         await Promise.all([a.setSearch({ text: 'ab' }), b.setSearch({ text: 'ab' })]);
         await window.codepad.frames(2);
         const count = (id) => document.querySelectorAll(`#${id} [data-match]`).length;
+        // Marks inside the host's box, so a mark scrolled out of view does not count.
+        const inBox = (id) => {
+          const root = document.getElementById(id).getBoundingClientRect();
+          return [...document.querySelectorAll(`#${id} [data-match]`)].filter((m) => {
+            const r = m.getBoundingClientRect();
+            return (
+              r.bottom > root.top &&
+              r.top < root.bottom &&
+              r.right > root.left &&
+              r.left < root.right
+            );
+          }).length;
+        };
         const wrapped = count('a');
-        const single = count('b');
+        const unwrapped = count('b');
         a.scroller.scrollTop = 1500;
+        b.scroller.scrollLeft = 4000;
         await window.codepad.frames(3);
-        const root = document.getElementById('a').getBoundingClientRect();
-        const inView = [...document.querySelectorAll('#a [data-match]')].filter((m) => {
-          const r = m.getBoundingClientRect();
-          return r.bottom > root.top && r.top < root.bottom;
-        }).length;
-        return { wrapped, single, inView };
+        return { wrapped, unwrapped, inA: inBox('a'), inB: inBox('b'), scrolledB: count('b') };
       });
       assert.ok(painted.wrapped < 500, `wrapped ${painted.wrapped}`);
-      assert.ok(painted.single < 100, `single row ${painted.single}`);
-      assert.ok(painted.inView > 0, `marks in view after the scroll ${painted.inView}`);
+      assert.ok(painted.unwrapped < 300, `unwrapped ${painted.unwrapped}`);
+      assert.ok(painted.inA > 0, `marks in view after the scroll down ${painted.inA}`);
+      assert.ok(painted.inB > 0, `marks in view after the scroll right ${painted.inB}`);
+      assert.ok(painted.scrolledB < 300, `unwrapped after the scroll ${painted.scrolledB}`);
       await page.close();
     });
 
