@@ -209,12 +209,12 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     };
   }, []);
 
-  // Decorations reach the view once it exists. A prop that goes away clears them.
+  // Decorations reach the view once it exists. A prop that goes away clears them for the current text.
   const decorated = useRef(false);
   useEffect(() => {
     if (!view || (!decorations && !decorated.current)) return;
     decorated.current = decorations !== undefined;
-    view.setDecorations(decorations ?? [], decorationsRevision ?? -1);
+    view.setDecorations(decorations ?? [], decorations ? (decorationsRevision ?? -1) : -1);
   }, [view, decorations, decorationsRevision]);
 
   useEffect(() => {
