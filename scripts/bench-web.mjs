@@ -7,8 +7,8 @@ import path from 'node:path';
 import { chromium, devices } from 'playwright';
 import { summarize } from './profile-summary.mjs';
 
-// The CPU slowdown that matches the Redmi, set by the calibration in the plan 3 ledger.
-const DEFAULT_RATE = 1;
+// Key work matches the Redmi at 8x and engine tasks at 3x (calibrated on 73219f3): gate engine tasks with --desktop 3.
+const DEFAULT_RATE = 8;
 
 const args = process.argv.slice(2);
 const positional = [];
