@@ -1026,6 +1026,97 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('an onContentSizeChange that throws in one editor still lets the other draw', async () => {
+      const { page, errors } = await open();
+      await editor(page, 'a', 'one');
+      await editor(page, 'b', 'two');
+      const drawn = await page.evaluate(async () => {
+        const [a, b] = [window.views.a, window.views.b];
+        a.setOptions({
+          onContentSize: () => {
+            throw new Error('size boom');
+          },
+        });
+        // a draws first in the page's frame, and its new gap changes its content size.
+        a.setDecorations([{ kind: 'gap', line: 0, rows: 2 }], -1);
+        b.setDecorations([{ kind: 'lineBackground', line: 0, color: 'red' }], -1);
+        for (let i = 0; i < 20; i++) {
+          if (document.querySelector('#b [data-line-background]')) return true;
+          await new Promise((r) => requestAnimationFrame(r));
+        }
+        return false;
+      });
+      assert.equal(drawn, true);
+      assert.ok(
+        errors.some((e) => /size boom/.test(e)),
+        String(errors),
+      );
+      await page.close();
+    });
+
+    test('an onReady that throws still autofocuses', async () => {
+      const { page, errors } = await open();
+      const focused = await page.evaluate(async () => {
+        const { EditorView, loadCore, until } = window.codepad;
+        const view = new EditorView(document.getElementById('a'), await loadCore(), 'abc');
+        view.setOptions({
+          autoFocus: true,
+          onFirstDraw: () => {
+            throw new Error('ready boom');
+          },
+        });
+        window.views = { a: view };
+        await until(() => document.querySelector('#a [data-line="0"]'));
+        await window.codepad.frames(2);
+        return document.activeElement === document.querySelector('#a textarea');
+      });
+      assert.equal(focused, true);
+      assert.ok(
+        errors.some((e) => /ready boom/.test(e)),
+        String(errors),
+      );
+      await page.close();
+    });
+
+    test('a caret moved below the page fold with scrolling off scrolls the page to it', async () => {
+      const { page } = await open();
+      await editor(page, 'a', lines(200), { scrollEnabled: false });
+      await page.evaluate(async () => {
+        const v = window.views.a;
+        v.apply(() => v.core.setSelection(v.core.lineStart(150), v.core.lineStart(150)));
+        v.focus();
+        await window.codepad.frames(2);
+      });
+      await page.keyboard.press('ArrowDown');
+      const top = await page.evaluate(async () => {
+        await window.codepad.frames(3);
+        return document.querySelector('#a [data-caret]').getBoundingClientRect().top;
+      });
+      const height = await page.evaluate(() => window.innerHeight);
+      assert.ok(top >= 0 && top < height, `caret at ${top} of ${height}`);
+      await page.close();
+    });
+
+    test('a historyUndo beforeinput undoes in the core and the textarea follows', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'abc');
+      await clickAt(page, 'a', 0, 3);
+      await page.keyboard.type('x');
+      const out = await page.evaluate(async () => {
+        const ta = document.querySelector('#a textarea');
+        const ev = new InputEvent('beforeinput', {
+          inputType: 'historyUndo',
+          cancelable: true,
+          bubbles: true,
+        });
+        const prevented = !ta.dispatchEvent(ev);
+        await window.codepad.frames(2);
+        return { text: window.views.a.core.text(), textarea: ta.value, prevented };
+      });
+      assert.deepEqual(out, { text: 'abc', textarea: 'abc', prevented: true });
+      await page.close();
+    });
+
     test('the frame after a letter, an Enter and a joining Backspace keeps the keyword colors', async () => {
       const { page } = await open();
       await page.evaluate(async () => {

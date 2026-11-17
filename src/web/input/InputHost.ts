@@ -9,6 +9,8 @@ export type InputHooks = {
   clipboard(cut: boolean): string | null;
   focusChanged(focused: boolean): void;
   changed(): void;
+  // An undo or redo from the browser or an iOS gesture, run on the core's history.
+  history(undo: boolean): void;
 };
 
 const SUGGESTION_ATTRIBUTES: [string, string, string][] = [
@@ -40,7 +42,15 @@ export class InputHost {
     this.textarea = ta;
     this.setSuggestions('off');
     root.append(ta);
-    this.on(ta, 'beforeinput', () => this.session.beforeInput(this.state()));
+    this.on(ta, 'beforeinput', (e) => {
+      const type = (e as InputEvent).inputType;
+      if (type === 'historyUndo' || type === 'historyRedo') {
+        e.preventDefault();
+        this.hooks.history(type === 'historyUndo');
+        return;
+      }
+      this.session.beforeInput(this.state());
+    });
     this.on(ta, 'input', (e) => {
       const ie = e as InputEvent;
       this.write(

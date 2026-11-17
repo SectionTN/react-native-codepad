@@ -74,13 +74,23 @@ function frame(): void {
   const urgent = [...views].some((v) => v.urgent);
   const left = core && urgent ? core._cpw_pump(PUMP_BUDGET_MS, PARSE_SLICE_MS) : 0;
   const pumped = probe ? performance.now() - start : 0;
+  // A view that throws, such as a listener of its own, leaves the others drawn and the engine posted.
+  const failures: unknown[] = [];
   for (const view of [...views]) {
-    if (probe && view === keyView) drawKeyed(probe, view, pumped);
-    else view.draw();
+    try {
+      if (probe && view === keyView) drawKeyed(probe, view, pumped);
+      else view.draw();
+    } catch (e) {
+      failures.push(e);
+    }
   }
   if (probe) probe.pumps.push(performance.now() - start);
   if (left > 0) requestPump();
   else postEngine();
+  if (failures.length)
+    queueMicrotask(() => {
+      throw failures[0];
+    });
 }
 
 // The draw the bench counts as a key's work, a named call so a profile can tell it from other frames.

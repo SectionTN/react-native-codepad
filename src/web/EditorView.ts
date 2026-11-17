@@ -265,6 +265,10 @@ export class EditorView {
         this.invalidate();
       },
       changed: () => this.invalidate(),
+      history: (undo) => {
+        if (this.o.readOnly) return;
+        this.perform(() => (undo ? this.core.undo() : this.core.redo()));
+      },
     });
     this.scroller.addEventListener('click', this.onClickEvent);
     this.scroller.addEventListener('mousedown', this.onMouseDownEvent);
@@ -1544,23 +1548,23 @@ export class EditorView {
     const height = layout.insetTop + layout.contentHeight + layout.insetBottom - this.keyboard;
     if (width !== this.lastContent.width || height !== this.lastContent.height) {
       this.lastContent = { width, height };
-      this.o.onContentSize?.(width, height);
+      this.safely(() => this.o.onContentSize?.(width, height));
     }
     const gaps = JSON.stringify(this.drawnGaps);
     if (gaps !== this.reportedGaps) {
       this.reportedGaps = gaps;
-      this.o.onGapLayout?.(this.drawnGaps);
+      this.safely(() => this.o.onGapLayout?.(this.drawnGaps));
     }
     if (!this.drawn) {
       this.drawn = true;
-      this.o.onFirstDraw?.();
+      this.safely(() => this.o.onFirstDraw?.());
       if (this.o.autoFocus) this.focus();
     }
     const x = layout.scrollX;
     const y = this.o.scrollEnabled ? layout.scrollY : 0;
     if (x !== this.lastScroll.x || y !== this.lastScroll.y) {
       this.lastScroll = { x, y };
-      this.o.onScroll?.(x, y, layout.contentWidth, layout.contentHeight);
+      this.safely(() => this.o.onScroll?.(x, y, layout.contentWidth, layout.contentHeight));
     }
   }
 
