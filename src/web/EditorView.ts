@@ -85,6 +85,18 @@ export const DEFAULT_OPTIONS: ViewOptions = {
 const MONOSPACE = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
 const SNAPSHOT_INFO_INTS = 7;
 const SVG = 'http://www.w3.org/2000/svg';
+// How long an animated scrollToLine runs, as ScrollController.kt.
+const LINE_SCROLL_MS = 250;
+
+// The browser clipboard, which only a secure origin has.
+function browserClipboard(): Clipboard {
+  const c = typeof navigator === 'undefined' ? undefined : navigator.clipboard;
+  if (!c)
+    throw new Error(
+      '[codepad] the clipboard needs a secure origin: https, or localhost while developing',
+    );
+  return c;
+}
 const MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 // A run of Hebrew or Arabic script anywhere in a row.
 const RTL_TEXT = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
@@ -167,6 +179,13 @@ export class EditorView {
   private readonly underlineLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
   // Search matches under the selection, the selected match in the active color.
   private readonly matchLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
+  private readonly bracketLayer = div('position:absolute;left:0;top:0;pointer-events:none;');
+  private bracketsKey = '';
+  // An animated scrollToLine: the scroll it started from, when, and the line it ends on.
+  private lineScroll: { line: number; from: number; start: number } | null = null;
+  private readonly stopLineScrollEvent = () => {
+    this.lineScroll = null;
+  };
   private matchesKey = '';
   private paintedPairs: number[] | null = null;
   private readonly search: SearchController;
@@ -225,6 +244,7 @@ export class EditorView {
       this.activeLine,
       this.lineBackgroundLayer,
       this.matchLayer,
+      this.bracketLayer,
       this.selectionLayer,
       this.underlineLayer,
       this.placeholderEl,
@@ -254,6 +274,9 @@ export class EditorView {
     this.root.append(this.scroller);
     host.append(this.root);
     this.scroller.addEventListener('scroll', this.onScrollEvent, { passive: true });
+    // A user scroll ends an animated scrollToLine, as a touch does on native.
+    this.scroller.addEventListener('wheel', this.stopLineScrollEvent, { passive: true });
+    this.scroller.addEventListener('touchstart', this.stopLineScrollEvent, { passive: true });
     this.resize =
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => this.invalidate());
     this.resize?.observe(this.scroller);
@@ -621,6 +644,7 @@ export class EditorView {
     const selected = from < to ? this.rangeRects(from, to) : [];
     const writeDecorations = this.planDecorations(box);
     const writeMatches = this.planMatches(box, rootBox, from, to);
+    const writeBrackets = this.planBrackets(box);
     if (caret && this.input.focused) {
       put(this.caretEl, 'display', 'block');
       put(this.caretEl, 'left', `${caret.x + rootBox.left - box.left}px`);
@@ -653,6 +677,7 @@ export class EditorView {
     }
     writeDecorations();
     writeMatches();
+    writeBrackets();
   }
 
   // The page boxes of the document range on the lines that are drawn.
@@ -680,15 +705,112 @@ export class EditorView {
   }
 
   // Scrolls so the line is at the top of the editor, or of the page when the editor does not scroll.
-  scrollToLine(line: number): void {
+  scrollToLine(line: number, animated = false): void {
     if (this.destroyed) return;
-    const top = this.layout.insetTop + this.layout.rowStart(line) * this.rowHeight;
-    if (this.o.scrollEnabled) {
-      this.scroller.scrollTop = top - this.layout.insetTop;
-    } else {
-      window.scrollTo({ top: this.root.getBoundingClientRect().top + window.scrollY + top });
-    }
+    this.lineScroll = animated ? { line, from: this.scrollNow(), start: performance.now() } : null;
+    if (!animated) this.scrollTo(this.lineTarget(line));
     this.invalidate();
+  }
+
+  // The scroll that puts line at the top, read again every frame so rows measured on the way move it, as native.
+  private lineTarget(line: number): number {
+    const top = this.layout.insetTop + this.layout.rowStart(line) * this.rowHeight;
+    if (this.o.scrollEnabled) return Math.min(top - this.layout.insetTop, this.layout.maxScrollY);
+    return this.root.getBoundingClientRect().top + window.scrollY + top;
+  }
+
+  private scrollNow(): number {
+    return this.o.scrollEnabled ? this.scroller.scrollTop : window.scrollY;
+  }
+
+  private scrollTo(y: number): void {
+    if (this.o.scrollEnabled) this.scroller.scrollTop = y;
+    else window.scrollTo({ top: y });
+  }
+
+  // One frame of an animated scrollToLine, eased out cubic as ScrollController.kt.
+  private stepLineScroll(): void {
+    const s = this.lineScroll;
+    if (!s) return;
+    const t = Math.min(1, (performance.now() - s.start) / LINE_SCROLL_MS);
+    this.scrollTo(s.from + (this.lineTarget(s.line) - s.from) * (1 - (1 - t) ** 3));
+    this.dirty = true;
+    if (t < 1) requestPump();
+    else this.lineScroll = null;
+  }
+
+  // Replaces the document and scrolls to its top, ending an animated scrollToLine, as native.
+  setText(text: string, keepHistory: boolean): void {
+    if (this.destroyed) return;
+    this.lineScroll = null;
+    this.apply(() => this.core.setText(text, keepHistory));
+    if (this.o.scrollEnabled) {
+      this.scroller.scrollTop = 0;
+      this.scroller.scrollLeft = 0;
+    }
+  }
+
+  // Copies the selection. Rejects when the browser refuses, and without a clipboard outside a secure origin.
+  async copySelection(): Promise<void> {
+    const text = this.selectedText();
+    if (text) await browserClipboard().writeText(text);
+  }
+
+  // Copies the selection, then deletes it as an API edit. Nothing under readOnly, as native.
+  async cutSelection(): Promise<void> {
+    if (this.o.readOnly) return;
+    const text = this.selectedText();
+    if (!text) return;
+    await browserClipboard().writeText(text);
+    this.apply(() => this.core.insertText('', 'api'));
+  }
+
+  // Puts the clipboard's text over the selection as one API edit. Nothing under readOnly, as native.
+  async pasteClipboard(): Promise<void> {
+    if (this.o.readOnly) return;
+    const text = await browserClipboard().readText();
+    if (text) this.apply(() => this.core.insertText(text, 'api'));
+  }
+
+  private selectedText(): string {
+    if (this.destroyed) return '';
+    const { anchor, head } = this.core.selection;
+    return this.core.text(Math.min(anchor, head), Math.max(anchor, head));
+  }
+
+  // Reads the bracket pair's boxes now and returns their writes, keyed as BracketHighlight.kt keys its cache.
+  private planBrackets(box: DOMRect): () => void {
+    const snapshot = this.languageReady ? this.core.snapshot : 0;
+    const head = this.core.selection.head;
+    const { first, last } = this.drawnWindow;
+    const key = this.o.matchBrackets
+      ? [
+          this.core.revision,
+          head,
+          snapshot,
+          first,
+          last,
+          this.layout.wrapWidth,
+          this.css.matchingBracket,
+        ].join(':')
+      : '';
+    if (key === this.bracketsKey) return () => {};
+    this.bracketsKey = key;
+    // A snapshot of the current text skips brackets in strings and comments. Without one every bracket counts.
+    const consistent =
+      snapshot !== 0 && this.snapshotInfo(snapshot).revision === this.core.revision ? snapshot : 0;
+    const pair = key ? this.core.bracketMatch(consistent) : null;
+    const marks: HTMLElement[] = [];
+    for (const at of pair ?? []) {
+      for (const r of this.rangeRects(at, at + 1)) {
+        const mark = div(
+          `position:absolute;left:${r.left - box.left}px;top:${r.top - box.top}px;width:${r.width}px;height:${r.height}px;background:${this.css.matchingBracket};`,
+        );
+        mark.dataset.bracket = '';
+        marks.push(mark);
+      }
+    }
+    return () => this.bracketLayer.replaceChildren(...marks);
   }
 
   // Scrolls the least that shows the caret.
@@ -997,6 +1119,7 @@ export class EditorView {
   // One page frame: drawn only when something changed since the last one.
   draw(): void {
     if (this.destroyed) return;
+    if (this.lineScroll) this.stepLineScroll();
     if (this.core.snapshotCount !== this.seenSnapshots) {
       this.seenSnapshots = this.core.snapshotCount;
       this.dirty = true;
@@ -1063,6 +1186,8 @@ export class EditorView {
     this.resize?.disconnect();
     document.fonts?.removeEventListener?.('loadingdone', this.remeasureEvent);
     this.scroller.removeEventListener('scroll', this.onScrollEvent);
+    this.scroller.removeEventListener('wheel', this.stopLineScrollEvent);
+    this.scroller.removeEventListener('touchstart', this.stopLineScrollEvent);
     this.root.remove();
     if (this.frameInts) this.m._free(this.frameInts);
     if (this.frameText) this.m._free(this.frameText);

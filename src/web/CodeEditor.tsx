@@ -16,20 +16,6 @@ import { EditorView, type ViewOptions } from './EditorView';
 import { loadCore } from './loader';
 
 const NO_INSETS: ContentInsets = {};
-const warned = new Set<string>();
-
-// Methods, props and events plans 2 and 3 bring to the web. Each warns once per page.
-function notYet(name: string): void {
-  if (warned.has(name)) return;
-  warned.add(name);
-  console.warn(`[codepad] ${name} is not available on web yet`);
-}
-
-function later<T>(name: string, value: T): Promise<T> {
-  notYet(name);
-  return Promise.resolve(value);
-}
-
 // The editor on react-native-web: a View whose node holds lines drawn from the WASM core, outside React's render.
 export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function CodeEditor(
   {
@@ -284,11 +270,11 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       canUndo: () => core()?.canUndo ?? false,
       canRedo: () => core()?.canRedo ?? false,
       isFocused: () => viewRef.current?.focused ?? false,
-      setText: (text, opts) => write((v) => v.core.setText(text, opts?.keepHistory ?? false)),
+      setText: (text, opts) => run((v) => v.setText(text, opts?.keepHistory ?? false)),
       setSelection: (sel) => write((v) => v.core.setSelection(sel.anchor, sel.head)),
       selectAll: () => write((v) => v.core.selectAll()),
-      scrollToLine: (line) => {
-        viewRef.current?.scrollToLine(line);
+      scrollToLine: (line, opts) => {
+        viewRef.current?.scrollToLine(line, opts?.animated ?? false);
         return Promise.resolve();
       },
       revealSelection: () => {
@@ -301,9 +287,9 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       redo: () => write((v) => v.core.redo()),
       indent: () => write((v) => v.core.indent()),
       outdent: () => write((v) => v.core.outdent()),
-      cut: () => later('cut', undefined),
-      copy: () => later('copy', undefined),
-      paste: () => later('paste', undefined),
+      cut: () => ask((v) => v.cutSelection(), undefined),
+      copy: () => ask((v) => v.copySelection(), undefined),
+      paste: () => ask((v) => v.pasteClipboard(), undefined),
       focus: () => run((v) => v.focus()),
       blur: () => run((v) => v.blur()),
       setSearch: (query) => ask((v) => v.setSearch(query), { count: 0, limited: false }),

@@ -828,6 +828,149 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('matchBrackets draws the pair next to the caret and nothing when off', async () => {
+      const { page } = await open();
+      await editor(page, 'a', '(a [b] c)');
+      const counts = await page.evaluate(async () => {
+        const v = window.views.a;
+        v.apply(() => v.core.setSelection(1, 1));
+        await window.codepad.frames(2);
+        const on = document.querySelectorAll('#a [data-bracket]').length;
+        v.setOptions({ matchBrackets: false });
+        await window.codepad.frames(2);
+        return [on, document.querySelectorAll('#a [data-bracket]').length];
+      });
+      assert.deepEqual(counts, [2, 0]);
+      await page.close();
+    });
+
+    test('a bracket inside a string has no pair once the snapshot is in', async () => {
+      const { page } = await open();
+      await page.evaluate(() => window.codepad.ensureLanguage('python'));
+      await editor(page, 'a', 'x = "(" + y)');
+      const count = await page.evaluate(async () => {
+        const v = window.views.a;
+        v.setLanguage('python');
+        await window.codepad.until(() => v.core.snapshot !== 0);
+        v.apply(() => v.core.setSelection(6, 6));
+        await window.codepad.frames(3);
+        return document.querySelectorAll('#a [data-bracket]').length;
+      });
+      assert.equal(count, 0);
+      await page.close();
+    });
+
+    test('ref copy puts the selection on the clipboard', async () => {
+      // Playwright grants clipboard permissions in Chromium only.
+      if (engine !== chromium) return;
+      const { page } = await open();
+      await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+      await editor(page, 'a', 'hello world');
+      const text = await page.evaluate(async () => {
+        const v = window.views.a;
+        v.apply(() => v.core.setSelection(0, 5));
+        await v.copySelection();
+        return navigator.clipboard.readText();
+      });
+      assert.equal(text, 'hello');
+      await page.close();
+    });
+
+    test('ref cut under readOnly changes nothing', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'hello world', { readOnly: true });
+      const text = await page.evaluate(async () => {
+        const v = window.views.a;
+        v.apply(() => v.core.setSelection(0, 5));
+        await v.cutSelection();
+        return v.core.text();
+      });
+      assert.equal(text, 'hello world');
+      await page.close();
+    });
+
+    test('ref paste inserts the clipboard text as one undo step', async () => {
+      if (engine !== chromium) return;
+      const { page } = await open();
+      await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+      await editor(page, 'a', 'ab');
+      const out = await page.evaluate(async () => {
+        const v = window.views.a;
+        await navigator.clipboard.writeText('XYZ');
+        v.apply(() => v.core.setSelection(1, 1));
+        await v.pasteClipboard();
+        const pasted = v.core.text();
+        v.apply(() => v.core.undo());
+        return [pasted, v.core.text()];
+      });
+      assert.deepEqual(out, ['aXYZb', 'ab']);
+      await page.close();
+    });
+
+    test('ref copy rejects with the secure origin error when navigator.clipboard is missing', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'hello');
+      const message = await page.evaluate(async () => {
+        Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+        const v = window.views.a;
+        v.apply(() => v.core.setSelection(0, 5));
+        try {
+          await v.copySelection();
+          return '';
+        } catch (e) {
+          return e.message;
+        }
+      });
+      assert.match(message, /secure origin/);
+      await page.close();
+    });
+
+    // Starts an animated scroll to line, runs before() two frames in, and returns the scroll then and after it ends.
+    const animate = (page, line, before) =>
+      page.evaluate(
+        async ([line, before]) => {
+          const v = window.views.a;
+          const scroller = document.querySelector('#a [data-scroller]');
+          v.scrollToLine(line, true);
+          await window.codepad.frames(2);
+          const mid = scroller.scrollTop;
+          if (before === 'setText') v.setText('new\ntext', false);
+          if (before === 'wheel')
+            scroller.dispatchEvent(new WheelEvent('wheel', { deltaY: -10, bubbles: true }));
+          await new Promise((r) => setTimeout(r, 400));
+          await window.codepad.frames(2);
+          return { mid, end: scroller.scrollTop, target: v.layout.rowHeight * line };
+        },
+        [line, before],
+      );
+    const lines = (n) => Array.from({ length: n }, (_, i) => `line ${i}`).join('\n');
+
+    test('an animated scrollToLine ends with the line at the top', async () => {
+      const { page } = await open();
+      await editor(page, 'a', lines(300));
+      const out = await animate(page, 100, '');
+      assert.ok(out.mid > 0 && out.mid < out.target, JSON.stringify(out));
+      assert.equal(out.end, out.target);
+      await page.close();
+    });
+
+    test('setText during an animated scrollToLine leaves the new text at the top', async () => {
+      const { page } = await open();
+      await editor(page, 'a', lines(300));
+      const out = await animate(page, 200, 'setText');
+      assert.equal(out.end, 0, JSON.stringify(out));
+      assert.equal(await textOf(page, 'a'), 'new\ntext');
+      await page.close();
+    });
+
+    test('a wheel scroll during the animation stops it', async () => {
+      const { page } = await open();
+      await editor(page, 'a', lines(300));
+      const out = await animate(page, 200, 'wheel');
+      assert.ok(out.end < out.target * 0.9, JSON.stringify(out));
+      await page.close();
+    });
+
     test('the frame after a letter, an Enter and a joining Backspace keeps the keyword colors', async () => {
       const { page } = await open();
       await page.evaluate(async () => {

@@ -12,7 +12,7 @@ class MockView {
   written: string[] = [];
   core = {
     text: jest.fn(() => this.written.join('')),
-    setText: jest.fn((text: string) => this.written.push(text)),
+    setText: jest.fn((text: string, _keepHistory?: boolean) => this.written.push(text)),
   };
   constructor(_host: unknown, _m: unknown, text = '') {
     this.written.push(text);
@@ -42,6 +42,10 @@ class MockView {
   deleteForward = jest.fn();
   moveCaret = jest.fn();
   setDecorations = jest.fn();
+  scrollToLine = jest.fn();
+  setText(text: string, keepHistory: boolean) {
+    this.core.setText(text, keepHistory);
+  }
   gapRect = jest.fn(() => null);
   destroy() {}
 }
@@ -236,4 +240,17 @@ test('removing decorations clears them for the current text, whatever decoration
   });
   await rerender(<CodeEditor decorationsRevision={3} />);
   expect(mockViews[0]?.setDecorations).toHaveBeenLastCalledWith([], -1);
+});
+
+test('scrollToLine passes animated to the view', async () => {
+  const ref = createRef<CodeEditorRef>();
+  await render(<CodeEditor ref={ref} />);
+  await act(async () => {
+    mockCore.resolve({});
+    await tick();
+  });
+  await ref.current?.scrollToLine(5, { animated: true });
+  await ref.current?.scrollToLine(6);
+  expect(mockViews[0]?.scrollToLine).toHaveBeenNthCalledWith(1, 5, true);
+  expect(mockViews[0]?.scrollToLine).toHaveBeenNthCalledWith(2, 6, false);
 });
