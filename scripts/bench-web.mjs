@@ -1,4 +1,4 @@
-// Typing bench in Chrome: yarn bench:web [lines] [port] [--desktop [rate]] [--profile]
+// Typing bench in Chrome: yarn bench:web [lines] [port] [--desktop [rate]] [--profile] [--keys n]
 // Without --desktop it drives Chrome on an Android device through adb, the example served on that port with adb reverse.
 // --desktop opens the example in a local Chromium at phone size with the CPU slowed by rate. --profile adds a CPU profile.
 import { execFileSync } from 'node:child_process';
@@ -14,17 +14,19 @@ const args = process.argv.slice(2);
 const positional = [];
 let desktop = null;
 let profile = false;
+let keys = 60;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--profile') profile = true;
+  else if (args[i] === '--keys') keys = Number(args[++i]);
   else if (args[i] === '--desktop') {
     desktop = /^\d+(\.\d+)?$/.test(args[i + 1] ?? '') ? Number(args[++i]) : DEFAULT_RATE;
   } else positional.push(args[i]);
 }
 const lines = Number(positional[0] ?? 300);
 const WEB_PORT = positional[1] ?? '8082';
-const CHARS = 60;
+const CHARS = keys;
 const GAP_MS = 150;
-const TEXT = 'let total = value + 1; '.repeat(3).slice(0, CHARS);
+const TEXT = 'let total = value + 1; '.repeat(Math.ceil(CHARS / 23)).slice(0, CHARS);
 const PORT = 9222;
 const ROOTS = { drawKeyed: 'key draw', runEngine: 'engine', applyInput: 'handler' };
 
@@ -92,7 +94,8 @@ try {
   const probe = await page.evaluate(() => globalThis.__codepadProbe);
   const stats = (list) => {
     const sorted = [...list].sort((a, b) => a - b);
-    return `p50 ${ms(pct(sorted, 0.5))}, p95 ${ms(pct(sorted, 0.95))}, max ${ms(sorted.at(-1) ?? 0)}`;
+    const mean = list.reduce((a, b) => a + b, 0) / Math.max(1, list.length);
+    return `mean ${ms(mean)}, p50 ${ms(pct(sorted, 0.5))}, p95 ${ms(pct(sorted, 0.95))}, max ${ms(sorted.at(-1) ?? 0)}`;
   };
   const where = desktop !== null ? `desktop at ${desktop}x` : 'device';
   console.log(`${lines} lines, ${where}, ${probe.work.length} of ${CHARS} keys`);
@@ -110,7 +113,7 @@ try {
     const top = summarize(taken, ROOTS, 12);
     for (const group of ['key draw', 'handler', 'engine', 'other']) {
       const total = (all[group] ?? []).reduce((sum, f) => sum + f.selfMs, 0);
-      console.log(`  profile ${group}: ${ms(total)} over the 60 keys`);
+      console.log(`  profile ${group}: ${ms(total)} over the ${CHARS} keys`);
       for (const f of top[group] ?? []) console.log(`    ${ms(f.selfMs).padStart(9)}  ${f.fn}`);
     }
     console.log(`  profile saved to ${file}`);
