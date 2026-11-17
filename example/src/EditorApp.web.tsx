@@ -38,6 +38,8 @@ export function EditorApp() {
   // Lines of the generated JavaScript file the typing bench opened, 0 for a picked file.
   const [benchLines, setBenchLines] = useState(0);
   const file = FILES.find((f) => f.id === fileId) ?? FILES[0];
+  // The editor and the find bar both remount when this changes, so the bar never shows a search the new editor lacks.
+  const editorKey = benchLines ? `bench-${benchLines}` : file?.id;
   const text = useMemo(
     () => (benchLines ? generateJavaScript(benchLines) : (file?.load() ?? '')),
     [file, benchLines],
@@ -128,6 +130,7 @@ export function EditorApp() {
       </ScrollView>
       {finding && demo === 'editor' ? (
         <FindBar
+          key={editorKey}
           scheme={theme ? schemeFor(theme) : 'light'}
           editor={editor}
           onStatus={setStatus}
@@ -136,7 +139,7 @@ export function EditorApp() {
       ) : null}
       {demo === 'editor' ? (
         <CodeEditor
-          key={benchLines ? `bench-${benchLines}` : file?.id}
+          key={editorKey}
           ref={editor}
           decorations={decorations.items}
           decorationsRevision={decorations.revision}
