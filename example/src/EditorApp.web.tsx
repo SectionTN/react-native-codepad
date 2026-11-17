@@ -75,12 +75,14 @@ export function EditorApp() {
   // scripts/bench-web.mjs opens its file through this hook.
   useEffect(() => {
     if (!__DEV__) return;
-    (globalThis as { __codepadBench?: { open(lines: number): void } }).__codepadBench = {
-      open: (lines) => {
+    (globalThis as { __codepadBench?: object }).__codepadBench = {
+      open: (lines: number) => {
         started.current = performance.now();
         setDemo('editor');
         setBenchLines(lines);
       },
+      search: (text: string) => editor.current?.setSearch({ text }),
+      decorate: () => setDecorate(true),
     };
   }, []);
   const ready = (label: string) => () =>
@@ -112,6 +114,19 @@ export function EditorApp() {
         />
         <Chip label="decorations" on={decorate} onPress={() => setDecorate((d) => !d)} />
         <Chip label="find" on={finding} onPress={() => setFinding((f) => !f)} />
+        {(['cut', 'copy', 'paste'] as const).map((action) => (
+          <Chip
+            key={action}
+            label={action}
+            on={false}
+            onPress={() =>
+              editor.current?.[action]().then(
+                () => setStatus(` done`),
+                (e: Error) => setStatus(e.message),
+              )
+            }
+          />
+        ))}
         {status ? <Text style={styles.chipText}>{status}</Text> : null}
       </View>
       <ScrollView horizontal style={styles.files} contentContainerStyle={styles.bar}>

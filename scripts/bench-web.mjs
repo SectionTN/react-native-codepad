@@ -1,4 +1,4 @@
-// Typing bench in Chrome: yarn bench:web [lines] [port] [--desktop [rate]] [--profile] [--keys n]
+// Typing bench in Chrome: yarn bench:web [lines] [port] [--desktop [rate]] [--profile] [--keys n] [--search text] [--decorate]
 // Without --desktop it drives Chrome on an Android device through adb, the example served on that port with adb reverse.
 // --desktop opens the example in a local Chromium at phone size with the CPU slowed by rate. --profile adds a CPU profile.
 import { execFileSync } from 'node:child_process';
@@ -15,9 +15,13 @@ const positional = [];
 let desktop = null;
 let profile = false;
 let keys = 60;
+let search = '';
+let decorate = false;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--profile') profile = true;
   else if (args[i] === '--keys') keys = Number(args[++i]);
+  else if (args[i] === '--search') search = args[++i] ?? '';
+  else if (args[i] === '--decorate') decorate = true;
   else if (args[i] === '--desktop') {
     desktop = /^\d+(\.\d+)?$/.test(args[i + 1] ?? '') ? Number(args[++i]) : DEFAULT_RATE;
   } else positional.push(args[i]);
@@ -72,6 +76,9 @@ try {
   console.log((await opened).text());
   const box = await page.locator('[data-line="2"]').first().boundingBox();
   if (!box) throw new Error('the editor drew no line 2');
+  // A search and the demo decorations add draw work to every key.
+  if (search) await page.evaluate((t) => globalThis.__codepadBench.search(t), search);
+  if (decorate) await page.evaluate(() => globalThis.__codepadBench.decorate());
   await page.mouse.click(box.x + 4, box.y + box.height / 2);
   await sleep(1000);
   const cdp = await page.context().newCDPSession(page);
