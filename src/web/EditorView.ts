@@ -704,8 +704,17 @@ export class EditorView {
     // A caret moved off screen scrolls into view before the paint: by row while its line is not drawn, then by x.
     for (let pass = 0; this.revealing && pass < 2; pass++) {
       if (this.drawnCaret) this.revealing = false;
+      const [beforeX, beforeY] = [this.layout.scrollX, this.layout.scrollY];
       if (!this.revealCaret()) break;
       this.syncScroll();
+      const caret = this.drawnCaret;
+      if (caret && this.layout.scrollY === beforeY) {
+        // Lines and the caret scroll with the content: only the textarea, placed in view coordinates, follows.
+        const x = caret.x - (this.layout.scrollX - beforeX);
+        this.drawnCaret = { ...caret, x };
+        if (this.input.focused) this.input.place(x, caret.y);
+        break;
+      }
       moved = this.frame();
     }
     this.revealing = false;

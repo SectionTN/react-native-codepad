@@ -459,13 +459,19 @@ for (const engine of [chromium, webkit]) {
       await editor(page, 'a', 'x');
       await clickAt(page, 'a', 0, 1);
       await page.keyboard.type('a'.repeat(90));
-      const { x, width } = await page.evaluate(async () => {
+      const { x, width, textarea } = await page.evaluate(async () => {
         const v = window.views.a;
         await window.codepad.frames(2);
         const caret = v.caretRect(v.core.selection.head);
-        return { x: caret?.x ?? -1, width: document.getElementById('a').clientWidth };
+        return {
+          x: caret?.x ?? -1,
+          width: document.getElementById('a').clientWidth,
+          textarea: Number.parseFloat(document.querySelector('#a textarea').style.left),
+        };
       });
       assert.ok(x >= 0 && x <= width, `caret x ${x} of ${width}`);
+      // The keyboard's candidate window opens at the textarea.
+      assert.ok(Math.abs(textarea - x) <= 1, `textarea at ${textarea}, caret at ${x}`);
       await page.close();
     });
 
