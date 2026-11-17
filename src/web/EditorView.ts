@@ -563,12 +563,13 @@ export class EditorView {
   private drawInput(): void {
     const box = this.textLayer.getBoundingClientRect();
     const { anchor, head } = this.core.selection;
-    const caret = this.caretRect(head);
-    this.drawnCaret = caret;
     const rootBox = this.root.getBoundingClientRect();
+    const caret = this.caretRect(head, rootBox);
+    this.drawnCaret = caret;
     const caretLine = this.cache.get(this.core.lineAt(head))?.el;
+    // Without soft wrap every line is one row.
     this.drawnCaretRow =
-      caret && caretLine
+      this.o.softWrap && caret && caretLine
         ? Math.max(
             0,
             Math.round(
@@ -671,12 +672,12 @@ export class EditorView {
   }
 
   // The caret at offset in view coordinates, or null when its line is not drawn.
-  caretRect(offset: number): Rect | null {
+  caretRect(offset: number, rootBox?: DOMRect): Rect | null {
     if (this.destroyed) return null;
     const line = this.core.lineAt(offset);
     const entry = this.cache.get(line);
     if (!entry || entry.stale || !this.attached.has(line)) return null;
-    const box = this.root.getBoundingClientRect();
+    const box = rootBox ?? this.root.getBoundingClientRect();
     const edge = caretEdge(entry.el, offset - this.core.lineStart(line));
     return { x: edge.x - box.left, y: edge.top - box.top, width: 1, height: this.rowHeight };
   }
