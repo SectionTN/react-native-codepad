@@ -190,6 +190,9 @@ export class EditorView {
   private paintedPairs: number[] | null = null;
   private readonly search: SearchController;
   private decorationsKey = '';
+  // Bumped when the theme, the font or the text's place changes, so every overlay is planned again.
+  private overlayVersion = 0;
+  private placedAt = '';
   private baseline = 0;
   private drawnWindow = { first: 0, last: -1 };
   private drawnGaps: GapRect[] = [];
@@ -797,6 +800,7 @@ export class EditorView {
     const { first, last } = this.drawnWindow;
     const key = this.o.matchBrackets
       ? [
+          this.overlayVersion,
           this.core.revision,
           head,
           snapshot,
@@ -943,6 +947,7 @@ export class EditorView {
       items.length === 0
         ? ''
         : [
+            this.overlayVersion,
             this.core.decorationsVersion,
             this.core.revision,
             this.appliedRevision,
@@ -985,24 +990,28 @@ export class EditorView {
   // Reads the visible matches' boxes now and returns their writes, the selected match in the active color.
   private planMatches(box: DOMRect, rootBox: DOMRect, from: number, to: number): () => void {
     const pairs = this.search.matchesForPaint();
+    // The window clips the painted span, so a page scroll draws again while matches are painted.
+    this.listenToPage(!this.o.scrollEnabled || pairs.length > 0);
+    const [windowStart, windowEnd] = pairs.length ? this.visibleSpan(rootBox) : [0, -1];
     const { first, last } = this.drawnWindow;
     const key =
       pairs.length === 0
         ? ''
         : [
+            this.overlayVersion,
             this.core.revision,
             this.appliedRevision,
             first,
             last,
+            windowStart,
+            windowEnd,
             from,
             to,
-            this.layout.wrapWidth,
             this.layout.scrollX,
           ].join(':');
     if (key === this.matchesKey && pairs === this.paintedPairs) return () => {};
     this.matchesKey = key;
     this.paintedPairs = pairs;
-    const [windowStart, windowEnd] = pairs.length ? this.visibleSpan(rootBox) : [0, -1];
     const marks: HTMLElement[] = [];
     for (let i = firstEndingAfter(pairs, windowStart); i * 2 < pairs.length; i++) {
       const s = pairs[i * 2] as number;
@@ -1026,10 +1035,17 @@ export class EditorView {
     const { first, last } = this.drawnWindow;
     const lo = this.core.lineStart(first);
     const hi = this.core.lineEnd(last);
+    const layout = this.layout;
+    const left = rootBox.left + layout.textAreaLeft;
+    const right = left + (layout.wrapWidth > 0 ? layout.wrapWidth : layout.textAreaWidth) - 2;
+    // The last drawn line's bottom, so a single long row is hit on its text and not below it.
+    const lastEl = this.attached.has(last) ? this.cache.get(last)?.el : undefined;
+    const lastBottom = lastEl ? lastEl.getBoundingClientRect().bottom : Number.POSITIVE_INFINITY;
     const top = Math.max(rootBox.top, 0) + 1;
-    const bottom = Math.min(rootBox.bottom, window.innerHeight) - 2;
-    const a = this.offsetAt(rootBox.left + this.layout.textAreaLeft + 1, top);
-    const b = this.offsetAt(rootBox.right - 2, bottom);
+    const bottom = Math.min(rootBox.bottom, window.innerHeight, lastBottom) - 2;
+    if (top >= bottom) return [0, -1];
+    const a = this.offsetAt(left + 1, top);
+    const b = this.offsetAt(right, bottom);
     return [a === null ? lo : Math.max(lo, a), b === null ? hi : Math.min(hi, b)];
   }
 
@@ -1269,6 +1285,7 @@ export class EditorView {
 
   private applyOptions(metrics: boolean): void {
     const o = this.o;
+    this.overlayVersion++;
     this.css = cssTheme(o.theme);
     const font = o.fontFamily ? `"${o.fontFamily}", ${MONOSPACE}` : MONOSPACE;
     this.rowHeight = Math.max(1, Math.round(o.fontSize * o.lineHeight));
@@ -1301,6 +1318,7 @@ export class EditorView {
 
   // Every line is laid out again on the next draw.
   private relayout(): void {
+    this.overlayVersion++;
     for (const entry of this.cache.values()) entry.el.remove();
     this.cache.clear();
     this.attached.clear();
@@ -1324,6 +1342,11 @@ export class EditorView {
     this.keyboard = keyboard;
     const bottom = (insets.bottom ?? 0) + keyboard;
     this.layout.setInsets(insets.top ?? 0, bottom, insets.left ?? 0, insets.right ?? 0);
+    const placedAt = `${this.layout.textAreaLeft}:${this.layout.insetTop}`;
+    if (placedAt !== this.placedAt) {
+      this.placedAt = placedAt;
+      this.overlayVersion++;
+    }
     if (o.softWrap && this.layout.textAreaWidth !== before) this.relayout();
   }
 

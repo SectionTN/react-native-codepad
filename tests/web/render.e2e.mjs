@@ -860,6 +860,105 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('matches and the bracket pair follow the text when the gutter, theme or font size changes', async () => {
+      const { page } = await open();
+      await editor(page, 'a', '(ab) ab', { lineNumbers: false });
+      const drift = await page.evaluate(async () => {
+        const v = window.views.a;
+        const { frames, githubLight } = window.codepad;
+        // The page box of the text from start to end on line 0.
+        const textBox = (start, end) => {
+          const node = document.querySelector('#a [data-line="0"]');
+          const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+          const range = document.createRange();
+          let at = 0;
+          for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            if (start >= at && start <= at + n.data.length) range.setStart(n, start - at);
+            if (end >= at && end <= at + n.data.length) range.setEnd(n, end - at);
+            at += n.data.length;
+          }
+          return range.getBoundingClientRect();
+        };
+        const off = () => {
+          const match = document.querySelector('#a [data-match]').getBoundingClientRect();
+          const bracket = document.querySelector('#a [data-bracket]').getBoundingClientRect();
+          const ab = textBox(1, 3);
+          const open = textBox(0, 1);
+          return Math.max(
+            Math.abs(match.left - ab.left),
+            Math.abs(match.width - ab.width),
+            Math.abs(bracket.left - open.left),
+            Math.abs(bracket.height - open.height),
+          );
+        };
+        await v.setSearch({ text: 'ab' });
+        v.apply(() => v.core.setSelection(1, 1));
+        await frames(2);
+        const before = off();
+        v.setOptions({ lineNumbers: true });
+        await frames(2);
+        const gutter = off();
+        v.setOptions({ fontSize: 22 });
+        await frames(2);
+        const font = off();
+        v.setOptions({ theme: { ...githubLight, searchMatch: '#ff0000' } });
+        await frames(2);
+        const color = getComputedStyle(document.querySelector('#a [data-match]')).backgroundColor;
+        return { before, gutter, font, color };
+      });
+      assert.ok(drift.before < 1, `before ${drift.before}`);
+      assert.ok(drift.gutter < 1, `after the gutter ${drift.gutter}`);
+      assert.ok(drift.font < 1, `after the font size ${drift.font}`);
+      assert.equal(drift.color, 'rgb(255, 0, 0)');
+      await page.close();
+    });
+
+    test('matches below the page fold paint once the page scrolls to them', async () => {
+      const { page } = await open();
+      await page.evaluate(() => {
+        document.body.style.paddingTop = `${window.innerHeight - 100}px`;
+      });
+      await editor(page, 'a', Array(10).fill('ab ab').join('\n'));
+      const counts = await page.evaluate(async () => {
+        const v = window.views.a;
+        await v.setSearch({ text: 'ab' });
+        await window.codepad.frames(2);
+        const folded = document.querySelectorAll('#a [data-match]').length;
+        window.scrollTo(0, 400);
+        await window.codepad.frames(3);
+        return [folded, document.querySelectorAll('#a [data-match]').length];
+      });
+      assert.ok(counts[0] < 20, `before the scroll ${counts[0]}`);
+      assert.equal(counts[1], 20);
+      await page.close();
+    });
+
+    test('a long line paints only the matches in view, and new ones as the editor scrolls', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'ab '.repeat(3000), { softWrap: true });
+      await editor(page, 'b', 'ab '.repeat(3000));
+      const painted = await page.evaluate(async () => {
+        const { a, b } = window.views;
+        await Promise.all([a.setSearch({ text: 'ab' }), b.setSearch({ text: 'ab' })]);
+        await window.codepad.frames(2);
+        const count = (id) => document.querySelectorAll(`#${id} [data-match]`).length;
+        const wrapped = count('a');
+        const single = count('b');
+        a.scroller.scrollTop = 1500;
+        await window.codepad.frames(3);
+        const root = document.getElementById('a').getBoundingClientRect();
+        const inView = [...document.querySelectorAll('#a [data-match]')].filter((m) => {
+          const r = m.getBoundingClientRect();
+          return r.bottom > root.top && r.top < root.bottom;
+        }).length;
+        return { wrapped, single, inView };
+      });
+      assert.ok(painted.wrapped < 500, `wrapped ${painted.wrapped}`);
+      assert.ok(painted.single < 100, `single row ${painted.single}`);
+      assert.ok(painted.inView > 0, `marks in view after the scroll ${painted.inView}`);
+      await page.close();
+    });
+
     test('ref copy puts the selection on the clipboard', async () => {
       // Playwright grants clipboard permissions in Chromium only.
       if (engine !== chromium) return;
