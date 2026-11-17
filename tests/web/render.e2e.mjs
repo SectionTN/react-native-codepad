@@ -547,6 +547,29 @@ for (const engine of [chromium, webkit]) {
       await page.close();
     });
 
+    test('an underline across the whole document splits only the drawn lines on a key', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'x\n'.repeat(100_000));
+      const calls = await page.evaluate(async () => {
+        const v = window.views.a;
+        const range = { start: 0, end: v.core.length };
+        v.setDecorations([{ kind: 'underline', range, color: '#0000ff' }], v.core.revision);
+        await window.codepad.frames(2);
+        let n = 0;
+        const lineStart = v.core.lineStart;
+        v.core.lineStart = function (line) {
+          n++;
+          return lineStart.call(this, line);
+        };
+        v.apply(() => v.core.insertText('y', 'api'));
+        await window.codepad.frames(2);
+        delete v.core.lineStart;
+        return n;
+      });
+      assert.ok(calls < 5000, `lineStart calls ${calls}`);
+      await page.close();
+    });
+
     test('a line background keeps its element and grows when a key widens the text', async () => {
       const { page } = await open();
       await editor(page, 'a', 'ab\ncd');

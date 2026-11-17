@@ -1013,7 +1013,7 @@ export class EditorView {
         d.color,
       ]);
     }
-    const byLine = this.underlinesByLine(items);
+    const byLine = this.underlinesByLine(items, first, last);
     const wanted = new Map<number, string>();
     for (let line = first; line <= last; line++) {
       const list = byLine.get(line);
@@ -1059,15 +1059,19 @@ export class EditorView {
     };
   }
 
-  // The underlines on each line as columns of that line, for the current decorations and text.
-  private underlinesByLine(items: Decoration[]): Map<number, LineUnderline[]> {
-    const key = `${this.core.decorationsVersion}:${this.core.revision}`;
+  // The underlines on each drawn line as columns of that line, for the current decorations and text.
+  private underlinesByLine(
+    items: Decoration[],
+    first: number,
+    last: number,
+  ): Map<number, LineUnderline[]> {
+    const key = `${this.core.decorationsVersion}:${this.core.revision}:${first}:${last}`;
     if (key === this.underlines.key) return this.underlines.lines;
     const lines = new Map<number, LineUnderline[]>();
     for (const d of items) {
       if (d.kind !== 'underline') continue;
-      const last = this.core.lineAt(d.range.end);
-      for (let line = this.core.lineAt(d.range.start); line <= last; line++) {
+      const end = Math.min(this.core.lineAt(d.range.end), last);
+      for (let line = Math.max(this.core.lineAt(d.range.start), first); line <= end; line++) {
         const start = this.core.lineStart(line);
         const a = Math.max(d.range.start, start) - start;
         const b = Math.min(d.range.end, this.core.lineEnd(line)) - start;
