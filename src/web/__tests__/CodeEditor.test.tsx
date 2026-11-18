@@ -1,6 +1,6 @@
 import { beforeEach, expect, jest, test } from '@jest/globals';
 import { act, render } from '@testing-library/react-native';
-import { createRef } from 'react';
+import { createRef, Suspense, startTransition, use, useState } from 'react';
 import type { CodeEditorRef } from '../../types';
 import type { ViewOptions } from '../EditorView';
 
@@ -219,6 +219,44 @@ test('decorations passed at mount are on the view when it first draws, and sent 
   });
   expect(atReady).toEqual([[items, 3]]);
   expect(mockViews[0]?.setDecorations).toHaveBeenCalledTimes(1);
+});
+
+test('a render that never commits keeps its decorations and options off the first draw', async () => {
+  const shown = [{ kind: 'gap' as const, line: 0, rows: 1 }];
+  const pending = [{ kind: 'gap' as const, line: 1, rows: 2 }];
+  const never = new Promise<never>(() => {});
+  function Hold({ wait }: { wait: boolean }) {
+    if (wait) use(never);
+    return null;
+  }
+  let update: (items: typeof shown) => void = () => {};
+  function App() {
+    const [items, setItems] = useState(shown);
+    update = setItems;
+    return (
+      <Suspense fallback={null}>
+        <CodeEditor
+          decorations={items}
+          decorationsRevision={0}
+          fontSize={items === shown ? 14 : 20}
+        />
+        <Hold wait={items !== shown} />
+      </Suspense>
+    );
+  }
+  await render(<App />);
+  // The transition renders the editor with the pending props, then suspends on Hold and never commits.
+  await act(async () => {
+    startTransition(() => update(pending));
+    await tick();
+  });
+  await act(async () => {
+    mockCore.resolve({});
+    await tick();
+  });
+  expect(mockViews[0]?.setDecorations.mock.calls[0]).toEqual([shown, 0]);
+  expect(mockViews[0]?.setDecorations).toHaveBeenCalledTimes(1);
+  expect(mockViews[0]?.options.fontSize).toBe(14);
 });
 
 test('decorations without a revision are for the current text', async () => {
