@@ -100,6 +100,8 @@ function browserClipboard(): Clipboard {
 const MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 // A run of Hebrew or Arabic script anywhere in a row.
 const RTL_TEXT = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+// Rows of '0' widths the visible span reaches past the rows its probes find, enough for a row of Arial's narrowest letters.
+const SPAN_ROWS = 3;
 const MOVES: Partial<Record<CaretDirection, [MoveUnit, boolean]>> = {
   left: ['char', false],
   right: ['char', true],
@@ -406,6 +408,11 @@ export class EditorView {
   // The document offset under a page point, or null outside the drawn text.
   offsetAt(clientX: number, clientY: number): number | null {
     if (this.destroyed) return null;
+    return this.textOffsetAt(clientX, clientY) ?? this.offsetBeside(clientX, clientY);
+  }
+
+  // The offset of the drawn text under a page point, or null when the point is not on a line.
+  private textOffsetAt(clientX: number, clientY: number): number | null {
     const d = document as Document & {
       caretPositionFromPoint?(x: number, y: number): { offsetNode: Node; offset: number } | null;
       caretRangeFromPoint?(x: number, y: number): Range | null;
@@ -424,9 +431,7 @@ export class EditorView {
       }
     }
     const el = (node instanceof Element ? node : node?.parentElement)?.closest('[data-line]');
-    if (!node || !(el instanceof HTMLElement) || !this.textLayer.contains(el)) {
-      return this.offsetBeside(clientX, clientY);
-    }
+    if (!node || !(el instanceof HTMLElement) || !this.textLayer.contains(el)) return null;
     const line = Number(el.dataset.line);
     const column = columnOf(el, node, offset);
     return this.core.lineStart(line) + Math.min(column, this.core.line(line).length);
@@ -1110,6 +1115,8 @@ export class EditorView {
         for (let line = Math.max(this.core.lineAt(s), first); line <= end; line++) {
           const start = this.core.lineStart(line);
           const stop = this.core.lineEnd(line);
+          let a = Math.max(s, start);
+          let b = Math.min(e, stop);
           if (stop - start > screen) {
             clipped = true;
             let view: [number, number] | undefined;
@@ -1122,12 +1129,15 @@ export class EditorView {
               }
             }
             if (e < view[0] || s > view[1]) continue;
+            // A wrapped match measures only its rows in view. Right-to-left text keeps the whole match, as in shownColumns.
+            const over = a < view[0] || b > view[1] + 1;
+            if (over && layout.wrapWidth > 0 && !RTL_TEXT.test(this.cache.get(line)?.text ?? '')) {
+              a = Math.max(a, view[0]);
+              b = Math.min(b, view[1] + 1);
+              if (b <= a) continue;
+            }
           }
-          const part: [number, number, boolean] = [
-            Math.max(s, start) - start,
-            Math.min(e, stop) - start,
-            active,
-          ];
+          const part: [number, number, boolean] = [a - start, b - start, active];
           const list = parts.get(line);
           if (list) list.push(part);
           else parts.set(line, [part]);
@@ -1167,17 +1177,21 @@ export class EditorView {
     const lo = this.core.lineStart(first);
     const hi = this.core.lineEnd(last);
     const layout = this.layout;
-    const left = rootBox.left + layout.textAreaLeft;
-    const right = left + layout.wrapWidth - 2;
+    // Both probes sit on the lines' left edge, clear of an overlay scrollbar, and find the top and bottom rows in view.
+    const x = rootBox.left + layout.textAreaLeft + layout.textPadding + 1;
     // The last drawn line's bottom, so a short document is hit on its text and not below it.
     const lastEl = this.attached.has(last) ? this.cache.get(last)?.el : undefined;
     const lastBottom = lastEl ? lastEl.getBoundingClientRect().bottom : Number.POSITIVE_INFINITY;
     const top = Math.max(rootBox.top, 0) + 1;
     const bottom = Math.min(rootBox.bottom, window.innerHeight, lastBottom) - 2;
     if (top >= bottom) return [0, -1];
-    const a = this.offsetAt(left + 1, top);
-    const b = this.offsetAt(right, bottom);
-    return [a === null ? lo : Math.max(lo, a), b === null ? hi : Math.min(hi, b)];
+    // A probe off the text keeps the drawn window's end on its side, so a miss widens the span.
+    const a = this.textOffsetAt(x, top);
+    const b = this.textOffsetAt(x, bottom);
+    const reach = SPAN_ROWS * Math.ceil(layout.wrapWidth / Math.max(1, this.charWidth));
+    const from = a === null ? lo : Math.max(lo, a - reach);
+    const to = b === null ? hi : Math.min(hi, b + reach);
+    return to < from ? [lo, hi] : [from, to];
   }
 
   // The offsets of an unwrapped line between the text area's edges. Right-to-left text keeps the whole line.

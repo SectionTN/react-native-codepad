@@ -1138,13 +1138,54 @@ for (const engine of [chromium, webkit]) {
         a.scroller.scrollTop = 1500;
         b.scroller.scrollLeft = 4000;
         await window.codepad.frames(3);
-        return { wrapped, unwrapped, inA: inBox('a'), inB: inBox('b'), scrolledB: count('b') };
+        return {
+          wrapped,
+          unwrapped,
+          inA: inBox('a'),
+          inB: inBox('b'),
+          scrolledA: count('a'),
+          scrolledB: count('b'),
+        };
       });
       assert.ok(painted.wrapped < 500, `wrapped ${painted.wrapped}`);
+      assert.ok(painted.scrolledA < 500, `wrapped after the scroll ${painted.scrolledA}`);
       assert.ok(painted.unwrapped < 300, `unwrapped ${painted.unwrapped}`);
       assert.ok(painted.inA > 0, `marks in view after the scroll down ${painted.inA}`);
       assert.ok(painted.inB > 0, `marks in view after the scroll right ${painted.inB}`);
       assert.ok(painted.scrolledB < 300, `unwrapped after the scroll ${painted.scrolledB}`);
+      await page.close();
+    });
+
+    test('one match over a long wrapped line marks only the rows in view, and the rows a scroll brings in', async () => {
+      const { page } = await open();
+      await editor(page, 'a', 'a'.repeat(100_000), { softWrap: true });
+      const out = await page.evaluate(async () => {
+        const v = window.views.a;
+        await v.setSearch({ text: 'a+', regex: true });
+        await window.codepad.frames(2);
+        const marks = () => [...document.querySelectorAll('#a [data-match]')];
+        // Whether the first and last visible rows of the line each sit under a mark.
+        const covered = () => {
+          const root = document.getElementById('a').getBoundingClientRect();
+          const line = document.querySelector('#a [data-line="0"]').getBoundingClientRect();
+          const rects = marks().map((m) => m.getBoundingClientRect());
+          const at = (y) => rects.some((r) => r.top <= y && r.bottom >= y);
+          const half = v.rowHeight / 2;
+          return [
+            at(Math.max(root.top, line.top) + half),
+            at(Math.min(root.bottom, line.bottom) - half),
+          ];
+        };
+        const first = marks().length;
+        const top = covered();
+        v.scroller.scrollTop = 20_000;
+        await window.codepad.frames(3);
+        return { first, top, scrolled: marks().length, after: covered() };
+      });
+      assert.ok(out.first < 200, `marks before the scroll ${out.first}`);
+      assert.deepEqual(out.top, [true, true]);
+      assert.ok(out.scrolled < 200, `marks after the scroll ${out.scrolled}`);
+      assert.deepEqual(out.after, [true, true]);
       await page.close();
     });
 
