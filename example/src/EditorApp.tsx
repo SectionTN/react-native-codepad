@@ -208,7 +208,9 @@ export function EditorApp({ themeId, onTheme, onNested }: Props) {
           onTheme={onTheme}
         />
         {findOpen ? (
+          // Keyed like the editor, so opening another file remounts the bar with no stale query or count.
           <FindBar
+            key={`${fileId}:${openCount}`}
             scheme={scheme}
             editor={editor}
             onStatus={onStatus}
