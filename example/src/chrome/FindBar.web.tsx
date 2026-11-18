@@ -23,7 +23,8 @@ export function FindBar({ scheme, editor, onStatus, onClose }: FindBarProps) {
   return (
     <View style={styles.bar}>
       <TextInput placeholder="Find" style={field} onChangeText={find.setQuery} autoFocus />
-      <Text style={[styles.label, { color }]}>
+      {/* A live region, so a screen reader reads the new count while focus stays in the query. */}
+      <Text aria-live="polite" style={[styles.label, { color }]}>
         {count ? `${index || '-'} of ${count}` : 'no results'}
       </Text>
       {button('.*', 'Regular expression', () => find.toggle('regex'), find.options.regex)}

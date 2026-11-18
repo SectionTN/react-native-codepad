@@ -16,7 +16,8 @@ const NO_DECORATIONS: { items: Decoration[]; revision: number } = { items: [], r
 
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={[styles.chip, on && styles.chipOn]}>
+    // react-native-web gives Space to a Pressable only with the button role.
+    <Pressable onPress={onPress} role="button" style={[styles.chip, on && styles.chipOn]}>
       <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   );
