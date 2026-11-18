@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { expect, test } from '@jest/globals';
+import { afterAll, beforeAll, describe, expect, jest, test } from '@jest/globals';
 import { generateJavaScript } from '../../../example/src/bench/generate';
 import { builtCore, loadCore, loadGrammar, pumpAll, ROOT } from '../../../tests/web/core';
 import { EditorCore } from '../core/EditorCore';
@@ -35,51 +35,95 @@ const now = () => Number(process.hrtime.bigint()) / 1e6;
   pumpAll(m);
 });
 
-// Each engine turn as the list of tasks it stepped, with the engine taking engineMs of the turn.
-let engineMs = 0;
-let turns: string[][] = [];
-// Resolves at the start of the turn after the ones counted, since engine turns can starve a timer.
-let counted: { count: number; done: () => void } | null = null;
-// The pump falls back to timers, since an open MessagePort keeps jest from exiting.
-(globalThis as { MessageChannel?: unknown }).MessageChannel = undefined;
-setPumpCore({
-  _cpw_pump: () => {
-    if (counted && turns.length === counted.count) counted.done();
-    turns.push([]);
-    const end = now() + engineMs;
-    while (now() < end);
-    return 0;
-  },
-} as unknown as CoreModule);
-
-async function runTasks(names: string[], count: number): Promise<string[][]> {
-  turns = [];
-  const reached = new Promise<void>((done) => {
-    counted = { count, done };
-  });
-  const removals = names.map((name) =>
-    registerTask({
-      step: () => {
-        turns.at(-1)?.push(name);
-        return true;
+describe('engine tasks', () => {
+  // A clock only the engine and the tasks move, so a paused test worker cannot change a turn.
+  let clock = 0;
+  // Each engine turn as the list of tasks it stepped, with the engine taking engineMs of the turn.
+  let engineMs = 0;
+  let turns: string[][] = [];
+  // Resolves at the start of the turn after the ones counted, since engine turns can starve a timer.
+  let counted: { count: number; done: () => void } | null = null;
+  beforeAll(() => {
+    jest.spyOn(performance, 'now').mockImplementation(() => clock);
+    // The pump falls back to timers, since an open MessagePort keeps jest from exiting.
+    (globalThis as { MessageChannel?: unknown }).MessageChannel = undefined;
+    setPumpCore({
+      _cpw_pump: () => {
+        if (counted && turns.length === counted.count) counted.done();
+        turns.push([]);
+        clock += engineMs;
+        return 0;
       },
-    }),
-  );
-  await reached;
-  counted = null;
-  for (const remove of removals) remove();
-  return turns.slice(0, count);
-}
+    } as unknown as CoreModule);
+  });
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
 
-test('a turn whose engine used the whole budget steps one task, the next in line each turn', async () => {
-  engineMs = 8;
-  expect(await runTasks(['a', 'b', 'c'], 4)).toEqual([['a'], ['b'], ['c'], ['a']]);
-});
+  // A task takes cost ms of the clock. once runs on its first step and can register a task again.
+  type Spec = { name: string; cost?: number; once?: (again: (name: string) => void) => void };
 
-test('a turn the engine left time in steps every task', async () => {
-  engineMs = 0;
-  expect(await runTasks(['a', 'b', 'c'], 2)).toEqual([
-    ['a', 'b', 'c'],
-    ['a', 'b', 'c'],
-  ]);
+  async function runTasks(specs: Spec[], count: number): Promise<string[][]> {
+    turns = [];
+    const reached = new Promise<void>((done) => {
+      counted = { count, done };
+    });
+    const removals = new Map<string, () => void>();
+    // One object per task registered again as itself, as a search controller does.
+    const objects = new Map<string, { step(): boolean }>();
+    for (const spec of specs) {
+      let once = spec.once;
+      const step = () => {
+        turns.at(-1)?.push(spec.name);
+        clock += spec.cost ?? 0;
+        const run = once;
+        once = undefined;
+        run?.((name) => {
+          removals.get(name)?.();
+          const again = objects.get(name);
+          if (again) removals.set(name, registerTask(again));
+        });
+        return true;
+      };
+      objects.set(spec.name, { step });
+    }
+    for (const [name, task] of objects) removals.set(name, registerTask(task));
+    await reached;
+    counted = null;
+    for (const remove of removals.values()) remove();
+    return turns.slice(0, count);
+  }
+
+  const named = (...names: string[]) => names.map((name) => ({ name }));
+
+  test('a turn whose engine used the whole budget steps one task, the next in line each turn', async () => {
+    engineMs = 8;
+    expect(await runTasks(named('a', 'b', 'c'), 4)).toEqual([['a'], ['b'], ['c'], ['a']]);
+  });
+
+  test('a turn the engine left time in steps every task', async () => {
+    engineMs = 0;
+    expect(await runTasks(named('a', 'b', 'c'), 2)).toEqual([
+      ['a', 'b', 'c'],
+      ['a', 'b', 'c'],
+    ]);
+  });
+
+  test('a task after the first waits for the next turn when less than 1 ms is left', async () => {
+    engineMs = 0;
+    const specs = [{ name: 'a', cost: 5.5 }, ...named('b', 'c')];
+    expect(await runTasks(specs, 2)).toEqual([['a'], ['b', 'c', 'a']]);
+  });
+
+  test('a task registered again during a turn waits for the next turn, not its old place', async () => {
+    engineMs = 0;
+    const specs = [
+      { name: 'a', once: (again: (name: string) => void) => again('b') },
+      ...named('b', 'c'),
+    ];
+    expect(await runTasks(specs, 2)).toEqual([
+      ['a', 'c'],
+      ['a', 'b', 'c'],
+    ]);
+  });
 });

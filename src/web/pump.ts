@@ -107,14 +107,16 @@ function drawKeyed(p: Probe, view: View, pumped: number): void {
 }
 
 type Task = { step(budgetMs: number): boolean };
-const tasks = new Set<Task>();
+// One entry per registration, so a task registered again mid-turn is not stepped in its old place.
+const tasks = new Set<{ task: Task }>();
 
 // Adds work the engine task slices after the engine's own, until the returned removal.
 export function registerTask(task: Task): () => void {
-  tasks.add(task);
+  const entry = { task };
+  tasks.add(entry);
   if (core) postEngine();
   return () => {
-    tasks.delete(task);
+    tasks.delete(entry);
   };
 }
 
@@ -143,18 +145,19 @@ function runEngine(): void {
   let left = core._cpw_pump(PUMP_BUDGET_MS, PARSE_SLICE_MS);
   // Work outside the engine, like a search scan, shares what the engine left. Only the first task in line gets 1 ms past it.
   let stepped = false;
-  for (const task of [...tasks]) {
-    if (!tasks.has(task)) continue;
+  for (const entry of [...tasks]) {
+    if (!tasks.has(entry)) continue;
     const budget = PUMP_BUDGET_MS - (performance.now() - start);
-    if (stepped && budget <= 0) {
+    // After the first task, one that would not get a whole millisecond waits for the next turn.
+    if (stepped && budget < 1) {
       left++;
       continue;
     }
     stepped = true;
     // To the back of the line, so the next turn starts with a task this one skipped. A task that finishes removes itself.
-    tasks.delete(task);
-    tasks.add(task);
-    if (task.step(Math.max(1, budget))) left++;
+    tasks.delete(entry);
+    tasks.add(entry);
+    if (entry.task.step(Math.max(1, budget))) left++;
   }
   if (probe) probe.tasks.push(performance.now() - start);
   if ([...views].some((v) => v.pending())) requestPump();
