@@ -1176,14 +1176,24 @@ for (const engine of [chromium, webkit]) {
             at(Math.min(root.bottom, line.bottom) - half),
           ];
         };
+        const lineTop = () =>
+          document.querySelector('#a [data-line="0"]').getBoundingClientRect().top;
         const first = marks().length;
         const top = covered();
+        const before = lineTop();
         v.scroller.scrollTop = 20_000;
         await window.codepad.frames(3);
-        return { first, top, scrolled: marks().length, after: covered() };
+        return {
+          first,
+          top,
+          moved: before - lineTop(),
+          scrolled: marks().length,
+          after: covered(),
+        };
       });
       assert.ok(out.first < 200, `marks before the scroll ${out.first}`);
       assert.deepEqual(out.top, [true, true]);
+      assert.ok(out.moved > 10_000, `the line moved ${out.moved} px`);
       assert.ok(out.scrolled < 200, `marks after the scroll ${out.scrolled}`);
       assert.deepEqual(out.after, [true, true]);
       await page.close();
