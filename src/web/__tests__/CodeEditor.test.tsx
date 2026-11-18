@@ -221,7 +221,7 @@ test('decorations passed at mount are on the view when it first draws, and sent 
   expect(mockViews[0]?.setDecorations).toHaveBeenCalledTimes(1);
 });
 
-test('a render that never commits keeps its decorations and options off the first draw', async () => {
+test('a render that never commits keeps its decorations, options and handlers off the first draw', async () => {
   const shown = [{ kind: 'gap' as const, line: 0, rows: 1 }];
   const pending = [{ kind: 'gap' as const, line: 1, rows: 2 }];
   const never = new Promise<never>(() => {});
@@ -229,6 +229,11 @@ test('a render that never commits keeps its decorations and options off the firs
     if (wait) use(never);
     return null;
   }
+  // Which render's onReady ran, with the font size the view had at its first draw.
+  const ready: [string, number | undefined][] = [];
+  const readyFrom = (name: string) => () => ready.push([name, mockViews[0]?.options.fontSize]);
+  const committedReady = readyFrom('committed');
+  const droppedReady = readyFrom('dropped');
   let update: (items: typeof shown) => void = () => {};
   function App() {
     const [items, setItems] = useState(shown);
@@ -239,6 +244,7 @@ test('a render that never commits keeps its decorations and options off the firs
           decorations={items}
           decorationsRevision={0}
           fontSize={items === shown ? 14 : 20}
+          onReady={items === shown ? committedReady : droppedReady}
         />
         <Hold wait={items !== shown} />
       </Suspense>
@@ -256,7 +262,7 @@ test('a render that never commits keeps its decorations and options off the firs
   });
   expect(mockViews[0]?.setDecorations.mock.calls[0]).toEqual([shown, 0]);
   expect(mockViews[0]?.setDecorations).toHaveBeenCalledTimes(1);
-  expect(mockViews[0]?.options.fontSize).toBe(14);
+  expect(ready).toEqual([['committed', 14]]);
 });
 
 test('decorations without a revision are for the current text', async () => {

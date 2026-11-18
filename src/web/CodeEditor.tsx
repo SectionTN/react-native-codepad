@@ -74,17 +74,20 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onBlur,
     onGapLayout,
   });
-  handlers.current = {
-    onReady,
-    onScroll,
-    onSelectionChange,
-    onChange,
-    onChangeText,
-    onContentSizeChange,
-    onFocus,
-    onBlur,
-    onGapLayout,
-  };
+  // Written on commit, so a render React drops never calls its handlers.
+  useLayoutEffect(() => {
+    handlers.current = {
+      onReady,
+      onScroll,
+      onSelectionChange,
+      onChange,
+      onChangeText,
+      onContentSizeChange,
+      onFocus,
+      onBlur,
+      onGapLayout,
+    };
+  });
   const initial = useRef(initialValue);
 
   // The callbacks read the latest handlers and the view through refs, so the object only follows the props.
