@@ -14,10 +14,16 @@ const FILES = [...SAMPLE_FILES, ...GENERATED_FILES.filter((f) => f.id === 'js10k
 const FONT = 'JetBrainsMono_400Regular';
 const NO_DECORATIONS: { items: Decoration[]; revision: number } = { items: [], revision: -1 };
 
-function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+// A toggle passes on, an action leaves it out. react-native-web forwards aria-pressed, which React Native's types lack.
+function Chip({ label, on, onPress }: { label: string; on?: boolean; onPress: () => void }) {
   return (
     // react-native-web gives Space to a Pressable only with the button role.
-    <Pressable onPress={onPress} role="button" style={[styles.chip, on && styles.chipOn]}>
+    <Pressable
+      onPress={onPress}
+      role="button"
+      {...((on === undefined ? {} : { 'aria-pressed': on }) as object)}
+      style={[styles.chip, on && styles.chipOn]}
+    >
       <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   );
@@ -100,7 +106,6 @@ export function EditorApp() {
         ))}
         <Chip
           label={THEMES[themeIndex % THEMES.length]?.label ?? ''}
-          on={false}
           onPress={() => setThemeIndex((i) => i + 1)}
         />
         <Chip
@@ -119,7 +124,6 @@ export function EditorApp() {
           <Chip
             key={action}
             label={action}
-            on={false}
             onPress={() =>
               editor.current?.[action]().then(
                 () => setStatus(` done`),
