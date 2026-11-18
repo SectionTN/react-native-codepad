@@ -5,7 +5,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useLayoutEffect,
+  useInsertionEffect,
   useMemo,
   useRef,
   useState,
@@ -74,8 +74,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     onBlur,
     onGapLayout,
   });
-  // Written on commit, so a render React drops never calls its handlers.
-  useLayoutEffect(() => {
+  // Written on commit before any layout effect runs, so a render React drops never calls its handlers.
+  useInsertionEffect(() => {
     handlers.current = {
       onReady,
       onScroll,
@@ -158,8 +158,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
     ],
   );
   const latest = useRef({ options, language, decorations, decorationsRevision });
-  // Written on commit, so the props of a render React drops never reach the view.
-  useLayoutEffect(() => {
+  // Written on commit before any layout effect runs, so the props of a render React drops never reach the view.
+  useInsertionEffect(() => {
     latest.current = { options, language, decorations, decorationsRevision };
   });
   // The decorations last sent, so the view gets them before its first draw and a repeat is not mapped twice.

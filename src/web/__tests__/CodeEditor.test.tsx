@@ -1,6 +1,6 @@
 import { beforeEach, expect, jest, test } from '@jest/globals';
 import { act, render } from '@testing-library/react-native';
-import { createRef, Suspense, startTransition, use, useState } from 'react';
+import { createRef, Suspense, startTransition, use, useLayoutEffect, useState } from 'react';
 import type { CodeEditorRef } from '../../types';
 import type { ViewOptions } from '../EditorView';
 
@@ -263,6 +263,32 @@ test('a render that never commits keeps its decorations, options and handlers of
   expect(mockViews[0]?.setDecorations.mock.calls[0]).toEqual([shown, 0]);
   expect(mockViews[0]?.setDecorations).toHaveBeenCalledTimes(1);
   expect(ready).toEqual([['committed', 14]]);
+});
+
+test("a layout effect earlier in the tree that focuses the editor reaches the same commit's onFocus", async () => {
+  const ref = createRef<CodeEditorRef>();
+  const calls: string[] = [];
+  function Focuser({ n }: { n: number }) {
+    useLayoutEffect(() => {
+      if (n > 0) void ref.current?.focus();
+    }, [n]);
+    return null;
+  }
+  function App({ n }: { n: number }) {
+    return (
+      <>
+        <Focuser n={n} />
+        <CodeEditor ref={ref} onFocus={() => calls.push(`focus ${n}`)} />
+      </>
+    );
+  }
+  const { rerender } = await render(<App n={0} />);
+  await act(async () => {
+    mockCore.resolve({});
+    await tick();
+  });
+  await rerender(<App n={1} />);
+  expect(calls).toEqual(['focus 1']);
 });
 
 test('decorations without a revision are for the current text', async () => {
