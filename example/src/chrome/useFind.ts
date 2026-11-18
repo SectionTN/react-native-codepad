@@ -62,21 +62,29 @@ export function useFind(editor: RefObject<CodeEditorRef | null>, onStatus: (text
     [editor],
   );
 
-  // replaceCurrent selects the next match, which takes over the replaced index unless it was the last one.
+  // replaceCurrent selects the next match. Finding again from its start reads its index and the
+  // fresh total, which a replacement that still matches keeps.
   const replaceOne = useCallback(async () => {
-    const replaced = await editor.current?.replaceCurrent(replacement);
-    if (replaced) {
-      const left = Math.max(0, match.count - 1);
-      setMatch({ index: left === 0 ? 0 : match.index > left ? 1 : match.index, count: left });
+    const ed = editor.current;
+    const replaced = await ed?.replaceCurrent(replacement);
+    if (ed && replaced) {
+      const { anchor, head } = ed.getSelection();
+      const start = Math.min(anchor, head);
+      await ed.setSelection({ anchor: start, head: start });
+      const hit = await ed.findNext();
+      setMatch(hit ? { index: hit.index + 1, count: hit.total } : NO_MATCH);
     }
     status.current(replaced ? 'replaced one' : 'select a match first');
-  }, [editor, replacement, match]);
-
-  const replaceAll = useCallback(async () => {
-    const n = (await editor.current?.replaceAll(replacement)) ?? 0;
-    setMatch(NO_MATCH);
-    status.current(`replaced ${n}`);
   }, [editor, replacement]);
+
+  // The search stays on after a replace all, so the count is read again for the new text.
+  const replaceAll = useCallback(async () => {
+    const ed = editor.current;
+    const n = (await ed?.replaceAll(replacement)) ?? 0;
+    const fresh = query ? await ed?.setSearch({ text: query, ...options }).catch(() => null) : null;
+    setMatch(fresh?.count ? { index: 0, count: fresh.count } : NO_MATCH);
+    status.current(`replaced ${n}`);
+  }, [editor, replacement, query, options]);
 
   const toggle = useCallback(
     (option: FindOption) => setOptions((o) => ({ ...o, [option]: !o[option] })),
