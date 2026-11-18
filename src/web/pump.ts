@@ -141,9 +141,20 @@ function runEngine(): void {
   if (!core) return;
   const start = performance.now();
   let left = core._cpw_pump(PUMP_BUDGET_MS, PARSE_SLICE_MS);
-  // Work outside the engine, like a search scan, takes what the frame has left, at least 1 ms each.
+  // Work outside the engine, like a search scan, shares what the engine left. Only the first task in line gets 1 ms past it.
+  let stepped = false;
   for (const task of [...tasks]) {
-    if (task.step(Math.max(1, PUMP_BUDGET_MS - (performance.now() - start)))) left++;
+    if (!tasks.has(task)) continue;
+    const budget = PUMP_BUDGET_MS - (performance.now() - start);
+    if (stepped && budget <= 0) {
+      left++;
+      continue;
+    }
+    stepped = true;
+    // To the back of the line, so the next turn starts with a task this one skipped. A task that finishes removes itself.
+    tasks.delete(task);
+    tasks.add(task);
+    if (task.step(Math.max(1, budget))) left++;
   }
   if (probe) probe.tasks.push(performance.now() - start);
   if ([...views].some((v) => v.pending())) requestPump();
