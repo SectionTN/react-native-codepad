@@ -389,6 +389,14 @@ describe('CodeEditor', () => {
     expect(empty.decorationsRevision).toBe(-1);
   });
 
+  it('clears removed decorations for the current text, whatever decorationsRevision says', async () => {
+    const decorations: Decoration[] = [{ kind: 'gap', line: 1, rows: 2 }];
+    const api = await render(<CodeEditor decorations={decorations} decorationsRevision={3} />);
+    await api.rerender(<CodeEditor decorationsRevision={3} />);
+    expect(host(api).decorations).toEqual([]);
+    expect(host(api).decorationsRevision).toBe(-1);
+  });
+
   it('wires onGapLayout once a handler was set', async () => {
     const api = await render(<CodeEditor />);
     expect(host(api).onGapLayout).toBeUndefined();

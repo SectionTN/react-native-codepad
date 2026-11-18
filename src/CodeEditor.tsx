@@ -285,7 +285,8 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(function Co
       onEditorBlur={onBlurCallback}
       onContentSizeChange={onContentSizeChangeCallback}
       decorations={nativeDecorations}
-      decorationsRevision={decorationsRevision}
+      // A removed prop clears for the current text, since a revision older than the edit log is ignored.
+      decorationsRevision={decorations ? decorationsRevision : -1}
       onGapLayout={gapsListened.current ? onGapLayoutCallback : undefined}
       hybridRef={hybridRef}
     />
